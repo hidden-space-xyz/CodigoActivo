@@ -28,7 +28,7 @@ public class NewsController : ApiControllerBase
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a paged news list item, or an error response.</returns>
+    /// <returns>An HTTP response containing a page of news items.</returns>
     [HttpGet]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.News)]
@@ -42,11 +42,11 @@ public class NewsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the years endpoint for news items.
+    /// Lists the years in which news items were created, newest first.
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an int, or an error response.</returns>
+    /// <returns>An HTTP response containing the years.</returns>
     [HttpGet("years")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.News)]
@@ -84,9 +84,9 @@ public class NewsController : ApiControllerBase
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getById">Query handler that reads the result of the command.</param>
+    /// <param name="getById">Query handler that reads the created news item.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a news item, or an error response.</returns>
+    /// <returns>A 201 response with the news item and its location, or an error response.</returns>
     [HttpPost]
     [AllowOnlyAdmin]
     [ProducesResponseType<NewsItemResponse>(StatusCodes.Status201Created)]
@@ -110,7 +110,7 @@ public class NewsController : ApiControllerBase
     /// <param name="newsItemId">Identifier of the news item.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getById">Query handler that reads the result of the command.</param>
+    /// <param name="getById">Query handler that reads the updated news item.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a news item, or an error response.</returns>
     [HttpPut("{newsItemId:guid}")]
@@ -135,7 +135,7 @@ public class NewsController : ApiControllerBase
     /// <param name="newsItemId">Identifier of the news item.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpDelete("{newsItemId:guid}")]
     [AllowOnlyAdmin]
     public async Task<IActionResult> DeleteAsync(
@@ -150,13 +150,14 @@ public class NewsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the feature endpoint for news items.
+    /// Makes the news item the featured one; any other featured news item stops being featured,
+    /// so at most one is featured at a time.
     /// </summary>
     /// <param name="newsItemId">Identifier of the news item.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getById">Query handler that reads the result of the command.</param>
+    /// <param name="getById">Query handler that reads the featured news item.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a news item, or an error response.</returns>
+    /// <returns>An HTTP response containing the news item, or an error response.</returns>
     [HttpPatch("{newsItemId:guid}/feature")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<NewsItemResponse>> FeatureAsync(

@@ -47,7 +47,7 @@ outbox for events or event sourcing.
 | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | `CodigoActivo.Domain`         | Aggregates, typed identifiers, value objects, domain events and policies, repository ports, `Result`, `Error` and `DomainErrorCode` | None                                |
 | `CodigoActivo.Application`    | Use cases with their validated messages, response contracts, the read model, the use case decorators and the ports they need       | Domain                              |
-| `CodigoActivo.Infrastructure` | EF Core write and read contexts, repositories, the unit of work and event publisher, the caching decorator, file storage, Argon2id, HMAC-SHA256 one-time code hashing, TOTP (Otp.NET), the encrypted Data Protection key ring, SMTP, email templates, the clock and the log tables with their Serilog sinks | Domain, Application                 |
+| `CodigoActivo.Infrastructure` | EF Core write and read contexts, repositories, the unit of work and event publisher, the caching decorator, the encrypted data history, file storage and image re-encoding (NetVips), Argon2id, HMAC-SHA256 one-time code hashing, TOTP (Otp.NET), the encrypted Data Protection key ring, SMTP, email templates, the clock and the log tables with their Serilog sinks | Domain, Application                 |
 | `CodigoActivo.Composition`    | The composition root: registrations by feature, strict configuration-to-options mapping checked on start, data protection and database initialization | Domain, Application, Infrastructure |
 | `CodigoActivo.API`            | HTTP controllers and request contracts by feature, the wire `ErrorCode`, middleware, claims and cookies, rate and concurrency limits, output caching, OpenAPI, SEO documents and startup | Composition                         |
 
@@ -59,41 +59,42 @@ no check enforces.
 ### Domain and persistence
 
 - `CodigoActivo.Domain` has one folder per feature (`Users/`, `Events/`, `Activities/`, `EventCategories/`,
-  `TermsDocuments/`, `TermsDecisions/`, `News/`, `Resources/`, `Partners/`, `Files/`, `Legal/`) with its aggregates, typed
-  identifiers, value objects, domain events, policies and repository ports; `Common/` holds `Result`, `Error`,
-  `DomainErrorCode`, the base classes (`Entity<TId>`, `AggregateRoot<TId>`, `AuditableEntity<TId>`) and the shared
-  value objects.
+  `TermsDocuments/`, `TermsDecisions/`, `News/`, `Resources/`, `Partners/`, `Files/`, `Legal/`, `BlockedData/`)
+  with its aggregates, typed identifiers, value objects, domain events, policies and repository ports; `Common/`
+  holds `Result`, `Error`, `DomainErrorCode`, the base classes (`Entity<TId>`, `AggregateRoot<TId>`,
+  `AuditableEntity<TId>`) and the shared value objects.
 - Aggregates have a typed identifier (`UserId`, `EventId`, `ActivityId`, `PartnerId`, `StoredFileId`...), a
   `readonly record struct` over a `Guid` with no implicit conversion, so an identifier of one aggregate can never
-  be passed for another; `EventTermsAcceptance` is keyed by event, user and document. Values with rules are value objects: `EmailAddress`, `PhoneNumber`, `SpanishNationalId`,
-  `RichText`, `DateRange` (the event calendar), `SignupWindow`, `ActivitySchedule`, `HandwrittenSignature`, and
-  the security state of `User`: `OneTimeCode` (verification, password reset and login codes), `EmailChange`,
-  `Authenticator`, `LoginChallenge`, `PasswordLockout` and `TwoFactorLockout`. EF Core maps them onto plain
-  columns through conventions and converters (`Infrastructure/Database/Conversions`), the `User` ones as complex
-  properties; the read model keeps plain `Guid` and primitive columns.
+  be passed for another; `EventTermsAcceptance` is keyed by event, user and document. Values with rules are value
+  objects: `EmailAddress`, `PhoneNumber`, `SpanishNationalId`, `RichText`, `DateRange` (the event calendar),
+  `SignupWindow`, `ActivitySchedule`, `HandwrittenSignature`, and the security state of `User`: `OneTimeCode`
+  (verification, password reset and login codes), `EmailChange`, `Authenticator`, `LoginChallenge`,
+  `PasswordLockout` and `TwoFactorLockout`. EF Core maps them onto plain columns through conventions and
+  converters (`Infrastructure/Database/Conversions`), the `User` ones as complex properties; the read model keeps
+  plain `Guid` and primitive columns.
   `DateRange.InstantsIn` gives the UTC bounds of the event days that both `DateRange.Covers` (a new activity
   schedule) and `IActivityRepository.AnyOutsideRangeAsync` (a shortened event) compare activities against.
 - The aggregates are `User` (a dependent is another `User` referenced by `ParentId`), `UserSession`,
   `BlockedDataConsultation` (with its findings and extracts), `Event` (with its categories and terms links),
   `Activity` (with its role capacities and signups), `EventTermsAcceptance`, `EventRating`, `NewsItem`,
-  `Resource`, `Partner`, `TermsDocument`,
-  `LegalPolicy`, `EventCategoryType` and `StoredFile`. Their state has private setters: factories create them, returning
-  `Result<T>` when a rule can fail, and behavior methods own the invariants and the transitions
-  (`User.Verify`, `User.RecordPasswordFailure`, `Activity.RequestAssignment`, `Activity.ChangeAssignmentStatus`,
-  `Event.Feature`). Child entities change only through their root. For people, `CreateIndependent`,
-  `CreateDependent` and `PlanProfileChange`/`ApplyProfileChange` decide which details an independent account or
-  a dependent needs and answer each broken rule with one `DomainErrorCode`.
+  `Resource`, `Partner`, `TermsDocument`, `LegalPolicy`, `EventCategoryType` and `StoredFile`. Their state has
+  private setters: factories create them, returning `Result<T>` when a rule can fail, and behavior methods own the
+  invariants and the transitions (`User.Verify`, `User.RecordPasswordFailure`, `Activity.RequestAssignment`,
+  `Activity.ChangeAssignmentStatus`, `Event.Feature`). Child entities change only through their root. For people,
+  `CreateIndependent`, `CreateDependent` and `PlanProfileChange`/`ApplyProfileChange` decide which details an
+  independent account or a dependent needs and answer each broken rule with one `DomainErrorCode`.
 - Aggregates record domain events for the changes other parts react to (`PartnerUpdated`, `NewsItemDeleted`,
   `AssignmentStatusChanged`, `PasswordChanged`, `ContactDetailsReplaced`, `AccountErased`...). `UnitOfWork`
   collects them when it saves and publishes them only after the commit, or after the explicit transaction the
-  save ran in commits; a failed commit publishes nothing and keeps them with the changes they describe. `ICommittedEventsHandler`s see the whole commit once
-  (`CacheInvalidationOnCommit` evicts the tags `CacheTagsByEvent` maps; `ReleasedFilesCleanup` removes the files
-  that events implementing `IReleasesFiles` stopped referencing, when nothing else references them) and then every
-  `IDomainEventListener<T>` of each event runs (`AssignmentDecisionNotification`, `AccountSecurityNotifications`,
-  `SessionsEndOnPasswordReplacedOrLocked`, `AccountLockoutLog`). Effects run in the request after the commit and to their end even
-  when the client disconnects; a failing effect is logged and neither stops the others nor fails the committed
-  request. A crash between the commit and an effect loses that effect, because there is no transactional outbox
-  for events (emails themselves go through the email outbox).
+  save ran in commits; a failed commit publishes nothing and keeps them with the changes they describe.
+  `ICommittedEventsHandler`s see the whole commit once (`CacheInvalidationOnCommit` evicts the tags
+  `CacheTagsByEvent` maps; `ReleasedFilesCleanup` removes the files that events implementing `IReleasesFiles`
+  stopped referencing, when nothing else references them) and then every `IDomainEventListener<T>` of each event
+  runs (`AssignmentDecisionNotification`, `AccountSecurityNotifications`, `SessionsEndOnPasswordReplacedOrLocked`,
+  `AccountLockoutLog`, `ConsentWithdrawalNotification`, `BlockedDataConsultationNotification`). Effects run in the
+  request after the commit and to their end even when the client disconnects; a failing effect is logged and
+  neither stops the others nor fails the committed request. A crash between the commit and an effect loses that
+  effect, because there is no transactional outbox for events (emails themselves go through the email outbox).
 - Rich text references a stored file only by its content URL `/api/files/{id}/content`, which saved documents
   keep and the frontend builds and checks; `RichTextFileReferences` in Domain owns it, so it cannot change
   without migrating saved documents.
@@ -145,9 +146,10 @@ no check enforces.
   the values read before the concurrent write, and the checks made before the transaction would not run again.
   `PasswordAttemptGuard` counts a wrong password inside it with the account row locked (`FOR UPDATE`), so
   parallel attempts lose no increment and only one of them sees the account lock. `SavePasswordStateAsync` writes
-  only the lockout and login challenge columns (a lock closes the challenge), so it hands just the `PasswordLocked` event to the unit of work, which publishes it
-  when that transaction commits; the account's other changes and events wait for their own commit, and it
-  advances the account's token only when no other transaction wrote the row since it was loaded. Second-factor
+  only the lockout and login challenge columns (a lock closes the challenge), so it hands just the
+  `PasswordLocked` event to the unit of work, which publishes it when that transaction commits; the account's
+  other changes and events wait for their own commit, and it advances the account's token only when no other
+  transaction wrote the row since it was loaded. Second-factor
   checks (the handler locks and reloads the account, token included, before `SecondFactorGuard` counts the code)
   and adding a dependent lock and reload the account the same way (`IUserRepository.LockAsync`).
   Deleting an event category locks the category (`FOR UPDATE`, which also holds back tagging an event with it) and
@@ -159,9 +161,9 @@ no check enforces.
   such transaction it locks and loads the household and what belongs to it (`IAccountErasureStore`), hands the
   content credited to the household over to the initial administrator and removes the account; any other change
   staged in the unit of work commits with it. `InitialAdministratorGuard`, a `SaveChangesInterceptor` that
-  `CodigoActivoDbContext` adds to itself, refuses any deletion of the initial administrator. Deleting an event or
-  an activity, or cancelling a signup, commits through `ParticipationEraser`, which locks and loads what the
-  removal takes away (`IParticipationErasureStore`) in the same transaction.
+  `CodigoActivoDbContext` adds to itself, refuses any deletion of the initial administrator. Deleting an event,
+  an activity or a rating, or cancelling a signup, commits through `ParticipationEraser`, which locks and loads
+  what the removal takes away (`IParticipationErasureStore`) in the same transaction.
 - Historized entities change only through the change tracker: `DataHistoryRecorder`, the other interceptor
   `CodigoActivoDbContext` adds to itself, keeps the previous state of every historized row a save changes or
   deletes, encrypted, in `data_history`, so their dependents use `ClientCascade` and are loaded before their
@@ -187,21 +189,23 @@ no check enforces.
 - Infrastructure is organized by feature too: each feature folder (`Users/`, `Events/`, `Activities/`, `News/`,
   `Files/`...) holds its EF configurations, repositories and background services; `Database/` keeps the
   contexts, conventions, catalogs, shared configurations and repository base, the unit of work, the query
-  executor, seeders and migrations; `Communication/` holds the email delivery shared by every feature, and
-  `Caching/`, `Messaging/`, `Security/`, `Time/`, `Diagnostics/` and `Logs/` (the partitioned log tables, their
-  own connection pool and the Serilog sinks that write them) the other technical services.
+  executor, seeders and migrations; `Communication/` holds the email delivery shared by every feature,
+  `DataHistory/` the encrypted data history (recorder, reader and purge), and `Caching/`, `Messaging/`,
+  `Security/`, `Time/`, `Diagnostics/` and `Logs/` (the partitioned log tables, their own connection pool and the
+  Serilog sinks that write them) the other technical services.
 
 ### Commands and queries
 
 Each use case is a message and a sealed handler in `CodigoActivo.Application/<Feature>/Commands|Queries/`.
 `Accounts` groups its supporting types by concern: `Passwords/`, `SecondFactor/`, `Sessions/`, `EmailAddresses/`,
-`Notifications/` and `Erasure/`; `AccountLock`, `AccountLockoutLog` and `SecurityLog` sit at the `Accounts`
-root. `Activities` keeps the signup collaborators in `Signups/` and `ParticipationEraser` in `Erasure/`.
-`UseCaseRegistration` (Composition) registers every `ICommandHandler<,>`, `IQueryHandler<,>` and
-`IDomainEventListener<>` it finds by the contract it implements, and wraps the handlers in decorators: a command
-runs through `LoggingCommandDecorator` (warns about slow use cases), `AuditCommandDecorator` (records it in the
-audit log), `ValidationCommandDecorator` and `UnitOfWorkCommandDecorator` (commits once the handler succeeds); a
-query through `LoggingQueryDecorator`, `ValidationQueryDecorator` and `CachingQueryDecorator`. Controllers inject the handler contract
+`Notifications/` and `Erasure/`; `AccountLock`, `AccountLockoutLog`, `SecurityLog` and `PersonalDataReader` sit
+at the `Accounts` root. `Activities` keeps the signup collaborators in `Signups/` and `ParticipationEraser` in
+`Erasure/`. `UseCaseRegistration` (Composition) registers every `ICommandHandler<,>`, `IQueryHandler<,>`,
+`IDomainEventListener<>` and `ICommittedEventsHandler` it finds by the contract it implements, and wraps the
+handlers in decorators: a command runs through `LoggingCommandDecorator` (warns about slow use cases),
+`AuditCommandDecorator` (records it in the audit log), `ValidationCommandDecorator` and
+`UnitOfWorkCommandDecorator` (commits once the handler succeeds); a query through `LoggingQueryDecorator`,
+`ValidationQueryDecorator` and `CachingQueryDecorator`. Controllers inject the handler contract
 (`ICommandHandler<TCommand, TResult>`) with `[FromServices]`, the only way an action receives a service
 (implicit service binding is disabled); there is no MediatR dispatcher.
 
@@ -214,9 +218,9 @@ reaches the date rules through the validation context, never through a service l
 records live in the API (`API/<Feature>/Contracts/`) with only the standard attributes the OpenAPI document
 describes, plus the catalog membership check (`IValidatableObject` through `CatalogIdentifiers`), and map
 themselves to the command (`request.ToCommand(id)`). Response records and list criteria stay
-in `Application/<Feature>/Contracts/` as the read contracts of the queries. `Gender` and `TwoFactorMethod` are
-contract enums that mirror the domain ones (`ContractEnums`); they live with the read rows that store them, so
-the read model depends on no feature.
+in `Application/<Feature>/Contracts/` as the read contracts of the queries. `Gender`, `TwoFactorMethod`,
+`TermsDocumentKind` and `LegalPolicyKind` are contract enums that mirror the domain ones (`ContractEnums`); they
+live with the read rows that store them, so the read model depends on no feature.
 
 Queries read the database through `IReadStore`: no-tracking `IQueryable` sources of read rows
 (`Application/Abstractions/Querying/ReadModel`) that `CodigoActivoReadDbContext` maps onto the same tables,
@@ -239,42 +243,45 @@ when several saves form one transaction. `ICommand<TResult>` requires a `Result`
 and commit every command alike. Commands return `Result`, or `Result<TId>` with the typed ID of what they
 create; they return data only when it exists nowhere else after the operation, such as the authenticator secret
 of `BeginAuthenticatorSetup`, the recipient count of `SendEmail*` or the number of rows a scheduled purge
-removed. The controller then runs the query that builds the HTTP response. Commands never call query handlers; they may read
-the read store only for lookups that change nothing: email audiences, the names the signup notifier shows and
-the guardianship `ActingUserPolicy` checks.
+removed. The controller then runs the query that builds the HTTP response. Commands never call query handlers;
+they and the listeners may read the read store only for lookups that change nothing, each one reviewed in
+`HandlerConventionTests`: email audiences, the names a notification shows, the guardianship `ActingUserPolicy`
+checks, and the accounts a blocked data consultation searches or exports, with their personal data copy.
 
 `AuditCommandDecorator` hands every command to `IAuditTrail` (`Application/Abstractions/Auditing`) as an
 `AuditRecord`: the actor (`ICurrentUser`, or the system for an `IScheduledCommand`), the caller address
 (`IRequestOrigin`, implemented by `HttpRequestOrigin` in the API), the `AuditAction` named after the command,
 the main entity (the one the handler named through `IAuditSubject`, as login does with the account it found by
 email, else the typed ID a `Result<TId>` created, else the first typed ID of the command), the other typed IDs
-as related entities and the outcome. `CommandAudit` reads only the typed IDs, never another value. `IUnaudited` keeps a command out (only `SaveEventRating` and `DeleteEventRating`) and `[Unaudited]` a property (only the account of `ExportBlockedData`), a scheduled command is recorded
-only when it changed something, and a failure to record never changes the command's result.
+as related entities and the outcome. `CommandAudit` reads only the typed IDs, never another value. `IUnaudited`
+keeps a command out (only `SaveEventRating` and `DeleteEventRating`) and `[Unaudited]` a property (only the
+account of `ExportBlockedData`), a scheduled command is recorded only when it changed something, and a failure
+to record never changes the command's result.
 `SerilogAuditTrail` (Infrastructure) queues the record to `audit_log_entries`.
 
 Use cases decide who may run them on whose behalf. `ICurrentUser` (implemented by `HttpCurrentUser` in the API)
 tells who is signed in; commands and queries take the author, the acting user and the administrator flag from
 it, never from their input. `GetAccountQuery` is the one query that reads the caller's own account by its id:
 email verification and two-factor login completion answer before the session exists. `ActingUserPolicy` lets
-the signed-in user act for themselves or one of their dependents, and an administrator for anyone, reading the guardianship from the read side so commands and queries share it, and
-answers anything else with `ActingForAnotherUserForbidden` (403
-`AccessDenied` on the wire); signing up or withdrawing a person, checking their agenda and deleting a user
-check it. Personal data is narrower: updating a user and adding a dependent accept only the holder or their
-guardian, administrators included (`EnsureMayManagePersonalDataAsync`), and changing a password only the
-holder. Signing up a household is the exception: it only
-takes the signed-in user and their own dependents (`Household.Includes`), administrators included, and answers
-anyone else with `ActivityHouseholdMemberNotAllowed`. The `[AllowOnlySelf]` and `[AllowOnlyAdmin]` attributes
-refuse early at the HTTP edge; `[AllowOnlySelf]` asks the same policy.
+the signed-in user act for themselves or one of their dependents, and an administrator for anyone, reading the
+guardianship from the read side so commands and queries share it, and answers anything else with
+`ActingForAnotherUserForbidden` (403 `AccessDenied` on the wire); signing up or withdrawing a person, checking
+their agenda, withdrawing a consent and deleting a user check it. Personal data is narrower: updating a user
+and adding a dependent accept only the holder or their guardian, administrators included
+(`EnsureMayManagePersonalDataAsync`), and changing a password only the holder. Signing up a household is the
+exception: it only takes the signed-in user and their own dependents (`Household.Includes`), administrators
+included, and answers anyone else with `ActivityHouseholdMemberNotAllowed`. The `[AllowOnlySelf]` and
+`[AllowOnlyAdmin]` attributes refuse early at the HTTP edge; `[AllowOnlySelf]` asks the same policy.
 
 An event can link several terms documents (`event_terms_documents`, each `is_required`/`display_order`); a
 document holds conditions or a consent (`kind`, which cannot change once an event links it or anyone decided on
 it, and a consent is never required) and may ask for a handwritten signature (`requires_signature`). The signup
-wire contract carries `TermsDecisions` lists of
-`{TermsDocumentId, Accepted, Signature, Version}`, the signature a base64 PNG drawn in the SPA with `signature_pad`: one
-for the person in `AssignRequest`, one per member in each `AssignHouseholdRequest` assignment. `TermsGate`
-applies `TermsConsent` person by person and records each decision as an `EventTermsAcceptance` about that person
-with who decided and the document version it was taken on (a rewrite keeps the replaced version as a
-`TermsDocumentVersion`), which keeps every change of it as a `TermsDecisionChange` with the account that recorded it;
+wire contract carries `TermsDecisions` lists of `{TermsDocumentId, Accepted, Signature, Version}`, the
+signature a base64 PNG drawn in the SPA with `signature_pad`: one for the person in `AssignRequest`, one per
+member in each `AssignHouseholdRequest` assignment. `TermsGate` applies `TermsConsent` person by person and
+records each decision as an `EventTermsAcceptance` about that person with who decided and the document version
+it was taken on (a rewrite keeps the replaced version as a `TermsDocumentVersion`), which keeps every change of
+it as a `TermsDecisionChange` with the account that recorded it;
 `GET /api/events/{eventId}/terms` returns every linked document and, for the caller and each dependent, the
 decisions taken and whether they decide their own consents, and administrators list the decisions of an event
 under `/api/events/{eventId}/terms/decisions`. A given consent is withdrawn with
@@ -324,18 +331,16 @@ of its children included, answers that resource's `NotFound` when it does not ex
 `?eventId=` only narrows a list. The API owns the wire `ErrorCode` (`API/Errors`): `WireErrorCodes` translates
 each code to the wire member of the same name or to an explicit rename (malformed input becomes
 `RequestValidationFailed`, acting for another user `AccessDenied`), and `WireErrorCodesTests` fails when a code
-has no translation or a wire code is reached by none. Controllers
-translate failures through `ApiControllerBase`. All client-visible
-failures use `ApiErrorResponse(Title, Status, Code, TraceId)`, including model validation, authorization,
-CSRF, rate-limit rejections (`TooManyRequests` with `Retry-After`) and unhandled exceptions. HTTP
-mappings: 400 validation, 401 unauthenticated, 403 forbidden, 404 not found, 409 conflict, 429 too many
-requests, 500 unexpected. A path under `/api` that matches no endpoint answers 404
+has no translation or a wire code is reached by none. Controllers translate failures through
+`ApiControllerBase`. All client-visible failures use `ApiErrorResponse(Title, Status, Code, TraceId)`, including
+model validation, authorization, CSRF, rate-limit rejections (`TooManyRequests` with `Retry-After`) and
+unhandled exceptions. HTTP mappings: 400 validation, 401 unauthenticated, 403 forbidden, 404 not found, 409
+conflict, 429 too many requests, 500 unexpected. A path under `/api` that matches no endpoint answers 404
 `EndpointNotFound` to anyone, and every create answers 201 with the new resource and its `Location`.
 
 `ErrorCode` is serialized as a string and is part of the frontend contract; the API registers the string enum
 converter for MVC and for the responses it writes directly, since the Domain carries no serialization
-attributes. Request records live in `API/<Feature>/Contracts/`, response records in
-`Application/<Feature>/Contracts/`; the shared binding primitives (`PageQuery`, `SortMap`, `TextSearch`) in
+attributes. The shared binding primitives (`PageQuery`, `SortMap`, `TextSearch`) live in
 `Application/Common/Querying`; day filters turn a local day into UTC instants with `LocalDayRange` (Domain).
 Mapping is handwritten.
 
@@ -346,15 +351,17 @@ options registered with `AddValidatedOptions` and `ValidateOnStart`: a missing s
 a setting that is present but unusable stops the application at start with a message naming the key. Security,
 abuse and retention values are fixed in their `*Options` classes, registered with `AddFixedOptions` so no
 setting reaches them (tests replace the instance). The association's public identity is `Organization`
-(Domain) and `shared/config/organization.ts` (frontend); user-facing text is in the i18n resources. Data protection is registered there once, with the
-keys protected at rest in every environment. User-facing backend text comes from `Application/Common/Localization/AppStrings.resx`; logs and
-seeded content are not UI localization resources.
+(Domain) and `shared/config/organization.ts` (frontend); user-facing text is in the i18n resources. Data
+protection is registered in the composition root once, with the keys protected at rest in every environment.
+User-facing backend text comes from `Application/Common/Localization/AppStrings.resx`; logs and seeded content
+are not UI localization resources.
 
 ### Email boundaries
 
 Application decides which email is sent, to whom and with which data, through typed models and the composer
-ports `IAccountEmailComposer`, `ISignupEmailComposer` and `IManualEmailComposer`; Infrastructure renders the
-HTML, the branding and the links to the SPA (`Infrastructure/Communication/Templates`).
+ports `IAccountEmailComposer`, `ISignupEmailComposer`, `IManualEmailComposer`, `IConsentWithdrawalEmailComposer`
+and `IBlockedDataEmailComposer`; Infrastructure renders the HTML, the branding and the links to the SPA
+(`Infrastructure/Communication/Templates`).
 
 Automatic messages (`IEmailSender`/`ThrottledEmailSender`, rate-limited per recipient and globally) and
 administrator-authored bulk mail (`ManualEmailDispatcher`) both store their batch through `IEmailOutbox` in
@@ -388,9 +395,10 @@ slice exposes its public API through `index.ts`; `@` maps to `src`. Code starts 
 moves down to a feature or entity only when a second slice needs it. Steiger (`npm run lint:fsd`) enforces the
 structure, including that a widget, feature or entity slice is used by at least two slices or by `app`.
 `eslint.config.js` enforces most coding rules and `frontend/tests/architecture/` what neither tool sees: the
-slice and segment layout, the roles of `api` segment files, lazy page routing, the ownership of `shared/config`
-values, theme variables and global classes, and the reviewed `@x` list. [frontend/AGENTS.md](frontend/AGENTS.md)
-lists the rules no check enforces.
+slice and segment layout, the roles of `api` segment files, where query and mutation options are built, lazy
+page routing, the ownership of `shared/config` values, theme variables and global classes, admin table columns,
+the error messages, the test layout and the reviewed `@x` list. [frontend/AGENTS.md](frontend/AGENTS.md) lists
+the rules no check enforces.
 
 | Layer       | Responsibility                                                                                |
 | ----------- | --------------------------------------------------------------------------------------------- |
@@ -416,8 +424,9 @@ and `queries.ts` and `mutations.ts` hold the options factories. Dates stay ISO s
 Entities expose query keys (`xKeys`), `queryOptions` factories (`xQueries`), paged sources for
 `useServerTable` and `usePagedList`, and `mutationOptions` factories (`xMutations`) that list the keys they
 refresh in `meta.invalidates`; the query client invalidates them after a successful mutation, and a page adds
-keys of another slice with `alsoInvalidates`. Reports read by a single page (event statistics, attendees, ratings,
-badges, roster, dashboard analytics and the diagnostic and audit logs) live in that page's `api` segment.
+keys of another slice with `alsoInvalidates`. Reports read by a single page (event statistics, attendees,
+ratings and terms decisions, badges, roster, dashboard analytics and the diagnostic and audit logs) and the
+blocked data consultations live in that page's `api` segment.
 
 Person field rules mirror the backend `User` rules in one place, `entities/user`: `usePersonForm` (and the
 `parseIndependentPerson`/`parseDependentPerson` functions behind it) validates and normalizes an independent

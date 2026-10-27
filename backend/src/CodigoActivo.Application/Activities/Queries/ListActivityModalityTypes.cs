@@ -40,7 +40,7 @@ public sealed class ListActivityModalityTypesQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the matching activity modality type items.</returns>
+    /// <returns>A task whose result contains every modality, ordered by name.</returns>
     public Task<IReadOnlyList<ActivityModalityTypeResponse>> HandleAsync(
         ListActivityModalityTypesQuery query,
         CancellationToken ct = default

@@ -28,7 +28,8 @@ public static class ActivityProjections
         signup.AssignmentStatusId == ConfirmedStatusId;
 
     /// <summary>
-    /// Stores the shared activity value.
+    /// Projects an activity with its role capacities, each flagged as in high demand when more
+    /// people than desired are signed up in the role, denied signups aside.
     /// </summary>
     public static readonly Expression<Func<ActivityRow, ActivityResponse>> Activity =
         activity => new ActivityResponse
@@ -63,7 +64,7 @@ public static class ActivityProjections
         };
 
     /// <summary>
-    /// Stores the shared activity role type value.
+    /// Projects an activity role from its catalog.
     /// </summary>
     public static readonly Expression<
         Func<ActivityRoleTypeRow, ActivityRoleTypeResponse>
@@ -75,7 +76,7 @@ public static class ActivityProjections
     };
 
     /// <summary>
-    /// Stores the shared assignment status type value.
+    /// Projects a signup status from its catalog.
     /// </summary>
     public static readonly Expression<
         Func<AssignmentStatusTypeRow, AssignmentStatusTypeResponse>
@@ -88,7 +89,7 @@ public static class ActivityProjections
     };
 
     /// <summary>
-    /// Stores the shared activity modality type value.
+    /// Projects an activity modality from its catalog.
     /// </summary>
     public static readonly Expression<
         Func<ActivityModalityTypeRow, ActivityModalityTypeResponse>
@@ -114,7 +115,7 @@ public static class ActivityProjections
         );
 
     /// <summary>
-    /// Stores the shared assigned activity value.
+    /// Projects a signup to the activity it is for, with its role and status.
     /// </summary>
     public static readonly Expression<
         Func<AssignmentRow, AssignedActivityResponse>

@@ -10,7 +10,7 @@ public interface IDashboardCountsReader
     /// Gets the number of rows of each table shown on the dashboard summary.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a dashboard counts.</returns>
+    /// <returns>A task whose result contains the totals.</returns>
     public Task<DashboardCounts> GetCountsAsync(CancellationToken ct = default);
 
     /// <summary>

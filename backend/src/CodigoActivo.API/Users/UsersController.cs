@@ -21,7 +21,8 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace CodigoActivo.API.Users;
 
 /// <summary>
-/// Exposes HTTP endpoints for querying and managing users.
+/// Exposes HTTP endpoints for querying and managing user accounts and the minors of their
+/// households.
 /// </summary>
 [ApiController]
 [Route("api/users")]
@@ -29,12 +30,13 @@ namespace CodigoActivo.API.Users;
 public class UsersController : ApiControllerBase
 {
     /// <summary>
-    /// Lists the users that match the supplied filters.
+    /// Lists the users that match the supplied filters: every account for an administrator, and
+    /// only their own account and their dependents for anyone else.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a paged user, or an error response.</returns>
+    /// <returns>An HTTP response containing a page of users.</returns>
     [HttpGet]
     public async Task<ActionResult<PagedResult<UserResponse>>> ListAsync(
         [FromQuery] UserListQuery query,
@@ -46,11 +48,11 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the types endpoint for users.
+    /// Lists the catalog of membership types.
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a user type, or an error response.</returns>
+    /// <returns>An HTTP response containing the membership types.</returns>
     [HttpGet("types")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<IReadOnlyList<UserTypeResponse>>> TypesAsync(
@@ -62,11 +64,11 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the status types endpoint for users.
+    /// Lists the catalog of account statuses.
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a user status type, or an error response.</returns>
+    /// <returns>An HTTP response containing the account statuses.</returns>
     [HttpGet("status-types")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<IReadOnlyList<UserStatusTypeResponse>>> StatusTypesAsync(
@@ -98,15 +100,16 @@ public class UsersController : ApiControllerBase
 
     /// <summary>
     /// Updates the selected user with the validated request. Only the user or their guardian may,
-    /// never an administrator. Replacing the email or the phone requires the caller's password, so
-    /// the endpoint shares the credential rate limits.
+    /// never an administrator. Replacing the email or the phones requires the caller's password, so
+    /// the endpoint shares the credential rate limits, and a new email only applies once its holder
+    /// confirms it through the emailed link.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getById">Query handler that reads the result of the command.</param>
+    /// <param name="getById">Query handler that reads the updated user.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a user, or an error response.</returns>
+    /// <returns>An HTTP response containing the user, or an error response.</returns>
     [HttpPut("{userId:guid}")]
     [AllowOnlySelf(AdministratorsAllowed = false)]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -132,7 +135,7 @@ public class UsersController : ApiControllerBase
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpDelete("{userId:guid}")]
     [AllowOnlySelf]
     public async Task<IActionResult> DeleteAsync(
@@ -148,14 +151,14 @@ public class UsersController : ApiControllerBase
 
     /// <summary>
     /// Sets the admin state. Granting it requires the caller's password, so the endpoint shares
-    /// the credential rate limits. The caller's own state is refused, and the initial
-    /// administrator always keeps it.
+    /// the credential rate limits. The caller's own state is refused, neither a dependent nor an
+    /// account with an unconfirmed email gets it, and the initial administrator always keeps it.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPatch("{userId:guid}/admin")]
     [AllowOnlyAdmin]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -171,13 +174,14 @@ public class UsersController : ApiControllerBase
 
     /// <summary>
     /// Returns a user's second factor to email so they can log in again after losing their
-    /// authenticator. The acting administrator confirms their own password.
+    /// authenticator; it also drops a pending login code and lifts the second-factor lock. The
+    /// acting administrator confirms their own password.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPost("{userId:guid}/two-factor/reset")]
     [AllowOnlyAdmin]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -194,12 +198,12 @@ public class UsersController : ApiControllerBase
     /// <summary>
     /// Adds a minor to the household of the selected user, who must be the caller.
     /// </summary>
-    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="userId">Identifier of the guardian.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getById">Query handler that reads the result of the command.</param>
+    /// <param name="getById">Query handler that reads the created minor.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a user, or an error response.</returns>
+    /// <returns>A 201 response with the minor and its location, or an error response.</returns>
     [HttpPost("{userId:guid}/children")]
     [AllowOnlySelf(AdministratorsAllowed = false)]
     [ProducesResponseType<UserResponse>(StatusCodes.Status201Created)]
@@ -222,13 +226,14 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Changes the password to the requested value.
+    /// Changes the password of the caller's own account, which needs its current password. Every
+    /// session of the account ends and the holder is emailed a security alert.
     /// </summary>
-    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="userId">Identifier of the user; it must be the caller.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPatch("{userId:guid}/password")]
     [AllowOnlySelf]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -243,14 +248,17 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Changes the type to the requested value. The caller's own type is refused.
+    /// Changes the membership type of the user. The caller's own type is refused.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
-    /// <param name="userTypeId">Identifier of the user type.</param>
+    /// <param name="userTypeId">
+    /// Identifier of the new membership type; one that names no member of the catalog answers
+    /// <see cref="ErrorCode.RequestValidationFailed"/>.
+    /// </param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getById">Query handler that reads the result of the command.</param>
+    /// <param name="getById">Query handler that reads the updated user.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a user, or an error response.</returns>
+    /// <returns>An HTTP response containing the user, or an error response.</returns>
     [HttpPatch("{userId:guid}/change-type")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<UserResponse>> ChangeTypeAsync(

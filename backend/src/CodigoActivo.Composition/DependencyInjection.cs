@@ -22,8 +22,9 @@ public static class DependencyInjection
 {
     /// <summary>
     /// Adds the application with its infrastructure. Settings are read strictly and checked when
-    /// the host starts; a production process is refused right away when its secrets are weak or its
-    /// public address and mail delivery are unsafe.
+    /// the host starts; a production process is refused right away when its secrets are weak, its
+    /// public address and mail delivery are unsafe or the legal identity of the association is
+    /// missing.
     /// </summary>
     /// <param name="services">Service collection to add to.</param>
     /// <param name="configuration">Configuration of the application.</param>

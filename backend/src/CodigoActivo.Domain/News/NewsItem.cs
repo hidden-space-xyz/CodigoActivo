@@ -36,7 +36,7 @@ public class NewsItem : AuditableEntity<NewsItemId>, IFeaturable
     public StoredFileId ThumbnailId { get; private set; }
 
     /// <summary>
-    /// Creates a news item.
+    /// Creates a news item and raises <see cref="NewsItemCreated"/>.
     /// </summary>
     /// <param name="content">Content of the item.</param>
     /// <param name="authorId">Identifier of the user who creates it.</param>
@@ -54,7 +54,8 @@ public class NewsItem : AuditableEntity<NewsItemId>, IFeaturable
     }
 
     /// <summary>
-    /// Replaces the content of the item.
+    /// Replaces the content of the item and raises <see cref="NewsItemUpdated"/> with the thumbnail
+    /// and body images it no longer references.
     /// </summary>
     /// <param name="content">New content.</param>
     /// <param name="editorId">Identifier of the user who edits it.</param>
@@ -93,7 +94,8 @@ public class NewsItem : AuditableEntity<NewsItemId>, IFeaturable
     }
 
     /// <summary>
-    /// Marks the item as deleted, so the files it references can be released once it is gone.
+    /// Raises <see cref="NewsItemDeleted"/> before the item is removed, so the files it references
+    /// are released once it is gone.
     /// </summary>
     public void Delete()
     {

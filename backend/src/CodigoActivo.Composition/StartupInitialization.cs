@@ -95,7 +95,8 @@ public static class StartupInitialization
     }
 
     /// <summary>
-    /// Creates the initial administrator when the user table is empty, or checks it exists.
+    /// Creates the initial administrator when the user table is empty, or checks it exists; a
+    /// database with users but without it stops the start.
     /// </summary>
     /// <param name="services">Scoped service provider.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -111,7 +112,8 @@ public static class StartupInitialization
     }
 
     /// <summary>
-    /// Adds or refreshes the demo data.
+    /// Adds the demo data unless the first demo account already exists, so it adds everything or
+    /// nothing and never refreshes demo data added by an earlier start.
     /// </summary>
     /// <param name="services">Scoped service provider.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -122,8 +124,8 @@ public static class StartupInitialization
     }
 
     /// <summary>
-    /// Replays the changes and erasures of personal data of demo mode when the data history has
-    /// none, so the blocked data have something to consult.
+    /// Replays the changes and erasures of personal data of demo mode when the data history holds
+    /// nothing about the former demo accounts, so the blocked data have something to consult.
     /// </summary>
     /// <param name="services">Scoped service provider.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -137,8 +139,10 @@ public static class StartupInitialization
     }
 
     /// <summary>
-    /// Adds the invented diagnostic and audit history of demo mode when the log tables have none.
-    /// A failure is logged and does not stop the start.
+    /// Adds the invented diagnostic and audit history of demo mode unless the audit log already
+    /// holds an entry of a demo account within the diagnostic retention, so a later start writes a
+    /// new history once the previous one has expired. A failure is logged and does not stop the
+    /// start.
     /// </summary>
     /// <param name="services">Scoped service provider.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

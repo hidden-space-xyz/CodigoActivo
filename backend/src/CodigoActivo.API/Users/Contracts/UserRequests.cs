@@ -8,7 +8,7 @@ using Gender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
 namespace CodigoActivo.API.Users.Contracts;
 
 /// <summary>
-/// Contains the client-supplied data used to set admin.
+/// Contains the client-supplied data used to grant or revoke the administrator rights of a user.
 /// </summary>
 /// <param name="IsAdmin">
 /// Whether the user must be an administrator. It must be present: a body without it is refused
@@ -51,12 +51,15 @@ public record ResetTwoFactorRequest([Required] [MaxLength(128)] string CurrentPa
 }
 
 /// <summary>
-/// Contains the client-supplied data used to update the user.
+/// Contains the client-supplied data that replaces the personal data of a user.
 /// </summary>
 /// <param name="FirstName">User's given name.</param>
 /// <param name="LastName">User's family name.</param>
-/// <param name="Email">Email address to validate or locate.</param>
-/// <param name="Phone">Phone number to validate or locate.</param>
+/// <param name="Email">
+/// Email; required for an independent account and ignored for a dependent. A new one only applies
+/// once its holder confirms it through the emailed link.
+/// </param>
+/// <param name="Phone">Phone; required for an independent account and ignored for a dependent.</param>
 /// <param name="BirthDate">
 /// User's date of birth. Required for a dependent; a changed value must keep them a minor,
 /// while the stored one stays valid after they come of age. An independent account must leave it
@@ -69,7 +72,7 @@ public record ResetTwoFactorRequest([Required] [MaxLength(128)] string CurrentPa
 /// <param name="NewsConsent">
 /// Whether the user agrees to receive news by email; ignored for a dependent.
 /// </param>
-/// <param name="Gender">The gender value.</param>
+/// <param name="Gender">Gender of the user.</param>
 /// <param name="ParentId">
 /// Identifier of the parent. Only accepted for an account that is already a dependent, and only
 /// repeating the guardian it already has; the guardian is never reassigned here.

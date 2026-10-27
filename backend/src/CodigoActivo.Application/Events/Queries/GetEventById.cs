@@ -31,7 +31,10 @@ public sealed class GetEventByIdQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains an event on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the event stamped with its stage, or
+    /// <see cref="ApplicationErrorCode.EventNotFound"/>.
+    /// </returns>
     public async Task<Result<EventResponse>> HandleAsync(
         GetEventByIdQuery query,
         CancellationToken ct = default

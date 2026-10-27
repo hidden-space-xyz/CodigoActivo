@@ -20,13 +20,20 @@ public sealed class UserRow
     /// <summary>Gets the new email address its holder asked for and has not confirmed yet.</summary>
     public string? PendingEmail { get; init; }
 
-    /// <summary>Gets the main phone number.</summary>
+    /// <summary>
+    /// Gets the main phone number; <see langword="null"/> for a dependent, and for the initial
+    /// administrator until a profile change sets one.
+    /// </summary>
     public string? Phone { get; init; }
 
     /// <summary>Gets the optional second phone number.</summary>
     public string? SecondaryPhone { get; init; }
 
-    /// <summary>Gets the stored password hash, used only to derive credential stamps.</summary>
+    /// <summary>
+    /// Gets the stored password hash; <see langword="null"/> for a dependent and for a new account
+    /// until a password is set. The queries only check that it is set and derive credential stamps
+    /// from it.
+    /// </summary>
     public string? PasswordHash { get; init; }
 
     /// <summary>Gets the date of birth, kept for dependents.</summary>
@@ -171,7 +178,10 @@ public sealed class NewsConsentChangeRow
     /// <summary>Gets a value indicating whether the consent was given or withdrawn.</summary>
     public bool Granted { get; init; }
 
-    /// <summary>Gets where the change was made, as stored.</summary>
+    /// <summary>
+    /// Gets where the change was made: the name of the <c>NewsConsentSource</c> member it was stored
+    /// with, such as <c>Registration</c> or <c>UnsubscribeLink</c>.
+    /// </summary>
     public string Source { get; init; } = string.Empty;
 
     /// <summary>Gets when the change was made.</summary>

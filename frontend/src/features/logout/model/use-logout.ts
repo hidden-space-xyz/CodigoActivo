@@ -5,7 +5,8 @@ import { endSession, logoutRequest } from '@/entities/session'
 
 /**
  * Signs the user out and goes to the login page. The local session and every cached query end even
- * when the API call fails, so a lost connection never leaves the user's data on screen.
+ * when the API call fails, so a lost connection never leaves the user's data on screen; the
+ * returned function then still rejects with that error.
  */
 export function useLogout() {
   const queryClient = useQueryClient()

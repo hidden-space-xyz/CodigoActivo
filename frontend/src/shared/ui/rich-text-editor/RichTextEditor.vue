@@ -27,9 +27,10 @@ const props = defineProps<{
   label: string
   /**
    * Uploads an inserted image and resolves to its stored file id, which becomes the image URL.
-   * Resolving `undefined` skips the insert; a rejection shows the upload error message. Without it
-   * the editor is text only: it has no image button and drops images from loaded or pasted content.
-   * Read once at mount.
+   * Files over `MAX_IMAGE_UPLOAD_BYTES` are refused before it is called. Resolving `undefined`
+   * skips the insert; a rejection shows the upload error message. Without it the editor is text
+   * only: it has no image button and drops images from loaded or pasted content. Read once at
+   * mount.
    */
   upload?: (file: File) => Promise<string | undefined>
 }>()

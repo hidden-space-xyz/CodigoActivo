@@ -10,7 +10,7 @@ import { RichTextContent } from '@/shared/ui/rich-text-content'
 const props = defineProps<{
   /** Number of the version shown; `null` keeps the dialog closed. */
   version: number | null
-  /** The version once loaded. */
+  /** The version once loaded; `undefined` while it loads or if loading fails. */
   policy: LegalPolicy | undefined
   /** Shows a spinner instead of the text. */
   loading: boolean

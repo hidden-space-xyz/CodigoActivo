@@ -39,11 +39,16 @@ public sealed class ConfirmEmailChangeCommandHandler(
     /// change controls the new address, so the account moves to it and the previous address is
     /// told, quoting the new one masked. An account nobody verified that held the address is
     /// erased in the same transaction, while one that <see cref="User.OwnsEmail"/>, verified since
-    /// the link was sent, keeps it.
+    /// the link was sent, keeps it and the change is refused.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result reports success, <see cref="ApplicationErrorCode.UserNotFound"/>,
+    /// <see cref="ApplicationErrorCode.OtpInvalidOrExpired"/> when no change waits or the code is
+    /// wrong or expired, or <see cref="ApplicationErrorCode.UserEmailAlreadyInUse"/> when another
+    /// account owns or took the address first.
+    /// </returns>
     public async Task<Result> HandleAsync(
         ConfirmEmailChangeCommand command,
         CancellationToken ct = default

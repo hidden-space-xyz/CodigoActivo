@@ -11,12 +11,14 @@ namespace CodigoActivo.Application.Reports;
 public static class EventAttendeeFilters
 {
     /// <summary>
-    /// Filters users to those attending the selected event.
+    /// Filters users to those with a signup matching <see cref="MatchingAssignment"/>, of the type
+    /// and gender selected, whose names, email or phones, or those of their guardian, contain the
+    /// search text.
     /// </summary>
-    /// <param name="source">Source sequence to query.</param>
+    /// <param name="source">Users to filter.</param>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="query">Query containing the selection criteria.</param>
-    /// <returns>The resulting user value.</returns>
+    /// <returns>The users that match every criterion.</returns>
     public static IQueryable<UserRow> Apply(
         IQueryable<UserRow> source,
         Guid eventId,

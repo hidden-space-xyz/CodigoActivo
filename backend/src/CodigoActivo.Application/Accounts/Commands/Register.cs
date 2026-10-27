@@ -16,7 +16,7 @@ using Microsoft.Extensions.Logging;
 namespace CodigoActivo.Application.Accounts.Commands;
 
 /// <summary>
-/// Carries the input required to register.
+/// Carries the input required to register an adult together with the minors in their care.
 /// </summary>
 /// <param name="FirstName">Given name of the adult.</param>
 /// <param name="LastName">Family name of the adult.</param>
@@ -48,10 +48,10 @@ public sealed record RegisterCommand(
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="hasher">The hasher value.</param>
+/// <param name="hasher">Hasher of the new password.</param>
 /// <param name="codeHasher">Hasher used so the verification code is never stored in plaintext.</param>
-/// <param name="verification">The verification value.</param>
-/// <param name="accountEmails">The account emails value.</param>
+/// <param name="verification">Account verification configuration, whose code lifetime applies.</param>
+/// <param name="accountEmails">Sender of the verification link and of the email-in-use notice.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 /// <param name="disposableEmails">Checker that refuses addresses of disposable email providers.</param>
 /// <param name="emailClaims">Committer that replaces an unverified account holding the email.</param>
@@ -77,11 +77,15 @@ public sealed class RegisterCommandHandler(
     /// whose account <see cref="User.OwnsEmail"/> gets a notice instead and nothing is created; an
     /// address held by an account nobody verified gets the link of a new account that replaces it.
     /// The password is hashed before the address is looked up, so every outcome does the same
-    /// expensive work.
+    /// expensive work. A mail the limiter refuses or that cannot be queued does not fail the
+    /// registration; after a failed verification mail a new link can be requested at once.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result reports success, the failure of the details the domain refused, or
+    /// <see cref="ApplicationErrorCode.DisposableEmailNotAllowed"/>.
+    /// </returns>
     public async Task<Result> HandleAsync(RegisterCommand command, CancellationToken ct = default)
     {
         var planned = PlanHousehold(command);

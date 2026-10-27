@@ -12,7 +12,7 @@ interface Series {
   readonly values: readonly number[]
 }
 
-/** Values of several series over the same date buckets (ISO days). */
+/** Values of several series over the same date buckets, each named by its first ISO day. */
 export interface TimeSeries {
   readonly buckets: readonly string[]
   readonly series: readonly Series[]
@@ -107,8 +107,9 @@ export interface Occupancy {
 }
 
 /**
- * Figures of the admin dashboard for a date range; `granularity` sizes the time buckets. The
- * pending signups, role coverage and occupancy describe upcoming activities whatever the range.
+ * Figures of the admin dashboard for a date range; `granularity` (`day`, `week` or `month`, by the
+ * length of the range) sizes the time buckets. The pending signups, role coverage and occupancy
+ * describe upcoming activities whatever the range.
  */
 export interface DashboardAnalytics {
   readonly granularity: string

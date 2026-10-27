@@ -11,9 +11,9 @@ export type CrudDialogState<TItem> =
 interface CrudDialogOptions<TRow, TItem> {
   /** Loads the full item behind a row before editing; `null` when it no longer exists. */
   readonly load: (row: TRow) => Promise<TItem | null>
-  /** Called when `load` finds nothing. */
+  /** Runs when `load` resolves `null`; the dialog stays closed. */
   readonly onMissing?: (() => void) | undefined
-  /** Called when `load` fails. */
+  /** Runs with the error when `load` rejects; the dialog stays closed. */
   readonly onError?: ((error: unknown) => void) | undefined
 }
 

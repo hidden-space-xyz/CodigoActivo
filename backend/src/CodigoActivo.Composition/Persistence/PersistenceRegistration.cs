@@ -12,7 +12,8 @@ using Npgsql;
 namespace CodigoActivo.Composition.Persistence;
 
 /// <summary>
-/// Registers the database: the write and read contexts, the unit of work and the seeders.
+/// Registers the database: the write and read contexts, the unit of work, the recorder of the data
+/// history and the seeders.
 /// </summary>
 internal static class PersistenceRegistration
 {
@@ -50,7 +51,8 @@ internal static class PersistenceRegistration
     }
 
     /// <summary>
-    /// Builds the connection string of the application database from the flat settings.
+    /// Builds the connection string of the application database from the flat <c>POSTGRES_*</c>
+    /// settings; every one but the password has a local development default.
     /// </summary>
     /// <param name="settings">Settings of the application.</param>
     /// <returns>The connection string.</returns>

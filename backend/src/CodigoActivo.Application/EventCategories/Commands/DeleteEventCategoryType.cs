@@ -35,7 +35,12 @@ public sealed class DeleteEventCategoryTypeCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the error.</returns>
+    /// <returns>
+    /// A task whose result reports success;
+    /// <see cref="ApplicationErrorCode.EventCategoryTypeNotFound"/>, or
+    /// <see cref="DomainErrorCode.EventCategoryTypeOnlyCategoryOfEvent"/> when it is the only
+    /// category of an event, in which case nothing is deleted.
+    /// </returns>
     public async Task<Result> HandleAsync(
         DeleteEventCategoryTypeCommand command,
         CancellationToken ct = default

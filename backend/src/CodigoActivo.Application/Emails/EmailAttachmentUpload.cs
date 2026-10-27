@@ -1,12 +1,15 @@
 namespace CodigoActivo.Application.Emails;
 
 /// <summary>
-/// Represents an email attachment upload value used by the application.
+/// A file an administrator attaches to a manual email, as uploaded.
 /// </summary>
-/// <param name="Content">Content stream to store or inspect.</param>
-/// <param name="FileName">The file name value.</param>
-/// <param name="ContentType">The content type value.</param>
-/// <param name="Length">The length value.</param>
+/// <param name="Content">Stream the file is read from; exactly <c>Length</c> bytes are read.</param>
+/// <param name="FileName">Name given by the client, sanitized before it is attached.</param>
+/// <param name="ContentType">Media type given by the client.</param>
+/// <param name="Length">
+/// Size in bytes; it must be positive and counts toward
+/// <see cref="ManualEmailOptions.MaxAttachmentsBytes"/>.
+/// </param>
 public sealed record EmailAttachmentUpload(
     Stream Content,
     string FileName,

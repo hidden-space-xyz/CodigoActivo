@@ -59,7 +59,7 @@ limit is raised to 65,536). Application request and credential-work rate limits 
 ```bash
 curl -LO https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/docker-compose.yml
 curl -Lo .env https://raw.githubusercontent.com/hidden-space-xyz/CodigoActivo/master/.env.example
-# Edit .env and replace all required or placeholder values.
+# Edit .env and set the required values.
 mkdir -m 700 secrets
 openssl rand -base64 32 | tr -d '\r\n' > secrets/postgres_password
 openssl rand -base64 32 | tr -d '\r\n' > secrets/data_protection_key
@@ -71,9 +71,9 @@ docker compose exec db sh -c 'tail -n 100 /var/log/postgresql/postgresql-*.log'
 ```
 
 Set at least `APP_BASE_URL` (final public HTTPS origin, no path/query/fragment), `DEMO_MODE` (permanent for
-these volumes), `BOOTSTRAP_ADMIN_EMAIL` (used only when the user table is empty), `SMTP_HOST` and
-`SMTP_FROM_ADDRESS`, the association's identity for the privacy policy (`LEGAL_NAME`, `LEGAL_TAX_ID`,
-`LEGAL_ADDRESS`, `LEGAL_REGISTRY`, `LEGAL_EMAIL`), plus `SMTP_USERNAME` and its password in
+these volumes), `BOOTSTRAP_ADMIN_EMAIL` (used only when the user table is empty), `PRIVACY_OFFICER_EMAIL`,
+`SMTP_HOST` and `SMTP_FROM_ADDRESS`, the association's identity for the privacy policy (`LEGAL_NAME`,
+`LEGAL_TAX_ID`, `LEGAL_ADDRESS`, `LEGAL_REGISTRY`, `LEGAL_EMAIL`), plus `SMTP_USERNAME` and its password in
 `secrets/smtp_password` when the server needs a login. See [Secrets](#secrets) for the file rules.
 
 `docker compose logs api` shows only a failed start (its fatal event) and failures of the logging pipeline;
@@ -92,10 +92,11 @@ ring. Production startup (`ProductionConfiguration`) also fails when:
   `secrets/smtp_password` is set;
 - any of `LEGAL_NAME`, `LEGAL_TAX_ID`, `LEGAL_ADDRESS`, `LEGAL_REGISTRY` or `LEGAL_EMAIL` is blank.
 
-These settings and every application setting are checked before anything is written to `api-state` or the
-database. `BOOTSTRAP_ADMIN_EMAIL` is checked once the database is migrated and the deployment mode is locked
-only after that check, so a start it stops leaves a migrated database but no mode lock. Demo seeding runs after
-the lock; a start it stops keeps the lock and seeds again on the next start.
+These settings and every application setting except `DEMO_MODE` are checked before anything is written to
+`api-state` or the database. `BOOTSTRAP_ADMIN_EMAIL` is checked once the database is migrated, and `DEMO_MODE`
+only after that check, when the deployment mode is locked, so a start either one stops has migrated the database
+but written no mode lock. Demo seeding runs after the lock; a start it stops keeps the lock and seeds again on
+the next start.
 
 ### TLS and proxy boundary
 
@@ -121,27 +122,27 @@ These variables are the whole deployment configuration: the base Compose file fo
 the API, and every other value is fixed in code (see [Fixed settings](#fixed-settings)). Compose fixes the
 database connection itself (host `db`, port `5432`, database and user `codigoactivo`), so the API only
 reaches PostgreSQL over the internal `backend` network. Optional variables take the listed default when empty
-or missing.
+or missing. `.env.example` lists every variable with an empty value.
 
-| Variable                        | Meaning                                                                       | Default                                     | Template value                                 |
-| ------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------- | ---------------------------------------------- |
-| `APP_BASE_URL`                  | Public origin for links and SEO output                                        | Required                                    | `https://example.org` (invalid for Production) |
-| `APP_TIMEZONE`                  | IANA time-zone ID used by the application clock                               | `Europe/Madrid`                             | `Europe/Madrid`                                |
-| `DEMO_MODE`                     | `true` or `false`; locked on first start                                      | Required                                    | `false`                                        |
-| `BOOTSTRAP_ADMIN_EMAIL`         | Initial administrator email for an empty database                             | Required on an empty database               | Empty                                          |
-| `PRIVACY_OFFICER_EMAIL`         | Email of the administrator designated for data protection                     | Required                                    | Empty                                          |
-| `SMTP_HOST`                     | SMTP host; always required because login codes are emailed                    | Required                                    | Empty                                          |
-| `SMTP_PORT`                     | SMTP port                                                                     | `587`                                       | `587`                                          |
-| `SMTP_SECURITY`                 | `StartTls`, `SslOnConnect`, `None` or `Auto`; Production rejects the last two | `SslOnConnect` on port 465, else `StartTls` | Empty                                          |
-| `SMTP_USERNAME`                 | SMTP username; set exactly when `secrets/smtp_password` is not empty          | No login                                    | Empty                                          |
-| `SMTP_FROM_ADDRESS`             | Single sender address                                                         | Required                                    | Empty                                          |
-| `SMTP_FROM_NAME`                | Sender display name                                                           | `Código Activo`                             | Empty                                          |
-| `LEGAL_NAME`                    | Registered name of the association, shown as data controller                  | Required in Production                      | Empty                                          |
-| `LEGAL_TAX_ID`                  | NIF of the association                                                        | Required in Production                      | Empty                                          |
-| `LEGAL_ADDRESS`                 | Registered postal address of the association                                  | Required in Production                      | Empty                                          |
-| `LEGAL_REGISTRY`                | Register of associations and entry number                                     | Required in Production                      | Empty                                          |
-| `LEGAL_EMAIL`                   | Contact mailbox on the site and in the footer of news email                   | Required in Production                      | Empty                                          |
-| `LEGAL_PHONE`                   | Contact phone published in the footer, the about page and the privacy policy  | Not published                               | Empty                                          |
+| Variable                | Meaning                                                                       | Default                                     |
+| ----------------------- | ----------------------------------------------------------------------------- | ------------------------------------------- |
+| `APP_BASE_URL`          | Public origin for links and SEO output                                        | Required                                    |
+| `APP_TIMEZONE`          | IANA time-zone ID used by the application clock                               | `Europe/Madrid`                             |
+| `DEMO_MODE`             | `true` or `false`; locked on first start                                      | Required                                    |
+| `BOOTSTRAP_ADMIN_EMAIL` | Initial administrator email for an empty database                             | Required on an empty database               |
+| `PRIVACY_OFFICER_EMAIL` | Email of the administrator designated for data protection                     | Required                                    |
+| `SMTP_HOST`             | SMTP host; always required because login codes are emailed                    | Required                                    |
+| `SMTP_PORT`             | SMTP port                                                                     | `587`                                       |
+| `SMTP_SECURITY`         | `StartTls`, `SslOnConnect`, `None` or `Auto`; Production rejects the last two | `SslOnConnect` on port 465, else `StartTls` |
+| `SMTP_USERNAME`         | SMTP username; set exactly when `secrets/smtp_password` is not empty          | No login                                    |
+| `SMTP_FROM_ADDRESS`     | Single sender address                                                         | Required                                    |
+| `SMTP_FROM_NAME`        | Sender display name                                                           | `Código Activo`                             |
+| `LEGAL_NAME`            | Registered name of the association, shown as data controller                  | Required in Production                      |
+| `LEGAL_TAX_ID`          | NIF of the association                                                        | Required in Production                      |
+| `LEGAL_ADDRESS`         | Registered postal address of the association                                  | Required in Production                      |
+| `LEGAL_REGISTRY`        | Register of associations and entry number                                     | Required in Production                      |
+| `LEGAL_EMAIL`           | Contact mailbox on the site and in the footer of news email                   | Required in Production                      |
+| `LEGAL_PHONE`           | Contact phone published in the footer, the about page and the privacy policy  | Not published                               |
 
 The site and news email read the association's legal identity and contact details from the `LEGAL_*`
 variables (the site through `GET /api/legal-entity`); a `LEGAL_EMAIL` that is not a single address or a
@@ -192,11 +193,11 @@ login. Keep the directory private to the deployment account (`0700`) and the fil
 without Swarm bind-mounts them unchanged, and the containers read them as unprivileged users.
 
 For a direct `dotnet run`, secrets are plain environment variables with those uppercase names. Missing
-database variables fall back to `localhost:5432` and database/user `codigoactivo` with an empty password;
-missing `APP_BASE_URL` falls back to `http://localhost:5173` and missing `APP_TIMEZONE` to the machine's time
-zone. SMTP has no fallback: point `SMTP_HOST` at a
-mail catcher such as the development overlay's Mailpit (`localhost:1025`, security `None`), where login codes
-can also be read.
+`POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB` and `POSTGRES_USER` fall back to `localhost:5432` and
+database/user `codigoactivo`, with an empty password; missing `APP_BASE_URL` falls back to
+`http://localhost:5173` and missing `APP_TIMEZONE` to the machine's time zone. SMTP has no fallback: point
+`SMTP_HOST` at a mail catcher such as the development overlay's Mailpit (`localhost:1025`, security `None`),
+where login codes can also be read.
 
 ### Fixed settings
 
@@ -253,16 +254,16 @@ Verification and reset mail cannot spend the last half of the reserved capacity,
 second-factor codes, and second-factor codes have per-address budgets of their own.
 
 Pending mail survives a restart: rows are claimed with `FOR UPDATE SKIP LOCKED` and a lease, in priority
-order (2FA/verification/reset codes first, ordinary automatic mail next, administrator-written mail last), by
-a poll loop every 5 seconds, also woken immediately by same-process enqueues; each pass claims up to 10 due
-messages and sends 4 at a time, each within 60 seconds. A message is attempted up to 5 times, retried after
-1 minute, 5 minutes, 30 minutes and 2 hours on the first four failures; the 5th failure discards the row and
-logs an error. Delivery is at-least-once: a crash between a successful send and removing the row can resend
-it. The outbox accepts about 1000 pending ordinary automatic and bulk messages; login, verification and
-password-reset codes are always accepted (and still bounded by the `ThrottledEmailSender` budgets above).
-Shutdown only waits for sends already in flight, up to 20 seconds, below the API service's 30-second
-`stop_grace_period`; whatever is not delivered by then stays in the outbox for the next start. These values
-live in `EmailQueueOptions` and cannot be configured.
+order (2FA/verification/reset codes first, security alerts and activity decisions next, other notices and
+administrator-written mail last), by a poll loop every 5 seconds, also woken immediately by same-process
+enqueues; each pass claims up to 10 due messages and sends 4 at a time, each within 60 seconds. A message is
+attempted up to 5 times, retried after 1 minute, 5 minutes, 30 minutes and 2 hours on the first four failures;
+the 5th failure discards the row and logs an error. Delivery is at-least-once: a crash between a successful
+send and removing the row can resend it. The outbox accepts about 1000 pending ordinary automatic and bulk
+messages; login, verification and password-reset codes are always accepted (and still bounded by the
+`ThrottledEmailSender` budgets above). Shutdown only waits for sends already in flight, up to 20 seconds, below
+the API service's 30-second `stop_grace_period`; whatever is not delivered by then stays in the outbox for the
+next start. These values live in `EmailQueueOptions` and cannot be configured.
 
 A full outbox (`EmailOutboxFull`), an exhausted global budget (`GlobalEmailBudgetExhausted`) and exhausted
 attempts (`EmailDeliveryGaveUp`, with the last error) are logged as `Error`, and each delivery failure as the
@@ -351,18 +352,19 @@ of deleted accounts; startup refuses a database that has users but not that acco
 
 Inside the repository, `docker compose up --build` merges `docker-compose.override.yml`: it builds `api` and
 `web` from the working tree, sets the API to Development and exposes port `5150`, adds a Mailpit service
-publishing SMTP on port `1025` and its inbox UI on port `8025` and points every `SMTP_*` value at it (the
-`.env` SMTP settings are ignored), exposes PostgreSQL on port `5432` and makes
-the backend network non-internal, and disables the API read-only root filesystem in favor of
-debugger-oriented privileges. Visual Studio uses the same Compose project through
-`backend/docker-compose.dcproj`. In Development the API also writes its log to the console, which the overlay
-keeps at 5 MB per file, two files.
+publishing SMTP on port `1025` and its inbox UI on port `8025` and points every `SMTP_*` value at it, fixes
+`APP_BASE_URL`, `APP_TIMEZONE`, `DEMO_MODE=true` and every `LEGAL_*` value (so `.env` only needs
+`BOOTSTRAP_ADMIN_EMAIL`), exposes PostgreSQL on port `5432` and makes the backend network non-internal, and
+disables the API read-only root filesystem in favor of debugger-oriented privileges. Visual Studio uses the same
+Compose project through `backend/docker-compose.dcproj`. In Development the API also writes its log to the
+console, which the overlay keeps at 5 MB per file, two files.
 
 ## Releases and upgrades
 
 Only pushes to `master` start CI, merged pull requests included; open pull requests and pushes to `develop`
-run none of it. Backend build/unit/integration tests and frontend checks must pass before publishing. The Docker workflow
-is a reusable CI stage; it does not run independently or on a schedule.
+run none of it. The backend build, its architecture, unit and integration tests with 90% coverage, and the
+frontend checks must pass before publishing. The Docker workflow is a reusable CI stage; it does not run
+independently or on a schedule.
 
 Pushes to `develop` or `master` that change `backend/`, `frontend/` or the workflow itself start the CodeQL
 workflow, which is independent of CI and does not gate publishing. A newer push to the same branch cancels
@@ -377,7 +379,8 @@ API and UI share one version and one GitHub release, tagged `vX.Y.Z`. All reposi
 highest stable `vX.Y.Z` tag count. With no matching tag, the baseline is `0.0.0` and the full commit history
 is considered.
 The largest Conventional Commit increment wins: `feat` = minor, `fix`/`perf` = patch, any type with `!` = major.
-`refactor`, `docs`, `test`, `style`, `build`, `ci`, `chore` and non-conventional subjects produce no increment.
+Any other type (`refactor`, `docs`, `chore`, Dependabot's `bump`, ...) and non-conventional subjects produce no
+increment.
 Scopes are optional; for squash merges use a conventional PR title. Normal merges also inspect branch commits.
 With no qualifying commits, publishing is skipped for both containers.
 

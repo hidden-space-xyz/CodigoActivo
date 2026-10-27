@@ -38,7 +38,7 @@ public class EventTermsDocument
     public bool IsRequired { get; private set; }
 
     /// <summary>
-    /// Gets the position of the document in the event.
+    /// Gets the zero-based position of the document among the terms documents of the event.
     /// </summary>
     public int DisplayOrder { get; private set; }
 

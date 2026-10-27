@@ -89,8 +89,9 @@ function toReading<T>(
  * draft is what the inputs bind to; `errors` holds a translated message per refused field once the
  * form was submitted. Editing an independent account asks for `currentPassword` whenever its
  * email, phone or secondary phone changes (the email ignoring case), or after `rejectPassword`
- * reports that the server refused one. `submit` returns the normalized person, or `null` while
- * something is wrong.
+ * reports that the server refused one. `load` fills the draft and forgets the password, and
+ * `submit` returns the normalized person with the password to send (`null` when none is asked), or
+ * `null` while a field is refused or the asked password is missing.
  */
 export function usePersonForm(options: PersonFormOptions) {
   const today = options.today ?? toDateOnly(new Date())

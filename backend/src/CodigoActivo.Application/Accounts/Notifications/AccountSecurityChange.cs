@@ -1,7 +1,9 @@
 namespace CodigoActivo.Application.Accounts.Notifications;
 
 /// <summary>
-/// Identifies the change to the authentication data of an account that is worth notifying.
+/// Identifies the security-relevant change to an account that its holder is told about: to its
+/// password or password lock, its second factor, its administrator rights, or the email and phones
+/// it is reached at.
 /// </summary>
 public enum AccountSecurityChange
 {
@@ -16,27 +18,28 @@ public enum AccountSecurityChange
     CredentialReset,
 
     /// <summary>
-    /// Selects the authenticator confirmed option.
+    /// Selects the option for an authenticator the holder confirmed as their second factor.
     /// </summary>
     AuthenticatorEnabled,
 
     /// <summary>
-    /// Selects the authenticator removed option.
+    /// Selects the option for the holder going back from an authenticator to emailed codes.
     /// </summary>
     AuthenticatorDisabled,
 
     /// <summary>
-    /// Selects the second factor reset by an administrator option.
+    /// Selects the option for an administrator returning an account that used an authenticator to
+    /// emailed codes.
     /// </summary>
     TwoFactorReset,
 
     /// <summary>
-    /// Selects the administrator flag granted option.
+    /// Selects the option for administrator rights given to the account.
     /// </summary>
     AdminGranted,
 
     /// <summary>
-    /// Selects the administrator flag revoked option.
+    /// Selects the option for administrator rights taken from the account.
     /// </summary>
     AdminRevoked,
 

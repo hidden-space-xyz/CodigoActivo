@@ -3,7 +3,7 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Accounts.EmailAddresses;
 
 /// <summary>
-/// Provides reusable extension methods for string.
+/// Masks email addresses quoted in messages that may reach someone other than their owner.
 /// </summary>
 public static class StringExtensions
 {
@@ -12,7 +12,10 @@ public static class StringExtensions
     /// not yet proven ownership of the account, e.g. <c>a***@example.org</c>.
     /// </summary>
     /// <param name="email">Address to mask.</param>
-    /// <returns>The masked address, or <see langword="null"/> when there is no address.</returns>
+    /// <returns>
+    /// The masked address, <c>***</c> when it has no local part before an <c>@</c>, or
+    /// <see langword="null"/> when there is no address.
+    /// </returns>
     public static string? MaskEmail(this string? email)
     {
         if (string.IsNullOrWhiteSpace(email))

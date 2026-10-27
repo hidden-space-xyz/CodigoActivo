@@ -15,7 +15,8 @@ namespace CodigoActivo.Application.Users.Queries;
 public sealed record GetAccountQuery(UserId UserId) : IQuery<Result<UserResponse>>;
 
 /// <summary>
-/// Executes the query to retrieve an account as its owner sees it.
+/// Executes the query to retrieve an account as its owner sees it, through
+/// <see cref="UserProjections.User"/>.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -27,7 +28,10 @@ public sealed class GetAccountQueryHandler(IReadStore readStore, IQueryExecutor 
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a user on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the account, or the unauthorized
+    /// <see cref="ApplicationErrorCode.CurrentUserNotFound"/> when it no longer exists.
+    /// </returns>
     public async Task<Result<UserResponse>> HandleAsync(
         GetAccountQuery query,
         CancellationToken ct = default

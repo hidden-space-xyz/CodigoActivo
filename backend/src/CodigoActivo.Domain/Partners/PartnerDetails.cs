@@ -7,7 +7,7 @@ namespace CodigoActivo.Domain.Partners;
 /// </summary>
 /// <param name="Name">Human-readable name; surrounding spaces are removed.</param>
 /// <param name="FromDate">Date the partnership started.</param>
-/// <param name="Tier">Sponsorship tier.</param>
+/// <param name="Tier">Sponsorship tier; partner lists show the lowest tier first.</param>
 /// <param name="Web">Website; blank means none.</param>
 /// <param name="ThumbnailId">Identifier of the logo file.</param>
 public sealed record PartnerDetails(

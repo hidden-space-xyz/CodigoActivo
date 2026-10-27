@@ -28,7 +28,7 @@ public class ResourcesController : ApiControllerBase
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a paged resource list item, or an error response.</returns>
+    /// <returns>An HTTP response containing a page of resources.</returns>
     [HttpGet]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Resources)]
@@ -43,11 +43,11 @@ public class ResourcesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the types endpoint for resources.
+    /// Lists the catalog of resource types.
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a resource type, or an error response.</returns>
+    /// <returns>An HTTP response containing the resource types.</returns>
     [HttpGet("types")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<IReadOnlyList<ResourceTypeResponse>>> TypesAsync(
@@ -85,9 +85,9 @@ public class ResourcesController : ApiControllerBase
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getById">Query handler that reads the result of the command.</param>
+    /// <param name="getById">Query handler that reads the created resource.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a resource, or an error response.</returns>
+    /// <returns>A 201 response with the resource and its location, or an error response.</returns>
     [HttpPost]
     [AllowOnlyAdmin]
     [ProducesResponseType<ResourceResponse>(StatusCodes.Status201Created)]
@@ -111,9 +111,9 @@ public class ResourcesController : ApiControllerBase
     /// <param name="resourceId">Identifier of the resource.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getById">Query handler that reads the result of the command.</param>
+    /// <param name="getById">Query handler that reads the updated resource.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a resource, or an error response.</returns>
+    /// <returns>An HTTP response containing the resource, or an error response.</returns>
     [HttpPut("{resourceId:guid}")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<ResourceResponse>> UpdateAsync(
@@ -136,7 +136,7 @@ public class ResourcesController : ApiControllerBase
     /// <param name="resourceId">Identifier of the resource.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpDelete("{resourceId:guid}")]
     [AllowOnlyAdmin]
     public async Task<IActionResult> DeleteAsync(

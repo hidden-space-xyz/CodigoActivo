@@ -35,7 +35,10 @@ public sealed class GetEventAttendeesEmailAudienceQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the audience summary, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the audience summary, or
+    /// <see cref="ApplicationErrorCode.EventNotFound"/>.
+    /// </returns>
     public async Task<Result<EmailAudienceResponse>> HandleAsync(
         GetEventAttendeesEmailAudienceQuery query,
         CancellationToken ct = default

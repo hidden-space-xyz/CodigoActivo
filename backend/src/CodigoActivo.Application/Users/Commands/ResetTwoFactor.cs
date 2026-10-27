@@ -21,7 +21,9 @@ public sealed record ResetTwoFactorCommand(
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to reset a user's second factor to email.
+/// Executes the command to reset a user's second factor to email: it drops the authenticator and the
+/// pending login code and lifts the second-factor lock. The holder is told by email only when the
+/// account used an authenticator.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
@@ -37,7 +39,11 @@ public sealed class ResetTwoFactorCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result reports success;
+    /// <see cref="ApplicationErrorCode.UserCurrentPasswordIncorrect"/> when the administrator's
+    /// password is wrong or locked, or <see cref="ApplicationErrorCode.UserNotFound"/>.
+    /// </returns>
     public async Task<Result> HandleAsync(
         ResetTwoFactorCommand command,
         CancellationToken ct = default

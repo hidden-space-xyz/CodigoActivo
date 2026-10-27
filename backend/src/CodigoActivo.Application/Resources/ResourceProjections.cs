@@ -10,7 +10,7 @@ namespace CodigoActivo.Application.Resources;
 public static class ResourceProjections
 {
     /// <summary>
-    /// Stores the shared resource value.
+    /// Projects a resource with its body and its type.
     /// </summary>
     public static readonly Expression<Func<ResourceRow, ResourceResponse>> Resource =
         resource => new ResourceResponse
@@ -34,7 +34,7 @@ public static class ResourceProjections
         };
 
     /// <summary>
-    /// Stores the shared resource list item value.
+    /// Projects a resource to a list item, without its body.
     /// </summary>
     public static readonly Expression<
         Func<ResourceRow, ResourceListItemResponse>
@@ -58,7 +58,7 @@ public static class ResourceProjections
     };
 
     /// <summary>
-    /// Stores the shared resource type value.
+    /// Projects a resource type from its catalog.
     /// </summary>
     public static readonly Expression<Func<ResourceTypeRow, ResourceTypeResponse>> ResourceType =
         resourceType => new ResourceTypeResponse

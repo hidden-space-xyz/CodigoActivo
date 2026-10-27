@@ -15,14 +15,17 @@ public static class BlockedDataConsultationEmail
     private const string TimestampFormat = "dd/MM/yyyy, HH:mm";
 
     /// <summary>
-    /// Creates the notice for the association's legal contact.
+    /// Creates the notice for the association's legal contact: who opened the consultation, for which
+    /// authority and reference, and when, with a note on who may receive the blocked data.
     /// </summary>
     /// <param name="toAddress">Legal contact email of the association.</param>
     /// <param name="toName">Name the message greets.</param>
-    /// <param name="consultation">The consultation opened.</param>
+    /// <param name="consultation">
+    /// The consultation opened; its texts are raw and encoded for the HTML part.
+    /// </param>
     /// <param name="timeZone">Time zone used to calculate local dates.</param>
-    /// <param name="siteUrl">The site url value.</param>
-    /// <returns>The resulting email message value.</returns>
+    /// <param name="siteUrl">Public base URL of the site, linked from the footer.</param>
+    /// <returns>The message, of kind <see cref="EmailKind.BlockedDataConsultationNotice"/>.</returns>
     public static EmailMessage Create(
         string toAddress,
         string toName,

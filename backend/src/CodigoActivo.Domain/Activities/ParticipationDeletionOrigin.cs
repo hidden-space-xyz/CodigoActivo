@@ -6,7 +6,8 @@ namespace CodigoActivo.Domain.Activities;
 public enum ParticipationDeletionOrigin
 {
     /// <summary>
-    /// An administrator deleted the event, with its activities, signups and terms decisions.
+    /// An administrator deleted the event, with its activities, signups, terms decisions and
+    /// ratings.
     /// </summary>
     EventDeleted = 1,
 

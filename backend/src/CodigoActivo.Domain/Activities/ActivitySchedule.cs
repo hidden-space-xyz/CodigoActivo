@@ -42,7 +42,12 @@ public sealed record ActivitySchedule
     /// <param name="endsAt">When the activity ends.</param>
     /// <param name="eventCalendar">Days of the event, which the activity must lie within.</param>
     /// <param name="zone">Time zone the days of the event are counted in.</param>
-    /// <returns>The schedule in UTC, or a validation error when it does not fit the event.</returns>
+    /// <returns>
+    /// The schedule in UTC, or <see cref="DomainErrorCode.ActivityScheduleRequired"/> when a time is
+    /// missing, <see cref="DomainErrorCode.ActivityScheduleInvalidRange"/> when it does not end after
+    /// it starts, or <see cref="DomainErrorCode.ActivityScheduleOutsideEventRange"/> when it falls
+    /// outside the days of the event.
+    /// </returns>
     public static Result<ActivitySchedule> Create(
         DateTimeOffset? startsAt,
         DateTimeOffset? endsAt,

@@ -17,7 +17,7 @@ interface AppRouterOptions {
 /**
  * Router over the application routes. It restores the saved scroll position on back/forward and
  * otherwise scrolls smoothly to the top, checks `meta.access` before every navigation, applies the
- * route SEO after each successful one and leaves for login when the API reports the session lost.
+ * route SEO after each successful one and ends the local session when the API reports it lost.
  */
 export function createAppRouter(options: AppRouterOptions): Router {
   const router = createRouter({

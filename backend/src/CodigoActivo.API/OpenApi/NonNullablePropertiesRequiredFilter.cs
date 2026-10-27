@@ -14,7 +14,7 @@ public sealed class NonNullablePropertiesRequiredFilter : ISchemaFilter
     /// Adds the non-nullable members of the schema's type to its required properties.
     /// </summary>
     /// <param name="schema">Schema generated for the type.</param>
-    /// <param name="context">Type the schema was generated from.</param>
+    /// <param name="context">Schema filter context carrying the type the schema was generated from.</param>
     public void Apply(IOpenApiSchema schema, SchemaFilterContext context)
     {
         ArgumentNullException.ThrowIfNull(context);

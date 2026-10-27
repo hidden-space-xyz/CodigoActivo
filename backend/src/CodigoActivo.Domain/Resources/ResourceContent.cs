@@ -26,7 +26,8 @@ public sealed record ResourceContent
     public RichText Description { get; }
 
     /// <summary>
-    /// Gets the link of an external resource.
+    /// Gets the trimmed link of an external resource, or <see langword="null"/> for a resource
+    /// hosted on the site.
     /// </summary>
     public string? Url { get; }
 
@@ -35,8 +36,14 @@ public sealed record ResourceContent
     /// </summary>
     /// <param name="type">Type of the resource.</param>
     /// <param name="description">Rich-text body supplied.</param>
-    /// <param name="url">Link supplied.</param>
-    /// <returns>The content, or a validation error when it does not fit the type.</returns>
+    /// <param name="url">Link supplied; blank means none.</param>
+    /// <returns>
+    /// The content, or, for an external resource,
+    /// <see cref="DomainErrorCode.ResourceDescriptionNotAllowed"/> when it has a body and
+    /// <see cref="DomainErrorCode.ResourceUrlRequired"/> when it has no link; for a resource hosted
+    /// on the site, <see cref="DomainErrorCode.ResourceUrlNotAllowed"/> when it has a link and
+    /// <see cref="DomainErrorCode.ResourceDescriptionRequired"/> when its body is empty.
+    /// </returns>
     public static Result<ResourceContent> For(ResourceType type, RichText description, string? url)
     {
         ArgumentNullException.ThrowIfNull(description);

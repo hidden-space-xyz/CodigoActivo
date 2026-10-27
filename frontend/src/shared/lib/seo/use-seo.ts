@@ -5,8 +5,11 @@ import { i18n, type TranslationKey } from '@/shared/i18n'
 
 /** Static SEO declared in a route's `meta.seo`, as i18n keys resolved on navigation. */
 export interface SeoRouteMeta {
+  /** Page title message; the site name is appended to it. */
   readonly titleKey?: TranslationKey | undefined
+  /** Message for the meta and social description; the site default when absent. */
   readonly descriptionKey?: TranslationKey | undefined
+  /** Keeps the page out of search results: adds `robots: noindex` and drops the canonical link. */
   readonly noindex?: boolean | undefined
 }
 
@@ -15,11 +18,17 @@ export interface SeoRouteMeta {
  * falls back to `/og-image.png`.
  */
 export interface SeoData {
+  /** Page title without the site name, which is appended to it. */
   readonly title?: string | undefined
+  /** Meta, Open Graph and Twitter description; the site default when absent. */
   readonly description?: string | undefined
+  /** Keeps the page out of search results: adds `robots: noindex` and drops the canonical link. */
   readonly noindex?: boolean | undefined
+  /** Open Graph and Twitter image, as a path or URL resolved against the current origin. */
   readonly image?: string | undefined
+  /** Open Graph `og:type`; `website` when absent. */
   readonly type?: 'website' | 'article' | undefined
+  /** Structured data written to the page's only JSON-LD script, which is removed when absent. */
   readonly jsonLd?: Record<string, unknown> | undefined
 }
 
@@ -111,8 +120,9 @@ function withoutUndefined(seo: SeoData): SeoData {
 }
 
 /**
- * Writes the document title, description, canonical, robots, Open Graph, Twitter and JSON-LD tags
- * from the route's static meta. Admin-layout routes are always `noindex`.
+ * Writes the document title, description, canonical, robots, Open Graph and Twitter tags from the
+ * route's static meta and removes the JSON-LD of the previous page. Admin-layout routes are always
+ * `noindex`.
  */
 export function applyRouteSeo(to: RouteLocationNormalized): void {
   const resolved = resolveRouteSeo(to.meta.seo ?? {})

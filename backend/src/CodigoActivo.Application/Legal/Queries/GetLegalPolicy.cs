@@ -27,7 +27,10 @@ public sealed class GetLegalPolicyQueryHandler(IReadStore readStore, IQueryExecu
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the policy, or an application error when none was published yet.</returns>
+    /// <returns>
+    /// A task whose result contains the policy, or
+    /// <see cref="ApplicationErrorCode.LegalPolicyNotFound"/> when none was published yet.
+    /// </returns>
     public async Task<Result<LegalPolicyResponse>> HandleAsync(
         GetLegalPolicyQuery query,
         CancellationToken ct = default

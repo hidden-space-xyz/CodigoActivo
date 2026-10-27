@@ -1,7 +1,7 @@
 namespace CodigoActivo.Domain.Common;
 
 /// <summary>
-/// Identifies the supported error kind values.
+/// Classifies an expected failure; the API answers each kind with its own HTTP status.
 /// </summary>
 public enum ErrorKind
 {
@@ -11,22 +11,24 @@ public enum ErrorKind
     Validation = 0,
 
     /// <summary>
-    /// Selects the not found option.
+    /// Something the request names does not exist, or is not visible to the caller.
     /// </summary>
     NotFound = 1,
 
     /// <summary>
-    /// Selects the forbidden option.
+    /// The caller is known but may not perform the operation.
     /// </summary>
     Forbidden = 2,
 
     /// <summary>
-    /// Selects the unauthorized option.
+    /// The caller is not authenticated, such as after wrong credentials, with an expired login
+    /// challenge or for an account that no longer exists.
     /// </summary>
     Unauthorized = 3,
 
     /// <summary>
-    /// Selects the conflict option.
+    /// The operation clashes with the current state, such as a duplicate or a state that does not
+    /// allow it.
     /// </summary>
     Conflict = 4,
 }
@@ -40,9 +42,9 @@ public enum ErrorKind
 public sealed record Error(ErrorKind Kind, Enum Code)
 {
     /// <summary>
-    /// Creates an application error with the validation classification.
+    /// Creates a domain or application error with thevalidation classification.
     /// </summary>
-    /// <param name="code">The code value.</param>
+    /// <param name="code">Member of the error code enumeration that names the failure.</param>
     /// <returns>The resulting error value.</returns>
     public static Error Validation(Enum code)
     {
@@ -50,9 +52,9 @@ public sealed record Error(ErrorKind Kind, Enum Code)
     }
 
     /// <summary>
-    /// Creates an application error with the not found classification.
+    /// Creates a domain or application error with thenot found classification.
     /// </summary>
-    /// <param name="code">The code value.</param>
+    /// <param name="code">Member of the error code enumeration that names the failure.</param>
     /// <returns>The resulting error value.</returns>
     public static Error NotFound(Enum code)
     {
@@ -60,9 +62,9 @@ public sealed record Error(ErrorKind Kind, Enum Code)
     }
 
     /// <summary>
-    /// Creates an application error with the forbidden classification.
+    /// Creates a domain or application error with theforbidden classification.
     /// </summary>
-    /// <param name="code">The code value.</param>
+    /// <param name="code">Member of the error code enumeration that names the failure.</param>
     /// <returns>The resulting error value.</returns>
     public static Error Forbidden(Enum code)
     {
@@ -70,9 +72,9 @@ public sealed record Error(ErrorKind Kind, Enum Code)
     }
 
     /// <summary>
-    /// Creates an application error with the unauthorized classification.
+    /// Creates a domain or application error with theunauthorized classification.
     /// </summary>
-    /// <param name="code">The code value.</param>
+    /// <param name="code">Member of the error code enumeration that names the failure.</param>
     /// <returns>The resulting error value.</returns>
     public static Error Unauthorized(Enum code)
     {
@@ -80,9 +82,9 @@ public sealed record Error(ErrorKind Kind, Enum Code)
     }
 
     /// <summary>
-    /// Creates an application error with the conflict classification.
+    /// Creates a domain or application error with theconflict classification.
     /// </summary>
-    /// <param name="code">The code value.</param>
+    /// <param name="code">Member of the error code enumeration that names the failure.</param>
     /// <returns>The resulting error value.</returns>
     public static Error Conflict(Enum code)
     {

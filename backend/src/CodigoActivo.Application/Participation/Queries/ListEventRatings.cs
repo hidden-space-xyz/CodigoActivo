@@ -17,7 +17,7 @@ public sealed record ListEventRatingsQuery(EventId EventId, EventRatingListQuery
     : IQuery<Result<PagedResult<EventRatingListItemResponse>>>;
 
 /// <summary>
-/// Executes the query to list event ratings.
+/// Executes the query to list the ratings of an event without identifying their authors.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -35,7 +35,11 @@ public sealed class ListEventRatingsQueryHandler(IReadStore readStore, IQueryExe
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a paged event rating list item on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the requested page of ratings, highest score first by default,
+    /// a rating without a score sorting as zero; or
+    /// <see cref="ApplicationErrorCode.EventNotFound"/>.
+    /// </returns>
     public async Task<Result<PagedResult<EventRatingListItemResponse>>> HandleAsync(
         ListEventRatingsQuery query,
         CancellationToken ct = default

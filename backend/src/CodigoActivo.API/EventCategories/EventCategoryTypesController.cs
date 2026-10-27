@@ -21,12 +21,12 @@ namespace CodigoActivo.API.EventCategories;
 public class EventCategoryTypesController : ApiControllerBase
 {
     /// <summary>
-    /// Executes the category types endpoint for events.
+    /// Lists the event category types that match the supplied filters.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a paged event category type, or an error response.</returns>
+    /// <returns>An HTTP response containing a page of category types.</returns>
     [HttpGet]
     [AllowOnlyAdmin]
     public async Task<ActionResult<PagedResult<EventCategoryTypeResponse>>> CategoryTypesAsync(
@@ -47,9 +47,9 @@ public class EventCategoryTypesController : ApiControllerBase
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getById">Query handler that reads the result of the command.</param>
+    /// <param name="getById">Query handler that reads the created category type.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an event category type, or an error response.</returns>
+    /// <returns>A 201 response with the category type and its location, or an error response.</returns>
     [HttpPost]
     [AllowOnlyAdmin]
     [ProducesResponseType<EventCategoryTypeResponse>(StatusCodes.Status201Created)]
@@ -75,9 +75,9 @@ public class EventCategoryTypesController : ApiControllerBase
     /// <param name="eventCategoryTypeId">Identifier of the event category type.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getById">Query handler that reads the result of the command.</param>
+    /// <param name="getById">Query handler that reads the updated category type.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an event category type, or an error response.</returns>
+    /// <returns>An HTTP response containing the category type, or an error response.</returns>
     [HttpPut("{eventCategoryTypeId:guid}")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<EventCategoryTypeResponse>> UpdateCategoryTypeAsync(
@@ -97,12 +97,13 @@ public class EventCategoryTypesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Deletes a category type when it is no longer referenced.
+    /// Deletes a category type, removing it from every event tagged with it; it is refused while it
+    /// is the only category of an event.
     /// </summary>
     /// <param name="eventCategoryTypeId">Identifier of the event category type.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpDelete("{eventCategoryTypeId:guid}")]
     [AllowOnlyAdmin]
     public async Task<IActionResult> DeleteCategoryTypeAsync(

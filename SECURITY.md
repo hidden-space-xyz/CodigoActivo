@@ -15,7 +15,7 @@ authentication are not supported.
 ### Authentication and authorization
 
 - Authentication uses an ASP.NET Core session cookie: `HttpOnly`, `SameSite=Lax`, non-sliding, expiring after
-  30 days by default. It is a browser-session cookie unless the user ticks «Mantener la sesión iniciada en este
+  30 days. It is a browser-session cookie unless the user ticks «Mantener la sesión iniciada en este
   dispositivo» on the password step (`keepSignedIn`), which makes it persistent; the challenge cookie carries
   that choice to the second factor, and a claims refresh keeps it. The session, challenge and CSRF cookies are
   `Secure` in every environment except Development and use a `__Host-` name in Production. The ticket is not self-sufficient: completing the second factor also writes a
@@ -24,11 +24,12 @@ authentication are not supported.
   decides access: refreshing the claims re-issues the cookie with a later expiry, so a cookie can outlive its
   row, and the ticket is rejected as soon as the row is missing or expired.
 - Every authenticated request revalidates account status, password lock, password fingerprint, administrator
-  flag and the `sid` row in one query, and rejects the ticket when any of them is missing or expired.
+  flag and the `sid` row in one query: it rejects the ticket when the account is not active, is locked, has
+  another password or has no live row, and refreshes its claims, such as the administrator flag, when they changed.
   Blocking or demoting a user takes effect on existing sessions; changing or resetting the password
-  invalidates them through the fingerprint, and the change then deletes that user's session rows. When the API answers `AuthenticationRequired` or
-  `CurrentUserNotFound` to a signed-in SPA, or right after the user changes their password, the SPA drops its
-  cached session and data and sends protected pages back to login.
+  invalidates them through the fingerprint, and the change then deletes that user's session rows. When the
+  API answers `AuthenticationRequired` or `CurrentUserNotFound` to a signed-in SPA, or right after the user
+  changes their password, the SPA drops its cached session and data and sends protected pages back to login.
 - `POST /api/auth/logout` deletes the row of the presented session before clearing the cookies, so a copy of
   that cookie stops working immediately instead of lasting until its expiry. It is idempotent: it asks for no
   valid session, only the CSRF token, and always answers 204 after clearing the session and challenge
@@ -108,8 +109,8 @@ authentication are not supported.
   `minors` list, at most 20, `RequestValidationFailed` beyond) or through `POST /api/users/{id}/children`
   (at most 20 per guardian, counted with the guardian's row locked, `UserChildLimitReached` beyond). They must be
   minors at creation and leave their guardian when the guardian deletes them or when they come of age, since
-  the guardian no longer represents them then: `PurgeAdultDependents` erases a dependent, with its blocked
-  copy, on the day they turn 18 in `APP_TIMEZONE` (1 March for a 29 February birth in a common year), and
+  the guardian no longer represents them then: `PurgeAdultDependents` erases a dependent, keeping its data
+  history, on the day they turn 18 in `APP_TIMEZONE` (1 March for a 29 February birth in a common year), and
   `SendComingOfAgeNotices` emails the guardian 30 days before, recording it in
   `users.coming_of_age_notice_sent_at`. A changed birth date clears that record, so the corrected day gets its
   own notice; a notice the email limits refuse is retried on the next run, and a guardian whose email nobody
@@ -185,6 +186,12 @@ cancelling a signup (`UnassignActivity`), commits through `ParticipationEraser`,
 removal takes away the same way. The SPA only tells users that they and their dependents lose access and cannot
 recover the account.
 
+**Recovery**: an administrator can reset a user's second factor to email
+(`POST /api/users/{id}/two-factor/reset`) after re-entering their own password, which also lifts a
+second-factor lockout; the user is only notified when the reset removed an authenticator. Losing the Data
+Protection keys makes stored authenticator secrets unreadable; affected users then need the same administrator
+reset.
+
 ### Data history
 
 The blocked data (LOPDGDD article 32) is the data history: `DataHistoryRecorder`, a `SaveChangesInterceptor` that
@@ -204,9 +211,9 @@ since the row itself is the record, and neither does a change of excluded proper
   state `UserRepository` writes, which is excluded, and limits raw SQL to a reviewed list of types that only lock,
   read or write tables without history.
 - **Entry**: `id` (UUID v7), `entity`, `occurred_at`, `subject_ids` (every `UserId` the row holds, as GUIDs:
-  the account it is, the person a signup or decision is for, whoever decided, recorded or authored it; never
-  the signed-in account that changed it, so an extract about an administrator does not carry every row they
-  changed about others) and `payload`: the operation, the actor, the
+  the account it is, its guardian, the person a signup or decision is for, whoever decided, recorded, authored
+  or last updated it; never the signed-in account that changed it, so an extract about an administrator does
+  not carry every row they changed about others) and `payload`: the operation, the actor, the
   command (`ICommandScope`, set by the audit decorator) and the previous values, encrypted with the Data
   Protection key ring under `CodigoActivo.DataHistory.v1` and the entry id, so a payload moved to another row
   does not decrypt. A copy of the database without `DATA_PROTECTION_KEY` and the key ring reveals nothing.
@@ -232,9 +239,9 @@ whether they are that person.
   `LEGAL_EMAIL`, so an access nobody expected is noticed.
 - `POST .../{id}/searches` takes an identifier, email, DNI/NIE, phone or part of the name (at least three
   characters) in the body, never in the URL; finds existing accounts and, decrypting only past states of
-  accounts, erased ones; adds their minors; and returns each with only its name, whether it exists and how many
-  entries concern it, counted without decrypting. The consultation, locked meanwhile, records the accounts
-  found, never the text.
+  accounts, erased ones; adds their minors; and returns each with only its id, name and guardian, whether it
+  exists or when it was erased and how many entries of each kind concern it, counted without decrypting. The
+  consultation, locked meanwhile, records the accounts found, never the text.
 - `POST .../{id}/extracts` decrypts the entries about an account the consultation found and its minors, narrowed
   to days and kinds of data, adds the current personal data of an existing account and records the extract
   (account, filters, moment and number of entries, enough to find the same entries again). An entry that no longer
@@ -245,11 +252,6 @@ whether they are that person.
 
 Only the consultation handlers use `IDataHistoryReader` (`DataHistoryConventionTests`), and the personal data
 copy of «Mi cuenta» leaves the history out.
-
-**Recovery**: an administrator can reset a user's second factor to email
-(`POST /api/users/{id}/two-factor/reset`) after re-entering their own password, which also clears any
-lockout; the user is only notified when the reset removed an authenticator. Losing the Data Protection keys makes stored authenticator secrets unreadable; affected users then
-need the same administrator reset.
 
 ### CSRF
 
@@ -284,14 +286,15 @@ account's email can lock it, so recovery depends on the owner's mailbox.
 
 Credential routes (both login steps and code resend, registration, verification, email-change confirmation,
 password recovery/change, authenticator enrollment/removal, administrator grants, second-factor resets, user
-updates and the two self-service account-deletion steps) have layered controls:
+updates, the two self-service account-deletion steps, the two steps that open a blocked data consultation and
+both unsubscribe endpoints) have layered controls:
 
 - nginx caps `login`, `register`, `forgot-password`, `resend-verification`,
   `/api/auth/{id}/(verify|reset-password|confirm-email)` and
   `/api/users/{id}/(password|admin)` at 10 requests/second per client IP, burst 100; the remaining
   credential routes (two-factor login/resend/authenticator/email, `users/{id}`,
-  `users/{id}/two-factor/reset`, `me/deletion*`) rely only on nginx's general 200 requests/second limit and
-  the API controls below.
+  `users/{id}/two-factor/reset`, `me/deletion*`, `blocked-data/consultations` and its `/code`,
+  `emails/unsubscribe*`) rely only on nginx's general 200 requests/second limit and the API controls below.
 - the API enforces 120 requests/minute per client IP in every environment on every credential route;
 - the credential routes share a process-wide concurrency limit of 4 executing requests and a FIFO queue of 16,
   which bounds the memory-hard Argon2 work.
@@ -318,7 +321,7 @@ API, answer 429 `TooManyRequests` with `Retry-After`. These are per-instance con
 - A list `sort` parameter keeps only the first occurrence of each known key, so a request cannot grow the
   query EF Core translates recursively.
 - Account emails must read as one mailbox: no whitespace, control character or `()<>[]:;,\"`
-  (`UserEmailInvalid`).
+  (`UserEmailInvalid`, answered as `RequestValidationFailed`).
 - The SPA refuses to send a request whose path the browser would rewrite (dot segments, backslashes,
   stripped tabs), because generated paths interpolate their parameters unencoded; its detail routes only
   match GUID ids, since Vue Router decodes `%2F`, `%3F` and `%23` in params, and it treats an emailed
@@ -347,10 +350,10 @@ TLS ends at an external proxy; its requirements (overwriting forwarded headers, 
 `Host` header, IPv4 only) are in
 [DEPLOYMENT.md](DEPLOYMENT.md#tls-and-proxy-boundary). The API accepts one forwarded hop and honours
 `X-Forwarded-For`/`X-Forwarded-Proto` only from IPv4 loopback and private ranges (`127.0.0.0/8`, `10.0.0.0/8`,
-`172.16.0.0/12`, `192.168.0.0/16`). nginx applies no peer filtering of its own and counts only an exact `https`
-`X-Forwarded-Proto` as HTTPS. IPv6 stays disabled on both networks and nginx answers 403 to IPv6 clients,
-because Docker would relay IPv6 clients from its bridge gateway, a private address whose `X-Forwarded-For` nginx
-trusts.
+`172.16.0.0/12`, `192.168.0.0/16`). nginx takes the client address from `X-Forwarded-For` only from peers in
+those same ranges, but reads `X-Forwarded-Proto` from any peer and counts only an exact `https` as HTTPS. IPv6
+stays disabled on both networks and nginx answers 403 to IPv6 clients, because Docker would relay IPv6 clients
+from its bridge gateway, a private address whose `X-Forwarded-For` nginx trusts.
 
 nginx sends HSTS (`max-age=63072000; includeSubDomains`, no `preload`) only when its normalized scheme is HTTPS,
 plus CSP, frame denial, MIME sniffing, referrer, permissions, `Cross-Origin-Opener-Policy: same-origin` and
@@ -583,8 +586,8 @@ Only administrators read either log: `GET /api/logs/diagnostics`, `/api/logs/dia
 ### Production configuration and secrets
 
 Production refuses to start with weak secrets, a non-public or non-HTTPS `APP_BASE_URL` or unencrypted SMTP;
-the full list of startup checks and the secret file rules are in
-[DEPLOYMENT.md](DEPLOYMENT.md#first-production-start). Secrets are Compose file secrets, never environment
+the full list of startup checks is in [DEPLOYMENT.md](DEPLOYMENT.md#first-production-start) and the secret
+file rules in [DEPLOYMENT.md](DEPLOYMENT.md#secrets). Secrets are Compose file secrets, never environment
 variables, so they stay out of `docker inspect`, `docker compose config` and every process environment; code
 running inside a container can still read the files mounted into it. The root `.env` and `appsettings.json`
 hold no credentials, and there is no bootstrap password. The API's database connection never leaves the
@@ -605,14 +608,15 @@ key whose secret is stored in clear or names another decryptor, so whoever can w
 procedure: changing `DATA_PROTECTION_KEY` means recreating the volume, which invalidates every session, every
 stored authenticator secret and every pending one-time code or link, and leaves the data history unreadable.
 Data Protection payloads themselves — session and two-factor cookies, antiforgery tokens, authenticator
-secrets, the email outbox content described below and the data history — are encrypted with AES-256-GCM. Application containers run as non-root, drop all
-capabilities, enable `no-new-privileges` and use read-only root filesystems; PostgreSQL drops every capability
-its entrypoint does not need and is reachable only on the internal backend network. The development override
-removes parts of this boundary and must not be deployed.
+secrets, unsubscribe tokens, the email outbox content described below and the data history — are encrypted
+with AES-256-GCM. Application containers run as non-root, drop all capabilities, enable `no-new-privileges`
+and use read-only root filesystems; PostgreSQL drops every capability its entrypoint does not need and is
+reachable only on the internal backend network. The development override removes parts of this boundary and
+must not be deployed.
 
 ### Files and multipart requests
 
-Uploads are limited to 10 MiB by default; nginx also enforces a `12m` request-body limit. Kestrel refuses any
+Uploads are limited to 10 MiB; nginx also enforces a `12m` request-body limit. Kestrel refuses any
 other request body above 2 MiB, which no valid JSON request reaches; only the multipart upload and email
 endpoints raise it, to the upload limit plus 64 KiB. Only JPEG, PNG and WebP are accepted, detected from their
 first bytes. No upload is stored as sent: `VipsImageProcessor` reads the dimensions from the header and refuses
@@ -622,21 +626,22 @@ drops every metadata block (EXIF with any GPS position, XMP, IPTC, color profile
 the content, at most 2048 × 2048 pixels, and a thumbnail at most 800 pixels wide, lossless when the image has
 an alpha channel. An upload no loader decodes is refused (`FileUploadInvalidImage`). The variants are saved
 under `/app/files` in the `api-files` volume, each written to a temporary entry, flushed to disk and only then
-moved to its name, which never replaces stored content. Access to stored files goes through API
-authorization, not a direct static volume mount. An upload is kept
-while content references it (`StoredFileRepository.GetInUseAsync`); one that nothing references 7 days after
-it was uploaded, such as an image picked for a form that was never saved, is deleted with its content by
-`PurgeUnusedFiles`, which `UnusedFilePurgeWorker` runs 30 seconds after startup and then hourly. The purge locks the
-files it deletes (`FOR UPDATE`) before reading their references, and saving an event, activity, news item,
-resource or partner locks its thumbnail and the images its rich text embeds (`FOR KEY SHARE`, `ContentFiles`)
-in the transaction that stores it, so a save either commits first and keeps them or is refused
+moved to its name, which never replaces stored content. Files are served only by the API, never from a static
+mount of the volume: only administrators upload or delete them, and anyone who knows a file's id may read it
+(`GET /api/files/{id}`, `/content`, `/thumbnail`). An upload is kept while content references it
+(`StoredFileRepository.GetInUseAsync`); one that nothing references 7 days after it was uploaded, such as an
+image picked for a form that was never saved, is deleted with its content by `PurgeUnusedFiles`, which
+`UnusedFilePurgeWorker` runs 30 seconds after startup and then hourly. The purge locks the files it deletes
+(`FOR UPDATE`) before reading their references, and saving an event, activity, news item, resource or partner
+locks its thumbnail and the images its rich text embeds (`FOR KEY SHARE`, `ContentFiles`) in the transaction
+that stores it, so a save either commits first and keeps them or is refused
 (`*ThumbnailNotFound`, `RichTextFileNotFound`) instead of storing a reference to a deleted file. The same run
 then removes every entry of the volume that no file row owns an hour after it was written: a write cut short,
 an upload whose row was never committed or content whose deletion failed. A
 failed run logs `UnusedFilePurgeFailed`, and content that cannot be removed from the volume logs
 `StoredFileContentDeleteFailed`. Administrator email
 attachments never reach the `api-files` volume: they are read once
-per batch into the Data Protection-protected outbox content described above and removed once every message
+per batch into the Data Protection-protected outbox content described below and removed once every message
 referencing them is delivered or discarded, with count, combined bytes and recipient count bounded by
 `ManualEmailOptions`.
 
@@ -681,22 +686,23 @@ changed, without quoting it. These messages are
 ordinary automatic mail, not credential mail, so they spend the shared budget without touching the credential
 reserve that login codes rely on.
 
-Every automatic verification, password-reset, second-factor-code, security-change and activity-decision email
-passes through `ThrottledEmailSender`: each normalized destination has burst/hourly/daily budgets, the
-process has a global budget with a credential-email reserve whose half only second-factor codes may spend,
-and second-factor codes have per-destination budgets of their own, so verification and reset mail, which
-anyone can request, never stops a login code. Normalization lowercases addresses, strips sub-address tags
-and folds dots only for Gmail/Googlemail. Quota is spent on attempt, before the message
-reaches the outbox; SMTP failure and a full outbox do not refund it. The limiter is always enabled,
-in-memory, resets on restart and is multiplied by the number of API replicas.
+Every automatic email (verification, password reset, second-factor code, security change, activity decision and
+the notices to guardians and the legal contact) passes through `ThrottledEmailSender`: each normalized
+destination has burst/hourly/daily budgets, the process has a global budget with a credential-email reserve
+whose half only second-factor codes may spend, and second-factor codes have per-destination budgets of their
+own, so verification and reset mail, which anyone can request, never stops a login code. Normalization
+lowercases addresses, strips sub-address tags and folds dots only for Gmail/Googlemail. Quota is spent on
+attempt, before the message reaches the outbox; SMTP failure and a full outbox do not refund it. The limiter
+is always enabled, in-memory, resets on restart and is multiplied by the number of API replicas.
 
 Both automatic and administrator-written mail are stored in a PostgreSQL outbox (`email_outbox_messages`)
 and delivered in the background by `EmailOutboxDeliveryWorker`, so a request that queues email returns once the
 row is committed, not once SMTP accepts it: see [DEPLOYMENT.md](DEPLOYMENT.md#email-delivery) for the
 delivery schedule, capacity and logged failures. The stored subject, bodies and attachments are protected with
 Data Protection (purpose `CodigoActivo.EmailOutbox.v1`); recipient address/name, unsubscribe link and one-click
-unsubscribe address, kind and attachment names are stored in clear. Recreating the Data Protection key ring makes pending rows unreadable and they are
-discarded on their next delivery attempt.
+unsubscribe address, kind and attachment names are stored in clear. Recreating the Data Protection key ring
+makes pending rows unreadable: each attempt fails like any other delivery failure, and a row is discarded after
+its last attempt.
 
 Only administrators may send through `/api/emails/...`; recipients are resolved on the server from the same
 filters as user/attendee lists, never client-supplied addresses. Each recipient gets a separate message,

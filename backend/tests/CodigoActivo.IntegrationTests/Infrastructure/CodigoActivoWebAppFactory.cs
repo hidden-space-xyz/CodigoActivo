@@ -199,8 +199,9 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, 
     }
 
     /// <summary>
-    /// Drops a background worker whose timing would race the tests: the periodic session and deleted
-    /// account purges would delete rows behind a test that moves the clock on purpose, the email
+    /// Drops a background worker whose timing would race the tests: the periodic purges of expired
+    /// sessions, the data history, unverified accounts, dependents who came of age and unused files
+    /// would delete rows behind a test that moves the clock on purpose, the email
     /// delivery worker would compete with the synchronous drain installed by
     /// <see cref="UseSynchronousEmailOutbox"/>, the disposable email domain refresh would reach
     /// the internet and fill the list behind the tests, and the log retention would drop the

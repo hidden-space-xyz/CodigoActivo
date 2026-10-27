@@ -4,16 +4,17 @@ using CodigoActivo.Domain.Common;
 namespace CodigoActivo.Application.Files;
 
 /// <summary>
-/// Provides reusable extension methods for stream.
+/// Detects the format of an uploaded image from its header.
 /// </summary>
 public static class StreamExtensions
 {
     private const int HeaderSize = 32;
 
     /// <summary>
-    /// Detects the image format from the supplied content.
+    /// Detects JPEG, PNG or WebP from the first 32 bytes read from the current position, leaving
+    /// the stream after them.
     /// </summary>
-    /// <param name="content">Content stream to store or inspect.</param>
+    /// <param name="content">Content of the upload, positioned at its start.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the matching image format, or <see langword="null"/> when it is not found.</returns>
     public static async Task<ImageFormat?> DetectImageFormatAsync(
@@ -74,10 +75,10 @@ public static class StreamExtensions
 }
 
 /// <summary>
-/// Represents an image format value used by the application.
+/// An image format the application accepts or stores.
 /// </summary>
-/// <param name="Extension">The extension value.</param>
-/// <param name="ContentType">The content type value.</param>
+/// <param name="Extension">Extension a file of this format is stored with, without the dot.</param>
+/// <param name="ContentType">Media type the format is served as.</param>
 public sealed record ImageFormat(string Extension, string ContentType)
 {
     /// <summary>

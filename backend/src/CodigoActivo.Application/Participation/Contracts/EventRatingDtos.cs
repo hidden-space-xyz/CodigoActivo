@@ -4,11 +4,17 @@ namespace CodigoActivo.Application.Participation.Contracts;
 /// Contains the compact event rating list item data returned in list results. It never identifies
 /// the author of a rating.
 /// </summary>
-/// <param name="Id">Identifier of the target entity.</param>
+/// <param name="Id">Identifier of the rating.</param>
 /// <param name="Score">Score from 1 to 5, or <see langword="null"/> when the participant gave none.</param>
-/// <param name="MostLiked">The most liked value.</param>
-/// <param name="LeastLiked">The least liked value.</param>
-/// <param name="Suggestions">The suggestions value.</param>
+/// <param name="MostLiked">
+/// What the participant liked most, or <see langword="null"/> without an answer.
+/// </param>
+/// <param name="LeastLiked">
+/// What the participant liked least, or <see langword="null"/> without an answer.
+/// </param>
+/// <param name="Suggestions">
+/// Suggestions of the participant, or <see langword="null"/> without any.
+/// </param>
 public record EventRatingListItemResponse(
     Guid Id,
     int? Score,

@@ -66,7 +66,7 @@ public class MyAccountController : ApiControllerBase
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPost("deletion/code")]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult> RequestDeletionCodeAsync(
@@ -86,7 +86,7 @@ public class MyAccountController : ApiControllerBase
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPost("deletion")]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult> DeleteAccountAsync(

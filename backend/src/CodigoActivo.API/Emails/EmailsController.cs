@@ -23,23 +23,25 @@ using EventId = CodigoActivo.Domain.Events.EventId;
 namespace CodigoActivo.API.Emails;
 
 /// <summary>
-/// Exposes HTTP endpoints for querying and managing emails.
+/// Exposes HTTP endpoints for the email administrators write by hand, and the unsubscribe links of
+/// the news emails. Manual emails are queued in the outbox and delivered in the background, so a
+/// response counts the messages accepted, not the ones delivered.
 /// </summary>
 [ApiController]
 [Route("api/emails")]
 public class EmailsController : ApiControllerBase
 {
     /// <summary>
-    /// Sends the to user message to its recipients.
+    /// Queues an email written by an administrator for one user.
     /// </summary>
-    /// <param name="userId">Identifier of the user.</param>
-    /// <param name="subject">The subject value.</param>
-    /// <param name="body">The body value.</param>
+    /// <param name="userId">Identifier of the recipient.</param>
+    /// <param name="subject">Subject of the email.</param>
+    /// <param name="body">Body of the email as plain text.</param>
     /// <param name="purpose">What the email is written for, which decides who it reaches.</param>
-    /// <param name="attachments">The attachments value.</param>
+    /// <param name="attachments">Files attached to the email, if any.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a send email, or an error response.</returns>
+    /// <returns>An HTTP response containing the messages queued and skipped, or an error response.</returns>
     [HttpPost("users/{userId:guid}")]
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
@@ -73,16 +75,17 @@ public class EmailsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Sends the to users message to its recipients.
+    /// Queues an email written by an administrator for the users the filters select; the whole
+    /// batch is queued or none of it.
     /// </summary>
-    /// <param name="query">Query containing the selection criteria.</param>
-    /// <param name="subject">The subject value.</param>
-    /// <param name="body">The body value.</param>
+    /// <param name="query">Filters that select the recipients, as in the user list.</param>
+    /// <param name="subject">Subject of the email.</param>
+    /// <param name="body">Body of the email as plain text.</param>
     /// <param name="purpose">What the email is written for, which decides who it reaches.</param>
-    /// <param name="attachments">The attachments value.</param>
+    /// <param name="attachments">Files attached to every message, if any.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a send email, or an error response.</returns>
+    /// <returns>An HTTP response containing the messages queued and skipped, or an error response.</returns>
     [HttpPost("users")]
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
@@ -116,17 +119,18 @@ public class EmailsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Sends the to event attendees message to its recipients.
+    /// Queues an email written by an administrator for the attendees of an event the filters
+    /// select; the whole batch is queued or none of it.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
-    /// <param name="query">Query containing the selection criteria.</param>
-    /// <param name="subject">The subject value.</param>
-    /// <param name="body">The body value.</param>
+    /// <param name="query">Filters that select the recipients, as in the attendee report.</param>
+    /// <param name="subject">Subject of the email.</param>
+    /// <param name="body">Body of the email as plain text.</param>
     /// <param name="purpose">What the email is written for, which decides who it reaches.</param>
-    /// <param name="attachments">The attachments value.</param>
+    /// <param name="attachments">Files attached to every message, if any.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a send email, or an error response.</returns>
+    /// <returns>An HTTP response containing the messages queued and skipped, or an error response.</returns>
     [HttpPost("events/{eventId:guid}/attendees")]
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
@@ -219,7 +223,7 @@ public class EmailsController : ApiControllerBase
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPost("unsubscribe")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -247,7 +251,7 @@ public class EmailsController : ApiControllerBase
     /// </param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPost("unsubscribe/one-click")]
     [AllowAnonymous]
     [RequireAntiforgeryToken(required: false)]

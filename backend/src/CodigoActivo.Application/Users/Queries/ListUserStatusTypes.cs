@@ -8,7 +8,7 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Users.Queries;
 
 /// <summary>
-/// Carries the criteria used to list the status types of independent accounts. Dependents are
+/// Carries the request to list the status types of independent accounts. Dependents are
 /// told apart through <see cref="UserScope"/> instead.
 /// </summary>
 public sealed record ListUserStatusTypesQuery
@@ -29,7 +29,7 @@ public sealed record ListUserStatusTypesQuery
 }
 
 /// <summary>
-/// Executes the query to list user status types.
+/// Executes the query to list user status types by name, leaving out the dependent status.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>

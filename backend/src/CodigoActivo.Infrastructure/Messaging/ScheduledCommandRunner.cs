@@ -13,7 +13,9 @@ internal static class ScheduledCommandRunner
     /// <summary>
     /// Runs <paramref name="run"/> after <paramref name="startupDelay"/> and then once per
     /// <paramref name="interval"/> until shutdown. A failed run is handed to
-    /// <paramref name="logFailure"/> and never stops the host or the following runs.
+    /// <paramref name="logFailure"/> and never stops the host or the following runs; an
+    /// <see cref="OperationCanceledException"/> ends the runs without being logged, whatever token
+    /// cancelled it.
     /// </summary>
     /// <param name="startupDelay">Delay before the first run, so startup work finishes first.</param>
     /// <param name="interval">Interval between two runs.</param>
@@ -61,6 +63,7 @@ internal static class ScheduledCommandRunner
     /// <param name="command">Command to run.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the count the command reports.</returns>
+    /// <exception cref="InvalidOperationException">The command returned a failed result.</exception>
     internal static async Task<int> RunAsync<TCommand>(
         IServiceScopeFactory scopes,
         TCommand command,

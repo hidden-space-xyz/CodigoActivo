@@ -28,7 +28,8 @@ public class Resource : AuditableEntity<ResourceId>
     public RichText Description { get; private set; } = RichText.Empty;
 
     /// <summary>
-    /// Gets the link of an external resource.
+    /// Gets the link of an external resource, or <see langword="null"/> for a resource hosted on
+    /// the site.
     /// </summary>
     public string? Url { get; private set; }
 
@@ -43,7 +44,7 @@ public class Resource : AuditableEntity<ResourceId>
     public StoredFileId ThumbnailId { get; private set; }
 
     /// <summary>
-    /// Creates a resource.
+    /// Creates a resource and raises <see cref="ResourceCreated"/>.
     /// </summary>
     /// <param name="details">Titles and thumbnail of the resource.</param>
     /// <param name="content">Content checked against its type, which the resource takes.</param>
@@ -68,7 +69,8 @@ public class Resource : AuditableEntity<ResourceId>
     }
 
     /// <summary>
-    /// Replaces the resource.
+    /// Replaces the resource and raises <see cref="ResourceUpdated"/> with the thumbnail and body
+    /// images it no longer references.
     /// </summary>
     /// <param name="details">New titles and thumbnail.</param>
     /// <param name="content">New content checked against its type, which the resource takes.</param>
@@ -102,7 +104,8 @@ public class Resource : AuditableEntity<ResourceId>
     }
 
     /// <summary>
-    /// Marks the resource as deleted, so the files it references can be released once it is gone.
+    /// Raises <see cref="ResourceDeleted"/> before the resource is removed, so the files it
+    /// references are released once it is gone.
     /// </summary>
     public void Delete()
     {

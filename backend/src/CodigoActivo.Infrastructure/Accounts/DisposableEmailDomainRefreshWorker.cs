@@ -14,7 +14,7 @@ namespace CodigoActivo.Infrastructure.Accounts;
 /// </summary>
 /// <param name="downloader">Component that downloads and validates the list.</param>
 /// <param name="scopes">Scope factory used to resolve the scoped store of each run.</param>
-/// <param name="options">Configuration values used by the component.</param>
+/// <param name="options">Startup delay and the refresh and retry intervals.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class DisposableEmailDomainRefreshWorker(
     DisposableEmailDomainDownloader downloader,
@@ -25,7 +25,8 @@ public sealed class DisposableEmailDomainRefreshWorker(
 {
     /// <summary>
     /// Downloads the list and, when it is valid, stores it in place of the previous one. A download
-    /// that fails or is rejected is logged and changes nothing.
+    /// that fails or is rejected is logged and changes nothing; a failed write is not logged here and
+    /// propagates to the caller.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is <see langword="true"/> when the downloaded list was stored.</returns>

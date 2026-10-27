@@ -30,8 +30,9 @@ export function toConsultationCodeDraft(): ConsultationCodeDraft {
 }
 
 /**
- * Reads the first step of the dialog that opens a consultation: the authority and the reference
- * of the request are required, the reference is trimmed and the password is sent as typed.
+ * Reads the first step of the dialog that opens a consultation: the authority, the reference of
+ * the request and the password are required; the reference is trimmed and the password is sent as
+ * typed.
  */
 export function readConsultationRequestDraft(
   draft: ConsultationRequestDraft,

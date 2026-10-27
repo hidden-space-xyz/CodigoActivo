@@ -35,7 +35,12 @@ public sealed class TermsGate(
     /// <param name="signups">People signed up, each with the decisions supplied for them.</param>
     /// <param name="recordedById">Identifier of the account that signs them up.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result reports success, also when the event is missing or links no document;
+    /// <see cref="ApplicationErrorCode.EventTermsAcceptanceRequired"/> when a required document is
+    /// left unaccepted for someone, or the domain error of a decision that names an outdated
+    /// version or lacks a valid signature.
+    /// </returns>
     public async Task<Result> EnsureDecidedAsync(
         EventId eventId,
         IReadOnlyList<PersonTermsDecisions> signups,

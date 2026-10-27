@@ -2,7 +2,7 @@
 import type { LegalFact } from './legal-fact'
 
 defineProps<{
-  /** Labelled values, in order. */
+  /** Labelled values, in order; each `label` must be unique because it is the list key. */
   facts: readonly LegalFact[]
 }>()
 </script>

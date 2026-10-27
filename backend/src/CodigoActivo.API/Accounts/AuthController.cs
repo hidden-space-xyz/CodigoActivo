@@ -26,17 +26,20 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace CodigoActivo.API.Accounts;
 
 /// <summary>
-/// Exposes HTTP endpoints for querying and managing auth.
+/// Exposes the anonymous account flows (registration, email verification and change, password
+/// reset and the two-step login), the second-factor settings of the signed-in user, logout and the
+/// signed-in user.
 /// </summary>
 [ApiController]
 [Route("api/auth")]
 public class AuthController : ApiControllerBase
 {
     /// <summary>
-    /// Executes the csrf endpoint for auth.
+    /// Issues an antiforgery request token, storing its cookie, and names the header that must echo
+    /// the token on every unsafe request.
     /// </summary>
-    /// <param name="antiforgery">The antiforgery value.</param>
-    /// <returns>An HTTP response containing a csrf token, or an error response.</returns>
+    /// <param name="antiforgery">Antiforgery service that issues the cookie and request token pair.</param>
+    /// <returns>An HTTP response containing the request token and its header name.</returns>
     [HttpGet("csrf")]
     [AllowAnonymous]
     [OutputCache(NoStore = true)]
@@ -59,7 +62,7 @@ public class AuthController : ApiControllerBase
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPost("register")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -73,14 +76,15 @@ public class AuthController : ApiControllerBase
     }
 
     /// <summary>
-    /// Verifies the supplied value against its stored cryptographic representation.
+    /// Verifies the email of a new account with the code of the link emailed to it. It needs no
+    /// session.
     /// </summary>
-    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="userId">Identifier of the account to verify.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getUser">Query handler that reads the result of the command.</param>
+    /// <param name="getUser">Query handler that reads the verified account.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a user, or an error response.</returns>
+    /// <returns>An HTTP response containing the verified account, or an error response.</returns>
     [HttpPatch("{userId:guid}/verify")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -106,7 +110,7 @@ public class AuthController : ApiControllerBase
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPost("resend-verification")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -123,11 +127,11 @@ public class AuthController : ApiControllerBase
     /// Moves an account to the new email its holder asked for, with the code of the link emailed to
     /// that address. It needs no session, so the link also works on another device.
     /// </summary>
-    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="userId">Identifier of the account whose email changes.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPatch("{userId:guid}/confirm-email")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -147,12 +151,13 @@ public class AuthController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the forgot password endpoint for auth.
+    /// Emails a password reset link to the account with the given email. It answers 204 for every
+    /// valid request, so it never tells whether the address has an account.
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPost("forgot-password")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -166,13 +171,14 @@ public class AuthController : ApiControllerBase
     }
 
     /// <summary>
-    /// Resets the password using the supplied value.
+    /// Sets a new password with the code of the reset link emailed to the account. It needs no
+    /// session.
     /// </summary>
-    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="userId">Identifier of the account whose password is reset.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPatch("{userId:guid}/reset-password")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -321,7 +327,7 @@ public class AuthController : ApiControllerBase
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPost("login/two-factor/resend")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -370,7 +376,7 @@ public class AuthController : ApiControllerBase
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPost("two-factor/authenticator/confirm")]
     [Authorize]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -389,7 +395,7 @@ public class AuthController : ApiControllerBase
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPost("two-factor/email")]
     [Authorize]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
@@ -407,14 +413,14 @@ public class AuthController : ApiControllerBase
     /// second-factor challenge is closed on the account, before the cookies are deleted, so neither
     /// presented ticket stops being accepted only because a copy of it survives. The endpoint is
     /// idempotent and needs no valid session, so a ticket whose row is already gone is still
-    /// answered by clearing both cookies; a failed revocation is logged and never keeps them. A
-    /// challenge that fails to close is not logged, since it expires on its own within minutes.
+    /// answered by clearing both cookies. A session or challenge that fails to close is logged and
+    /// never keeps the cookies.
     /// </summary>
     /// <param name="sessionTickets">Revokes the session of the caller.</param>
     /// <param name="challengeTickets">Closes the pending second-factor challenge.</param>
-    /// <param name="logger">Logger used to record a failed revocation.</param>
+    /// <param name="logger">Logger used to record a failed session or challenge revocation.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, whatever the revocations did.</returns>
     [HttpPost("logout")]
     [AllowAnonymous]
     public async Task<IActionResult> LogoutAsync(
@@ -449,11 +455,11 @@ public class AuthController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the me endpoint for auth.
+    /// Returns the account of the signed-in user; without a valid session it answers 401.
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a user, or an error response.</returns>
+    /// <returns>An HTTP response containing the signed-in user, or an error response.</returns>
     [HttpGet("me")]
     [Authorize]
     public async Task<ActionResult<UserResponse>> MeAsync(

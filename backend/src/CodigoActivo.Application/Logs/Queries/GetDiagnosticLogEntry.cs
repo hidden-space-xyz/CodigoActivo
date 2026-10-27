@@ -25,7 +25,8 @@ public sealed class GetDiagnosticLogEntryQueryHandler(ILogEntryReader reader)
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
-    /// A task whose result contains the entry, or <see cref="ApplicationErrorCode.DiagnosticLogEntryNotFound"/>.
+    /// A task whose result contains the entry, or
+    /// <see cref="ApplicationErrorCode.DiagnosticLogEntryNotFound"/> when no entry has the identifier.
     /// </returns>
     public async Task<Result<DiagnosticLogEntryDetailResponse>> HandleAsync(
         GetDiagnosticLogEntryQuery query,

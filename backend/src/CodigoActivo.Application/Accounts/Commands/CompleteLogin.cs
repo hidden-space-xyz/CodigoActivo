@@ -27,7 +27,9 @@ public sealed record CompleteLoginCommand(
 /// open and must not have expired; an account that can no longer sign in or that wrong passwords
 /// locked is refused like an expired challenge, before its code is checked. The code is checked by
 /// <see cref="SecondFactorGuard"/> with the account row locked and reloaded, and an accepted login
-/// clears the challenge, so a code or an authenticator time step is accepted only once.
+/// clears the challenge, so a code or an authenticator time step is accepted only once. An accepted
+/// login also forgets the wrong codes, records the login time and removes the account's expired
+/// sessions.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="sessions">Repository used to store the new session.</param>
@@ -51,7 +53,12 @@ public sealed class CompleteLoginCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the challenge and the code.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is the new session, or the reason the login was refused.</returns>
+    /// <returns>
+    /// A task whose result is the new session;
+    /// <see cref="ApplicationErrorCode.TwoFactorChallengeExpired"/> when the challenge is no longer
+    /// open, <see cref="DomainErrorCode.TwoFactorLocked"/> while the second factor is locked, or
+    /// <see cref="ApplicationErrorCode.TwoFactorCodeInvalid"/> for a wrong code.
+    /// </returns>
     public async Task<Result<UserSessionId>> HandleAsync(
         CompleteLoginCommand command,
         CancellationToken ct = default

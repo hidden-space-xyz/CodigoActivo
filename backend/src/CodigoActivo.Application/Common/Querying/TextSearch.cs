@@ -4,7 +4,7 @@ using System.Reflection;
 namespace CodigoActivo.Application.Common.Querying;
 
 /// <summary>
-/// Normalizes search terms and applies database text matching.
+/// Matches search terms in the database without regard to case or to the acute accents of vowels.
 /// </summary>
 public static class TextSearch
 {
@@ -33,10 +33,11 @@ public static class TextSearch
     )!;
 
     /// <summary>
-    /// Normalizes a search term for case-insensitive matching.
+    /// Trims a text, lowercases it and drops the acute accent of its vowels, the same folding
+    /// <see cref="Contains{T}"/> applies to the text it searches.
     /// </summary>
-    /// <param name="value">Value to validate or convert.</param>
-    /// <returns>The generated text.</returns>
+    /// <param name="value">Search term, or a text to compare or order the same way.</param>
+    /// <returns>The normalized text.</returns>
     public static string Normalize(string value)
     {
         var normalized = value.Trim().ToLowerInvariant();
@@ -49,12 +50,14 @@ public static class TextSearch
     }
 
     /// <summary>
-    /// Determines whether the normalized source contains the search term.
+    /// Builds a predicate, translatable to SQL, that tells whether the selected text, lowercased with
+    /// the acute accent of its vowels dropped, contains the term. A null text counts as empty, and
+    /// the term is sent as a query parameter.
     /// </summary>
-    /// <typeparam name="T">Type of item processed by the operation.</typeparam>
-    /// <param name="selector">The selector value.</param>
-    /// <param name="term">The term value.</param>
-    /// <returns>The resulting t, bool value.</returns>
+    /// <typeparam name="T">Type of the rows filtered.</typeparam>
+    /// <param name="selector">Text of the row searched.</param>
+    /// <param name="term">Term already passed through <see cref="Normalize"/>.</param>
+    /// <returns>The predicate.</returns>
     public static Expression<Func<T, bool>> Contains<T>(
         Expression<Func<T, string?>> selector,
         string term
@@ -83,13 +86,14 @@ public static class TextSearch
     }
 
     /// <summary>
-    /// Filters the source to rows where contains.
+    /// Keeps the rows whose selected text contains the term passed through <see cref="Normalize"/>,
+    /// as <see cref="Contains{T}"/> compares them.
     /// </summary>
-    /// <typeparam name="T">Type of item processed by the operation.</typeparam>
-    /// <param name="source">Source sequence to query.</param>
-    /// <param name="selector">The selector value.</param>
-    /// <param name="term">The term value.</param>
-    /// <returns>The resulting t value.</returns>
+    /// <typeparam name="T">Type of the rows filtered.</typeparam>
+    /// <param name="source">Rows to filter.</param>
+    /// <param name="selector">Text of the row searched.</param>
+    /// <param name="term">Term typed by the client; null or blank keeps every row.</param>
+    /// <returns>The matching rows.</returns>
     public static IQueryable<T> WhereContains<T>(
         this IQueryable<T> source,
         Expression<Func<T, string?>> selector,

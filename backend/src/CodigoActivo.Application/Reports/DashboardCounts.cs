@@ -1,37 +1,37 @@
 namespace CodigoActivo.Application.Reports;
 
 /// <summary>
-/// Represents a dashboard counts value used by the application.
+/// Total rows of each table the dashboard summary shows.
 /// </summary>
 public sealed record DashboardCounts
 {
     /// <summary>
-    /// Gets or sets the events value.
+    /// Gets the number of events.
     /// </summary>
     public int Events { get; init; }
 
     /// <summary>
-    /// Gets or sets the activities value.
+    /// Gets the number of activities.
     /// </summary>
     public int Activities { get; init; }
 
     /// <summary>
-    /// Gets or sets the resources value.
+    /// Gets the number of resources.
     /// </summary>
     public int Resources { get; init; }
 
     /// <summary>
-    /// Gets or sets the news value.
+    /// Gets the number of news items.
     /// </summary>
     public int News { get; init; }
 
     /// <summary>
-    /// Gets or sets the partners value.
+    /// Gets the number of partners.
     /// </summary>
     public int Partners { get; init; }
 
     /// <summary>
-    /// Gets or sets the users value.
+    /// Gets the number of accounts, dependents included.
     /// </summary>
     public int Users { get; init; }
 }

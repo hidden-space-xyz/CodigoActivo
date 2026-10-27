@@ -1,12 +1,13 @@
 namespace CodigoActivo.API.Caching;
 
 /// <summary>
-/// Defines the shared output cache policies used for cache and authorization configuration.
+/// Names the output cache policies that are not a single cache tag; each cache tag of
+/// <c>CacheTags.OutputCached</c> is a policy of its own.
 /// </summary>
 public static class OutputCachePolicies
 {
     /// <summary>
-    /// Identifies the seo configuration or policy value.
+    /// Policy of the sitemap and <c>robots.txt</c>, evicted when events, news or resources change.
     /// </summary>
     public const string Seo = "seo";
 }

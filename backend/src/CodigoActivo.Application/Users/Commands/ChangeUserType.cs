@@ -18,7 +18,7 @@ public sealed record ChangeUserTypeCommand(UserId UserId, UserType UserType) : I
 
 /// <summary>
 /// Executes the command to change the membership type of a user. Nobody changes their own type,
-/// administrators included.
+/// administrators included. Setting the type the user already has changes nothing.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
@@ -34,7 +34,11 @@ public sealed class ChangeUserTypeCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result reports success;
+    /// <see cref="ApplicationErrorCode.UserSelfTypeChangeForbidden"/> for the caller's own account or
+    /// <see cref="ApplicationErrorCode.UserNotFound"/>.
+    /// </returns>
     public async Task<Result> HandleAsync(
         ChangeUserTypeCommand command,
         CancellationToken ct = default

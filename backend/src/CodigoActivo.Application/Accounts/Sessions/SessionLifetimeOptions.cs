@@ -9,7 +9,7 @@ namespace CodigoActivo.Application.Accounts.Sessions;
 public sealed class SessionLifetimeOptions
 {
     /// <summary>
-    /// Identifies the lifetime used when <c>Auth:ExpireHours</c> is absent or not a positive number.
+    /// Identifies the session lifetime, fixed in code: no setting can change it.
     /// </summary>
     public static readonly TimeSpan DefaultLifetime = TimeSpan.FromDays(30);
 

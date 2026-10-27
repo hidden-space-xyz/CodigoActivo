@@ -9,111 +9,111 @@ namespace CodigoActivo.Application.Common.Localization;
 public static class AppStrings
 {
     /// <summary>
-    /// Identifies the base name configuration or policy value.
+    /// Base name of the <c>AppStrings.resx</c> resources, which hold the Spanish texts.
     /// </summary>
     public const string BaseName = "CodigoActivo.Application.Common.Localization.AppStrings";
     private static readonly CultureInfo Culture = CultureInfo.InvariantCulture;
     private static readonly ResourceManager Manager = new(BaseName, typeof(AppStrings).Assembly);
 
     /// <summary>
-    /// Gets the emails account deletion code heading value.
+    /// Gets the heading of the email with the code that confirms deleting one's account.
     /// </summary>
     public static string EmailsAccountDeletionCodeHeading =>
         Get("emails.accountDeletionCode.heading");
 
     /// <summary>
-    /// Gets the emails account deletion code ignore note value.
+    /// Gets the closing note of the account deletion code email for whoever did not ask for it.
     /// </summary>
     public static string EmailsAccountDeletionCodeIgnoreNote =>
         Get("emails.accountDeletionCode.ignoreNote");
 
     /// <summary>
-    /// Gets the emails account deletion code intro html value.
+    /// Gets the HTML introduction of the account deletion code email.
     /// </summary>
     public static string EmailsAccountDeletionCodeIntroHtml =>
         Get("emails.accountDeletionCode.introHtml");
 
     /// <summary>
-    /// Gets the emails account deletion code intro text value.
+    /// Gets the plain-text introduction of the account deletion code email.
     /// </summary>
     public static string EmailsAccountDeletionCodeIntroText =>
         Get("emails.accountDeletionCode.introText");
 
     /// <summary>
-    /// Gets the emails account deletion code subject value.
+    /// Gets the subject of the account deletion code email.
     /// </summary>
     public static string EmailsAccountDeletionCodeSubject =>
         Get("emails.accountDeletionCode.subject");
 
     /// <summary>
-    /// Gets the emails activity decision confirmed button label value.
+    /// Gets the button label of the email that confirms an activity signup.
     /// </summary>
     public static string EmailsActivityDecisionConfirmedButtonLabel =>
         Get("emails.activityDecision.confirmedButtonLabel");
 
     /// <summary>
-    /// Gets the emails activity decision confirmed heading value.
+    /// Gets the heading of the email that confirms an activity signup.
     /// </summary>
     public static string EmailsActivityDecisionConfirmedHeading =>
         Get("emails.activityDecision.confirmedHeading");
 
     /// <summary>
-    /// Gets the emails activity decision confirmed note value.
+    /// Gets the note of the email that confirms an activity signup, asking to cancel it in time.
     /// </summary>
     public static string EmailsActivityDecisionConfirmedNote =>
         Get("emails.activityDecision.confirmedNote");
 
     /// <summary>
-    /// Gets the emails activity decision denied button label value.
+    /// Gets the button label of the email that denies an activity signup.
     /// </summary>
     public static string EmailsActivityDecisionDeniedButtonLabel =>
         Get("emails.activityDecision.deniedButtonLabel");
 
     /// <summary>
-    /// Gets the emails activity decision denied heading value.
+    /// Gets the heading of the email that denies an activity signup.
     /// </summary>
     public static string EmailsActivityDecisionDeniedHeading =>
         Get("emails.activityDecision.deniedHeading");
 
     /// <summary>
-    /// Gets the emails activity decision signup phrase self value.
+    /// Gets how an activity decision email names the signup of its recipient.
     /// </summary>
     public static string EmailsActivityDecisionSignupPhraseSelf =>
         Get("emails.activityDecision.signupPhraseSelf");
 
     /// <summary>
-    /// Gets the emails coming of age blocked data note value.
+    /// Gets the note of the coming-of-age email on the data kept blocked after the deletion.
     /// </summary>
     public static string EmailsComingOfAgeBlockedCopyNote =>
         Get("emails.comingOfAge.blockedCopyNote");
 
     /// <summary>
-    /// Gets the emails coming of age button label value.
+    /// Gets the button label of the email that tells a guardian a dependent comes of age.
     /// </summary>
     public static string EmailsComingOfAgeButtonLabel => Get("emails.comingOfAge.buttonLabel");
 
     /// <summary>
-    /// Gets the emails coming of age download value.
+    /// Gets the line of the coming-of-age email on downloading a copy of the dependent's data.
     /// </summary>
     public static string EmailsComingOfAgeDownload => Get("emails.comingOfAge.download");
 
     /// <summary>
-    /// Gets the emails coming of age heading value.
+    /// Gets the heading of the coming-of-age email.
     /// </summary>
     public static string EmailsComingOfAgeHeading => Get("emails.comingOfAge.heading");
 
     /// <summary>
-    /// Gets the emails coming of age own account value.
+    /// Gets the line of the coming-of-age email on registering an account of one's own.
     /// </summary>
     public static string EmailsComingOfAgeOwnAccount => Get("emails.comingOfAge.ownAccount");
 
     /// <summary>
-    /// Gets the emails coming of age subject value.
+    /// Gets the subject of the coming-of-age email.
     /// </summary>
     public static string EmailsComingOfAgeSubject => Get("emails.comingOfAge.subject");
 
     /// <summary>
-    /// Gets the emails consent withdrawn action value.
+    /// Gets what the notice of a withdrawn consent tells the association to do from now on.
     /// </summary>
     public static string EmailsConsentWithdrawnAction => Get("emails.consentWithdrawn.action");
 
@@ -196,118 +196,118 @@ public static class AppStrings
         Get("emails.blockedDataConsultationCode.ignoreNote");
 
     /// <summary>
-    /// Gets the emails consent withdrawn heading value.
+    /// Gets the heading of the notice of a withdrawn consent.
     /// </summary>
     public static string EmailsConsentWithdrawnHeading => Get("emails.consentWithdrawn.heading");
 
     /// <summary>
-    /// Gets the emails consent withdrawn history note value.
+    /// Gets the note of the notice of a withdrawn consent on where the decision stays recorded.
     /// </summary>
     public static string EmailsConsentWithdrawnHistoryNote =>
         Get("emails.consentWithdrawn.historyNote");
 
     /// <summary>
-    /// Gets the emails consent withdrawn subject value.
+    /// Gets the subject of the notice of a withdrawn consent.
     /// </summary>
     public static string EmailsConsentWithdrawnSubject => Get("emails.consentWithdrawn.subject");
 
     /// <summary>
-    /// Gets the emails details activity label value.
+    /// Gets the label of the activity row in the details block of an email.
     /// </summary>
     public static string EmailsDetailsActivityLabel => Get("emails.details.activityLabel");
 
     /// <summary>
-    /// Gets the emails details event label value.
+    /// Gets the label of the event row in the details block of an email.
     /// </summary>
     public static string EmailsDetailsEventLabel => Get("emails.details.eventLabel");
 
     /// <summary>
-    /// Gets the emails details location label value.
+    /// Gets the label of the location row in the details block of an email.
     /// </summary>
     public static string EmailsDetailsLocationLabel => Get("emails.details.locationLabel");
 
     /// <summary>
-    /// Gets the emails details role label value.
+    /// Gets the label of the role row in the details block of an email.
     /// </summary>
     public static string EmailsDetailsRoleLabel => Get("emails.details.roleLabel");
 
     /// <summary>
-    /// Gets the emails details schedule label value.
+    /// Gets the label of the schedule row in the details block of an email.
     /// </summary>
     public static string EmailsDetailsScheduleLabel => Get("emails.details.scheduleLabel");
 
     /// <summary>
-    /// Gets the emails email change button label value.
+    /// Gets the button label of the email that confirms a new email address.
     /// </summary>
     public static string EmailsEmailChangeButtonLabel => Get("emails.emailChange.buttonLabel");
 
     /// <summary>
-    /// Gets the emails email change heading value.
+    /// Gets the heading of the email that confirms a new email address.
     /// </summary>
     public static string EmailsEmailChangeHeading => Get("emails.emailChange.heading");
 
     /// <summary>
-    /// Gets the emails email change ignore note value.
+    /// Gets the closing note of the email change confirmation for whoever did not ask for it.
     /// </summary>
     public static string EmailsEmailChangeIgnoreNote => Get("emails.emailChange.ignoreNote");
 
     /// <summary>
-    /// Gets the emails email change intro html value.
+    /// Gets the HTML introduction of the email change confirmation.
     /// </summary>
     public static string EmailsEmailChangeIntroHtml => Get("emails.emailChange.introHtml");
 
     /// <summary>
-    /// Gets the emails email change intro text value.
+    /// Gets the plain-text introduction of the email change confirmation.
     /// </summary>
     public static string EmailsEmailChangeIntroText => Get("emails.emailChange.introText");
 
     /// <summary>
-    /// Gets the emails email change subject value.
+    /// Gets the subject of the email change confirmation.
     /// </summary>
     public static string EmailsEmailChangeSubject => Get("emails.emailChange.subject");
 
     /// <summary>
-    /// Gets the emails email in use button label value.
+    /// Gets the button label of the notice sent to the holder of an email someone tried to use.
     /// </summary>
     public static string EmailsEmailInUseButtonLabel => Get("emails.emailInUse.buttonLabel");
 
     /// <summary>
-    /// Gets the emails email in use heading value.
+    /// Gets the heading of the email-in-use notice.
     /// </summary>
     public static string EmailsEmailInUseHeading => Get("emails.emailInUse.heading");
 
     /// <summary>
-    /// Gets the emails email in use ignore note value.
+    /// Gets the closing note of the email-in-use notice for whoever did not cause it.
     /// </summary>
     public static string EmailsEmailInUseIgnoreNote => Get("emails.emailInUse.ignoreNote");
 
     /// <summary>
-    /// Gets the emails email in use intro html value.
+    /// Gets the HTML introduction of the email-in-use notice.
     /// </summary>
     public static string EmailsEmailInUseIntroHtml => Get("emails.emailInUse.introHtml");
 
     /// <summary>
-    /// Gets the emails email in use intro text value.
+    /// Gets the plain-text introduction of the email-in-use notice.
     /// </summary>
     public static string EmailsEmailInUseIntroText => Get("emails.emailInUse.introText");
 
     /// <summary>
-    /// Gets the emails email in use recovery value.
+    /// Gets the line of the email-in-use notice on recovering a forgotten password.
     /// </summary>
     public static string EmailsEmailInUseRecovery => Get("emails.emailInUse.recovery");
 
     /// <summary>
-    /// Gets the emails email in use subject value.
+    /// Gets the subject of the email-in-use notice.
     /// </summary>
     public static string EmailsEmailInUseSubject => Get("emails.emailInUse.subject");
 
     /// <summary>
-    /// Gets the emails footer tagline value.
+    /// Gets the tagline of the association in the email footer.
     /// </summary>
     public static string EmailsFooterTagline => Get("emails.footer.tagline");
 
     /// <summary>
-    /// Gets the emails footer website label value.
+    /// Gets the label of the website link in the email footer.
     /// </summary>
     public static string EmailsFooterWebsiteLabel => Get("emails.footer.websiteLabel");
 
@@ -322,114 +322,115 @@ public static class AppStrings
     public static string EmailsFooterUnsubscribeLabel => Get("emails.footer.unsubscribeLabel");
 
     /// <summary>
-    /// Gets the emails login code heading value.
+    /// Gets the heading of the email with a login code.
     /// </summary>
     public static string EmailsLoginCodeHeading => Get("emails.loginCode.heading");
 
     /// <summary>
-    /// Gets the emails login code ignore note value.
+    /// Gets the closing note of the login code email for whoever did not try to sign in.
     /// </summary>
     public static string EmailsLoginCodeIgnoreNote => Get("emails.loginCode.ignoreNote");
 
     /// <summary>
-    /// Gets the emails login code intro html value.
+    /// Gets the HTML introduction of the login code email.
     /// </summary>
     public static string EmailsLoginCodeIntroHtml => Get("emails.loginCode.introHtml");
 
     /// <summary>
-    /// Gets the emails login code intro text value.
+    /// Gets the plain-text introduction of the login code email.
     /// </summary>
     public static string EmailsLoginCodeIntroText => Get("emails.loginCode.introText");
 
     /// <summary>
-    /// Gets the emails login code subject value.
+    /// Gets the subject of the login code email.
     /// </summary>
     public static string EmailsLoginCodeSubject => Get("emails.loginCode.subject");
 
     /// <summary>
-    /// Gets the emails password reset button label value.
+    /// Gets the button label of the password reset email.
     /// </summary>
     public static string EmailsPasswordResetButtonLabel => Get("emails.passwordReset.buttonLabel");
 
     /// <summary>
-    /// Gets the emails password reset heading value.
+    /// Gets the heading of the password reset email.
     /// </summary>
     public static string EmailsPasswordResetHeading => Get("emails.passwordReset.heading");
 
     /// <summary>
-    /// Gets the emails password reset ignore note value.
+    /// Gets the closing note of the password reset email for whoever did not ask for it.
     /// </summary>
     public static string EmailsPasswordResetIgnoreNote => Get("emails.passwordReset.ignoreNote");
 
     /// <summary>
-    /// Gets the emails password reset intro html value.
+    /// Gets the HTML introduction of the password reset email.
     /// </summary>
     public static string EmailsPasswordResetIntroHtml => Get("emails.passwordReset.introHtml");
 
     /// <summary>
-    /// Gets the emails password reset intro text value.
+    /// Gets the plain-text introduction of the password reset email.
     /// </summary>
     public static string EmailsPasswordResetIntroText => Get("emails.passwordReset.introText");
 
     /// <summary>
-    /// Gets the emails password reset subject value.
+    /// Gets the subject of the password reset email.
     /// </summary>
     public static string EmailsPasswordResetSubject => Get("emails.passwordReset.subject");
 
     /// <summary>
-    /// Gets the emails security alert admin granted value.
+    /// Gets the security alert line for administrator rights granted to the account.
     /// </summary>
     public static string EmailsSecurityAlertAdminGranted =>
         Get("emails.securityAlert.adminGranted");
 
     /// <summary>
-    /// Gets the emails security alert admin revoked value.
+    /// Gets the security alert line for administrator rights revoked from the account.
     /// </summary>
     public static string EmailsSecurityAlertAdminRevoked =>
         Get("emails.securityAlert.adminRevoked");
 
     /// <summary>
-    /// Gets the emails security alert authenticator disabled value.
+    /// Gets the security alert line for an authenticator application disabled.
     /// </summary>
     public static string EmailsSecurityAlertAuthenticatorDisabled =>
         Get("emails.securityAlert.authenticatorDisabled");
 
     /// <summary>
-    /// Gets the emails security alert authenticator enabled value.
+    /// Gets the security alert line for an authenticator application enabled.
     /// </summary>
     public static string EmailsSecurityAlertAuthenticatorEnabled =>
         Get("emails.securityAlert.authenticatorEnabled");
 
     /// <summary>
-    /// Gets the emails security alert heading value.
+    /// Gets the heading of the security alert email.
     /// </summary>
     public static string EmailsSecurityAlertHeading => Get("emails.securityAlert.heading");
 
     /// <summary>
-    /// Gets the emails security alert email changed value.
+    /// Gets the security alert line for a changed email, sent to the previous address.
     /// </summary>
     public static string EmailsSecurityAlertEmailChanged =>
         Get("emails.securityAlert.emailChanged");
 
     /// <summary>
-    /// Gets the emails security alert phone changed value.
+    /// Gets the security alert line for a changed contact phone.
     /// </summary>
     public static string EmailsSecurityAlertPhoneChanged =>
         Get("emails.securityAlert.phoneChanged");
 
     /// <summary>
-    /// Gets the emails security alert email and phone changed value.
+    /// Gets the security alert line for a changed email and contact phone, sent to the previous
+    /// address.
     /// </summary>
     public static string EmailsSecurityAlertEmailAndPhoneChanged =>
         Get("emails.securityAlert.emailAndPhoneChanged");
 
     /// <summary>
-    /// Gets the emails security alert intro html value.
+    /// Gets the HTML introduction of the security alert email.
     /// </summary>
     public static string EmailsSecurityAlertIntroHtml => Get("emails.securityAlert.introHtml");
 
     /// <summary>
-    /// Gets the emails security alert intro text value.
+    /// Gets the plain-text introduction of the security alert email.
     /// </summary>
     public static string EmailsSecurityAlertIntroText => Get("emails.securityAlert.introText");
 
@@ -441,7 +442,8 @@ public static class AppStrings
         Get("emails.securityAlert.emailChangedWarning");
 
     /// <summary>
-    /// Gets the advice for a change an administrator made on the account.
+    /// Gets the advice for a change an administrator made on the account: a second-factor reset or
+    /// administrator rights granted or revoked.
     /// </summary>
     public static string EmailsSecurityAlertUnexpectedWarning =>
         Get("emails.securityAlert.unexpectedWarning");
@@ -453,25 +455,25 @@ public static class AppStrings
         Get("emails.securityAlert.passwordLockedWarning");
 
     /// <summary>
-    /// Gets the emails security alert password changed value.
+    /// Gets the security alert line for a changed password.
     /// </summary>
     public static string EmailsSecurityAlertPasswordChanged =>
         Get("emails.securityAlert.passwordChanged");
 
     /// <summary>
-    /// Gets the emails security alert password locked value.
+    /// Gets the security alert line for an account locked after repeated wrong passwords.
     /// </summary>
     public static string EmailsSecurityAlertPasswordLocked =>
         Get("emails.securityAlert.passwordLocked");
 
     /// <summary>
-    /// Gets the emails security alert password reset value.
+    /// Gets the security alert line for a password reset through a forgotten password.
     /// </summary>
     public static string EmailsSecurityAlertPasswordReset =>
         Get("emails.securityAlert.passwordReset");
 
     /// <summary>
-    /// Gets the emails security alert subject value.
+    /// Gets the subject of the security alert email.
     /// </summary>
     public static string EmailsSecurityAlertSubject => Get("emails.securityAlert.subject");
 
@@ -488,48 +490,49 @@ public static class AppStrings
         Get("emails.securityAlert.passwordLockedHeading");
 
     /// <summary>
-    /// Gets the emails security alert two factor reset value.
+    /// Gets the security alert line for a second factor an administrator reset.
     /// </summary>
     public static string EmailsSecurityAlertTwoFactorReset =>
         Get("emails.securityAlert.twoFactorReset");
 
     /// <summary>
-    /// Gets the emails security alert warning value.
+    /// Gets the advice for any other change the owner did not make: reset the password and contact
+    /// the association.
     /// </summary>
     public static string EmailsSecurityAlertWarning => Get("emails.securityAlert.warning");
 
     /// <summary>
-    /// Gets the emails shared fallback link note value.
+    /// Gets the note that offers the link as text when the email button does not work.
     /// </summary>
     public static string EmailsSharedFallbackLinkNote => Get("emails.shared.fallbackLinkNote");
 
     /// <summary>
-    /// Gets the emails shared logo alt value.
+    /// Gets the alternative text of the logo in emails.
     /// </summary>
     public static string EmailsSharedLogoAlt => Get("emails.shared.logoAlt");
 
     /// <summary>
-    /// Gets the emails shared signoff html value.
+    /// Gets the HTML sign-off of emails.
     /// </summary>
     public static string EmailsSharedSignoffHtml => Get("emails.shared.signoffHtml");
 
     /// <summary>
-    /// Gets the emails shared signoff text value.
+    /// Gets the plain-text sign-off of emails.
     /// </summary>
     public static string EmailsSharedSignoffText => Get("emails.shared.signoffText");
 
     /// <summary>
-    /// Gets the emails verification button label value.
+    /// Gets the button label of the email that verifies a new account.
     /// </summary>
     public static string EmailsVerificationButtonLabel => Get("emails.verification.buttonLabel");
 
     /// <summary>
-    /// Gets the emails verification heading value.
+    /// Gets the heading of the account verification email.
     /// </summary>
     public static string EmailsVerificationHeading => Get("emails.verification.heading");
 
     /// <summary>
-    /// Gets the emails verification ignore note value.
+    /// Gets the closing note of the account verification email for whoever did not register.
     /// </summary>
     public static string EmailsVerificationIgnoreNote => Get("emails.verification.ignoreNote");
 
@@ -539,27 +542,27 @@ public static class AppStrings
     public static string EmailsVerificationNewsConsent => Get("emails.verification.newsConsent");
 
     /// <summary>
-    /// Gets the emails verification intro html value.
+    /// Gets the HTML introduction of the account verification email.
     /// </summary>
     public static string EmailsVerificationIntroHtml => Get("emails.verification.introHtml");
 
     /// <summary>
-    /// Gets the emails verification intro text value.
+    /// Gets the plain-text introduction of the account verification email.
     /// </summary>
     public static string EmailsVerificationIntroText => Get("emails.verification.introText");
 
     /// <summary>
-    /// Gets the emails verification subject value.
+    /// Gets the subject of the account verification email.
     /// </summary>
     public static string EmailsVerificationSubject => Get("emails.verification.subject");
 
     /// <summary>
-    /// Gets the files fallback attachment name value.
+    /// Gets the name given to a manual email attachment whose name is empty once sanitized.
     /// </summary>
     public static string FilesFallbackAttachmentName => Get("files.fallbackAttachmentName");
 
     /// <summary>
-    /// Gets the files fallback file name value.
+    /// Gets the name given to an uploaded file whose name is empty once sanitized.
     /// </summary>
     public static string FilesFallbackFileName => Get("files.fallbackFileName");
 
@@ -574,9 +577,9 @@ public static class AppStrings
     public static string LegalPoliciesPrivacy => Get("legal.policies.privacy");
 
     /// <summary>
-    /// Formats the localized emails account deletion code expiry html text with the supplied values.
+    /// Formats the HTML lifetime of the code that confirms deleting one's account.
     /// </summary>
-    /// <param name="minutes">The minutes value.</param>
+    /// <param name="minutes">Minutes the code stays valid.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsAccountDeletionCodeExpiryHtml(int minutes)
     {
@@ -584,9 +587,9 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails account deletion code expiry text text with the supplied values.
+    /// Formats the plain-text lifetime of the code that confirms deleting one's account.
     /// </summary>
-    /// <param name="minutes">The minutes value.</param>
+    /// <param name="minutes">Minutes the code stays valid.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsAccountDeletionCodeExpiryText(int minutes)
     {
@@ -594,9 +597,12 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails activity decision confirmed intro text with the supplied values.
+    /// Formats the introduction of the email that confirms an activity signup.
     /// </summary>
-    /// <param name="signupPhrase">The signup phrase value.</param>
+    /// <param name="signupPhrase">
+    /// How the signup is named, from <see cref="EmailsActivityDecisionSignupPhraseSelf"/> or
+    /// <see cref="EmailsActivityDecisionSignupPhraseNamed"/>.
+    /// </param>
     /// <returns>The generated text.</returns>
     public static string EmailsActivityDecisionConfirmedIntro(string signupPhrase)
     {
@@ -604,9 +610,9 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails activity decision confirmed subject text with the supplied values.
+    /// Formats the subject of the email that confirms an activity signup.
     /// </summary>
-    /// <param name="activityTitle">The activity title value.</param>
+    /// <param name="activityTitle">Title of the activity.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsActivityDecisionConfirmedSubject(string activityTitle)
     {
@@ -614,9 +620,12 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails activity decision denied intro text with the supplied values.
+    /// Formats the introduction of the email that denies an activity signup.
     /// </summary>
-    /// <param name="signupPhrase">The signup phrase value.</param>
+    /// <param name="signupPhrase">
+    /// How the signup is named, from <see cref="EmailsActivityDecisionSignupPhraseSelf"/> or
+    /// <see cref="EmailsActivityDecisionSignupPhraseNamed"/>.
+    /// </param>
     /// <returns>The generated text.</returns>
     public static string EmailsActivityDecisionDeniedIntro(string signupPhrase)
     {
@@ -624,9 +633,9 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails activity decision denied subject text with the supplied values.
+    /// Formats the subject of the email that denies an activity signup.
     /// </summary>
-    /// <param name="activityTitle">The activity title value.</param>
+    /// <param name="activityTitle">Title of the activity.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsActivityDecisionDeniedSubject(string activityTitle)
     {
@@ -634,9 +643,9 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails activity decision signup phrase named text with the supplied values.
+    /// Formats how an activity decision email to a guardian names the signup of their dependent.
     /// </summary>
-    /// <param name="participantName">The participant name value.</param>
+    /// <param name="participantName">Name of the dependent signed up.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsActivityDecisionSignupPhraseNamed(string participantName)
     {
@@ -644,7 +653,7 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails coming of age intro html text with the supplied values.
+    /// Formats the HTML introduction of the email that tells a guardian a dependent comes of age.
     /// </summary>
     /// <param name="dependentName">Name of the dependent, already HTML-encoded.</param>
     /// <param name="comingOfAgeOn">Day the dependent comes of age.</param>
@@ -655,7 +664,8 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails coming of age intro text text with the supplied values.
+    /// Formats the plain-text introduction of the email that tells a guardian a dependent comes of
+    /// age.
     /// </summary>
     /// <param name="dependentName">Name of the dependent.</param>
     /// <param name="comingOfAgeOn">Day the dependent comes of age.</param>
@@ -666,7 +676,7 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails consent withdrawn intro html text with the supplied values.
+    /// Formats the HTML introduction of the notice of a withdrawn consent.
     /// </summary>
     /// <param name="personName">Name of the person, already HTML-encoded.</param>
     /// <param name="documentName">Name of the document, already HTML-encoded.</param>
@@ -736,7 +746,7 @@ public static class AppStrings
     /// <summary>
     /// Formats the HTML lifetime of the code that confirms opening a consultation.
     /// </summary>
-    /// <param name="minutes">The minutes value.</param>
+    /// <param name="minutes">Minutes the code stays valid.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsBlockedDataConsultationCodeExpiryHtml(int minutes)
     {
@@ -746,7 +756,7 @@ public static class AppStrings
     /// <summary>
     /// Formats the plain-text lifetime of the code that confirms opening a consultation.
     /// </summary>
-    /// <param name="minutes">The minutes value.</param>
+    /// <param name="minutes">Minutes the code stays valid.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsBlockedDataConsultationCodeExpiryText(int minutes)
     {
@@ -754,7 +764,7 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails consent withdrawn intro text text with the supplied values.
+    /// Formats the plain-text introduction of the notice of a withdrawn consent.
     /// </summary>
     /// <param name="personName">Name of the person.</param>
     /// <param name="documentName">Name of the document.</param>
@@ -770,7 +780,7 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails consent withdrawn recorded text with the supplied values.
+    /// Formats who recorded a withdrawn consent and when, for its notice.
     /// </summary>
     /// <param name="recordedByName">Name of the account that recorded the withdrawal.</param>
     /// <param name="withdrawnAt">When it was withdrawn, already formatted.</param>
@@ -781,10 +791,10 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails details row text text with the supplied values.
+    /// Formats a row of the details block of a plain-text email.
     /// </summary>
-    /// <param name="label">The label value.</param>
-    /// <param name="value">Value to validate or convert.</param>
+    /// <param name="label">Label of the row, such as <see cref="EmailsDetailsEventLabel"/>.</param>
+    /// <param name="value">Value shown after the label.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsDetailsRowText(string label, string value)
     {
@@ -792,12 +802,12 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails details schedule multi day text with the supplied values.
+    /// Formats a schedule that ends on a later day than it starts.
     /// </summary>
-    /// <param name="startDate">The start date value.</param>
-    /// <param name="startTime">The start time value.</param>
-    /// <param name="endDate">The end date value.</param>
-    /// <param name="endTime">The end time value.</param>
+    /// <param name="startDate">Day it starts, already formatted.</param>
+    /// <param name="startTime">Time it starts, already formatted.</param>
+    /// <param name="endDate">Day it ends, already formatted.</param>
+    /// <param name="endTime">Time it ends, already formatted.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsDetailsScheduleMultiDay(
         string startDate,
@@ -810,11 +820,11 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails details schedule same day text with the supplied values.
+    /// Formats a schedule that starts and ends on the same day.
     /// </summary>
-    /// <param name="startDate">The start date value.</param>
-    /// <param name="startTime">The start time value.</param>
-    /// <param name="endTime">The end time value.</param>
+    /// <param name="startDate">Day it takes place, already formatted.</param>
+    /// <param name="startTime">Time it starts, already formatted.</param>
+    /// <param name="endTime">Time it ends, already formatted.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsDetailsScheduleSameDay(
         string startDate,
@@ -826,9 +836,9 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails email change expiry html text with the supplied values.
+    /// Formats the HTML lifetime of the link that confirms a new email address.
     /// </summary>
-    /// <param name="minutes">The minutes value.</param>
+    /// <param name="minutes">Minutes the link stays valid.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsEmailChangeExpiryHtml(int minutes)
     {
@@ -836,9 +846,9 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails email change expiry text text with the supplied values.
+    /// Formats the plain-text lifetime of the link that confirms a new email address.
     /// </summary>
-    /// <param name="minutes">The minutes value.</param>
+    /// <param name="minutes">Minutes the link stays valid.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsEmailChangeExpiryText(int minutes)
     {
@@ -866,9 +876,9 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails login code expiry html text with the supplied values.
+    /// Formats the HTML lifetime of a login code.
     /// </summary>
-    /// <param name="minutes">The minutes value.</param>
+    /// <param name="minutes">Minutes the code stays valid.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsLoginCodeExpiryHtml(int minutes)
     {
@@ -876,9 +886,9 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails login code expiry text text with the supplied values.
+    /// Formats the plain-text lifetime of a login code.
     /// </summary>
-    /// <param name="minutes">The minutes value.</param>
+    /// <param name="minutes">Minutes the code stays valid.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsLoginCodeExpiryText(int minutes)
     {
@@ -886,9 +896,9 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails password reset expiry html text with the supplied values.
+    /// Formats the HTML lifetime of a password reset link.
     /// </summary>
-    /// <param name="minutes">The minutes value.</param>
+    /// <param name="minutes">Minutes the link stays valid.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsPasswordResetExpiryHtml(int minutes)
     {
@@ -896,9 +906,9 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails password reset expiry text text with the supplied values.
+    /// Formats the plain-text lifetime of a password reset link.
     /// </summary>
-    /// <param name="minutes">The minutes value.</param>
+    /// <param name="minutes">Minutes the link stays valid.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsPasswordResetExpiryText(int minutes)
     {
@@ -906,9 +916,9 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails security alert new email text with the supplied values.
+    /// Formats the security alert line that hints at the new email of the account.
     /// </summary>
-    /// <param name="maskedEmail">The masked email value.</param>
+    /// <param name="maskedEmail">New email with most of it masked.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsSecurityAlertNewEmail(string maskedEmail)
     {
@@ -916,9 +926,9 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails security alert when text with the supplied values.
+    /// Formats when the change a security alert reports happened.
     /// </summary>
-    /// <param name="occurredAt">The occurred at value.</param>
+    /// <param name="occurredAt">When it happened, already formatted.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsSecurityAlertWhen(string occurredAt)
     {
@@ -926,9 +936,9 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails shared greeting text with the supplied values.
+    /// Formats the greeting that opens an email.
     /// </summary>
-    /// <param name="name">The name value.</param>
+    /// <param name="name">Name of the recipient.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsSharedGreeting(string name)
     {
@@ -936,9 +946,9 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails verification expiry html text with the supplied values.
+    /// Formats the HTML lifetime of the link that verifies a new account.
     /// </summary>
-    /// <param name="minutes">The minutes value.</param>
+    /// <param name="minutes">Minutes the link stays valid.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsVerificationExpiryHtml(int minutes)
     {
@@ -946,9 +956,9 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the localized emails verification expiry text text with the supplied values.
+    /// Formats the plain-text lifetime of the link that verifies a new account.
     /// </summary>
-    /// <param name="minutes">The minutes value.</param>
+    /// <param name="minutes">Minutes the link stays valid.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsVerificationExpiryText(int minutes)
     {

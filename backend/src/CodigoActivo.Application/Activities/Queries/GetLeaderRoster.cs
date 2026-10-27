@@ -44,7 +44,10 @@ public sealed class GetLeaderRosterQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the led activities in chronological order on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the led activities in chronological order, or
+    /// <see cref="ApplicationErrorCode.EventNotFound"/>.
+    /// </returns>
     public async Task<Result<IReadOnlyList<LeaderRosterActivityResponse>>> HandleAsync(
         GetLeaderRosterQuery query,
         CancellationToken ct = default

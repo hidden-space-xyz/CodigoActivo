@@ -7,7 +7,7 @@ import { useSession } from '@/entities/session'
 import { useCrudFeedback, useDeleteConfirm } from '@/shared/lib/feedback'
 
 /**
- * User's event participation history split into upcoming and past entries, plus the mutations
+ * Household's event participation history split into upcoming and past entries, plus the mutations
  * that save and delete the account's rating of an event. Both refetch the history, which carries
  * the stored rating of each event, so the form reopens with it. Call it in `setup`.
  */

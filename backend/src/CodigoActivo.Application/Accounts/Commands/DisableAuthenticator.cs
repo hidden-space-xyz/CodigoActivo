@@ -27,7 +27,8 @@ public sealed record DisableAuthenticatorCommand(
 /// Executes the command that removes the authenticator. Downgrading the second factor requires
 /// both the password and a current authenticator code, so neither a stolen session nor a stolen
 /// password is enough; wrong codes count towards the same lockout as logins, checked with the
-/// account row locked so parallel attempts are counted one after another.
+/// account row locked so parallel attempts are counted one after another. Once the change is
+/// committed the holder is emailed a security alert.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
@@ -49,7 +50,13 @@ public sealed class DisableAuthenticatorCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <returns>
+    /// A task whose result indicates success,
+    /// <see cref="ApplicationErrorCode.AuthenticatorNotEnabled"/> when the account uses email,
+    /// <see cref="ApplicationErrorCode.UserCurrentPasswordIncorrect"/>,
+    /// <see cref="DomainErrorCode.TwoFactorLocked"/>, or
+    /// <see cref="ApplicationErrorCode.TwoFactorCodeInvalid"/>.
+    /// </returns>
     public async Task<Result> HandleAsync(
         DisableAuthenticatorCommand command,
         CancellationToken ct = default

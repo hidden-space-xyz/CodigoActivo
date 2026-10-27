@@ -9,7 +9,7 @@ export interface EventCategoryTag {
 export type EventStatusKind =
   'upcoming' | 'earlySignupOpen' | 'signupOpen' | 'signupClosed' | 'finished'
 
-/** An event as its cards show it; `startsAt` and `endsAt` are ISO days or instants. */
+/** An event as its cards show it; `startsAt` and `endsAt` are ISO days (`yyyy-mm-dd`). */
 export interface EventSummary {
   readonly id: string
   readonly title: string

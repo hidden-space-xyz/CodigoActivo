@@ -1,12 +1,13 @@
 namespace CodigoActivo.Application.Files;
 
 /// <summary>
-/// Defines configuration values for file upload.
+/// Limits of image uploads, fixed in code: no deployment setting changes them.
 /// </summary>
 public sealed class FileUploadOptions
 {
     /// <summary>
-    /// Gets or sets the max size bytes value.
+    /// Gets or sets the largest upload accepted, in bytes (10 MiB); a larger one is refused before
+    /// it is read.
     /// </summary>
     public long MaxSizeBytes { get; set; } = 10 * 1024 * 1024;
 

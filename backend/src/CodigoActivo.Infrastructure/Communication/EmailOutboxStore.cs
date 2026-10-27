@@ -10,7 +10,7 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// Describes a message that was removed because its attempts were spent, with the data the worker is
 /// allowed to log about it.
 /// </summary>
-/// <param name="Kind">Email category whose limits were applied.</param>
+/// <param name="Kind">Email category of the removed message.</param>
 /// <param name="AttemptCount">Number of delivery attempts that were started.</param>
 public sealed record ExhaustedEmail(EmailKind Kind, int AttemptCount);
 
@@ -20,10 +20,11 @@ public sealed record ExhaustedEmail(EmailKind Kind, int AttemptCount);
 public interface IEmailOutboxStore : IEmailOutbox
 {
     /// <summary>
-    /// Takes up to <paramref name="batchSize"/> messages whose next attempt is due, in priority
-    /// order, leasing them until <paramref name="leaseUntil"/> so no other instance delivers the same
-    /// row and counting the attempt as started. Messages that share stored content share one
-    /// instance of it.
+    /// Takes up to <paramref name="batchSize"/> messages whose next attempt is due, by priority and
+    /// then by schedule, leasing them until <paramref name="leaseUntil"/> so no other instance
+    /// delivers the same row and counting the attempt as started. Messages whose attempts are spent
+    /// and rows another transaction has locked are skipped. The messages come back with their content
+    /// and its parts loaded, and messages that share stored content share one instance of it.
     /// </summary>
     /// <param name="now">Current timestamp compared against the schedule and the leases.</param>
     /// <param name="leaseUntil">Timestamp until which the claimed rows stay reserved.</param>
@@ -33,7 +34,10 @@ public interface IEmailOutboxStore : IEmailOutbox
     /// already spent, so the claimed rows are read and returned even when it is cancelled: a batch
     /// dropped on the way out would wait for its lease to expire with one attempt fewer.
     /// </param>
-    /// <returns>A task whose result contains the claimed email outbox message items.</returns>
+    /// <returns>
+    /// A task whose result contains the claimed messages, untracked, each with the attempt count it
+    /// was claimed on.
+    /// </returns>
     public Task<IReadOnlyList<EmailOutboxMessage>> ClaimDueAsync(
         DateTimeOffset now,
         DateTimeOffset leaseUntil,
@@ -43,25 +47,35 @@ public interface IEmailOutboxStore : IEmailOutbox
 
     /// <summary>
     /// Removes a message that was delivered or that ran out of attempts, as long as it is still on
-    /// the attempt the caller claimed.
+    /// the attempt the caller claimed. Its content stays until <see cref="RemoveOrphanContentAsync"/>.
     /// </summary>
     /// <param name="messageId">Identifier of the message.</param>
     /// <param name="attemptCount">Attempt the caller claimed, which must still be the current one.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the number of deleted rows.</returns>
+    /// <returns>
+    /// A task whose result contains the number of deleted rows: zero when the message is gone or was
+    /// claimed again.
+    /// </returns>
     public Task<int> RemoveAsync(Guid messageId, int attemptCount, CancellationToken ct = default);
 
     /// <summary>
-    /// Releases the lease of a failed message so it is retried later, as long as it is still on the
-    /// attempt the caller claimed: a worker whose lease expired never overwrites the schedule of the
-    /// worker that claimed the message afterwards.
+    /// Releases the lease of a failed message so it is retried later and stores the error, as long as
+    /// it is still on the attempt the caller claimed: a worker whose lease expired never overwrites the
+    /// schedule of the worker that claimed the message afterwards.
     /// </summary>
     /// <param name="messageId">Identifier of the message.</param>
     /// <param name="attemptCount">Attempt the caller claimed, which must still be the current one.</param>
     /// <param name="nextAttemptAt">Timestamp from which the message may be attempted again.</param>
-    /// <param name="error">Truncated diagnostic of the failure, without recipient data.</param>
+    /// <param name="error">
+    /// Diagnostic of the failure, without recipient data; it is cut to
+    /// <see cref="EmailOutboxMessage.LastErrorMaxLength"/> and a blank one is stored as
+    /// <see langword="null"/>.
+    /// </param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the number of updated rows.</returns>
+    /// <returns>
+    /// A task whose result contains the number of updated rows: zero when the message is gone or was
+    /// claimed again.
+    /// </returns>
     public Task<int> RescheduleAsync(
         Guid messageId,
         int attemptCount,
@@ -72,11 +86,14 @@ public interface IEmailOutboxStore : IEmailOutbox
 
     /// <summary>
     /// Removes the messages whose attempts are spent and whose lease has expired, which is how a
-    /// message abandoned during its last attempt leaves the outbox.
+    /// message abandoned during its last attempt leaves the outbox. Rows another transaction has
+    /// locked are left for a later call.
     /// </summary>
     /// <param name="now">Current timestamp compared against the leases.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the removed messages.</returns>
+    /// <returns>
+    /// A task whose result contains the kind and attempt count of every removed message, for the log.
+    /// </returns>
     public Task<IReadOnlyList<ExhaustedEmail>> RemoveExhaustedAsync(
         DateTimeOffset now,
         CancellationToken ct = default
@@ -87,19 +104,22 @@ public interface IEmailOutboxStore : IEmailOutbox
     /// references any more.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the number of deleted rows.</returns>
+    /// <returns>
+    /// A task whose result contains the number of deleted content rows; the parts the database
+    /// deletes with them are not counted.
+    /// </returns>
     public Task<int> RemoveOrphanContentAsync(CancellationToken ct = default);
 }
 
 /// <summary>
 /// Stores outbound email in PostgreSQL. Every call uses a scope, and therefore a database session, of
 /// its own: enqueuing commits before returning and never carries the pending changes of the handler
-/// that asked for the email.
+/// that asked for the email. A stored batch wakes the delivery worker of this process.
 /// </summary>
 /// <param name="scopes">Scope factory used to resolve the context of each operation.</param>
 /// <param name="protector">Protector applied to the stored subject, bodies and attachments.</param>
 /// <param name="signal">Signal that wakes the delivery worker of this process.</param>
-/// <param name="options">Configuration values used by the component.</param>
+/// <param name="options">Outbox policy, read for the capacity an enqueue checks.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class EmailOutboxStore(
     IServiceScopeFactory scopes,

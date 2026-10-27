@@ -41,7 +41,11 @@ public sealed class GetEventTermsStateQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the event's terms state for the household on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the event's terms state for the household, with no documents
+    /// and no people when the event links no document; or
+    /// <see cref="ApplicationErrorCode.EventNotFound"/>.
+    /// </returns>
     public async Task<Result<EventTermsStateResponse>> HandleAsync(
         GetEventTermsStateQuery query,
         CancellationToken ct = default

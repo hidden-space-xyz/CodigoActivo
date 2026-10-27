@@ -16,8 +16,9 @@ const NARROW_QUERY = '(max-width: 640px)'
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/
 
 /**
- * Maps a filterable column to query parameters. `param` defaults to the column key; `dateRange`
- * columns send `fromParam`/`toParam` (default `<key>From`/`<key>To`) as `YYYY-MM-DD`.
+ * Maps a filterable column to query parameters. `param` defaults to the column key; `number`
+ * columns send only finite numbers, and `dateRange` columns send `fromParam`/`toParam` (default
+ * `<key>From`/`<key>To`) as `YYYY-MM-DD`.
  */
 interface ServerTableColumn<TParams = Record<string, unknown>> {
   readonly param?: Extract<keyof TParams, string>
@@ -84,9 +85,13 @@ export interface ServerTableSource<T, TParams> {
 }
 
 interface UseServerTableOptions<T, TParams> extends ServerTableSource<T, TParams> {
+  /** Filterable columns by key; `columnFilter(key)` binds an input to each one. */
   readonly columns?: Record<string, ServerTableColumn<TParams>> | undefined
+  /** Sort before the user picks one; `order` is `1` ascending (default) or `-1` descending. */
   readonly defaultSort?: { readonly field: string; readonly order?: 1 | -1 } | undefined
+  /** Page-owned filters merged into every request; a change goes back to the first page. */
   readonly extraParams?: (() => Record<string, unknown>) | undefined
+  /** Whether the query may run; always when absent. */
   readonly enabled?: (() => boolean) | undefined
   /** Row identity for Element Plus; defaults to `'id'`. Lists whose rows have no id pass a function. */
   readonly rowKey?: string | ((row: T) => string) | undefined

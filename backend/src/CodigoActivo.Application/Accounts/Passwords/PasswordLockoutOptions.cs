@@ -6,7 +6,7 @@ namespace CodigoActivo.Application.Accounts.Passwords;
 public sealed class PasswordLockoutOptions
 {
     /// <summary>
-    /// Stores the shared default maximum failed attempts value.
+    /// Identifies the default number of wrong passwords tolerated before the account locks.
     /// </summary>
     public const int DefaultMaxFailedAttempts = 5;
 

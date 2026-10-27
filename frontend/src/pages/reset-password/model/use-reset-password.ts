@@ -11,11 +11,12 @@ import { isGuid } from '@/shared/lib/navigation'
 export type ResetPasswordState = 'form' | 'success'
 
 /**
- * Reset-password form for the emailed link. Validates the length and the confirmation locally before
- * calling the API; an API failure shows its message and offers requesting a new link.
+ * Reset-password form for the emailed link. Checks the minimum length (`PASSWORD_MIN_LENGTH`) and
+ * that the confirmation matches before calling the API; an API failure shows its message and
+ * offers requesting a new link.
  *
  * @param userId - User id from the link; `hasValidLink` requires it to be a GUID.
- * @param code - One-time reset code from the link.
+ * @param code - One-time reset code from the link; `hasValidLink` is false without it.
  */
 export function useResetPassword(userId: string | null, code: string | null) {
   const { t } = useI18n()

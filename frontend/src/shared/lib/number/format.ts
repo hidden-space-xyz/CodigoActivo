@@ -20,7 +20,10 @@ export function formatScore(value?: number | null): string {
   return numberFormatter.format(Number(value.toFixed(1)))
 }
 
-/** Localized size in B, whole KB or one-decimal MB (1024-based); `—` for negative or NaN input. */
+/**
+ * Localized size in B, whole KB or one-decimal MB (1024-based), or `—` for a negative or
+ * non-finite byte count.
+ */
 export function formatFileSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '—'
   if (bytes < 1024) return i18n.global.t('common.fileSize.bytes', { value: formatNumber(bytes) })
@@ -35,7 +38,10 @@ export function formatFileSize(bytes: number): string {
   })
 }
 
-/** Rounds a percentage change and prefixes positives with `+` (e.g. `+12%`, `-3%`, `0%`). */
+/**
+ * Rounds a percentage change and prefixes positives with `+` (e.g. `+12%`, `-3%`, `0%`); `—` for
+ * a non-finite value.
+ */
 export function formatSignedPercent(value: number): string {
   if (!Number.isFinite(value)) return '—'
   const rounded = Math.round(value)

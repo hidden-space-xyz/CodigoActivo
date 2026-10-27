@@ -1,7 +1,7 @@
 /** Contact phone as the association writes it and in the dialable form `tel:` links take. */
 export interface ContactPhone {
   readonly text: string
-  /** Digits and leading `+` only, for `tel:` links. */
+  /** The text without any character other than digits and `+`, for `tel:` links. */
   readonly dialable: string
 }
 

@@ -13,7 +13,7 @@ defineProps<{
   invalid?: boolean
 }>()
 
-/** PNG data URL of the drawing, or an empty string while nothing is drawn. */
+/** PNG data URL of the drawing, or an empty string while blank; setting it empty clears the pad. */
 const signature = defineModel<string>({ required: true })
 
 const canvas = ref<HTMLCanvasElement | null>(null)

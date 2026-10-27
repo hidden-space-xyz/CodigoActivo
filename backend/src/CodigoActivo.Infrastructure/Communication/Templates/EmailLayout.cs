@@ -6,18 +6,22 @@ using CodigoActivo.Domain.Common;
 namespace CodigoActivo.Infrastructure.Communication.Templates;
 
 /// <summary>
-/// Represents an email block value used by the application.
+/// One block of an email body, in the form each part of the message shows it.
 /// </summary>
-/// <param name="Html">The html value.</param>
-/// <param name="Text">The text value.</param>
+/// <param name="Html">
+/// HTML fragment placed as is in the content cell; any raw text in it is already encoded.
+/// </param>
+/// <param name="Text">
+/// Plain-text form of the block, trimmed in the text part; a blank text leaves the block out of both parts.
+/// </param>
 public sealed record EmailBlock(string Html, string Text);
 
 /// <summary>
-/// Represents an email content value used by the application.
+/// Rendered email, ready to be addressed.
 /// </summary>
-/// <param name="Html">The html value.</param>
-/// <param name="Text">The text value.</param>
-/// <param name="InlineImages">The inline images value.</param>
+/// <param name="Html">Complete HTML document of the message.</param>
+/// <param name="Text">Plain-text part of the message.</param>
+/// <param name="InlineImages">Images the HTML part references by content identifier: the logo.</param>
 public sealed record EmailContent(
     string Html,
     string Text,
@@ -31,7 +35,7 @@ public sealed record EmailContent(
     /// <param name="toAddress">Address of the recipient.</param>
     /// <param name="toName">Name of the recipient.</param>
     /// <param name="subject">Subject of the message.</param>
-    /// <returns>The resulting email message value.</returns>
+    /// <returns>The message, without attachments or one-click unsubscribe address.</returns>
     public EmailMessage ToMessage(EmailKind kind, string toAddress, string toName, string subject)
     {
         return new EmailMessage(
@@ -47,16 +51,20 @@ public sealed record EmailContent(
 }
 
 /// <summary>
-/// Parses and validates email documents.
+/// Frame the layout draws around the blocks of an email. Its texts are raw; the layout encodes them for the
+/// HTML part.
 /// </summary>
-/// <param name="Heading">The heading value.</param>
-/// <param name="Preheader">The preheader value.</param>
+/// <param name="Heading">Heading of the message, also the title of the HTML document.</param>
+/// <param name="Preheader">
+/// Preview text mail clients show next to the subject; hidden in the HTML body and left out of the text part.
+/// </param>
 /// <param name="RecipientName">Name the message greets; a null or empty name greets nobody.</param>
-/// <param name="SiteUrl">The site url value.</param>
-/// <param name="Accent">The accent value.</param>
+/// <param name="SiteUrl">Public base URL of the site, linked from the footer.</param>
+/// <param name="Accent">Accent whose line color draws the bar at the top of the card.</param>
 /// <param name="NewsContact">
 /// Contact address of a news email, whose footer carries it and leaves a place for the
-/// unsubscribe link of each recipient; <see langword="null"/> for any other email.
+/// unsubscribe link of each recipient, filled by <see cref="EmailLayout.LinkUnsubscribe"/>;
+/// <see langword="null"/> for any other email.
 /// </param>
 public sealed record EmailDocument(
     string Heading,
@@ -68,7 +76,7 @@ public sealed record EmailDocument(
 );
 
 /// <summary>
-/// Wraps transactional email content in the shared branded layout.
+/// Wraps email content in the shared branded layout, as an HTML part and a plain-text part.
 /// </summary>
 public static class EmailLayout
 {
@@ -85,11 +93,14 @@ public static class EmailLayout
         "role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"";
 
     /// <summary>
-    /// Builds the render output.
+    /// Renders the document and its blocks into both parts of a message: the brand header, the heading,
+    /// the greeting, the blocks in order and the footer with the site link.
     /// </summary>
-    /// <param name="document">The document value.</param>
-    /// <param name="blocks">The blocks value.</param>
-    /// <returns>The resulting email content value.</returns>
+    /// <param name="document">Heading, preheader, greeting, accent and footer of the message.</param>
+    /// <param name="blocks">
+    /// Body blocks in order; those whose plain text is blank are left out of both parts.
+    /// </param>
+    /// <returns>The HTML and plain-text parts, with the inline logo the HTML part references.</returns>
     public static EmailContent Render(EmailDocument document, IReadOnlyList<EmailBlock> blocks)
     {
         var kept = blocks.Where(block => !string.IsNullOrWhiteSpace(block.Text)).ToList();

@@ -88,9 +88,9 @@ function readProblems(draft: EventDraft): Partial<Record<EventField, FormProblem
 
 /**
  * Reads the event dialog. Title, subtitle, a category and every date but the early signup are
- * required; the event cannot end before it starts, signup must open before the event ends and
- * close after it opens and no later than the event's last day, and early signup must open before
- * the general signup. Event days are sent
+ * required and the description must fit what the API stores; the event cannot end before it
+ * starts, signup must open no later than the event's last day and close after it opens and no
+ * later than that day, and early signup must open before the general signup. Event days are sent
  * as ISO days, signup moments as ISO instants and an empty description as an empty rich-text
  * document. A linked consent is never sent as required. The thumbnail is resolved separately when
  * saving.

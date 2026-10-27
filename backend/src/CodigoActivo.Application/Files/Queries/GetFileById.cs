@@ -26,7 +26,10 @@ public sealed class GetFileByIdQueryHandler(IReadStore readStore, IQueryExecutor
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a file on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the metadata of the file, or
+    /// <see cref="ApplicationErrorCode.FileNotFound"/>.
+    /// </returns>
     public async Task<Result<FileResponse>> HandleAsync(
         GetFileByIdQuery query,
         CancellationToken ct = default

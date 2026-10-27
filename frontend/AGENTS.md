@@ -2,8 +2,8 @@
 
 These are the frontend conventions. Commands are in [CONTRIBUTING.md](../CONTRIBUTING.md#commands); the layer
 design is in [ARCHITECTURE.md](../ARCHITECTURE.md#frontend). `npm run check` is the complete frontend gate: its
-ESLint, Steiger, Stylelint, Knip, architecture test, type and coverage checks enforce further conventions that
-this file leaves out, and each failure names the rule it guards.
+ESLint, Steiger, Stylelint, Knip, Prettier, architecture test, type and coverage checks enforce further
+conventions that this file leaves out, and each failure names the rule it guards.
 
 ## Rules
 
@@ -34,8 +34,9 @@ this file leaves out, and each failure names the rule it guards.
   sources through `tests/architecture/codebase.ts` (TypeScript and Vue compiler ASTs) and run in the `node`
   environment without `tests/setup.ts`. Its reviewed lists name every accepted exception.
 - Unit and integration tests never need the backend: `tests/setup.ts` runs an MSW server that fails unhandled
-  requests, so declare responses with `server.use(...)` from `tests/support/server.ts`. Requests still go
-  through the generated client and `httpClient`, CSRF included.
+  requests, so declare responses with `server.use(...)` from `tests/support/server.ts`, or with the handler sets
+  that several specs share in `tests/support/api/`. Requests still go through the generated client and
+  `httpClient`, CSRF included.
 - Mount with `renderWithProviders` or `renderApp` and run composables with `mountComposable`, from
   `tests/support/render.ts`; build API payloads with `tests/support/builders/` and model values with
   `tests/support/models.ts`. Shared state (session, CSRF token, handlers, storage, fake timers, media queries)

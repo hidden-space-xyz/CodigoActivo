@@ -34,7 +34,10 @@ public sealed class ListEventCategoryTypesQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a paged event category type.</returns>
+    /// <returns>
+    /// A task whose result contains the requested page of category types, by name unless the sort
+    /// names <c>color</c>.
+    /// </returns>
     public Task<PagedResult<EventCategoryTypeResponse>> HandleAsync(
         ListEventCategoryTypesQuery query,
         CancellationToken ct = default

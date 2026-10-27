@@ -68,7 +68,14 @@ public sealed class SearchBlockedDataCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result carries the accounts found, or the error.</returns>
+    /// <returns>
+    /// A task whose result carries the accounts found;
+    /// <see cref="CodigoActivo.Application.Common.Errors.ApplicationErrorCode.BlockedDataOfficerOnly"/>
+    /// for any other account,
+    /// <see cref="DomainErrorCode.BlockedDataConsultationNotFound"/> for a consultation another
+    /// account opened or that does not exist, or
+    /// <see cref="DomainErrorCode.BlockedDataConsultationExpired"/> once it has closed.
+    /// </returns>
     public async Task<Result<BlockedDataSearch>> HandleAsync(
         SearchBlockedDataCommand command,
         CancellationToken ct = default

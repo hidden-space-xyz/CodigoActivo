@@ -20,8 +20,8 @@ public sealed record SendComingOfAgeNoticesCommand : ICommand<Result<int>>, ISch
 /// Executes the command that tells guardians, <see cref="User.ComingOfAgeNoticeDays"/> days ahead,
 /// that a dependent will be erased the day it comes of age, so they can download its data first. Each
 /// dependent is locked and checked again in its own transaction, and the notice is recorded only once
-/// the email is queued, so a notice the email limits refused is tried again on the next run. A
-/// guardian whose email nobody verified gets none.
+/// the email is queued, so a notice the email limits refused, or that could not be queued, is tried
+/// again on the next run. A guardian whose email nobody verified gets none.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="accountEmails">Sender of the notice.</param>
@@ -41,7 +41,7 @@ public sealed class SendComingOfAgeNoticesCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result carries the number of notices sent.</returns>
+    /// <returns>A task whose result carries the number of notices queued and recorded.</returns>
     public async Task<Result<int>> HandleAsync(
         SendComingOfAgeNoticesCommand command,
         CancellationToken ct = default

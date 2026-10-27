@@ -4,7 +4,8 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Common.Validation;
 
 /// <summary>
-/// Applies not blank validation or authorization to the annotated target.
+/// Refuses text that is empty or only whitespace. Null and values that are not strings are left to
+/// other attributes.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class NotBlankAttribute : ValidationAttribute
@@ -81,7 +82,8 @@ public sealed class RichTextAttribute : ValidationAttribute
 }
 
 /// <summary>
-/// Applies http url validation or authorization to the annotated target.
+/// Accepts text that is an absolute HTTP or HTTPS URL as <see cref="IsHttpUrl"/> checks it. Null
+/// passes, so optional members can omit it; any other value that is not a string is invalid.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class HttpUrlAttribute : ValidationAttribute
@@ -115,7 +117,7 @@ public sealed class HttpUrlAttribute : ValidationAttribute
 
 /// <summary>
 /// Accepts an IPv4 address in dotted-quad notation or an IPv6 address, without a port, a prefix
-/// length or a zone.
+/// length or a zone. Null passes; any other value that is not a string is invalid.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class IpAddressAttribute : ValidationAttribute

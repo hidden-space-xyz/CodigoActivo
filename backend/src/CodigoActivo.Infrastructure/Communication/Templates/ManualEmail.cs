@@ -5,12 +5,15 @@ using CodigoActivo.Application.Common.Localization;
 namespace CodigoActivo.Infrastructure.Communication.Templates;
 
 /// <summary>
-/// Represents a manual email content value used by the application.
+/// Rendered email written by an administrator, shared by every recipient of its batch.
 /// </summary>
-/// <param name="Subject">The subject value.</param>
-/// <param name="HtmlBody">The html body value.</param>
-/// <param name="TextBody">The text body value.</param>
-/// <param name="InlineImages">The inline images value.</param>
+/// <param name="Subject">Subject as the administrator wrote it.</param>
+/// <param name="HtmlBody">
+/// HTML part; in a news email it keeps the place that <see cref="EmailLayout.LinkUnsubscribe"/> fills
+/// with the unsubscribe link of each recipient.
+/// </param>
+/// <param name="TextBody">Plain-text part, with the same place in a news email.</param>
+/// <param name="InlineImages">Images the HTML part references by content identifier: the logo.</param>
 public sealed record ManualEmailContent(
     string Subject,
     string HtmlBody,
@@ -19,7 +22,7 @@ public sealed record ManualEmailContent(
 );
 
 /// <summary>
-/// Builds the email content for manual.
+/// Builds the email an administrator writes, in the site layout.
 /// </summary>
 public static class ManualEmail
 {
@@ -28,16 +31,19 @@ public static class ManualEmail
     private static readonly char[] Whitespace = [' ', '\t', '\n', '\r', '\f', '\v'];
 
     /// <summary>
-    /// Builds the render output.
+    /// Renders the subject and body into the site layout, without a greeting. The preheader is the body
+    /// on one line, cut to at most 140 characters at the last space that fits.
     /// </summary>
-    /// <param name="subject">The subject value.</param>
-    /// <param name="body">The body value.</param>
-    /// <param name="siteUrl">The site url value.</param>
+    /// <param name="subject">Subject, also the heading of the message; raw text.</param>
+    /// <param name="body">
+    /// Raw plain-text body; empty lines separate paragraphs and the line breaks inside one are kept.
+    /// </param>
+    /// <param name="siteUrl">Public base URL of the site, linked from the footer.</param>
     /// <param name="newsContact">
     /// Contact address of a news email, which carries the news footer;
     /// <see langword="null"/> for a notice.
     /// </param>
-    /// <returns>The resulting manual email content value.</returns>
+    /// <returns>The rendered content, shared by every recipient.</returns>
     public static ManualEmailContent Render(
         string subject,
         string body,
@@ -63,13 +69,13 @@ public static class ManualEmail
     }
 
     /// <summary>
-    /// Creates the manual email batch from the validated request, so every recipient receives their
+    /// Addresses the rendered content to the recipients as one batch, so every recipient receives their
     /// own message while the stored copy of the content and its attachments is shared.
     /// </summary>
-    /// <param name="content">Content stream to store or inspect.</param>
-    /// <param name="recipients">The recipients value.</param>
-    /// <param name="attachments">The attachments value.</param>
-    /// <returns>The resulting email batch value.</returns>
+    /// <param name="content">Content rendered by <see cref="Render"/>.</param>
+    /// <param name="recipients">Recipients, each with their own unsubscribe links in a news email.</param>
+    /// <param name="attachments">Files attached to every message.</param>
+    /// <returns>The batch, of kind <see cref="EmailKind.Manual"/>.</returns>
     public static EmailBatch Create(
         ManualEmailContent content,
         IReadOnlyList<EmailRecipient> recipients,

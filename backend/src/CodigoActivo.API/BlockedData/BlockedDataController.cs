@@ -73,7 +73,7 @@ public class BlockedDataController : ApiControllerBase
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPost("consultations/code")]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<ActionResult> RequestConsultationCodeAsync(
@@ -87,13 +87,13 @@ public class BlockedDataController : ApiControllerBase
 
     /// <summary>
     /// Opens a consultation of the blocked data for a request, after the password and a code of
-    /// the second factor of the designated account.
+    /// the second factor of the designated account; the opening is announced to the legal contact.
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getById">Query handler that reads the result of the command.</param>
+    /// <param name="getById">Query handler that reads the opened consultation.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing the consultation, or an error response.</returns>
+    /// <returns>A 201 response with the consultation and its location, or an error response.</returns>
     [HttpPost("consultations")]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     [ProducesResponseType<BlockedDataConsultationResponse>(StatusCodes.Status201Created)]
@@ -120,7 +120,8 @@ public class BlockedDataController : ApiControllerBase
     }
 
     /// <summary>
-    /// Looks accounts up in an open consultation of the blocked data.
+    /// Looks accounts up, existing and erased, in an open consultation of the blocked data and
+    /// records those found, never the text typed, in the consultation.
     /// </summary>
     /// <param name="consultationId">Identifier of the consultation.</param>
     /// <param name="request">Validated client request data.</param>
@@ -140,7 +141,8 @@ public class BlockedDataController : ApiControllerBase
     }
 
     /// <summary>
-    /// Takes an extract of the blocked data about an account an open consultation found.
+    /// Takes an extract of the blocked data about an account an open consultation found and its
+    /// minors, and records the extract in the consultation.
     /// </summary>
     /// <param name="consultationId">Identifier of the consultation.</param>
     /// <param name="request">Validated client request data.</param>

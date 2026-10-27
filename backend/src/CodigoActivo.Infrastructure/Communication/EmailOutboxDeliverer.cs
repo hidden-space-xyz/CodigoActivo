@@ -13,13 +13,15 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// mail that still has a chance of leaving. The stored content shared by a batch is unprotected once
 /// per run, shared by every recipient of it, and dropped when the run ends. A failed attempt that
 /// will be retried and a failed removal of spent messages repeat while their cause lasts, so each is
-/// logged at most once per <see cref="EmailGuardOptions.AlertInterval"/>; the last error of a
-/// message stays on its row and is logged in full when the message is given up.
+/// logged at most once per <see cref="EmailGuardOptions.AlertInterval"/>; the error of each retried
+/// attempt stays on its row, cut short, and the error of the last attempt is logged in full when the
+/// message is given up. Delivery is at least once: a sent message whose row cannot be removed is
+/// attempted again.
 /// </summary>
 /// <param name="store">Outbox rows this run works with.</param>
-/// <param name="transport">The transport value.</param>
+/// <param name="transport">Transport each message is handed to; whatever it throws is a failed attempt.</param>
 /// <param name="protector">Protector applied to the stored subject, bodies and attachments.</param>
-/// <param name="options">Configuration values used by the component.</param>
+/// <param name="options">Outbox policy: batch size, lease, concurrent sends and send timeout.</param>
 /// <param name="guard">Email guard configuration, whose alert interval spaces repeated failures.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
@@ -37,12 +39,17 @@ public sealed class EmailOutboxDeliverer(
     private readonly LogThrottle exhaustedRemovalFailures = new(guard.AlertInterval);
 
     /// <summary>
-    /// Claims and delivers the messages that are due, with the configured number of workers running
-    /// concurrently, and clears the stored content that no message references any more. The content
-    /// sweep also runs when nothing was due, because a process that died between the last delivery
-    /// and the sweep leaves content behind with an empty outbox.
+    /// Removes the spent messages whose last attempt was abandoned, claims and delivers the messages
+    /// that are due, with <see cref="EmailQueueOptions.Workers"/> sends running concurrently, and
+    /// clears the stored content that no message references any more. The content sweep also runs
+    /// when nothing was due, because a process that died between the last delivery and the sweep
+    /// leaves content behind with an empty outbox. Only a failed claim or a cancellation reaches the
+    /// caller: the failures of single messages, of the removal and of the sweep are logged here.
     /// </summary>
-    /// <param name="ct">Cancellation token that stops further claiming.</param>
+    /// <param name="ct">
+    /// Cancellation token that stops the removal and the claim; a claimed batch is still delivered
+    /// to the end, each send bounded by <see cref="EmailQueueOptions.SendTimeout"/>.
+    /// </param>
     /// <returns>A task whose result contains the number of claimed messages.</returns>
     public async Task<int> DeliverDueAsync(CancellationToken ct = default)
     {

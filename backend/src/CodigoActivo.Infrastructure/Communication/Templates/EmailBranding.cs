@@ -3,111 +3,111 @@ using CodigoActivo.Application.Abstractions.Email;
 namespace CodigoActivo.Infrastructure.Communication.Templates;
 
 /// <summary>
-/// Represents an email accent value used by the application.
+/// Colors of an accent that sets the tone of an email or of a callout.
 /// </summary>
-/// <param name="Line">The line value.</param>
-/// <param name="Soft">The soft value.</param>
-/// <param name="Ink">The ink value.</param>
+/// <param name="Line">Strong color of the bar at the top of the card and of the left edge of a callout.</param>
+/// <param name="Soft">Light tint of the accent color.</param>
+/// <param name="Ink">Dark shade of the accent color.</param>
 public sealed record EmailAccent(string Line, string Soft, string Ink);
 
 /// <summary>
-/// Provides brand assets and presentation values for transactional emails.
+/// Provides the brand assets and colors of the emails.
 /// </summary>
 public static class EmailBranding
 {
     /// <summary>
-    /// Identifies the font stack configuration or policy value.
+    /// System font stack of the email texts.
     /// </summary>
     public const string FontStack =
         "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
 
     /// <summary>
-    /// Identifies the canvas configuration or policy value.
+    /// Background color around the card and of its footer.
     /// </summary>
     public const string Canvas = "#f5f5f5";
 
     /// <summary>
-    /// Identifies the surface configuration or policy value.
+    /// Background color of the card.
     /// </summary>
     public const string Surface = "#ffffff";
 
     /// <summary>
-    /// Identifies the panel configuration or policy value.
+    /// Background color of panels, callouts and the one-time code box.
     /// </summary>
     public const string Panel = "#f5f5f5";
 
     /// <summary>
-    /// Identifies the border configuration or policy value.
+    /// Color of the borders of the card, panels, callouts and code box, and of the lines between detail rows.
     /// </summary>
     public const string Border = "#e8e8e8";
 
     /// <summary>
-    /// Identifies the border soft configuration or policy value.
+    /// Color of the lines under the header and above the footer.
     /// </summary>
     public const string BorderSoft = "#efefef";
 
     /// <summary>
-    /// Identifies the text bright configuration or policy value.
+    /// Color of the brand names, the heading and the one-time code.
     /// </summary>
     public const string TextBright = "#171717";
 
     /// <summary>
-    /// Identifies the text configuration or policy value.
+    /// Color of paragraphs, callouts and detail values.
     /// </summary>
     public const string Text = "#262626";
 
     /// <summary>
-    /// Identifies the text muted configuration or policy value.
+    /// Color of notes, footer texts and detail labels.
     /// </summary>
     public const string TextMuted = "#616161";
 
     /// <summary>
-    /// Identifies the primary configuration or policy value.
+    /// Brand orange of the buttons and of the brand accent.
     /// </summary>
     public const string Primary = "#f9a320";
 
     /// <summary>
-    /// Identifies the primary ink configuration or policy value.
+    /// Dark brand orange of the links, legible on the light backgrounds.
     /// </summary>
     public const string PrimaryInk = "#8f5900";
 
     /// <summary>
-    /// Identifies the primary soft configuration or policy value.
+    /// Light tint of the brand orange.
     /// </summary>
     public const string PrimarySoft = "#fef3e2";
 
     /// <summary>
-    /// Identifies the on primary configuration or policy value.
+    /// Color of the button labels on the brand orange.
     /// </summary>
     public const string OnPrimary = "#2a1400";
 
     /// <summary>
-    /// Identifies the logo content identifier configuration or policy value.
+    /// Content identifier by which the HTML part references the inline logo.
     /// </summary>
     public const string LogoContentId = "codigoactivo-logo";
 
     /// <summary>
-    /// Identifies the logo file name configuration or policy value.
+    /// File name of the inline logo image.
     /// </summary>
     public const string LogoFileName = "codigo-activo.png";
 
     /// <summary>
-    /// Stores the shared brand value.
+    /// Brand orange accent, used by most emails.
     /// </summary>
     public static readonly EmailAccent Brand = new(Primary, PrimarySoft, PrimaryInk);
 
     /// <summary>
-    /// Stores the shared success value.
+    /// Green accent for good news, such as a confirmed signup.
     /// </summary>
     public static readonly EmailAccent Success = new("#2e9e57", "#e4f2e9", "#257f46");
 
     /// <summary>
-    /// Stores the shared danger value.
+    /// Red accent for bad news or a required action, such as a denied signup or a withdrawn consent.
     /// </summary>
     public static readonly EmailAccent Danger = new("#d84a3b", "#fae8e6", "#c13b2e");
 
     /// <summary>
-    /// Stores the shared inline images value.
+    /// Inline images every rendered email carries: the logo, read once from the embedded resource.
     /// </summary>
     public static readonly IReadOnlyList<EmailInlineImage> InlineImages =
     [

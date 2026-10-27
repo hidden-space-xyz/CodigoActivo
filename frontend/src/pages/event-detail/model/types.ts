@@ -24,5 +24,6 @@ export interface TimelineActivity {
   highDemandRoleIds: string[]
   /** The current user's own enrollment, or `null` when not enrolled. */
   assignment: { status: string; roleName: string } | null
+  /** Signups to this activity of the user and of the minors in their care. */
   household: TimelineMemberAssignment[]
 }

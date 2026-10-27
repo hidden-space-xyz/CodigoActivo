@@ -16,7 +16,7 @@ namespace CodigoActivo.Application.BlockedData;
 /// <param name="readStore">Read side that names the consultation and its officer.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="legalEntity">Legal identity of the association, with its contact email.</param>
-/// <param name="emailSender">The email sender value.</param>
+/// <param name="emailSender">Sender that applies the message limiter and queues the notice.</param>
 /// <param name="composer">Composer that renders the notice.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class BlockedDataConsultationNotification(

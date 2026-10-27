@@ -13,7 +13,8 @@ namespace CodigoActivo.Application.News.Commands;
 public sealed record DeleteNewsItemCommand(NewsItemId NewsItemId) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to delete the news item.
+/// Executes the command to delete the news item. Its thumbnail and body images are removed after
+/// the commit when nothing else uses them.
 /// </summary>
 /// <param name="news">Repository used to persist and retrieve news.</param>
 public sealed class DeleteNewsItemCommandHandler(INewsItemRepository news)
@@ -24,7 +25,9 @@ public sealed class DeleteNewsItemCommandHandler(INewsItemRepository news)
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <returns>
+    /// A task whose result reports success, or <see cref="ApplicationErrorCode.NewsItemNotFound"/>.
+    /// </returns>
     public async Task<Result> HandleAsync(
         DeleteNewsItemCommand command,
         CancellationToken ct = default

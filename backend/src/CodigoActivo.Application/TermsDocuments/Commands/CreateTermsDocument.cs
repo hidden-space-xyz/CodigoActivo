@@ -11,7 +11,7 @@ namespace CodigoActivo.Application.TermsDocuments.Commands;
 /// <summary>
 /// Carries the input required to create a terms document.
 /// </summary>
-/// <param name="Name">Name, unique among terms documents.</param>
+/// <param name="Name">Name of up to 120 characters, unique among terms documents.</param>
 /// <param name="Description">Rich-text document holding text only; images are refused.</param>
 /// <param name="RequiresSignature">Whether accepting it asks for a handwritten signature.</param>
 /// <param name="Kind">Whether it holds conditions or a consent.</param>
@@ -35,7 +35,10 @@ public sealed class CreateTermsDocumentCommandHandler(ITermsDocumentRepository t
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the identifier of the created item, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the identifier of the new document, or
+    /// <see cref="ApplicationErrorCode.TermsDocumentNameAlreadyExists"/>.
+    /// </returns>
     public async Task<Result<TermsDocumentId>> HandleAsync(
         CreateTermsDocumentCommand command,
         CancellationToken ct = default

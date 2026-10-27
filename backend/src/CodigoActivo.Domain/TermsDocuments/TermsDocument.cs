@@ -78,7 +78,8 @@ public class TermsDocument : AggregateRoot<TermsDocumentId>
     /// Replaces the name and content of the document, whether accepting it asks for a signature and
     /// its kind. When anything changes, the current version is kept in
     /// <see cref="PreviousVersions"/> and the new one gets the next number, so decisions already
-    /// taken keep naming the text they were taken on; nobody has to decide again.
+    /// taken keep naming the text they were taken on; nobody has to decide again. Every rewrite
+    /// raises <see cref="TermsDocumentRewritten"/> with the images the content no longer references.
     /// </summary>
     /// <param name="name">New name; surrounding spaces are removed.</param>
     /// <param name="description">New rich-text content.</param>
@@ -116,7 +117,8 @@ public class TermsDocument : AggregateRoot<TermsDocumentId>
     }
 
     /// <summary>
-    /// Marks the document as deleted, so the files it references can be released once it is gone.
+    /// Raises <see cref="TermsDocumentDeleted"/> before the document is removed, so the files it
+    /// references are released once it is gone.
     /// </summary>
     public void Delete()
     {

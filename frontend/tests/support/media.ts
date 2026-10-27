@@ -10,8 +10,9 @@ const lists = new Map<string, MockMediaQueryList>()
 let predicate: (query: string) => boolean = () => false
 
 /**
- * `window.matchMedia` replacement. Every query starts unmatched; `setMediaQueryMatches` changes the
- * result and notifies listeners, so composables that cache a query at module level still react.
+ * `window.matchMedia` replacement. A query first read matches as the last `setMediaQueryMatches`
+ * predicate says, none by default; a later call changes the result and notifies listeners, so
+ * composables that cache a query at module level still react.
  */
 export function matchMediaMock(query: string): MediaQueryList {
   const existing = lists.get(query)

@@ -3,20 +3,22 @@ using System.Security.Claims;
 namespace CodigoActivo.API.Extensions;
 
 /// <summary>
-/// Provides reusable extension methods for claims principal.
+/// Reads the account claims that the session cookie carries.
 /// </summary>
 public static class ClaimsPrincipalExtensions
 {
     /// <summary>
-    /// Identifies the is admin claim configuration or policy value.
+    /// Type of the claim, valued <c>True</c>, that the session cookie of an administrator carries.
     /// </summary>
     public const string IsAdminClaim = "isAdmin";
 
     /// <summary>
-    /// Gets the requested user identifier.
+    /// Gets the account identifier from the name identifier claim.
     /// </summary>
     /// <param name="principal">Authenticated principal whose claims are inspected.</param>
-    /// <returns>The resulting guid value.</returns>
+    /// <returns>
+    /// The account identifier, or <see langword="null"/> when the claim is missing or not a GUID.
+    /// </returns>
     public static Guid? GetUserId(this ClaimsPrincipal principal)
     {
         return Guid.TryParse(principal.FindFirstValue(ClaimTypes.NameIdentifier), out var id)

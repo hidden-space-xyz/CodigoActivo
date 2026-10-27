@@ -13,7 +13,7 @@ namespace CodigoActivo.Infrastructure.Logs;
 public class AuditLogEntry
 {
     /// <summary>
-    /// Identifies the maximum stored length of the enumerated columns.
+    /// Identifies the maximum stored length of the enumerated columns and of <see cref="ErrorCode"/>.
     /// </summary>
     public const int NameMaxLength = 100;
 
@@ -38,7 +38,8 @@ public class AuditLogEntry
     public Guid? ActorId { get; init; }
 
     /// <summary>
-    /// Gets the address of the caller as the trusted proxy forwarded it.
+    /// Gets the address of the caller as the trusted proxy forwarded it, or <see langword="null"/>
+    /// when the command did not come through a request.
     /// </summary>
     public IPAddress? ClientIp { get; init; }
 
@@ -58,7 +59,8 @@ public class AuditLogEntry
     public Guid? EntityId { get; init; }
 
     /// <summary>
-    /// Gets the other entities the command named, as a JSON array of <c>{type, id}</c> objects.
+    /// Gets the other entities the command named, as a JSON array of <c>{type, id}</c> objects, or
+    /// <see langword="null"/> when it named none.
     /// </summary>
     public string? Related { get; init; }
 
@@ -68,7 +70,8 @@ public class AuditLogEntry
     public string Outcome { get; init; } = string.Empty;
 
     /// <summary>
-    /// Gets the code of the error that rejected the command.
+    /// Gets the code of the error that rejected the command, or <see langword="null"/> when it
+    /// succeeded or failed with an unexpected exception.
     /// </summary>
     public string? ErrorCode { get; init; }
 

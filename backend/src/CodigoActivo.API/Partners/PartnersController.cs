@@ -28,7 +28,7 @@ public class PartnersController : ApiControllerBase
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a paged partner, or an error response.</returns>
+    /// <returns>An HTTP response containing a page of partners.</returns>
     [HttpGet]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Partners)]
@@ -67,9 +67,9 @@ public class PartnersController : ApiControllerBase
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getById">Query handler that reads the result of the command.</param>
+    /// <param name="getById">Query handler that reads the created partner.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a partner, or an error response.</returns>
+    /// <returns>A 201 response with the partner and its location, or an error response.</returns>
     [HttpPost]
     [AllowOnlyAdmin]
     [ProducesResponseType<PartnerResponse>(StatusCodes.Status201Created)]
@@ -93,9 +93,9 @@ public class PartnersController : ApiControllerBase
     /// <param name="partnerId">Identifier of the partner.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getById">Query handler that reads the result of the command.</param>
+    /// <param name="getById">Query handler that reads the updated partner.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a partner, or an error response.</returns>
+    /// <returns>An HTTP response containing the partner, or an error response.</returns>
     [HttpPut("{partnerId:guid}")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<PartnerResponse>> UpdateAsync(
@@ -118,7 +118,7 @@ public class PartnersController : ApiControllerBase
     /// <param name="partnerId">Identifier of the partner.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpDelete("{partnerId:guid}")]
     [AllowOnlyAdmin]
     public async Task<IActionResult> DeleteAsync(

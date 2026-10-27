@@ -4,8 +4,8 @@ namespace CodigoActivo.Domain.Events;
 
 /// <summary>
 /// Days an event runs and the window in which people sign up to its activities. The signup
-/// closes after it opens, an early signup opens before the regular one, and the signup closes no
-/// later than the last day of the event.
+/// closes after it opens, an early signup opens before the regular one, and the signup opens and
+/// closes no later than the last day of the event.
 /// </summary>
 public sealed record EventSchedule
 {
@@ -33,7 +33,15 @@ public sealed record EventSchedule
     /// <param name="earlySignupStartsAt">When the early signup opens, if there is one.</param>
     /// <param name="signupStartsAt">When the signup opens.</param>
     /// <param name="signupEndsAt">When the signup closes.</param>
-    /// <returns>The schedule in UTC, or a validation error when the dates do not fit together.</returns>
+    /// <returns>
+    /// The schedule in UTC, or <see cref="DomainErrorCode.EventScheduleRequired"/> when a date other
+    /// than the early signup is missing, <see cref="DomainErrorCode.EventScheduleInvalidRange"/>
+    /// when the event ends before it starts, the signup does not close after it opens or it opens
+    /// after the last day of the event, <see cref="DomainErrorCode.EventEarlySignupNotBeforeSignup"/>
+    /// when the early signup does not open before the regular one, or
+    /// <see cref="DomainErrorCode.EventSignupEndsAfterEvent"/> when the signup closes after the last
+    /// day of the event.
+    /// </returns>
     public static Result<EventSchedule> Create(
         DateOnly? eventStartsAt,
         DateOnly? eventEndsAt,

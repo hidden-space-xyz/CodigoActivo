@@ -6,16 +6,18 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Users;
 
 /// <summary>
-/// Applies reusable user filters to database queries.
+/// Applies the filters of a <see cref="UserListQuery"/>, shared by the user list and the manual email
+/// commands and audience queries.
 /// </summary>
 public static class UserFilters
 {
     /// <summary>
-    /// Applies the user filters rules to the supplied target.
+    /// Narrows the users to those that match every filter set in <paramref name="query"/>, ignoring
+    /// its sort and page.
     /// </summary>
-    /// <param name="source">Source sequence to query.</param>
-    /// <param name="query">Query containing the selection criteria.</param>
-    /// <returns>The resulting user value.</returns>
+    /// <param name="source">Users to narrow down.</param>
+    /// <param name="query">Filters to apply.</param>
+    /// <returns>The matching users, neither sorted nor paged.</returns>
     public static IQueryable<UserRow> Apply(IQueryable<UserRow> source, UserListQuery query)
     {
         if (query.Id is { } id)

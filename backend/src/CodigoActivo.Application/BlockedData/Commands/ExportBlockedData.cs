@@ -35,6 +35,7 @@ public sealed record ExportBlockedDataCommand(
 /// Executes the command that decrypts the history entries about an account a search of the
 /// consultation found and its minors, narrowed to the days and kinds of data asked for, adds the
 /// current personal data while the account exists, and records the extract in the consultation.
+/// The days are local days of the clock's time zone, and only entries recorded up to now are read.
 /// </summary>
 /// <param name="officer">Policy that tells who may consult the blocked data.</param>
 /// <param name="consultations">Repository of the consultations.</param>
@@ -58,7 +59,16 @@ public sealed class ExportBlockedDataCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result carries the extract, or the error.</returns>
+    /// <returns>
+    /// A task whose result carries the extract;
+    /// <see cref="ApplicationErrorCode.BlockedDataEntityUnknown"/> or
+    /// <see cref="ApplicationErrorCode.BlockedDataPeriodInvalid"/> for a filter that cannot apply,
+    /// <see cref="ApplicationErrorCode.BlockedDataOfficerOnly"/> for any other account,
+    /// <see cref="DomainErrorCode.BlockedDataConsultationNotFound"/> or
+    /// <see cref="DomainErrorCode.BlockedDataConsultationExpired"/> when the consultation may not be
+    /// used, or <see cref="DomainErrorCode.BlockedDataAccountNotFound"/> when none of its searches
+    /// found the account.
+    /// </returns>
     public async Task<Result<BlockedDataExport>> HandleAsync(
         ExportBlockedDataCommand command,
         CancellationToken ct = default

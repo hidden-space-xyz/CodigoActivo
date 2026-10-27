@@ -3,13 +3,15 @@ import type { FormReading } from '@/shared/lib/form'
 
 /** What the account deletion dialog binds its inputs to, across both of its steps. */
 export interface DeletionDraft {
+  /** Current password, typed in the first step and sent again with the deletion. */
   password: string
+  /** Emailed or authenticator code typed in the second step; sent trimmed. */
   code: string
   /** The user accepted that the deletion cannot be undone. */
   accepted: boolean
 }
 
-/** A blank deletion. */
+/** Empty draft the dialog opens with: no password, no code and nothing accepted. */
 export function toDeletionDraft(): DeletionDraft {
   return { password: '', code: '', accepted: false }
 }

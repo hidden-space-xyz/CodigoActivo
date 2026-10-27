@@ -3,7 +3,10 @@ import type { FormProblem, FormReading } from '@/shared/lib/form'
 import { toWebUrl } from '@/shared/lib/navigation'
 import { isRichTextBlank, isRichTextTooLong } from '@/shared/lib/rich-text'
 
-/** What the resource dialog binds its inputs to. */
+/**
+ * What the resource dialog binds its inputs to; `description` is a rich-text document, used by
+ * internal types, and `url` the link of external ones.
+ */
 export interface ResourceDraft {
   title: string
   subtitle: string
@@ -29,7 +32,8 @@ export function toResourceDraft(resource: LearningResource | null): ResourceDraf
 /**
  * Reads the resource dialog against the known `types`: a title, a subtitle and a known type are
  * required; external types need an http(s) link and send no description, the others need a
- * description and send no link. The thumbnail is resolved separately when saving.
+ * description that fits what the API stores and send no link. The thumbnail is resolved
+ * separately when saving.
  */
 export function readResourceDraft(
   draft: ResourceDraft,

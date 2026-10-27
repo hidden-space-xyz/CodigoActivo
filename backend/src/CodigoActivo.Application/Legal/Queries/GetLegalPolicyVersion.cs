@@ -28,7 +28,11 @@ public sealed class GetLegalPolicyVersionQueryHandler(IReadStore readStore, IQue
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the version, or an application error when the policy has none with that number.</returns>
+    /// <returns>
+    /// A task whose result contains the version, or
+    /// <see cref="ApplicationErrorCode.LegalPolicyVersionNotFound"/> when the policy has none with
+    /// that number.
+    /// </returns>
     public async Task<Result<LegalPolicyResponse>> HandleAsync(
         GetLegalPolicyVersionQuery query,
         CancellationToken ct = default

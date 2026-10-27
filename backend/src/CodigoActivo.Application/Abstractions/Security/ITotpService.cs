@@ -17,6 +17,9 @@ public interface ITotpService
     /// <param name="secret">Base32 shared secret of the authenticator.</param>
     /// <param name="code">Code typed by the user.</param>
     /// <param name="now">Current timestamp used to compute the candidate time steps.</param>
-    /// <returns>The matching time step, or <see langword="null"/> when no candidate matches.</returns>
+    /// <returns>
+    /// The matching time step, or <see langword="null"/> when no candidate matches or the code or the
+    /// secret is malformed.
+    /// </returns>
     public long? MatchStep(string secret, string code, DateTimeOffset now);
 }

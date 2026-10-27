@@ -8,10 +8,10 @@ import { getErrorMessage, useCrudFeedback } from '@/shared/lib/feedback'
 import type { useAccount } from './use-account'
 
 /**
- * Dialog that edits the signed-in user's own data. Changes that need the current password ask for
- * it; a wrong password is reported inside the dialog, any other failure with a toast. A new email
- * only replaces the current one once the user opens the link the API emails to it, which the
- * success toast tells them. Call it in `setup`.
+ * Dialog that edits the signed-in user's own data. Changing the email or a phone asks for the
+ * current password; a wrong password is reported inside the dialog, any other failure with a
+ * toast. A new email only replaces the current one once the user opens the link the API emails to
+ * it, which the success toast tells them. Call it in `setup`.
  */
 export function useProfileEditor(
   account: Pick<ReturnType<typeof useAccount>, 'profile' | 'updateProfile'>,

@@ -29,7 +29,10 @@ public sealed class GetPastEventCategoryTypesQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the matching event category type items.</returns>
+    /// <returns>
+    /// A task whose result contains the category types tagging at least one event whose last day
+    /// is before today, ordered by name.
+    /// </returns>
     public Task<IReadOnlyList<EventCategoryTypeResponse>> HandleAsync(
         GetPastEventCategoryTypesQuery query,
         CancellationToken ct = default

@@ -229,7 +229,8 @@ public sealed class AesGcmXmlDecryptor : IXmlDecryptor
     private readonly AesGcmKeyRingProtection protection;
 
     /// <summary>
-    /// Initializes the decryptor with its required dependencies.
+    /// Initializes the decryptor with the registered <see cref="AesGcmKeyRingProtection"/>; Data
+    /// Protection activates it with the application services.
     /// </summary>
     /// <param name="services">Service provider that holds the key ring protection.</param>
     public AesGcmXmlDecryptor(IServiceProvider services)

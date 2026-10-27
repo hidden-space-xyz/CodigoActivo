@@ -52,7 +52,10 @@ export function buildDependentResponse(overrides: Partial<UserResponse> = {}): U
   })
 }
 
-/** Pending second-factor challenge as returned by `/api/auth/login` and its `GET` twin. */
+/**
+ * Pending second-factor challenge as returned by `POST /api/auth/login` and
+ * `GET /api/auth/login/two-factor`.
+ */
 export function buildLoginChallenge(
   overrides: Partial<LoginChallengeResponse> = {},
 ): LoginChallengeResponse {

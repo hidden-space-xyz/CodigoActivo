@@ -26,7 +26,10 @@ public sealed class GetActivityByIdQueryHandler(IReadStore readStore, IQueryExec
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains an activity on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the activity, or
+    /// <see cref="ApplicationErrorCode.ActivityNotFound"/>.
+    /// </returns>
     public async Task<Result<ActivityResponse>> HandleAsync(
         GetActivityByIdQuery query,
         CancellationToken ct = default

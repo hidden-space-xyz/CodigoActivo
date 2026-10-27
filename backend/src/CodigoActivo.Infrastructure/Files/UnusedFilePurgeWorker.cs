@@ -10,11 +10,12 @@ namespace CodigoActivo.Infrastructure.Files;
 
 /// <summary>
 /// Deletes the uploads that no content references <see cref="StoredFile.UnusedRetentionDays"/>
-/// after they were uploaded. It runs shortly after startup, so a stopped API only delays the
-/// deletion until the next start, and then once per interval.
+/// after they were uploaded, and then the stored content that no file row owns. It runs shortly
+/// after startup, so a stopped API only delays the deletion until the next start, and then once
+/// per interval.
 /// </summary>
 /// <param name="scopes">Scope factory used to resolve the use case of each run.</param>
-/// <param name="options">Configuration values used by the component.</param>
+/// <param name="options">Startup delay and interval of the purges.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class UnusedFilePurgeWorker(
     IServiceScopeFactory scopes,
@@ -23,10 +24,11 @@ public sealed class UnusedFilePurgeWorker(
 ) : BackgroundService
 {
     /// <summary>
-    /// Deletes every upload that no content used in time.
+    /// Deletes every upload that no content used in time, then the stored content no file row owns.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the number of deleted files.</returns>
+    /// <returns>A task whose result contains the number of deleted uploads; stray content removed
+    /// without a row is not counted.</returns>
     public Task<int> PurgeAsync(CancellationToken ct = default)
     {
         return ScheduledCommandRunner.RunAsync(scopes, new PurgeUnusedFilesCommand(), ct);

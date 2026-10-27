@@ -19,7 +19,10 @@ public static class InitialAdministrator
     /// Checks that an account may be deleted.
     /// </summary>
     /// <param name="userId">Identifier of the account.</param>
-    /// <returns>Success, or forbidden for the initial administrator.</returns>
+    /// <returns>
+    /// Success, or <see cref="DomainErrorCode.UserDeleteInitialAdminForbidden"/> for the initial
+    /// administrator.
+    /// </returns>
     public static Result EnsureMayBeDeleted(UserId userId)
     {
         return userId == Id
@@ -31,7 +34,10 @@ public static class InitialAdministrator
     /// Checks that an account may lose its administrator rights.
     /// </summary>
     /// <param name="userId">Identifier of the account.</param>
-    /// <returns>Success, or forbidden for the initial administrator.</returns>
+    /// <returns>
+    /// Success, or <see cref="DomainErrorCode.UserCannotRemoveInitialAdmin"/> for the initial
+    /// administrator.
+    /// </returns>
     public static Result EnsureMayLoseAdminRights(UserId userId)
     {
         return userId == Id

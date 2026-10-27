@@ -4,19 +4,20 @@ using CodigoActivo.Application.Common.Localization;
 namespace CodigoActivo.Infrastructure.Communication.Templates;
 
 /// <summary>
-/// Builds the email content for password reset.
+/// Builds the email with the link that lets an account holder choose a new password.
 /// </summary>
 public static class PasswordResetEmail
 {
     /// <summary>
-    /// Creates a password reset email from the validated request.
+    /// Creates the email with the reset button, the minutes the link lasts and a note for whoever did not
+    /// ask for it.
     /// </summary>
-    /// <param name="toAddress">The to address value.</param>
-    /// <param name="toName">The to name value.</param>
-    /// <param name="resetUrl">The reset url value.</param>
-    /// <param name="siteUrl">The site url value.</param>
-    /// <param name="lifetime">The lifetime value.</param>
-    /// <returns>The resulting email message value.</returns>
+    /// <param name="toAddress">Address of the account holder.</param>
+    /// <param name="toName">Name the message greets.</param>
+    /// <param name="resetUrl">Link to the page that sets the new password.</param>
+    /// <param name="siteUrl">Public base URL of the site, linked from the footer.</param>
+    /// <param name="lifetime">Validity of the link, shown in whole minutes rounded up, at least one.</param>
+    /// <returns>The message, of kind <see cref="EmailKind.AccessRecovery"/>.</returns>
     public static EmailMessage Create(
         string toAddress,
         string toName,

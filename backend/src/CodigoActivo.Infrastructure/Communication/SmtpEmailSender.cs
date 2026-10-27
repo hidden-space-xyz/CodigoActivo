@@ -6,12 +6,13 @@ using MimeKit;
 namespace CodigoActivo.Infrastructure.Communication;
 
 /// <summary>
-/// Sends email through the configured smtp transport. Failures leave as exceptions: the outbox
-/// delivery worker decides whether they are retried and records them. A message with a one-click
-/// unsubscribe address carries the <c>List-Unsubscribe</c> and <c>List-Unsubscribe-Post</c>
-/// headers of RFC 8058, which the DKIM signature of the relay must cover.
+/// Sends email straight to the configured SMTP server, over a connection of its own for every message.
+/// Failures leave as exceptions: the outbox delivery worker decides whether they are retried and
+/// records them. A message with a one-click unsubscribe address carries the <c>List-Unsubscribe</c>
+/// and <c>List-Unsubscribe-Post</c> headers of RFC 8058, which the DKIM signature of the relay must
+/// cover.
 /// </summary>
-/// <param name="options">Configuration values used by the component.</param>
+/// <param name="options">SMTP server, encryption, credentials and sender of every message.</param>
 public sealed class SmtpEmailSender(SmtpOptions options) : IEmailTransport
 {
     private const string OneClickUnsubscribePost = "List-Unsubscribe=One-Click";
@@ -19,11 +20,20 @@ public sealed class SmtpEmailSender(SmtpOptions options) : IEmailTransport
     private static readonly string[] CompositeMediaTypes = ["message", "multipart"];
 
     /// <summary>
-    /// Sends the prepared smtp email sender message.
+    /// Connects, authenticates when <see cref="SmtpOptions.Username"/> is set, sends the message and
+    /// disconnects, without retrying. A content type that cannot be parsed, or that names a multipart
+    /// or message type, is sent as <c>application/octet-stream</c>.
     /// </summary>
     /// <param name="message">Email message to deliver.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// <see cref="SmtpOptions.Host"/> or <see cref="SmtpOptions.FromAddress"/> is empty.
+    /// </exception>
+    /// <exception cref="SmtpCommandException">
+    /// The server rejected the message; the exception keeps the error and status codes but not the
+    /// reply of the server, which may quote the recipient.
+    /// </exception>
     public async Task SendAsync(EmailMessage message, CancellationToken ct = default)
     {
         EnsureConfigured();

@@ -5,21 +5,26 @@ using CodigoActivo.Application.Common.Localization;
 namespace CodigoActivo.Infrastructure.Communication.Templates;
 
 /// <summary>
-/// Builds the email content for activity signup decision.
+/// Builds the email that tells a participant, or their guardian, how an activity signup was decided.
 /// </summary>
 public static class ActivitySignupDecisionEmail
 {
     /// <summary>
-    /// Builds the email sent when an activity signup is confirmed.
+    /// Builds the email sent when an activity signup is confirmed: the details with the role, a reminder
+    /// to cancel the signup when the participant cannot attend and a button to the event page. The
+    /// subject names the activity.
     /// </summary>
-    /// <param name="toAddress">The to address value.</param>
-    /// <param name="toName">The to name value.</param>
-    /// <param name="participantName">The participant name value.</param>
-    /// <param name="roleName">The role name value.</param>
-    /// <param name="details">The details value.</param>
+    /// <param name="toAddress">Address of the participant or guardian.</param>
+    /// <param name="toName">Name the message greets.</param>
+    /// <param name="participantName">
+    /// Name of the dependent the signup is for, when writing to a guardian; null or blank when the signup
+    /// is the recipient's own.
+    /// </param>
+    /// <param name="roleName">Role the participant was confirmed in; null or blank leaves the row out.</param>
+    /// <param name="details">Activity the signup is for.</param>
     /// <param name="timeZone">Time zone used to calculate local dates.</param>
-    /// <param name="siteUrl">The site url value.</param>
-    /// <returns>The resulting email message value.</returns>
+    /// <param name="siteUrl">Public base URL of the site, linked from the footer.</param>
+    /// <returns>The message, of kind <see cref="EmailKind.ActivityNotification"/>.</returns>
     public static EmailMessage Confirmed(
         string toAddress,
         string toName,
@@ -53,16 +58,20 @@ public static class ActivitySignupDecisionEmail
     }
 
     /// <summary>
-    /// Builds the email sent when an activity signup is denied.
+    /// Builds the email sent when an activity signup is denied: the details without a role and a button
+    /// to the events list. The subject names the activity.
     /// </summary>
-    /// <param name="toAddress">The to address value.</param>
-    /// <param name="toName">The to name value.</param>
-    /// <param name="participantName">The participant name value.</param>
-    /// <param name="details">The details value.</param>
+    /// <param name="toAddress">Address of the participant or guardian.</param>
+    /// <param name="toName">Name the message greets.</param>
+    /// <param name="participantName">
+    /// Name of the dependent the signup is for, when writing to a guardian; null or blank when the signup
+    /// is the recipient's own.
+    /// </param>
+    /// <param name="details">Activity the signup is for.</param>
     /// <param name="timeZone">Time zone used to calculate local dates.</param>
-    /// <param name="siteUrl">The site url value.</param>
+    /// <param name="siteUrl">Public base URL of the site, linked from the footer.</param>
     /// <param name="eventsUrl">Events list where the recipient can look for another one.</param>
-    /// <returns>The resulting email message value.</returns>
+    /// <returns>The message, of kind <see cref="EmailKind.ActivityNotification"/>.</returns>
     public static EmailMessage Denied(
         string toAddress,
         string toName,

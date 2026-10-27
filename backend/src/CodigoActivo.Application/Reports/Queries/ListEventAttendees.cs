@@ -20,7 +20,8 @@ public sealed record ListEventAttendeesQuery(EventId EventId, EventAttendeeListQ
     : IQuery<Result<PagedResult<EventAttendeeResponse>>>;
 
 /// <summary>
-/// Executes the query to list event attendees.
+/// Executes the query to list the people signed up to the activities of an event, each with the
+/// signups that match the criteria and their guardian's contact details.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -43,7 +44,11 @@ public sealed class ListEventAttendeesQueryHandler(IReadStore readStore, IQueryE
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a paged event attendee on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the requested page of attendees, by first name unless the sort
+    /// names <c>lastName</c>, <c>email</c>, <c>phone</c>, <c>birthDate</c>, <c>type</c> or
+    /// <c>createdAt</c>; or <see cref="ApplicationErrorCode.EventNotFound"/>.
+    /// </returns>
     public async Task<Result<PagedResult<EventAttendeeResponse>>> HandleAsync(
         ListEventAttendeesQuery query,
         CancellationToken ct = default

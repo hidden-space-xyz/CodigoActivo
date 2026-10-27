@@ -50,7 +50,10 @@ public record OpenBlockedDataConsultationRequest(
 /// Request to look accounts up in a consultation of the blocked data. The text travels in the
 /// body, never in the address, since it is personal data.
 /// </summary>
-/// <param name="Query">Identifier, email, DNI/NIE, phone number or part of the name.</param>
+/// <param name="Query">
+/// Identifier, email, DNI/NIE, phone number or part of the name, at least
+/// <see cref="SearchBlockedDataCommand.MinQueryLength"/> characters.
+/// </param>
 public record SearchBlockedDataRequest(
     [Required]
     [MinLength(SearchBlockedDataCommand.MinQueryLength)]
@@ -75,7 +78,9 @@ public record SearchBlockedDataRequest(
 /// <param name="AccountId">Identifier of an account a search of the consultation found.</param>
 /// <param name="From">First day covered, or <see langword="null"/> for no limit.</param>
 /// <param name="To">Last day covered, or <see langword="null"/> for no limit.</param>
-/// <param name="Entities">Kinds of data covered; empty for every kind.</param>
+/// <param name="Entities">
+/// Kinds of data covered, each one the data history knows; null or empty for every kind.
+/// </param>
 public record ExportBlockedDataRequest(
     [Required] Guid AccountId,
     DateOnly? From,

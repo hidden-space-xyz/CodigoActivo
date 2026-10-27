@@ -1,12 +1,14 @@
 namespace CodigoActivo.Application.Files;
 
 /// <summary>
-/// Represents a file content value used by the application.
+/// Stored content of one variant of a file, ready to be served.
 /// </summary>
-/// <param name="Content">Content stream to store or inspect.</param>
-/// <param name="ContentType">The content type value.</param>
-/// <param name="FileName">The file name value.</param>
-/// <param name="UploadedAt">The uploaded at value.</param>
+/// <param name="Content">Stream open on the stored content.</param>
+/// <param name="ContentType">
+/// Media type of the stored format, or <c>application/octet-stream</c> for an unknown extension.
+/// </param>
+/// <param name="FileName">Sanitized name the file was uploaded with.</param>
+/// <param name="UploadedAt">UTC timestamp of the upload.</param>
 public sealed record FileContent(
     Stream Content,
     string ContentType,

@@ -19,8 +19,9 @@ public sealed record ChangeAssignmentStatusCommand(
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to change the status of a person signed up to an activity. The person
-/// is told about a decision once the change is committed.
+/// Executes the command to change the status of a person signed up to an activity. When the status
+/// changes to confirmed or denied, the person, or their guardian, is emailed the decision once the
+/// change is committed.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
 public sealed class ChangeAssignmentStatusCommandHandler(IActivityRepository activities)
@@ -31,7 +32,11 @@ public sealed class ChangeAssignmentStatusCommandHandler(IActivityRepository act
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result reports success, or
+    /// <see cref="DomainErrorCode.ActivityAssignmentNotFound"/> when the activity or the signup is
+    /// missing.
+    /// </returns>
     public async Task<Result> HandleAsync(
         ChangeAssignmentStatusCommand command,
         CancellationToken ct = default

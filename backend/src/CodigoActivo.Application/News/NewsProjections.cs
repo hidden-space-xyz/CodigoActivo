@@ -10,7 +10,7 @@ namespace CodigoActivo.Application.News;
 public static class NewsProjections
 {
     /// <summary>
-    /// Stores the shared news item value.
+    /// Projects a news item with its body.
     /// </summary>
     public static readonly Expression<Func<NewsItemRow, NewsItemResponse>> NewsItem =
         newsItem => new NewsItemResponse
@@ -26,7 +26,7 @@ public static class NewsProjections
         };
 
     /// <summary>
-    /// Stores the shared news list item value.
+    /// Projects a news item to a list item, without its body.
     /// </summary>
     public static readonly Expression<Func<NewsItemRow, NewsListItemResponse>> NewsListItem =
         newsItem => new NewsListItemResponse

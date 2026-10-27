@@ -16,7 +16,7 @@ public enum Gender
     Female = 2,
 
     /// <summary>
-    /// The value does not match the predefined options.
+    /// The user identifies with none of the other options.
     /// </summary>
     Other = 3,
 

@@ -12,7 +12,12 @@ using Microsoft.Extensions.Logging;
 namespace CodigoActivo.Application.Accounts.SecondFactor;
 
 /// <summary>
-/// Generates, emails and stores the one-time codes of email-based second-factor challenges.
+/// Generates, emails and stores the six-digit one-time codes of email-based second-factor
+/// challenges. Every issue first applies <see cref="User.MayReceiveLoginCode"/> and stages the hash
+/// only once the email was queued; a message the email limiter or the full outbox refuses answers
+/// <see cref="ApplicationErrorCode.TwoFactorResendCooldownActive"/> and any other sending failure
+/// <see cref="ApplicationErrorCode.EmailSendFailed"/>. The resend cooldown is not checked when
+/// issuing: callers check it first, through <see cref="RefusalOf"/> or the age of the stored code.
 /// </summary>
 /// <param name="codeHasher">Hasher used so the code is never stored in plaintext.</param>
 /// <param name="options">Second-factor configuration.</param>

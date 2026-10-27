@@ -15,9 +15,10 @@ using Xunit;
 namespace CodigoActivo.IntegrationTests.Infrastructure;
 
 /// <summary>
-/// Starts one PostgreSQL server for the whole run and migrates its database once. That database is
-/// the template every test class copies into a database of its own, so the classes run in
-/// parallel without seeing each other's rows.
+/// Starts one PostgreSQL server for the whole run, or uses the database that
+/// <c>CODIGOACTIVO_TEST_DB_CONNECTION</c> names, and migrates that database once. It is the
+/// template every test class copies into a database of its own, so the classes run in parallel
+/// without seeing each other's rows.
 /// </summary>
 public sealed class PostgresServerFixture : IAsyncLifetime
 {

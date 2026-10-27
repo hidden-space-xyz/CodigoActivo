@@ -83,18 +83,20 @@ export const accountMutations = {
       mutationFn: (childId: string) => deleteAccountChildRequest(childId),
       meta: { invalidates: [accountKeys.children()] },
     }),
+  /** Checks the password and emails the code that confirms deleting the own account. */
   requestDeletionCode: () =>
     mutationOptions({
       mutationFn: (currentPassword: string) => requestAccountDeletionCodeRequest(currentPassword),
     }),
+  /** Deletes the own account and the minors in its care; the API also ends the session. */
   deleteAccount: () =>
     mutationOptions({
       mutationFn: (input: DeleteAccountInput) => deleteAccountRequest(input),
     }),
   /**
-   * Fetches the copy of the signed-in user's personal data as a JSON file labelled with `t` that
-   * links the privacy policy at `privacyPolicyUrl`. It runs on demand and is never cached, so the
-   * copy does not linger in the query cache.
+   * Fetches the copy of the personal data of the signed-in user and the minors in their care as a
+   * JSON file labelled with `t` that links the privacy policy at `privacyPolicyUrl`. It runs on
+   * demand and is never cached, so the copy does not linger in the query cache.
    */
   personalData: (privacyPolicyUrl: string, t: Translate) =>
     mutationOptions({
@@ -126,6 +128,7 @@ export const accountMutations = {
     mutationOptions({
       mutationFn: (email: string) => resendVerificationRequest(email),
     }),
+  /** Moves the account to its new email with the code from the link; it needs no session. */
   confirmEmailChange: () =>
     mutationOptions({
       mutationFn: ({ userId, code }: { userId: string; code: string }) =>

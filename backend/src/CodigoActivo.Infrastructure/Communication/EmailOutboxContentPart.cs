@@ -6,12 +6,13 @@ namespace CodigoActivo.Infrastructure.Communication;
 public enum EmailPartDisposition
 {
     /// <summary>
-    /// Selects the attachment option.
+    /// Sent as an attachment of the email.
     /// </summary>
     Attachment,
 
     /// <summary>
-    /// Selects the inline image option.
+    /// Sent as an inline image the HTML body references through
+    /// <see cref="EmailOutboxContentPart.InlineContentId"/>.
     /// </summary>
     Inline,
 }
@@ -44,17 +45,19 @@ public class EmailOutboxContentPart
     public EmailPartDisposition Disposition { get; set; }
 
     /// <summary>
-    /// Gets or sets the file name value.
+    /// Gets or sets the file name the part is sent with.
     /// </summary>
     public string FileName { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the content type value.
+    /// Gets or sets the MIME type the part is sent with; one that cannot be parsed or that names a
+    /// multipart or message type is sent as <c>application/octet-stream</c>.
     /// </summary>
     public string ContentType { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the identifier an inline image is referenced by from the HTML body.
+    /// Gets or sets the identifier an inline image is referenced by from the HTML body;
+    /// <see langword="null"/> for an attachment.
     /// </summary>
     public string? InlineContentId { get; set; }
 
@@ -64,7 +67,8 @@ public class EmailOutboxContentPart
     public byte[] Payload { get; set; } = [];
 
     /// <summary>
-    /// Gets or sets the position the part keeps among the parts of its content.
+    /// Gets or sets the position the part keeps among the parts of its content: inline images first,
+    /// then attachments, each in the order of the batch.
     /// </summary>
     public int DisplayOrder { get; set; }
 }

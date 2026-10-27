@@ -14,7 +14,7 @@ namespace CodigoActivo.Application.Emails.Commands;
 /// <param name="UserId">Identifier of the user.</param>
 /// <param name="Content">Subject and body of the email.</param>
 /// <param name="Purpose">What the email is written for, which decides whether it may reach the user.</param>
-/// <param name="Attachments">The attachments value.</param>
+/// <param name="Attachments">Files attached to the message.</param>
 public sealed record SendEmailToUserCommand(
     UserId UserId,
     ManualEmailText Content,
@@ -23,11 +23,11 @@ public sealed record SendEmailToUserCommand(
 ) : ICommand<Result<EmailDispatch>>;
 
 /// <summary>
-/// Executes the command to send email to user.
+/// Executes the command to email one user.
 /// </summary>
 /// <param name="readStore">Read side used to resolve the recipients.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-/// <param name="dispatcher">The dispatcher value.</param>
+/// <param name="dispatcher">Dispatcher that validates and queues the email.</param>
 public sealed class SendEmailToUserCommandHandler(
     IReadStore readStore,
     IQueryExecutor executor,
@@ -40,7 +40,13 @@ public sealed class SendEmailToUserCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the dispatch counts, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the dispatch counts; <see cref="ApplicationErrorCode.UserNotFound"/>,
+    /// <see cref="ApplicationErrorCode.EmailRecipientWithoutAddress"/>,
+    /// <see cref="ApplicationErrorCode.EmailRecipientNotVerified"/>,
+    /// <see cref="ApplicationErrorCode.EmailRecipientWithoutConsent"/>, or an error of
+    /// <see cref="ManualEmailDispatcher.DispatchAsync"/>.
+    /// </returns>
     public async Task<Result<EmailDispatch>> HandleAsync(
         SendEmailToUserCommand command,
         CancellationToken ct = default

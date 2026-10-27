@@ -23,10 +23,11 @@ function isChallengeExpired(error: unknown): boolean {
 /**
  * Second step of the login. Loads the pending challenge from the API (the browser holds it in a
  * cookie, so a reload survives), verifies the typed code and then stores the user in the session
- * and navigates to the `redirect` query parameter or home; whether the session survives closing the
- * browser was already chosen at the password step. Emailed codes can be resent after a 60-second
- * cooldown, which also runs when the page opens because a code was just sent. An expired challenge
- * sends the user back to the login page.
+ * and navigates to the local `redirect` query parameter or home; whether the session survives
+ * closing the browser was already chosen at the password step. Emailed codes can be resent after
+ * the `RESEND_COOLDOWN_SECONDS` cooldown, which also runs when the page opens because a code was
+ * just sent. A missing or expired challenge only sets `expired`; `loginRoute` leads back to the
+ * login page keeping `redirect`.
  */
 export function useTwoFactorLogin() {
   const { t } = useI18n()

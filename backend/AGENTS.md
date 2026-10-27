@@ -2,8 +2,9 @@
 
 These are the backend conventions. Commands, including migrations and coverage, are in
 [CONTRIBUTING.md](../CONTRIBUTING.md#commands); the design is in [ARCHITECTURE.md](../ARCHITECTURE.md#backend).
-The architecture tests in `tests/CodigoActivo.ArchitectureTests/`, the build's analyzers and the CI's CSharpier
-check enforce further conventions that this file leaves out; each failure names the rule it guards.
+The architecture tests in `tests/CodigoActivo.ArchitectureTests/` and the build's analyzers enforce further
+conventions that this file leaves out; each failure names the rule it guards. Format C# with the CSharpier tool
+pinned in `dotnet-tools.json`; no build or CI step checks it.
 
 ## Rules
 
@@ -35,7 +36,7 @@ check enforce further conventions that this file leaves out; each failure names 
   response.
 - Take the signed-in user from `ICurrentUser`, never from the command or query, and check `ActingUserPolicy` in
   every use case that acts on behalf of another person; HTTP attributes are only a first gate.
-- Delete users only through `AccountEraser`, and events, activities and signups only through
+- Delete users only through `AccountEraser`, and events, activities, ratings and signups only through
   `ParticipationEraser`. A new entity declares `HasHistory()` or `HasNoHistory()`; a historized one changes only
   through the change tracker (no `ExecuteUpdate`/`ExecuteDelete`, no raw SQL writes), its historized dependents
   use `ClientCascade` and the eraser loads them, and a new secret column is `ExcludedFromHistory()`.
@@ -47,8 +48,7 @@ check enforce further conventions that this file leaves out; each failure names 
   until their retention ends, so the table keeps no data history and is not handed over.
 - Expected failures return `Result`/`Result<T>` with a `DomainErrorCode` or an `ApplicationErrorCode`. Do not
   throw for business outcomes.
-- Put `*Request` records in `API/<Feature>/Contracts/`; shared binding primitives live in
-  `Application/Common/Querying`. Mapping is handwritten.
+- Shared binding primitives live in `Application/Common/Querying`. Mapping is handwritten.
 - PostgreSQL identifiers are snake_case; remember this in raw SQL.
 - User-facing backend text belongs in `Application/Common/Localization/AppStrings.resx` through
   `AppStrings`. Diagnostics, log templates, exception messages and seeded content are not UI strings.
@@ -59,14 +59,15 @@ check enforce further conventions that this file leaves out; each failure names 
   [SECURITY.md](../SECURITY.md#logging).
 - Handlers and listeners need no registration. Register other services and options in the registration under
   `CodigoActivo.Composition/` that covers their feature (`Events/` also covers activities, event categories,
-  ratings and terms; `Content/` covers news, partners, resources and files). Read deployment settings through
-  `Settings` and `AddValidatedOptions` so an unusable value stops the start instead of falling back; register
-  options whose values are fixed in code with `AddFixedOptions`, which no setting can reach (`FixedOptionsTests`).
+  ratings and terms; `Content/` covers news, partners, resources, files and reports). Read deployment settings
+  through `Settings` and `AddValidatedOptions` so an unusable value stops the start instead of falling back;
+  register options whose values are fixed in code with `AddFixedOptions`, which no setting can reach
+  (`FixedOptionsTests`).
 
 ## Tests
 
 - Unit tests use xUnit v3, AwesomeAssertions and NSubstitute. Test methods use three PascalCase segments, such as
-  `RegisterAsyncNewAdultReturnsCreatedAndSendsOtp`.
+  `ToOkFailureResultReturnsProblem`.
 - A rule about the shape or the dependencies of production code goes in `CodigoActivo.ArchitectureTests`, read
   from the compiled assemblies (`ProductionAssemblies`, `IlReferences`) or the sources (`BackendSources`). Its
   reviewed lists name every accepted exception: extend one only after reviewing the new case.

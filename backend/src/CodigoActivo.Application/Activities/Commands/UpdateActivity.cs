@@ -18,11 +18,12 @@ public sealed record UpdateActivityCommand(ActivityId ActivityId, ActivityDraft 
     : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to update the activity.
+/// Executes the command to update the activity, keeping its signups. A replaced thumbnail is
+/// removed after the commit when nothing else uses it.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
-/// <param name="validator">The validator value.</param>
-/// <param name="currentUser">Person the use case runs for.</param>
+/// <param name="validator">Validator of the event, schedule, thumbnail and role capacities.</param>
+/// <param name="currentUser">Person the use case runs for, recorded as the editor.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work whose transaction validates and saves the activity.</param>
 public sealed class UpdateActivityCommandHandler(
@@ -38,7 +39,12 @@ public sealed class UpdateActivityCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result reports success; <see cref="ApplicationErrorCode.ActivityNotFound"/>,
+    /// <see cref="ApplicationErrorCode.EventNotFound"/> or
+    /// <see cref="ApplicationErrorCode.ActivityThumbnailNotFound"/> when one is missing, or the
+    /// domain error of an invalid schedule or role capacity plan.
+    /// </returns>
     public async Task<Result> HandleAsync(
         UpdateActivityCommand command,
         CancellationToken ct = default

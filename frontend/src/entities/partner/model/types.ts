@@ -3,6 +3,7 @@ export interface Partner {
   readonly id: string
   readonly name: string
   readonly fromDate: string
+  /** Rank from 0; the home page sponsors show lower tiers first. */
   readonly tier: number
   readonly website: string | null
   readonly thumbnailId: string

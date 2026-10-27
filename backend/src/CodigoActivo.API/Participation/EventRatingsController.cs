@@ -24,13 +24,13 @@ namespace CodigoActivo.API.Participation;
 public class EventRatingsController : ApiControllerBase
 {
     /// <summary>
-    /// Executes the ratings endpoint for events.
+    /// Lists the ratings of an event without identifying their authors.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a paged event rating list item, or an error response.</returns>
+    /// <returns>An HTTP response containing a page of ratings, or an error response.</returns>
     [HttpGet("{eventId:guid}/ratings")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<PagedResult<EventRatingListItemResponse>>> RatingsAsync(
@@ -50,14 +50,15 @@ public class EventRatingsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the save rating endpoint for events. The first call stores the signed-in account's
-    /// rating of the event and later ones replace it.
+    /// Saves the signed-in account's rating of the event: the first call stores it and later ones
+    /// replace it. Only an event that has ended and in which someone of the household had a
+    /// confirmed signup can be rated.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPut("{eventId:guid}/rating")]
     [Authorize]
     public async Task<IActionResult> SaveRatingAsync(
@@ -71,13 +72,12 @@ public class EventRatingsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the delete rating endpoint for events: removes the signed-in account's rating of
-    /// the event.
+    /// Removes the signed-in account's rating of the event.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpDelete("{eventId:guid}/rating")]
     [Authorize]
     public async Task<IActionResult> DeleteRatingAsync(

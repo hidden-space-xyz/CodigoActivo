@@ -7,112 +7,113 @@ namespace CodigoActivo.API.Errors;
 public enum ErrorCode
 {
     /// <summary>
-    /// Selects the news item not found option.
+    /// No news item has the requested identifier.
     /// </summary>
     NewsItemNotFound,
 
     /// <summary>
-    /// Selects the news item thumbnail not found option.
+    /// The thumbnail file chosen for a news item does not exist.
     /// </summary>
     NewsItemThumbnailNotFound,
 
     /// <summary>
-    /// Selects the activity not found option.
+    /// No activity has the requested identifier.
     /// </summary>
     ActivityNotFound,
 
     /// <summary>
-    /// Selects the activity signup closed option.
+    /// The signup window of the event is closed.
     /// </summary>
     ActivitySignupClosed,
 
     /// <summary>
-    /// Selects the activity signup early only option.
+    /// Only early signup is open and someone signing up is not entitled to it.
     /// </summary>
     ActivitySignupEarlyOnly,
 
     /// <summary>
-    /// Selects the activity already started option.
+    /// The activity has already started, so nobody can sign up for it or withdraw from it.
     /// </summary>
     ActivityAlreadyStarted,
 
     /// <summary>
-    /// Selects the activity role not allowed option.
+    /// The type of the person does not allow the role asked for.
     /// </summary>
     ActivityRoleNotAllowed,
 
     /// <summary>
-    /// Selects the activity assignment already exists option.
+    /// The person is already signed up to the activity.
     /// </summary>
     ActivityAssignmentAlreadyExists,
 
     /// <summary>
-    /// Selects the activity household assignments required option.
+    /// A household signup listed no member.
     /// </summary>
     ActivityHouseholdAssignmentsRequired,
 
     /// <summary>
-    /// Selects the activity household member not allowed option.
+    /// A member of a household signup does not exist or is outside the household of the signed-in
+    /// user.
     /// </summary>
     ActivityHouseholdMemberNotAllowed,
 
     /// <summary>
-    /// Selects the activity assignment not found option.
+    /// The person is not signed up to the activity.
     /// </summary>
     ActivityAssignmentNotFound,
 
     /// <summary>
-    /// Selects the activity schedule required option.
+    /// The start or the end of an activity is missing.
     /// </summary>
     ActivityScheduleRequired,
 
     /// <summary>
-    /// Selects the activity schedule invalid range option.
+    /// An activity does not end after it starts.
     /// </summary>
     ActivityScheduleInvalidRange,
 
     /// <summary>
-    /// Selects the activity schedule outside event range option.
+    /// An activity falls outside the days of its event.
     /// </summary>
     ActivityScheduleOutsideEventRange,
 
     /// <summary>
-    /// Selects the activity thumbnail not found option.
+    /// The thumbnail file chosen for an activity does not exist.
     /// </summary>
     ActivityThumbnailNotFound,
 
     /// <summary>
-    /// Selects the activity role capacity duplicated option.
+    /// A role appears more than once among the capacities of an activity.
     /// </summary>
     ActivityRoleCapacityDuplicated,
 
     /// <summary>
-    /// Selects the event not found option.
+    /// No event has the requested identifier.
     /// </summary>
     EventNotFound,
 
     /// <summary>
-    /// Selects the event activities outside new range option.
+    /// The new days of an event would leave one of its activities outside them.
     /// </summary>
     EventActivitiesOutsideNewRange,
 
     /// <summary>
-    /// Selects the event category type not found option.
+    /// No event category type has the requested identifier.
     /// </summary>
     EventCategoryTypeNotFound,
 
     /// <summary>
-    /// Selects the event category type name already exists option.
+    /// Another event category type already has that name.
     /// </summary>
     EventCategoryTypeNameAlreadyExists,
 
     /// <summary>
-    /// Selects the event category type only category of event option.
+    /// The category is the only one of an event, which must keep at least one.
     /// </summary>
     EventCategoryTypeOnlyCategoryOfEvent,
 
     /// <summary>
-    /// Selects the event thumbnail not found option.
+    /// The thumbnail file chosen for an event does not exist.
     /// </summary>
     EventThumbnailNotFound,
 
@@ -122,42 +123,43 @@ public enum ErrorCode
     RichTextFileNotFound,
 
     /// <summary>
-    /// Selects the event categories required option.
+    /// An event was saved without any category.
     /// </summary>
     EventCategoriesRequired,
 
     /// <summary>
-    /// Selects the event schedule required option.
+    /// A date of an event other than the early signup is missing.
     /// </summary>
     EventScheduleRequired,
 
     /// <summary>
-    /// Selects the event schedule invalid range option.
+    /// An event ends before it starts, or its signup does not close after it opens or opens after
+    /// the last day of the event.
     /// </summary>
     EventScheduleInvalidRange,
 
     /// <summary>
-    /// Selects the event early signup not before signup option.
+    /// The early signup of an event does not open before the regular one.
     /// </summary>
     EventEarlySignupNotBeforeSignup,
 
     /// <summary>
-    /// Selects the event signup ends after event option.
+    /// The signup of an event closes after the last day of the event.
     /// </summary>
     EventSignupEndsAfterEvent,
 
     /// <summary>
-    /// Selects the event rating not finished option.
+    /// An event was rated before it ended.
     /// </summary>
     EventRatingNotFinished,
 
     /// <summary>
-    /// Selects the event rating attendance required option.
+    /// An event was rated by someone with no confirmed signup in their household.
     /// </summary>
     EventRatingAttendanceRequired,
 
     /// <summary>
-    /// Selects the event rating empty option.
+    /// A rating carries neither a score nor any answer.
     /// </summary>
     EventRatingEmpty,
 
@@ -167,7 +169,7 @@ public enum ErrorCode
     EventRatingNotFound,
 
     /// <summary>
-    /// Selects the event terms acceptance required option.
+    /// A signup left a required terms document of the event unaccepted.
     /// </summary>
     EventTermsAcceptanceRequired,
 
@@ -187,7 +189,7 @@ public enum ErrorCode
     EventTermsDecisionNotFound,
 
     /// <summary>
-    /// Selects the event terms document duplicated option.
+    /// An event links the same terms document twice.
     /// </summary>
     EventTermsDocumentDuplicated,
 
@@ -213,7 +215,7 @@ public enum ErrorCode
     EventTermsDocumentChanged,
 
     /// <summary>
-    /// Selects the terms document not found option.
+    /// No terms document has the requested identifier.
     /// </summary>
     TermsDocumentNotFound,
 
@@ -223,12 +225,12 @@ public enum ErrorCode
     DiagnosticLogEntryNotFound,
 
     /// <summary>
-    /// Selects the terms document name already exists option.
+    /// Another terms document already has that name.
     /// </summary>
     TermsDocumentNameAlreadyExists,
 
     /// <summary>
-    /// Selects the terms document in use option.
+    /// A terms document cannot be deleted while an event links it or anyone decided on it.
     /// </summary>
     TermsDocumentInUse,
 
@@ -259,82 +261,82 @@ public enum ErrorCode
     LegalPolicyPublishedConcurrently,
 
     /// <summary>
-    /// Selects the resource not found option.
+    /// No resource has the requested identifier.
     /// </summary>
     ResourceNotFound,
 
     /// <summary>
-    /// Selects the resource thumbnail not found option.
+    /// The thumbnail file chosen for a resource does not exist.
     /// </summary>
     ResourceThumbnailNotFound,
 
     /// <summary>
-    /// Selects the resource description required option.
+    /// A resource hosted on the site has an empty body.
     /// </summary>
     ResourceDescriptionRequired,
 
     /// <summary>
-    /// Selects the resource description not allowed option.
+    /// An external resource has a body; it only links elsewhere.
     /// </summary>
     ResourceDescriptionNotAllowed,
 
     /// <summary>
-    /// Selects the resource url required option.
+    /// An external resource has no link.
     /// </summary>
     ResourceUrlRequired,
 
     /// <summary>
-    /// Selects the resource url not allowed option.
+    /// A resource hosted on the site has a link.
     /// </summary>
     ResourceUrlNotAllowed,
 
     /// <summary>
-    /// Selects the partner not found option.
+    /// No partner has the requested identifier.
     /// </summary>
     PartnerNotFound,
 
     /// <summary>
-    /// Selects the partner thumbnail not found option.
+    /// The thumbnail file chosen for a partner does not exist.
     /// </summary>
     PartnerThumbnailNotFound,
 
     /// <summary>
-    /// Selects the file not found option.
+    /// No file has the requested identifier.
     /// </summary>
     FileNotFound,
 
     /// <summary>
-    /// Selects the file in use option.
+    /// A file cannot be deleted while any content references it.
     /// </summary>
     FileInUse,
 
     /// <summary>
-    /// Selects the file content missing from storage option.
+    /// The file is known but its stored content is missing.
     /// </summary>
     FileContentMissingFromStorage,
 
     /// <summary>
-    /// Selects the file upload missing option.
+    /// An upload carries no file.
     /// </summary>
     FileUploadMissing,
 
     /// <summary>
-    /// Selects the file upload empty option.
+    /// An uploaded file is empty.
     /// </summary>
     FileUploadEmpty,
 
     /// <summary>
-    /// Selects the file upload too large option.
+    /// An uploaded file is larger than the upload limit.
     /// </summary>
     FileUploadTooLarge,
 
     /// <summary>
-    /// Selects the file upload stream not seekable option.
+    /// The content of an upload cannot be read more than once.
     /// </summary>
     FileUploadStreamNotSeekable,
 
     /// <summary>
-    /// Selects the file upload unsupported format option.
+    /// An uploaded file is not a JPEG, PNG or WebP image.
     /// </summary>
     FileUploadUnsupportedFormat,
 
@@ -349,227 +351,228 @@ public enum ErrorCode
     FileUploadInvalidImage,
 
     /// <summary>
-    /// Selects the user not found option.
+    /// No account has the requested identifier.
     /// </summary>
     UserNotFound,
 
     /// <summary>
-    /// Selects the user self delete requires verification option.
+    /// A user tried to delete their own account through the endpoint for others; their own
+    /// deletion asks for their password and second factor.
     /// </summary>
     UserSelfDeleteRequiresVerification,
 
     /// <summary>
-    /// Selects the option for a user who grants or revokes their own administrator rights.
+    /// A user tried to grant or revoke their own administrator rights.
     /// </summary>
     UserSelfAdminChangeForbidden,
 
     /// <summary>
-    /// Selects the option for a user who changes their own membership type.
+    /// A user tried to change their own membership type.
     /// </summary>
     UserSelfTypeChangeForbidden,
 
     /// <summary>
-    /// Selects the user delete initial admin forbidden option.
+    /// The initial administrator can never be deleted.
     /// </summary>
     UserDeleteInitialAdminForbidden,
 
     /// <summary>
-    /// Selects the user cannot remove initial admin option.
+    /// The initial administrator can never lose its administrator rights.
     /// </summary>
     UserCannotRemoveInitialAdmin,
 
     /// <summary>
-    /// Selects the option for administrator rights given to a dependent.
+    /// Administrator rights were given to a dependent.
     /// </summary>
     UserDependentCannotBeAdmin,
 
     /// <summary>
-    /// Selects the option for administrator rights given to an account whose email is unconfirmed.
+    /// Administrator rights were given to an account whose email is unconfirmed.
     /// </summary>
     UserPendingVerificationCannotBeAdmin,
 
     /// <summary>
-    /// Selects the parent user not found option.
+    /// The guardian a dependent is added to does not exist.
     /// </summary>
     ParentUserNotFound,
 
     /// <summary>
-    /// Selects the option for a parent that is itself a dependent.
+    /// The guardian of a dependent is itself a dependent.
     /// </summary>
     UserParentIsMinor,
 
     /// <summary>
-    /// Selects the option for a dependent created, when registering or later, or given a new birth
-    /// date that does not make it a minor.
+    /// A dependent was created, when registering or later, or given a new birth date that does not
+    /// make it a minor.
     /// </summary>
     UserChildBirthDateNotMinor,
 
     /// <summary>
-    /// Selects the user password not set option.
+    /// The password of an account without one was to be changed.
     /// </summary>
     UserPasswordNotSet,
 
     /// <summary>
-    /// Selects the user current password incorrect option.
+    /// The current password re-entered to authorize a change is wrong.
     /// </summary>
     UserCurrentPasswordIncorrect,
 
     /// <summary>
-    /// Selects the user new password same as current option.
+    /// A new password equals the current one.
     /// </summary>
     UserNewPasswordSameAsCurrent,
 
     /// <summary>
-    /// Selects the user parent reassignment forbidden option.
+    /// A dependent was to be moved to another guardian.
     /// </summary>
     UserParentReassignmentForbidden,
 
     /// <summary>
-    /// Selects the user child limit reached option.
+    /// The guardian already has the most dependents a household may hold.
     /// </summary>
     UserChildLimitReached,
 
     /// <summary>
-    /// Selects the user parent not allowed for adult option.
+    /// A guardian was given to an account that is not a dependent.
     /// </summary>
     UserParentNotAllowedForAdult,
 
     /// <summary>
-    /// Selects the option for a birth date given to an account that is not a dependent.
+    /// A birth date was given to an account that is not a dependent.
     /// </summary>
     UserBirthDateNotAllowedForAdult,
 
     /// <summary>
-    /// Selects the option for a dependent updated without a birth date.
+    /// A dependent was updated without a birth date.
     /// </summary>
     UserChildBirthDateRequired,
 
     /// <summary>
-    /// Selects the option for an independent account registered or updated without an email or a
-    /// phone, or asked for an emailed code while it has no email.
+    /// An independent account was registered or updated without an email or a phone, or asked for
+    /// an emailed code while it has no email.
     /// </summary>
     UserContactInfoRequired,
 
     /// <summary>
-    /// Selects the option for an independent account registered or updated without a DNI or NIE.
+    /// An independent account was registered or updated without a DNI or NIE.
     /// </summary>
     UserNationalIdRequired,
 
     /// <summary>
-    /// Selects the option for a registration whose holder did not declare being of age.
+    /// A registration whose holder did not declare being of age.
     /// </summary>
     UserAdultDeclarationRequired,
 
     /// <summary>
-    /// Selects the option for a dependent added by someone who did not declare being its parent or
-    /// legal guardian.
+    /// A dependent was added by someone who did not declare being its parent or legal guardian.
     /// </summary>
     UserGuardianshipDeclarationRequired,
 
     /// <summary>
-    /// Selects the option for an account registered or updated with an email another account
-    /// already uses.
+    /// An email change was confirmed for an address another account already owns.
     /// </summary>
     UserEmailAlreadyInUse,
 
     /// <summary>
-    /// Selects the option for a secondary phone equal to the main phone of the same account.
+    /// The secondary phone of an account equals its main phone.
     /// </summary>
     SecondaryPhoneSameAsPrimary,
 
     /// <summary>
-    /// Selects the user phone invalid option.
+    /// A phone number does not have the shape of a phone number.
     /// </summary>
     UserPhoneInvalid,
 
     /// <summary>
-    /// Selects the option for an email address whose domain is on the disposable email domain list,
-    /// refused when registering or changing an account email.
+    /// An email address whose domain is on the disposable email domain list, refused when
+    /// registering or changing an account email.
     /// </summary>
     DisposableEmailNotAllowed,
 
     /// <summary>
-    /// Selects the invalid credentials option.
+    /// The password step of a login failed: unknown email, wrong password, or an account without a
+    /// password or locked by wrong passwords, all answered alike.
     /// </summary>
     InvalidCredentials,
 
     /// <summary>
-    /// Selects the user account blocked option.
+    /// The account is blocked and cannot sign in.
     /// </summary>
     UserAccountBlocked,
 
     /// <summary>
-    /// Selects the user account pending verification option.
+    /// The account has not verified its email yet and cannot sign in.
     /// </summary>
     UserAccountPendingVerification,
 
     /// <summary>
-    /// Selects the current user not found option.
+    /// The account a request has just verified or signed in no longer exists.
     /// </summary>
     CurrentUserNotFound,
 
     /// <summary>
-    /// Selects the otp invalid or expired option.
+    /// The code of an account verification or email change link is wrong or expired, or no such
+    /// verification or change waits.
     /// </summary>
     OtpInvalidOrExpired,
 
     /// <summary>
-    /// Selects the otp resend cooldown active option.
+    /// The email limit refused a new email change link; it can be asked for again later.
     /// </summary>
     OtpResendCooldownActive,
 
     /// <summary>
-    /// Selects the password reset invalid or expired option.
+    /// The code of a password reset link is wrong or expired.
     /// </summary>
     PasswordResetInvalidOrExpired,
 
     /// <summary>
-    /// Selects the two factor code invalid option.
+    /// A second-factor code is wrong; wrong codes count towards the lockout.
     /// </summary>
     TwoFactorCodeInvalid,
 
     /// <summary>
-    /// Selects the two factor locked option.
+    /// Too many wrong second-factor codes locked the second factor for a while.
     /// </summary>
     TwoFactorLocked,
 
     /// <summary>
-    /// Selects the two factor challenge expired option.
+    /// No second-factor challenge is open for the caller, or the one that was has expired.
     /// </summary>
     TwoFactorChallengeExpired,
 
     /// <summary>
-    /// Selects the two factor resend not allowed option.
+    /// The account does not use email as its second factor, so no code can be emailed to it.
     /// </summary>
     TwoFactorResendNotAllowed,
 
     /// <summary>
-    /// Selects the two factor resend cooldown active option.
+    /// A new emailed code was asked for within the resend cooldown or refused by the email limit.
     /// </summary>
     TwoFactorResendCooldownActive,
 
     /// <summary>
-    /// Selects the authenticator setup expired option.
+    /// No authenticator enrollment waits for confirmation, or the one that did has expired.
     /// </summary>
     AuthenticatorSetupExpired,
 
     /// <summary>
-    /// Selects the authenticator not enabled option.
+    /// The account does not use an authenticator application as its second factor.
     /// </summary>
     AuthenticatorNotEnabled,
 
     /// <summary>
-    /// Selects the authenticator already enabled option.
+    /// The account already uses an authenticator application as its second factor.
     /// </summary>
     AuthenticatorAlreadyEnabled,
 
     /// <summary>
-    /// Selects the email no recipients option.
+    /// A manual email would reach nobody.
     /// </summary>
     EmailNoRecipients,
 
     /// <summary>
-    /// Selects the email recipient without address option.
+    /// A manual email was written to an account without an email address.
     /// </summary>
     EmailRecipientWithoutAddress,
 
@@ -589,47 +592,48 @@ public enum ErrorCode
     EmailUnsubscribeLinkInvalid,
 
     /// <summary>
-    /// Selects the email too many recipients option.
+    /// A manual email would reach more recipients than one dispatch allows.
     /// </summary>
     EmailTooManyRecipients,
 
     /// <summary>
-    /// Selects the email too many attachments option.
+    /// A manual email carries more attachments than allowed.
     /// </summary>
     EmailTooManyAttachments,
 
     /// <summary>
-    /// Selects the email attachment empty option.
+    /// An attachment of a manual email is empty.
     /// </summary>
     EmailAttachmentEmpty,
 
     /// <summary>
-    /// Selects the email attachments too large option.
+    /// The attachments of a manual email are larger in total than allowed.
     /// </summary>
     EmailAttachmentsTooLarge,
 
     /// <summary>
-    /// Selects the email send failed option.
+    /// An email could not be queued for delivery, for instance because the outbox is full.
     /// </summary>
     EmailSendFailed,
 
     /// <summary>
-    /// Selects the authentication required option.
+    /// The endpoint needs a signed-in user and the request has no valid session.
     /// </summary>
     AuthenticationRequired,
 
     /// <summary>
-    /// Selects the endpoint not found option.
+    /// No endpoint answers the requested <c>/api</c> path.
     /// </summary>
     EndpointNotFound,
 
     /// <summary>
-    /// Selects the access denied option.
+    /// The signed-in user may not use the endpoint or act for the person the request names.
     /// </summary>
     AccessDenied,
 
     /// <summary>
-    /// Selects the invalid csrf token option.
+    /// An unsafe request carries no antiforgery token or a wrong one; the client fetches a new one
+    /// and sends the request again.
     /// </summary>
     InvalidCsrfToken,
 
@@ -640,7 +644,7 @@ public enum ErrorCode
     TooManyRequests,
 
     /// <summary>
-    /// Selects the request validation failed option.
+    /// The request is malformed or breaks a rule of its fields, such as a missing or too long value.
     /// </summary>
     RequestValidationFailed,
 
@@ -651,7 +655,7 @@ public enum ErrorCode
     ConcurrentUpdate,
 
     /// <summary>
-    /// Selects the unexpected error option.
+    /// The request failed for a reason the response does not disclose; the failure is logged.
     /// </summary>
     UnexpectedError,
 

@@ -13,7 +13,8 @@ using EventId = CodigoActivo.Domain.Events.EventId;
 namespace CodigoActivo.API.Reports;
 
 /// <summary>
-/// Exposes HTTP endpoints for querying and managing reports.
+/// Exposes the read-only reports administrators use: the dashboard and, per event, its summary,
+/// attendees, badges and roster.
 /// </summary>
 [ApiController]
 [Route("api/reports")]
@@ -21,12 +22,12 @@ namespace CodigoActivo.API.Reports;
 public class ReportsController : ApiControllerBase
 {
     /// <summary>
-    /// Executes the event summary endpoint for reports.
+    /// Summarizes the signups and ratings of an event.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an event summary, or an error response.</returns>
+    /// <returns>An HTTP response containing the event summary, or an error response.</returns>
     [HttpGet("events/{eventId:guid}/summary")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<EventSummaryResponse>> EventSummaryAsync(
@@ -39,13 +40,14 @@ public class ReportsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the event attendees endpoint for reports.
+    /// Lists the people signed up to the activities of an event, each with the signups that match
+    /// the criteria and their guardian's contact details.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a paged event attendee, or an error response.</returns>
+    /// <returns>An HTTP response containing a page of attendees, or an error response.</returns>
     [HttpGet("events/{eventId:guid}/attendees")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<PagedResult<EventAttendeeResponse>>> EventAttendeesAsync(
@@ -65,12 +67,13 @@ public class ReportsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the event badges endpoint for reports.
+    /// Returns one badge per person with a confirmed signup to the event, listing their confirmed
+    /// activities.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an event badges, or an error response.</returns>
+    /// <returns>An HTTP response containing the badges, or an error response.</returns>
     [HttpGet("events/{eventId:guid}/badges")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<EventBadgesResponse>> EventBadgesAsync(
@@ -83,12 +86,13 @@ public class ReportsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the event roster endpoint for reports.
+    /// Returns the activities of the event with confirmed signups, each listing the people confirmed
+    /// in it with their contact details.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an event roster, or an error response.</returns>
+    /// <returns>An HTTP response containing the roster, or an error response.</returns>
     [HttpGet("events/{eventId:guid}/roster")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<EventRosterResponse>> EventRosterAsync(
@@ -101,11 +105,12 @@ public class ReportsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the dashboard endpoint for reports.
+    /// Returns the totals of the dashboard, cached for a minute or until a change to one of their
+    /// sources evicts them.
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a dashboard summary, or an error response.</returns>
+    /// <returns>An HTTP response containing the dashboard totals.</returns>
     [HttpGet("dashboard")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<DashboardSummaryResponse>> DashboardAsync(
@@ -117,12 +122,13 @@ public class ReportsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the dashboard analytics endpoint for reports.
+    /// Returns the analytics of the dashboard for the selected window, cached for a minute per
+    /// window or until a change to one of their sources evicts them.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a dashboard analytics, or an error response.</returns>
+    /// <returns>An HTTP response containing the dashboard analytics.</returns>
     [HttpGet("dashboard/analytics")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<DashboardAnalyticsResponse>> DashboardAnalyticsAsync(

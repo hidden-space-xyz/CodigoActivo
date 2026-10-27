@@ -27,8 +27,9 @@ public sealed class RoleCapacityPlan
     /// </summary>
     /// <param name="items">Capacities; <see langword="null"/> means none.</param>
     /// <returns>
-    /// The plan, or a validation error when a role asks for a number of people out of range or
-    /// appears twice.
+    /// The plan, or <see cref="DomainErrorCode.ActivityRoleCapacityOutOfRange"/> when a role asks
+    /// for a number of people out of range, or
+    /// <see cref="DomainErrorCode.ActivityRoleCapacityDuplicated"/> when a role appears twice.
     /// </returns>
     public static Result<RoleCapacityPlan> Create(IReadOnlyList<RoleCapacity>? items)
     {

@@ -10,7 +10,7 @@ namespace CodigoActivo.Application.Files;
 public static class FileProjections
 {
     /// <summary>
-    /// Stores the shared file value.
+    /// Projects the metadata of a stored file.
     /// </summary>
     public static readonly Expression<Func<FileRow, FileResponse>> File = file => new FileResponse(
         file.Id,

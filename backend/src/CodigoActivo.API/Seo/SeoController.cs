@@ -14,7 +14,8 @@ using Microsoft.Net.Http.Headers;
 namespace CodigoActivo.API.Seo;
 
 /// <summary>
-/// Exposes HTTP endpoints for querying and managing seo.
+/// Serves the sitemap and <c>robots.txt</c> for search engines, left out of the OpenAPI document.
+/// Both are cached by the server and, for an hour, by any client or proxy.
 /// </summary>
 [ApiController]
 [Route("api")]
@@ -24,12 +25,12 @@ public class SeoController : ApiControllerBase
     private static readonly TimeSpan ClientCacheLifetime = TimeSpan.FromHours(1);
 
     /// <summary>
-    /// Executes the sitemap endpoint for seo.
+    /// Returns the sitemap XML of the public pages, with absolute URLs on the public base URL.
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="application">Options that carry the public base URL of the site.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>An <c>application/xml</c> response with the sitemap.</returns>
     [HttpGet("sitemap.xml")]
     [HttpHead("sitemap.xml")]
     [AllowAnonymous]
@@ -52,10 +53,10 @@ public class SeoController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the robots endpoint for seo.
+    /// Returns the <c>robots.txt</c> of the site, which points to the sitemap.
     /// </summary>
     /// <param name="application">Options that carry the public base URL of the site.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A <c>text/plain</c> response with the robots rules.</returns>
     [HttpGet("robots.txt")]
     [HttpHead("robots.txt")]
     [AllowAnonymous]

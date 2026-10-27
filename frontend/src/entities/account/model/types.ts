@@ -92,7 +92,9 @@ export interface AccountHistoryEntry {
   readonly startsAt: string
   readonly endsAt: string
   readonly thumbnailId: string
+  /** Whether the event is over; a past event lists only the confirmed participations. */
   readonly isPast: boolean
+  /** Whether the account may rate the event; the API allows it only once the event is over. */
   readonly canRate: boolean
   /** The account's own rating of the event, or `null` while it has not rated it. */
   readonly rating: EventRatingInput | null

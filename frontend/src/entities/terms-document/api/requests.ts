@@ -29,7 +29,10 @@ export async function createTermsDocumentRequest(input: TermsDocumentInput): Pro
   await postApiEventsTermsDocument(toTermsDocumentRequest(input))
 }
 
-/** Renames a terms document or rewrites its content. */
+/**
+ * Replaces the name, content, signature request and kind of a terms document; any change starts a
+ * new version. The API refuses a new kind while an event links it or anyone decided on it.
+ */
 export async function updateTermsDocumentRequest(
   id: string,
   input: TermsDocumentInput,
@@ -37,7 +40,7 @@ export async function updateTermsDocumentRequest(
   await putApiEventsTermsDocumentTermsDocumentId(id, toTermsDocumentRequest(input))
 }
 
-/** Deletes a terms document; the API refuses it once an event uses it or someone accepted it. */
+/** Deletes a terms document; the API refuses it once an event links it or anyone decided on it. */
 export async function deleteTermsDocumentRequest(id: string): Promise<void> {
   await deleteApiEventsTermsDocumentTermsDocumentId(id)
 }

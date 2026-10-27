@@ -15,7 +15,9 @@ namespace CodigoActivo.Application.Users.Queries;
 public sealed record ListUsersQuery(UserListQuery Filters) : IQuery<PagedResult<UserResponse>>;
 
 /// <summary>
-/// Executes the query to list users.
+/// Executes the query to list users. An administrator lists every account through
+/// <see cref="UserProjections.UserWithType"/>; anyone else only their own account and their
+/// dependents, through <see cref="UserProjections.User"/>.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -48,7 +50,7 @@ public sealed class ListUsersQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a paged user.</returns>
+    /// <returns>A task whose result contains the requested page of users.</returns>
     public Task<PagedResult<UserResponse>> HandleAsync(
         ListUsersQuery query,
         CancellationToken ct = default

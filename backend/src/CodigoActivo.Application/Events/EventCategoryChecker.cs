@@ -15,9 +15,13 @@ public sealed class EventCategoryChecker(IEventCategoryTypeRepository categoryTy
     /// <summary>
     /// Checks the chosen categories.
     /// </summary>
-    /// <param name="categoryTypeIds">Identifiers of the category type items.</param>
+    /// <param name="categoryTypeIds">Identifiers as chosen; repeated ones count once.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the selection, or the error of the first broken rule.</returns>
+    /// <returns>
+    /// A task whose result contains the selection;
+    /// <see cref="DomainErrorCode.EventCategoriesRequired"/> when none is chosen, or
+    /// <see cref="ApplicationErrorCode.EventCategoryTypeNotFound"/> when one does not exist.
+    /// </returns>
     public async Task<Result<EventCategorySelection>> EnsureCategoriesAsync(
         IReadOnlyList<EventCategoryTypeId> categoryTypeIds,
         CancellationToken ct = default

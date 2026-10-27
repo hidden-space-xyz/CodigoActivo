@@ -18,7 +18,7 @@ defineProps<{
   confirmLabel: string
   /** `id` of the password input, unique on the page. */
   inputId: string
-  /** Width of the dialog. */
+  /** CSS width of the dialog, such as `min(440px, 92vw)`. */
   width: string
   /** Shows a loading state on the confirm button while the parent sends the action. */
   saving: boolean

@@ -14,7 +14,9 @@ namespace CodigoActivo.Application.Users.Queries;
 public sealed record GetUserByIdQuery(UserId UserId) : IQuery<Result<UserResponse>>;
 
 /// <summary>
-/// Executes the query to retrieve user by identifier.
+/// Executes the query to retrieve a user by identifier through
+/// <see cref="UserProjections.UserWithType"/>. It does not check who may read the user; its callers
+/// do.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -26,7 +28,9 @@ public sealed class GetUserByIdQueryHandler(IReadStore readStore, IQueryExecutor
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a user on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the user, or <see cref="ApplicationErrorCode.UserNotFound"/>.
+    /// </returns>
     public async Task<Result<UserResponse>> HandleAsync(
         GetUserByIdQuery query,
         CancellationToken ct = default

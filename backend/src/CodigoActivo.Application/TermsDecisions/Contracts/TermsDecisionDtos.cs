@@ -6,8 +6,8 @@ namespace CodigoActivo.Application.TermsDecisions.Contracts;
 /// Contains a terms document linked to an event as the signup shows it, returned by the API.
 /// </summary>
 /// <param name="TermsDocumentId">Identifier of the terms document.</param>
-/// <param name="Name">The name value.</param>
-/// <param name="Description">The description value.</param>
+/// <param name="Name">Name of the terms document.</param>
+/// <param name="Description">Content of the document as rich text JSON.</param>
 /// <param name="Kind">Whether the document holds conditions or a consent.</param>
 /// <param name="Required">Whether accepting the document is mandatory to complete the signup; never for a consent.</param>
 /// <param name="RequiresSignature">Whether accepting the document asks for a handwritten signature.</param>
@@ -47,7 +47,9 @@ public record EventTermsPersonDecisionResponse(
 /// Whether the member decides their own consents: the current user, and a dependent from the age
 /// of 14. The current user decides everything else for their dependents.
 /// </param>
-/// <param name="Decisions">Decisions taken for the member about the documents of the event.</param>
+/// <param name="Decisions">
+/// Decisions taken for the member about the documents of the event, the oldest first.
+/// </param>
 public record EventTermsPersonStateResponse(
     Guid UserId,
     string FirstName,

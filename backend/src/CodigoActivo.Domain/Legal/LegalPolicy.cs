@@ -45,12 +45,15 @@ public class LegalPolicy : AggregateRoot<LegalPolicyId>
     public IReadOnlyCollection<LegalPolicyVersion> PreviousVersions => previousVersions;
 
     /// <summary>
-    /// Publishes the first version of a policy.
+    /// Publishes the first version of a policy and raises <see cref="LegalPolicyPublished"/>.
     /// </summary>
     /// <param name="kind">Which policy of the site it is.</param>
-    /// <param name="content">Rich-text content; it must hold some text.</param>
+    /// <param name="content">Rich-text content; it must hold some text or an image.</param>
     /// <param name="publishedAt">When it is published.</param>
-    /// <returns>The policy, or a validation error when the content is empty.</returns>
+    /// <returns>
+    /// The policy, or <see cref="DomainErrorCode.LegalPolicyContentRequired"/> when the content is
+    /// empty.
+    /// </returns>
     public static Result<LegalPolicy> Publish(
         LegalPolicyKind kind,
         RichText content,
@@ -76,12 +79,15 @@ public class LegalPolicy : AggregateRoot<LegalPolicyId>
 
     /// <summary>
     /// Publishes a new content. When it differs from the version in force, that version is kept in
-    /// <see cref="PreviousVersions"/> and the new one gets the next number; the same content
-    /// changes nothing.
+    /// <see cref="PreviousVersions"/>, the new one gets the next number and
+    /// <see cref="LegalPolicyPublished"/> is raised; the same content changes nothing.
     /// </summary>
-    /// <param name="content">New rich-text content; it must hold some text.</param>
+    /// <param name="content">New rich-text content; it must hold some text or an image.</param>
     /// <param name="publishedAt">When it is published.</param>
-    /// <returns>A success, or a validation error when the content is empty.</returns>
+    /// <returns>
+    /// A success, or <see cref="DomainErrorCode.LegalPolicyContentRequired"/> when the content is
+    /// empty.
+    /// </returns>
     public Result Revise(RichText content, DateTimeOffset publishedAt)
     {
         ArgumentNullException.ThrowIfNull(content);

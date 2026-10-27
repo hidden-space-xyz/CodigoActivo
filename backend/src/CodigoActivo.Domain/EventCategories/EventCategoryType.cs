@@ -15,12 +15,12 @@ public class EventCategoryType : AggregateRoot<EventCategoryTypeId>
     public string Name { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Gets the display color.
+    /// Gets the display color, written as <c>#RRGGBB</c>.
     /// </summary>
     public string Color { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Creates a category.
+    /// Creates a category and raises <see cref="EventCategoryTypeCreated"/>.
     /// </summary>
     /// <param name="name">Name; surrounding spaces are removed.</param>
     /// <param name="color">Display color; surrounding spaces are removed.</param>
@@ -39,7 +39,8 @@ public class EventCategoryType : AggregateRoot<EventCategoryTypeId>
     }
 
     /// <summary>
-    /// Replaces the name and color of the category.
+    /// Replaces the name and color of the category and raises
+    /// <see cref="EventCategoryTypeRenamed"/>.
     /// </summary>
     /// <param name="name">New name; surrounding spaces are removed.</param>
     /// <param name="color">New display color; surrounding spaces are removed.</param>
@@ -50,7 +51,7 @@ public class EventCategoryType : AggregateRoot<EventCategoryTypeId>
     }
 
     /// <summary>
-    /// Marks the category type as deleted.
+    /// Raises <see cref="EventCategoryTypeDeleted"/> before the category is removed.
     /// </summary>
     public void Delete()
     {

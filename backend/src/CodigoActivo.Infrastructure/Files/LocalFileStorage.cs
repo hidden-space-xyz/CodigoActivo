@@ -12,9 +12,10 @@ public sealed class LocalFileStorage : IFileStorage
     private readonly string rootPath;
 
     /// <summary>
-    /// Initializes the local file storage with its required dependencies.
+    /// Initializes the local file storage and creates its root directory when it does not exist.
     /// </summary>
-    /// <param name="options">Configuration values used by the component.</param>
+    /// <param name="options">Storage root; a blank root falls back to <c>files</c> under the current
+    /// directory.</param>
     public LocalFileStorage(FileStorageOptions options)
     {
         var configured = string.IsNullOrWhiteSpace(options.RootPath) ? "files" : options.RootPath;
@@ -33,7 +34,7 @@ public sealed class LocalFileStorage : IFileStorage
     /// content already stored there is never replaced.
     /// </summary>
     /// <param name="storedName">Storage-safe file name identifying the content.</param>
-    /// <param name="content">Content stream to store or inspect.</param>
+    /// <param name="content">Content to store, read from its current position to the end.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     /// <exception cref="IOException">Content is already stored under the name, or it could not be written.</exception>
@@ -67,7 +68,8 @@ public sealed class LocalFileStorage : IFileStorage
     }
 
     /// <summary>
-    /// Lists the entries of the root last written at or before an instant.
+    /// Lists the entries of the root last written at or before an instant, including the temporary
+    /// ones an interrupted write left behind.
     /// </summary>
     /// <param name="cutoff">Latest write instant to include.</param>
     /// <returns>The names of the entries.</returns>
@@ -108,7 +110,7 @@ public sealed class LocalFileStorage : IFileStorage
     }
 
     /// <summary>
-    /// Deletes the selected local file system.
+    /// Deletes the file stored under the name, if any. A refusal of the file system is thrown.
     /// </summary>
     /// <param name="storedName">Storage-safe file name identifying the content.</param>
     public void Delete(string storedName)

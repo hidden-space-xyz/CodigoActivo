@@ -24,8 +24,8 @@ public sealed record CreateEventCommand(EventDraft Event) : ICommand<Result<Even
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="termsDocuments">Repository used to persist and retrieve terms documents.</param>
-/// <param name="categoryChecker">The category checker value.</param>
-/// <param name="currentUser">Person the use case runs for.</param>
+/// <param name="categoryChecker">Checker of the chosen categories.</param>
+/// <param name="currentUser">Person the use case runs for, recorded as the creator.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work that saves the event in the transaction that locks its files.</param>
 public sealed class CreateEventCommandHandler(
@@ -43,7 +43,14 @@ public sealed class CreateEventCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the identifier of the created item, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the identifier of the new event; the domain error of an invalid
+    /// schedule, category selection or terms list;
+    /// <see cref="ApplicationErrorCode.EventCategoryTypeNotFound"/> or
+    /// <see cref="ApplicationErrorCode.TermsDocumentNotFound"/> when a chosen one is missing, or
+    /// <see cref="ApplicationErrorCode.EventThumbnailNotFound"/> or
+    /// <see cref="ApplicationErrorCode.RichTextFileNotFound"/> when a file is missing.
+    /// </returns>
     public async Task<Result<EventId>> HandleAsync(
         CreateEventCommand command,
         CancellationToken ct = default

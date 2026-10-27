@@ -31,7 +31,10 @@ export interface TermsDialogDraft {
   readonly signatures: Readonly<Record<string, string>>
 }
 
-/** What the terms dialog read: why it cannot be confirmed yet or, if nothing is missing, the decisions. */
+/**
+ * What the terms dialog read: why it cannot be confirmed yet or, if nothing is missing, the
+ * decisions.
+ */
 export interface TermsDialogReading {
   /** A required document is not checked for someone. */
   readonly missingRequired: boolean

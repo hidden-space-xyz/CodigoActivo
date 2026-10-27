@@ -35,7 +35,7 @@ const HIDDEN_FIELDS: Record<UserListScope, readonly string[]> = {
 export interface UserRelationFilter {
   /** Localized text shown in the active-filter chip. */
   readonly label: string
-  /** Query parameters merged into every table request, e.g. `{ parentId }`. */
+  /** Query parameters merged into every request: `id` of a guardian or `parentId` of dependents. */
   readonly params: Readonly<Record<string, string>>
 }
 
@@ -51,9 +51,9 @@ export interface UserRelationFilter {
  * factor to email; personal data and consents are only changed by their holder or guardian from
  * «Mi cuenta». Granting the role and resetting the second factor need the signed-in admin's
  * password: a refused one is shown in the dialog instead of a toast. Revoking the admin role and
- * deleting ask for confirmation and then act at once. The initial administrator can be neither demoted nor deleted, and the caller can neither
- * change their own type or admin role nor delete their own account here; the block reasons explain
- * why. Call it in `setup`.
+ * deleting ask for confirmation and then act at once. The initial administrator can be neither
+ * demoted nor deleted, and the caller can neither change their own type or admin role nor delete
+ * their own account here; the block reasons explain why. Call it in `setup`.
  */
 export function useUsersAdmin() {
   const { t } = useI18n()

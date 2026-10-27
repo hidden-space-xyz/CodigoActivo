@@ -6,7 +6,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace CodigoActivo.Infrastructure.Communication;
 
 /// <summary>
-/// Defines the Entity Framework mapping for email outbox content.
+/// Defines the Entity Framework mapping for email outbox content, which keeps no data history: it
+/// only lives until its messages leave. Deleting a content deletes its parts in the database.
 /// </summary>
 public sealed class EmailOutboxContentConfiguration : IEntityTypeConfiguration<EmailOutboxContent>
 {

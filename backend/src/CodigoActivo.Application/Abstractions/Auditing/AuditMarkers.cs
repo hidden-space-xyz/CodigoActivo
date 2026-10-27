@@ -15,7 +15,7 @@ public interface IUnaudited;
 public sealed class UnauditedAttribute : Attribute;
 
 /// <summary>
-/// Marks a command the application runs on its own schedule: it is recorded as run by the system,
-/// and only when it changed something.
+/// Marks a command the application runs on its own schedule, which returns how many things it
+/// changed: it is recorded as run by the system, and a success only when that number is not zero.
 /// </summary>
 public interface IScheduledCommand;

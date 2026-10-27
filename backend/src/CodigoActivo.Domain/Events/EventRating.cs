@@ -43,17 +43,17 @@ public class EventRating : AggregateRoot<EventRatingId>
     public int? Score { get; private set; }
 
     /// <summary>
-    /// Gets what the participant liked most.
+    /// Gets what the participant liked most, or <see langword="null"/> when they did not answer.
     /// </summary>
     public string? MostLiked { get; private set; }
 
     /// <summary>
-    /// Gets what the participant liked least.
+    /// Gets what the participant liked least, or <see langword="null"/> when they did not answer.
     /// </summary>
     public string? LeastLiked { get; private set; }
 
     /// <summary>
-    /// Gets the suggestions.
+    /// Gets the participant's suggestions, or <see langword="null"/> when they did not answer.
     /// </summary>
     public string? Suggestions { get; private set; }
 
@@ -65,7 +65,7 @@ public class EventRating : AggregateRoot<EventRatingId>
     /// <param name="score">Score, or <see langword="null"/> when the participant gave none.</param>
     /// <param name="mostLiked">What the participant liked most.</param>
     /// <param name="leastLiked">What the participant liked least.</param>
-    /// <param name="suggestions">Suggestions.</param>
+    /// <param name="suggestions">Suggestions of the participant.</param>
     /// <returns>The new rating, or a validation error naming the rule it breaks.</returns>
     public static Result<EventRating> Submit(
         EventId eventId,
@@ -90,8 +90,12 @@ public class EventRating : AggregateRoot<EventRatingId>
     /// <param name="score">Score, or <see langword="null"/> when the participant gives none.</param>
     /// <param name="mostLiked">What the participant liked most.</param>
     /// <param name="leastLiked">What the participant liked least.</param>
-    /// <param name="suggestions">Suggestions.</param>
-    /// <returns>Success, or a validation error naming the rule it breaks.</returns>
+    /// <param name="suggestions">Suggestions of the participant.</param>
+    /// <returns>
+    /// Success, or <see cref="DomainErrorCode.EventRatingScoreOutOfRange"/>,
+    /// <see cref="DomainErrorCode.EventRatingAnswerTooLong"/> or
+    /// <see cref="DomainErrorCode.EventRatingEmpty"/> for the rule it breaks.
+    /// </returns>
     public Result Revise(int? score, string? mostLiked, string? leastLiked, string? suggestions)
     {
         if (score is < MinScore or > MaxScore)

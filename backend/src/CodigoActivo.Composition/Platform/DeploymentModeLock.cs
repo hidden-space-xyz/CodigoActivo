@@ -29,11 +29,16 @@ internal sealed class DeploymentModeLock
     }
 
     /// <summary>
-    /// Validates deployment settings and prevents later mutation.
+    /// Reads <c>DEMO_MODE</c>, stores it on the first start and refuses any later start with the
+    /// other mode, unless it is a Development process outside a container.
     /// </summary>
-    /// <param name="configuration">Application configuration to validate or consume.</param>
+    /// <param name="configuration">Configuration holding <c>DEMO_MODE</c> and the container marker.</param>
     /// <param name="environment">Host environment that decides whether the choice is persisted.</param>
-    /// <returns><see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
+    /// <returns><see langword="true"/> when the deployment runs in demo mode; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// <c>DEMO_MODE</c> is not <c>true</c> or <c>false</c>, the stored mode is unreadable, or it
+    /// differs from the configured one.
+    /// </exception>
     public bool Lock(IConfiguration configuration, IHostEnvironment environment)
     {
         ArgumentNullException.ThrowIfNull(configuration);

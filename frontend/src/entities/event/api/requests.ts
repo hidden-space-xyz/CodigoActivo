@@ -89,8 +89,9 @@ export async function getEventTermsStateRequest(eventId: string): Promise<EventT
 }
 
 /**
- * Loads the event's activities that the signed-in user leads with a confirmed assignment, with
- * their confirmed attendees. The backend decides what the caller may see; anyone else gets `[]`.
+ * Loads the event's activities that have not ended and that the signed-in user leads with a
+ * confirmed assignment, with their confirmed attendees. The backend decides what the caller may
+ * see; anyone else gets `[]`.
  */
 export async function getEventLeaderRosterRequest(
   eventId: string,
@@ -132,7 +133,7 @@ export async function updateEventRequest(id: string, input: EventInput): Promise
   await putApiEventsEventId(id, toEventRequest(input))
 }
 
-/** Deletes an event with its activities. */
+/** Deletes an event with its activities, their signups and the terms decisions taken about it. */
 export async function deleteEventRequest(id: string): Promise<void> {
   await deleteApiEventsEventId(id)
 }

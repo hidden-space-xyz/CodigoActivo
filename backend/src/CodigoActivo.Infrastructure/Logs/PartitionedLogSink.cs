@@ -9,14 +9,15 @@ namespace CodigoActivo.Infrastructure.Logs;
 /// <summary>
 /// Writes batches of log events into a partitioned log table with one binary <c>COPY</c>. The
 /// batching sink of Serilog calls it from its own background loop, so nothing here ever runs on a
-/// request. Before the first batch of each day it creates the partitions the batch needs that are
-/// still inside the retention window, so a history of past days, such as the one of demo mode, or
+/// request. The first time a batch holds a day, it creates the partition of that day when the day is
+/// inside the window of the table, so a history of past days, such as the one of demo mode, or
 /// a start after the partitions ahead ran out is written without a failed copy first. A batch the
 /// database refuses for its data is written again row by row and only the refused rows are
 /// dropped; a batch that still finds no partition for its day, because one was dropped since,
-/// creates the partitions of the batch and is written once more. Any other failure, such as an
-/// unreachable database, is thrown so Serilog retries the whole batch with backoff until its retry
-/// limit.
+/// creates the partitions of the batch and is written once more, or row by row when none of its
+/// days is inside the window, which drops the rows that have no partition. Any other failure, such
+/// as an unreachable database, is thrown so Serilog retries the whole batch with backoff until its
+/// retry limit.
 /// </summary>
 /// <typeparam name="TRow">Row type the events become.</typeparam>
 /// <param name="database">Connections of the log tables, owned by the host.</param>
@@ -78,7 +79,8 @@ public abstract class PartitionedLogSink<TRow>(
     }
 
     /// <summary>
-    /// Stores a batch of events.
+    /// Stores a batch of events. Events that cannot become a row and rows the database refuses are
+    /// dropped and reported to the Serilog self log; any other failure is thrown.
     /// </summary>
     /// <param name="batch">Events to store.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
@@ -124,7 +126,7 @@ public abstract class PartitionedLogSink<TRow>(
     }
 
     /// <summary>
-    /// Does nothing: the sink holds no state between batches.
+    /// Does nothing: the sink has nothing to flush between batches.
     /// </summary>
     /// <returns>A completed task.</returns>
     public Task OnEmptyBatchAsync()

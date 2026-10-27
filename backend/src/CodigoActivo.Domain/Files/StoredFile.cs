@@ -4,7 +4,7 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Domain.Files;
 
 /// <summary>
-/// Uploaded file: its original name, the format detected from its content and who uploaded it.
+/// Uploaded file: its original name, the format its content is stored in and who uploaded it.
 /// Its content never changes; a new image is uploaded as a new file.
 /// </summary>
 public class StoredFile : AggregateRoot<StoredFileId>
@@ -24,7 +24,8 @@ public class StoredFile : AggregateRoot<StoredFileId>
     public string Name { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Gets the extension of the detected format.
+    /// Gets the extension, without a leading dot, of the format the content is stored in, which
+    /// every upload is re-encoded to.
     /// </summary>
     public string Extension { get; private set; } = string.Empty;
 
@@ -42,7 +43,7 @@ public class StoredFile : AggregateRoot<StoredFileId>
     /// Records a new upload.
     /// </summary>
     /// <param name="name">Original name, already sanitized.</param>
-    /// <param name="extension">Extension of the detected format.</param>
+    /// <param name="extension">Extension of the format the content is stored in.</param>
     /// <param name="uploaderId">Identifier of the user who uploads it.</param>
     /// <param name="now">Current time.</param>
     /// <param name="id">Stable identifier for seeded files; a new one otherwise.</param>
@@ -80,7 +81,8 @@ public class StoredFile : AggregateRoot<StoredFileId>
     }
 
     /// <summary>
-    /// Marks the file as deleted, so whatever caches it can drop it once it is gone.
+    /// Raises <see cref="StoredFileDeleted"/> before the file is removed, so whatever caches it can
+    /// drop it once it is gone.
     /// </summary>
     public void Delete()
     {

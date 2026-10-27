@@ -13,12 +13,14 @@ public interface IOrphanFileCleaner
 {
     /// <summary>
     /// Deletes the files among the candidates that nothing references any more, as a best effort:
-    /// a failure only leaves unreferenced data behind, so it is neither raised nor logged.
+    /// a failure only leaves unreferenced data behind for the scheduled purge, so a failure to
+    /// delete the rows is neither raised nor logged, and stored content that cannot be deleted
+    /// only logs a warning.
     /// </summary>
     /// <param name="fileIds">Identifiers of the candidate files.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
-    /// A task whose result is <see langword="false"/> when a failure left the orphans in place.
+    /// A task whose result is <see langword="false"/> when a failure left the rows in place.
     /// </returns>
     public Task<bool> TryDeleteOrphanedAsync(
         IReadOnlyCollection<StoredFileId> fileIds,
@@ -27,11 +29,15 @@ public interface IOrphanFileCleaner
 
     /// <summary>
     /// Deletes the files among the candidates that nothing references any more and lets a failure
-    /// of the database through, so a scheduled purge can report it.
+    /// of the database through, so a scheduled purge can report it; stored content that cannot be
+    /// deleted only logs a warning.
     /// </summary>
     /// <param name="fileIds">Identifiers of the candidate files.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains how many files were deleted.</returns>
+    /// <returns>
+    /// A task whose result contains how many file rows were deleted; zero when every candidate is
+    /// still referenced or already gone.
+    /// </returns>
     public Task<int> PurgeOrphanedAsync(
         IReadOnlyCollection<StoredFileId> fileIds,
         CancellationToken ct = default
@@ -48,7 +54,7 @@ public interface IOrphanFileCleaner
 /// </summary>
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
-/// <param name="storage">Repository used to persist and retrieve storage.</param>
+/// <param name="storage">Storage holding the content of the files.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class OrphanFileCleaner(
     IStoredFileRepository files,

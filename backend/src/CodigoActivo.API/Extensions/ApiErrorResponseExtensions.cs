@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http.Features;
 namespace CodigoActivo.API.Extensions;
 
 /// <summary>
-/// Provides reusable extension methods for api error.
+/// Builds the status code and body of every error response of the API.
 /// </summary>
 public static class ApiErrorResponseExtensions
 {
@@ -26,11 +26,12 @@ public static class ApiErrorResponseExtensions
         };
 
     /// <summary>
-    /// Creates an api error from the validated request.
+    /// Creates the error response of a failure, with the status its kind maps to.
     /// </summary>
-    /// <param name="error">Application error associated with a failed result or response.</param>
-    /// <param name="context">Database context used for persistence.</param>
-    /// <returns>The resulting (int status code, api error response body) value.</returns>
+    /// <param name="error">Failure with its kind and wire code.</param>
+    /// <param name="context">HTTP context of the failed request.</param>
+    /// <returns>The status code and body of the error response.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">The kind of the failure maps to no status.</exception>
     public static (int StatusCode, ApiErrorResponse Body) Create(
         ApiError error,
         HttpContext context
@@ -41,10 +42,10 @@ public static class ApiErrorResponseExtensions
     }
 
     /// <summary>
-    /// Creates an internal error.
+    /// Creates the 500 error response of an unexpected failure, which tells nothing about its cause.
     /// </summary>
-    /// <param name="context">Database context used for persistence.</param>
-    /// <returns>The resulting (int status code, api error response body) value.</returns>
+    /// <param name="context">HTTP context of the failed request.</param>
+    /// <returns>The status code and body of the error response.</returns>
     public static (int StatusCode, ApiErrorResponse Body) CreateInternalError(HttpContext context)
     {
         const int Status = StatusCodes.Status500InternalServerError;
@@ -60,10 +61,10 @@ public static class ApiErrorResponseExtensions
     }
 
     /// <summary>
-    /// Creates the error of a request refused by a rate or concurrency limit.
+    /// Creates the 429 error response of a request refused by a rate or concurrency limit.
     /// </summary>
     /// <param name="context">HTTP context of the refused request.</param>
-    /// <returns>The resulting (int status code, api error response body) value.</returns>
+    /// <returns>The status code and body of the error response.</returns>
     public static (int StatusCode, ApiErrorResponse Body) CreateTooManyRequests(HttpContext context)
     {
         const int Status = StatusCodes.Status429TooManyRequests;

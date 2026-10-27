@@ -22,7 +22,7 @@ const SUBJECT_MAX_LENGTH = 200
 const BODY_MAX_LENGTH = 10000
 
 const props = defineProps<{
-  /** Opens the dialog; each time it opens subject, body and attachments are cleared. */
+  /** Opens the dialog; each opening clears the purpose, subject, body and attachments. */
   visible: boolean
   /** Localized recipient description shown above the form and in the confirmation. */
   target: string

@@ -56,7 +56,7 @@ interface RouteNamedMap {
   >
 }
 
-/** Name of a route of the application. */
+/** Route name that `RouterLink`, `router.push` and route guards accept. */
 export type RouteName = keyof RouteNamedMap
 
 /** Who may open a route: only guests, any signed-in user, or administrators. */

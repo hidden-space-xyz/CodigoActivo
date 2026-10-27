@@ -1,9 +1,9 @@
 namespace CodigoActivo.Application.Files;
 
 /// <summary>
-/// Represents a file upload value used by the application.
+/// An image as the client uploaded it, before it is validated and processed.
 /// </summary>
-/// <param name="Content">Content stream to store or inspect.</param>
-/// <param name="FileName">The file name value.</param>
-/// <param name="Length">The length value.</param>
+/// <param name="Content">Content of the upload; it must be seekable.</param>
+/// <param name="FileName">Name the client gave the file, sanitized before it is stored.</param>
+/// <param name="Length">Size of the upload in bytes.</param>
 public sealed record FileUpload(Stream Content, string FileName, long Length);

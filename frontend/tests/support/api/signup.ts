@@ -47,7 +47,7 @@ export interface SignupApiState {
   termsDocuments?: EventTermsDocumentStateResponse[]
   /** Decisions taken for each member, by member id; unset members follow `termsAccepted`. */
   termsDecisions?: Record<string, EventTermsPersonDecisionResponse[]>
-  /** Minors in the household who decide their own consents, being 14 or older. */
+  /** Ids of the household minors who decide their own consents, being 14 or older. */
   consentingChildren?: string[]
   overlap: TimeOverlapResponse | 'error'
   assignError: (() => Response) | null

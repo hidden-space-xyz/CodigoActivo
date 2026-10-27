@@ -21,8 +21,8 @@ public sealed record CreateActivityCommand(EventId EventId, ActivityDraft Activi
 /// Executes the command to create an activity.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
-/// <param name="validator">The validator value.</param>
-/// <param name="currentUser">Person the use case runs for.</param>
+/// <param name="validator">Validator of the event, schedule, thumbnail and role capacities.</param>
+/// <param name="currentUser">Person the use case runs for, recorded as the creator.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work whose transaction validates and saves the activity.</param>
 public sealed class CreateActivityCommandHandler(
@@ -38,7 +38,11 @@ public sealed class CreateActivityCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the identifier of the created item, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the identifier of the new activity; <c>EventNotFound</c> or
+    /// <c>ActivityThumbnailNotFound</c> when either is missing, or the domain error of an invalid
+    /// schedule or role capacity plan.
+    /// </returns>
     public async Task<Result<ActivityId>> HandleAsync(
         CreateActivityCommand command,
         CancellationToken ct = default

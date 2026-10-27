@@ -14,7 +14,7 @@ namespace CodigoActivo.Application.TermsDocuments.Commands;
 /// Carries the input required to update the terms document.
 /// </summary>
 /// <param name="TermsDocumentId">Identifier of the terms document.</param>
-/// <param name="Name">Name, unique among terms documents.</param>
+/// <param name="Name">Name of up to 120 characters, unique among terms documents.</param>
 /// <param name="Description">Rich-text document holding text only; images are refused.</param>
 /// <param name="RequiresSignature">Whether accepting it asks for a handwritten signature.</param>
 /// <param name="Kind">Whether it holds conditions or a consent.</param>
@@ -30,7 +30,9 @@ public sealed record UpdateTermsDocumentCommand(
 /// <summary>
 /// Executes the command to update the terms document. The document is locked and reloaded first, so
 /// concurrent rewrites run one after another, and its kind stays as it is while an event links it or
-/// anyone decided on it, since every rule about those decisions reads the current kind.
+/// anyone decided on it, since every rule about those decisions reads the current kind. A rewrite
+/// that changes anything starts a new version and keeps the one it replaces, so decisions already
+/// taken keep naming the text they were taken on.
 /// </summary>
 /// <param name="termsDocuments">Repository used to persist and retrieve terms documents.</param>
 /// <param name="events">Repository used to persist and retrieve events.</param>
@@ -48,7 +50,13 @@ public sealed class UpdateTermsDocumentCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result reports success;
+    /// <see cref="ApplicationErrorCode.TermsDocumentNotFound"/>,
+    /// <see cref="ApplicationErrorCode.TermsDocumentNameAlreadyExists"/>, or
+    /// <see cref="ApplicationErrorCode.TermsDocumentKindInUse"/> when the kind changes while an
+    /// event links it or a decision was taken on it.
+    /// </returns>
     public async Task<Result> HandleAsync(
         UpdateTermsDocumentCommand command,
         CancellationToken ct = default

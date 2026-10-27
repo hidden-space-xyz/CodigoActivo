@@ -15,7 +15,8 @@ public abstract class AuditableEntity<TId> : AggregateRoot<TId>
     public DateTimeOffset CreatedAt { get; private set; }
 
     /// <summary>
-    /// Gets the UTC timestamp of the most recent update.
+    /// Gets the UTC timestamp of the most recent update, or <see langword="null"/> when the entity
+    /// was never changed after its creation.
     /// </summary>
     public DateTimeOffset? UpdatedAt { get; private set; }
 
@@ -25,7 +26,8 @@ public abstract class AuditableEntity<TId> : AggregateRoot<TId>
     public UserId CreatedBy { get; private set; }
 
     /// <summary>
-    /// Gets the identifier of the user who changed the entity last.
+    /// Gets the identifier of the user who changed the entity last, or <see langword="null"/> when
+    /// it was never changed after its creation.
     /// </summary>
     public UserId? UpdatedBy { get; private set; }
 

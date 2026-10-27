@@ -16,11 +16,13 @@ namespace CodigoActivo.Application.Partners.Commands;
 /// <summary>
 /// Carries the input required to create a partner.
 /// </summary>
-/// <param name="Name">Human-readable name.</param>
+/// <param name="Name">Human-readable name, up to 200 characters.</param>
 /// <param name="FromDate">Day the collaboration started; today at the latest.</param>
-/// <param name="Tier">Sponsorship tier.</param>
-/// <param name="Website">Website, if any.</param>
-/// <param name="ThumbnailId">Identifier of the logo file.</param>
+/// <param name="Tier">Sponsorship tier, zero or more.</param>
+/// <param name="Website">
+/// HTTP or HTTPS address of up to 500 characters, or <see langword="null"/>.
+/// </param>
+/// <param name="ThumbnailId">Identifier of the logo file, which must exist.</param>
 public sealed record CreatePartnerCommand(
     [property: Required, MaxLength(200), NotBlank] string Name,
     [property: NotDefaultOrFutureDate] DateOnly FromDate,
@@ -34,7 +36,7 @@ public sealed record CreatePartnerCommand(
 /// </summary>
 /// <param name="partners">Repository used to persist and retrieve partners.</param>
 /// <param name="files">Repository used to persist and retrieve files.</param>
-/// <param name="currentUser">Person the use case runs for.</param>
+/// <param name="currentUser">Person the use case runs for, recorded as the creator.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work whose transaction locks the logo and saves the partner.</param>
 public sealed class CreatePartnerCommandHandler(
@@ -50,7 +52,10 @@ public sealed class CreatePartnerCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the identifier of the created item, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the identifier of the new partner, or
+    /// <see cref="ApplicationErrorCode.PartnerThumbnailNotFound"/> when the logo is missing.
+    /// </returns>
     public async Task<Result<PartnerId>> HandleAsync(
         CreatePartnerCommand command,
         CancellationToken ct = default

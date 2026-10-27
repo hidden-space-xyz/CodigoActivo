@@ -15,7 +15,7 @@ import EventTermsDialog from './EventTermsDialog.vue'
 const props = defineProps<{
   /** Event whose activities are listed and grouped by overlapping schedules. */
   eventId: string
-  /** Whether the current user may enroll, including early signup when they are eligible. */
+  /** Whether the current user may enroll or withdraw, early signup included when eligible. */
   signupOpen: boolean
   /** Only early signup is open and the user is not eligible; picks the closed-signup message. */
   earlyOnly?: boolean

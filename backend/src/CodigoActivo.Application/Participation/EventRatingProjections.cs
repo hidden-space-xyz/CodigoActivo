@@ -10,7 +10,7 @@ namespace CodigoActivo.Application.Participation;
 public static class EventRatingProjections
 {
     /// <summary>
-    /// Stores the shared event rating list item value.
+    /// Projects a rating to a list item, leaving out its author.
     /// </summary>
     public static readonly Expression<
         Func<EventRatingRow, EventRatingListItemResponse>

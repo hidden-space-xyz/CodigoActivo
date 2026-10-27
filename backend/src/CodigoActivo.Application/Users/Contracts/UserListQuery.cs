@@ -5,7 +5,7 @@ using CodigoActivo.Application.Common.Validation;
 namespace CodigoActivo.Application.Users.Contracts;
 
 /// <summary>
-/// Identifies the supported user scope values.
+/// Kind of account a user list is narrowed to.
 /// </summary>
 public enum UserScope
 {
@@ -21,24 +21,26 @@ public enum UserScope
 }
 
 /// <summary>
-/// Carries the criteria used to user list.
+/// Carries the filters, sort and page of a user list; the manual email commands and audience
+/// queries reuse its filters and ignore the sort and page. Unset filters match everyone, and text
+/// filters match a fragment, ignoring case and acute accents.
 /// </summary>
 public sealed class UserListQuery : PageQuery
 {
     /// <summary>
-    /// Gets or sets the unique identifier.
+    /// Gets or sets the identifier of the only user to match.
     /// </summary>
     public Guid? Id { get; set; }
 
     /// <summary>
-    /// Gets or sets the human-readable name.
+    /// Gets or sets text the first name and last name, joined by a space, must contain.
     /// </summary>
     [MaxLength(MaxTextLength)]
     [SingleLine]
     public string? Name { get; set; }
 
     /// <summary>
-    /// Gets or sets the email value.
+    /// Gets or sets text the email must contain.
     /// </summary>
     [MaxLength(MaxTextLength)]
     [SingleLine]
@@ -59,17 +61,17 @@ public sealed class UserListQuery : PageQuery
     public string? NationalId { get; set; }
 
     /// <summary>
-    /// Gets or sets the identifier of the associated user type.
+    /// Gets or sets the identifier of the membership type users must have.
     /// </summary>
     public Guid? UserTypeId { get; set; }
 
     /// <summary>
-    /// Gets or sets the identifier of the associated user status type.
+    /// Gets or sets the identifier of the account status users must have.
     /// </summary>
     public Guid? UserStatusTypeId { get; set; }
 
     /// <summary>
-    /// Gets or sets the is admin value.
+    /// Gets or sets whether users must have, or lack, administrator rights.
     /// </summary>
     public bool? IsAdmin { get; set; }
 
@@ -79,7 +81,7 @@ public sealed class UserListQuery : PageQuery
     public bool? NewsConsent { get; set; }
 
     /// <summary>
-    /// Gets or sets the identifier of the associated parent.
+    /// Gets or sets the identifier of the guardian whose dependents are listed.
     /// </summary>
     public Guid? ParentId { get; set; }
 
@@ -90,12 +92,14 @@ public sealed class UserListQuery : PageQuery
     public UserScope? Scope { get; set; }
 
     /// <summary>
-    /// Gets or sets the birth date from value.
+    /// Gets or sets the earliest birth date, inclusive; set, it leaves out the users without one, the
+    /// independent accounts.
     /// </summary>
     public DateOnly? BirthDateFrom { get; set; }
 
     /// <summary>
-    /// Gets or sets the birth date to value.
+    /// Gets or sets the latest birth date, inclusive; set, it leaves out the users without one, the
+    /// independent accounts.
     /// </summary>
     public DateOnly? BirthDateTo { get; set; }
 }

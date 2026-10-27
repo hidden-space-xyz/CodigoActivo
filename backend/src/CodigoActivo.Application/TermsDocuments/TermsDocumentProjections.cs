@@ -10,7 +10,7 @@ namespace CodigoActivo.Application.TermsDocuments;
 public static class TermsDocumentProjections
 {
     /// <summary>
-    /// Stores the shared terms document value.
+    /// Projects the current version of a terms document with its content.
     /// </summary>
     public static readonly Expression<Func<TermsDocumentRow, TermsDocumentResponse>> TermsDocument =
         termsDocument => new TermsDocumentResponse

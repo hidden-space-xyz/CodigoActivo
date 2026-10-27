@@ -39,7 +39,11 @@ public sealed class EmailChangeLinkIssuer(
     /// <param name="change">Change planned for the account; it must replace the email.</param>
     /// <param name="now">Current timestamp.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <returns>
+    /// A task whose result is success, <see cref="ApplicationErrorCode.OtpResendCooldownActive"/>
+    /// when the message limiter or the full outbox refused the mail, or
+    /// <see cref="ApplicationErrorCode.EmailSendFailed"/> when it could not be queued.
+    /// </returns>
     /// <exception cref="ArgumentException">The change keeps the email.</exception>
     public async Task<Result> IssueAsync(
         User user,

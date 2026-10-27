@@ -44,7 +44,11 @@ public sealed class ListEventTermsDecisionsQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a page of decisions on success, or an application error when the event does not exist.</returns>
+    /// <returns>
+    /// A task whose result contains a page of decisions, latest first unless the sort names
+    /// <c>decidedAt</c>, <c>firstName</c>, <c>lastName</c> or <c>document</c>; or
+    /// <see cref="ApplicationErrorCode.EventNotFound"/>.
+    /// </returns>
     public async Task<Result<PagedResult<EventTermsDecisionResponse>>> HandleAsync(
         ListEventTermsDecisionsQuery query,
         CancellationToken ct = default

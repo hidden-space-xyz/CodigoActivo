@@ -11,10 +11,10 @@ namespace CodigoActivo.Application.Emails.Commands;
 /// <summary>
 /// Carries the input required to send email to users.
 /// </summary>
-/// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
+/// <param name="Filters">User filters that select the recipients; their sort and page are ignored.</param>
 /// <param name="Content">Subject and body of the email.</param>
 /// <param name="Purpose">What the email is written for, which decides who it reaches.</param>
-/// <param name="Attachments">The attachments value.</param>
+/// <param name="Attachments">Files attached to every message.</param>
 public sealed record SendEmailToUsersCommand(
     UserListQuery Filters,
     ManualEmailText Content,
@@ -23,11 +23,12 @@ public sealed record SendEmailToUsersCommand(
 ) : ICommand<Result<EmailDispatch>>;
 
 /// <summary>
-/// Executes the command to send email to users.
+/// Executes the command to email the users that match the filters, chosen by
+/// <see cref="ManualEmailAudience"/> as the audience preview chooses them.
 /// </summary>
 /// <param name="readStore">Read side used to resolve the recipients.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-/// <param name="dispatcher">The dispatcher value.</param>
+/// <param name="dispatcher">Dispatcher that validates and queues the email.</param>
 public sealed class SendEmailToUsersCommandHandler(
     IReadStore readStore,
     IQueryExecutor executor,
@@ -39,7 +40,10 @@ public sealed class SendEmailToUsersCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the dispatch counts, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the dispatch counts, or an error of
+    /// <see cref="ManualEmailDispatcher.DispatchAsync"/>.
+    /// </returns>
     public async Task<Result<EmailDispatch>> HandleAsync(
         SendEmailToUsersCommand command,
         CancellationToken ct = default

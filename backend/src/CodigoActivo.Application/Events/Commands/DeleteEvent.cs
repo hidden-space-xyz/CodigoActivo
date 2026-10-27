@@ -16,7 +16,9 @@ public sealed record DeleteEventCommand(EventId EventId) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to delete the event together with its activities, their signups and the
-/// terms decisions taken about it, keeping their data history.
+/// terms decisions and ratings taken about it, keeping their data history. Its thumbnail, its
+/// description images and the thumbnails of its activities are removed after the commit when
+/// nothing else uses them.
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
@@ -32,7 +34,9 @@ public sealed class DeleteEventCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <returns>
+    /// A task whose result reports success, or <see cref="ApplicationErrorCode.EventNotFound"/>.
+    /// </returns>
     public async Task<Result> HandleAsync(
         DeleteEventCommand command,
         CancellationToken ct = default

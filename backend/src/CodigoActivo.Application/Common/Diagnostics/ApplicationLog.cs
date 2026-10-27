@@ -26,7 +26,7 @@ public static partial class ApplicationLog
     );
 
     /// <summary>
-    /// Records that an automatic email could not be handed to the outbound transport.
+    /// Records that an automatic email could not be composed or stored in the outbox for delivery.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="kind">Email category that failed to leave.</param>

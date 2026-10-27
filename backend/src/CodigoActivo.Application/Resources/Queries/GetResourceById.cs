@@ -26,7 +26,10 @@ public sealed class GetResourceByIdQueryHandler(IReadStore readStore, IQueryExec
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a resource on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the resource, or
+    /// <see cref="ApplicationErrorCode.ResourceNotFound"/>.
+    /// </returns>
     public async Task<Result<ResourceResponse>> HandleAsync(
         GetResourceByIdQuery query,
         CancellationToken ct = default

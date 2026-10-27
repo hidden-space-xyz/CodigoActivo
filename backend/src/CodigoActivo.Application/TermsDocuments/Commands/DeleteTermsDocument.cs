@@ -15,7 +15,8 @@ namespace CodigoActivo.Application.TermsDocuments.Commands;
 public sealed record DeleteTermsDocumentCommand(TermsDocumentId TermsDocumentId) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to delete the terms document.
+/// Executes the command to delete the terms document, which is refused while an event links it or
+/// anyone decided on it.
 /// </summary>
 /// <param name="termsDocuments">Repository used to persist and retrieve terms documents.</param>
 /// <param name="events">Repository used to persist and retrieve events.</param>
@@ -31,7 +32,12 @@ public sealed class DeleteTermsDocumentCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <returns>
+    /// A task whose result reports success;
+    /// <see cref="ApplicationErrorCode.TermsDocumentNotFound"/>, or
+    /// <see cref="ApplicationErrorCode.TermsDocumentInUse"/> when an event links it or a decision
+    /// was taken on it.
+    /// </returns>
     public async Task<Result> HandleAsync(
         DeleteTermsDocumentCommand command,
         CancellationToken ct = default

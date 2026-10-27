@@ -17,7 +17,7 @@ public sealed class DiagnosticLogEntryListQuery : PageQuery
     public const string TracePattern = "^[0-9a-fA-F]{32}$";
 
     /// <summary>
-    /// Gets or sets a text the message must contain.
+    /// Gets or sets a text the message must contain, ignoring case and surrounding spaces.
     /// </summary>
     [MaxLength(MaxTextLength)]
     [SingleLine]
@@ -30,7 +30,8 @@ public sealed class DiagnosticLogEntryListQuery : PageQuery
     public DiagnosticLevel? Level { get; set; }
 
     /// <summary>
-    /// Gets or sets a text the category or the event name must contain.
+    /// Gets or sets a text the category or the event name must contain, ignoring case and surrounding
+    /// spaces.
     /// </summary>
     [MaxLength(MaxTextLength)]
     [SingleLine]
@@ -61,7 +62,7 @@ public sealed class AuditLogEntryListQuery : PageQuery
 {
     /// <summary>
     /// Gets or sets a text the name or email of the actor, or of the user the entry is about, must
-    /// contain.
+    /// contain, ignoring case and surrounding spaces.
     /// </summary>
     [MaxLength(MaxTextLength)]
     [SingleLine]

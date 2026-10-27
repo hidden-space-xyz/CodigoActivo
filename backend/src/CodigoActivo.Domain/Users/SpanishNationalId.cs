@@ -30,8 +30,8 @@ public sealed record SpanishNationalId
     /// <param name="value">Value as typed.</param>
     /// <returns>
     /// The identity number, <see cref="DomainErrorCode.UserNationalIdRequired"/> when nothing was
-    /// typed, or <see cref="DomainErrorCode.UserNationalIdInvalid"/> when its control letter does not
-    /// match its number.
+    /// typed, or <see cref="DomainErrorCode.UserNationalIdInvalid"/> when it is not shaped as a DNI or
+    /// NIE or its control letter does not match its number.
     /// </returns>
     public static Result<SpanishNationalId> Create(string? value)
     {

@@ -1,7 +1,8 @@
 namespace CodigoActivo.Application.Abstractions.Email;
 
 /// <summary>
-/// Identifies the supported email kind values.
+/// Names the kind of an outbound email, which sets the share of the sending budget it may use, its
+/// delivery priority and whether a full outbox still accepts it.
 /// </summary>
 public enum EmailKind
 {
@@ -17,22 +18,25 @@ public enum EmailKind
     AccessRecovery,
 
     /// <summary>
-    /// Selects the two factor login code option.
+    /// Selects the one-time code of the second factor: the login code and the codes that confirm
+    /// deleting an account or opening a consultation of the blocked data.
     /// </summary>
     TwoFactorCode,
 
     /// <summary>
-    /// Selects the activity notification option.
+    /// Selects the notice that tells a participant, or their guardian, how an activity signup was
+    /// decided.
     /// </summary>
     ActivityNotification,
 
     /// <summary>
-    /// Selects the security change notification option.
+    /// Selects the notice that tells the holder of an account about a security change to it, such
+    /// as a new password or a lock after wrong passwords.
     /// </summary>
     SecurityAlert,
 
     /// <summary>
-    /// Selects the manual option.
+    /// Selects the email an administrator writes, sent in bulk to the recipients they choose.
     /// </summary>
     Manual,
 
@@ -55,20 +59,26 @@ public enum EmailKind
 }
 
 /// <summary>
-/// Represents an email attachment value used by the application.
+/// File attached to an email.
 /// </summary>
-/// <param name="FileName">The file name value.</param>
-/// <param name="ContentType">The content type value.</param>
-/// <param name="Content">Content stream to store or inspect.</param>
+/// <param name="FileName">Name the file is attached under.</param>
+/// <param name="ContentType">
+/// MIME type of the file; an unparseable or composite type is sent as
+/// <c>application/octet-stream</c>.
+/// </param>
+/// <param name="Content">Bytes of the file.</param>
 public sealed record EmailAttachment(string FileName, string ContentType, byte[] Content);
 
 /// <summary>
-/// Represents an email inline image value used by the application.
+/// Image embedded in the HTML body of an email, which shows it through a <c>cid:</c> reference.
 /// </summary>
-/// <param name="ContentId">The content identifier value.</param>
-/// <param name="FileName">The file name value.</param>
-/// <param name="ContentType">The content type value.</param>
-/// <param name="Content">Content stream to store or inspect.</param>
+/// <param name="ContentId">Content identifier the HTML body references after <c>cid:</c>.</param>
+/// <param name="FileName">Name of the image file.</param>
+/// <param name="ContentType">
+/// MIME type of the image; an unparseable or composite type is sent as
+/// <c>application/octet-stream</c>.
+/// </param>
+/// <param name="Content">Bytes of the image.</param>
 public sealed record EmailInlineImage(
     string ContentId,
     string FileName,
@@ -77,16 +87,16 @@ public sealed record EmailInlineImage(
 );
 
 /// <summary>
-/// Represents an email message value used by the application.
+/// Email to one addressee.
 /// </summary>
 /// <param name="Kind">Email category whose limits are applied.</param>
-/// <param name="ToAddress">The to address value.</param>
-/// <param name="ToName">The to name value.</param>
-/// <param name="Subject">The subject value.</param>
-/// <param name="HtmlBody">The html body value.</param>
-/// <param name="TextBody">The text body value.</param>
-/// <param name="Attachments">The attachments value.</param>
-/// <param name="InlineImages">The inline images value.</param>
+/// <param name="ToAddress">Address of the addressee.</param>
+/// <param name="ToName">Display name of the addressee.</param>
+/// <param name="Subject">Subject line.</param>
+/// <param name="HtmlBody">HTML body.</param>
+/// <param name="TextBody">Plain-text alternative of the HTML body.</param>
+/// <param name="Attachments">Files attached, if any.</param>
+/// <param name="InlineImages">Images the HTML body embeds, if any.</param>
 /// <param name="OneClickUnsubscribeUrl">
 /// Address to which the mail client of the addressee posts to withdraw their news
 /// consent, sent in the <c>List-Unsubscribe</c> header (RFC 8058); <see langword="null"/> for
@@ -107,8 +117,8 @@ public sealed record EmailMessage(
 /// <summary>
 /// Represents one addressee of an email batch.
 /// </summary>
-/// <param name="Address">The address value.</param>
-/// <param name="Name">The name value.</param>
+/// <param name="Address">Address of the addressee.</param>
+/// <param name="Name">Display name of the addressee.</param>
 /// <param name="UnsubscribeUrl">
 /// Link with which this addressee withdraws their news consent, shown in the place the
 /// shared content of a news email leaves for it; <see langword="null"/> for other email.
@@ -130,12 +140,12 @@ public sealed record EmailRecipient(
 /// subject, bodies and binary content are stored once instead of once per addressee.
 /// </summary>
 /// <param name="Kind">Email category whose limits are applied.</param>
-/// <param name="Subject">The subject value.</param>
-/// <param name="HtmlBody">The html body value.</param>
-/// <param name="TextBody">The text body value.</param>
-/// <param name="Recipients">The recipients value.</param>
-/// <param name="Attachments">The attachments value.</param>
-/// <param name="InlineImages">The inline images value.</param>
+/// <param name="Subject">Subject line shared by every recipient.</param>
+/// <param name="HtmlBody">HTML body shared by every recipient.</param>
+/// <param name="TextBody">Plain-text alternative of the HTML body.</param>
+/// <param name="Recipients">Addressees, each stored as a pending message of its own.</param>
+/// <param name="Attachments">Files attached, if any.</param>
+/// <param name="InlineImages">Images the HTML body embeds, if any.</param>
 public sealed record EmailBatch(
     EmailKind Kind,
     string Subject,
@@ -150,7 +160,9 @@ public sealed record EmailBatch(
     /// Wraps a single message as a batch with one recipient.
     /// </summary>
     /// <param name="message">Email message to deliver.</param>
-    /// <returns>The resulting email batch value.</returns>
+    /// <returns>
+    /// The batch; the one-click unsubscribe address of the message is not carried over.
+    /// </returns>
     public static EmailBatch ForOne(EmailMessage message)
     {
         ArgumentNullException.ThrowIfNull(message);

@@ -11,7 +11,8 @@ export type LinkVerificationState = 'verifying' | 'success' | 'error'
 
 /**
  * Verification page flow: `verify` checks the link's user id and code (an incomplete link, or one
- * whose user id is not a GUID, fails without calling the API), and `resend` asks for a new link for the address in `resendForm`,
+ * whose user id is not a GUID, fails without calling the API), and `resend` asks for a new link
+ * for the trimmed address in `resendForm`, ignoring presses while a request is in flight and
  * reporting with a toast that never tells whether the address has a pending account.
  */
 export function useAccountVerification() {

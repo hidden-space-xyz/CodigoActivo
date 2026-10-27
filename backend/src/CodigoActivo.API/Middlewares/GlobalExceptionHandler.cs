@@ -22,12 +22,15 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
     private const string UnmatchedRoute = "(no endpoint)";
 
     /// <summary>
-    /// Logs an unhandled exception and writes a safe problem response.
+    /// Answers an exception the request did not handle: a concurrent update as a 409 conflict, and
+    /// anything else, after logging it, as a 500 error that tells nothing about its cause.
     /// </summary>
-    /// <param name="httpContext">The http context value.</param>
-    /// <param name="exception">The exception value.</param>
+    /// <param name="httpContext">HTTP context of the failed request.</param>
+    /// <param name="exception">Exception that ended the request.</param>
     /// <param name="cancellationToken">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a valuebool.</returns>
+    /// <returns>
+    /// A task whose result is always <see langword="true"/>, since every exception is answered.
+    /// </returns>
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
         Exception exception,

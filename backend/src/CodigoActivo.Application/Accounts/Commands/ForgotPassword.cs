@@ -14,7 +14,7 @@ using Microsoft.Extensions.Logging;
 namespace CodigoActivo.Application.Accounts.Commands;
 
 /// <summary>
-/// Carries the input required to forgot password.
+/// Carries the input required to ask for a password reset link.
 /// </summary>
 /// <param name="Email">Email of the account.</param>
 public sealed record ForgotPasswordCommand(
@@ -22,14 +22,15 @@ public sealed record ForgotPasswordCommand(
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to forgot password.
+/// Executes the command that emails a password reset link, replacing the previous one, to an
+/// account that has a password and is neither blocked nor a dependent.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="accountLock">Runs the issue of the code with the account locked.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="codeHasher">Hasher used so the reset code is never stored in plaintext.</param>
-/// <param name="passwordReset">The password reset value.</param>
-/// <param name="accountEmails">The account emails value.</param>
+/// <param name="passwordReset">Password reset configuration: code lifetime and resend cooldown.</param>
+/// <param name="accountEmails">Sender of the password reset link.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 /// <param name="auditSubject">Names the account the request found for the audit log.</param>
 public sealed class ForgotPasswordCommandHandler(
@@ -44,11 +45,12 @@ public sealed class ForgotPasswordCommandHandler(
 ) : ICommandHandler<ForgotPasswordCommand, Result>
 {
     /// <summary>
-    /// Handles the request to forgot password. Every request succeeds alike, so the answer never
-    /// tells whether the address has an account. Only an account that will get a code is locked,
-    /// so an address that gets nothing costs the same as one without an account; the code is
-    /// issued with the account locked and its eligibility checked again, so parallel requests run
-    /// one after another and the later ones find the resend cooldown.
+    /// Handles the request for a password reset link. Every request succeeds alike, so the answer
+    /// never tells whether the address has an account. Only an account that will get a code is
+    /// locked, so an address that gets nothing costs the same as one without an account; the code
+    /// is issued with the account locked and its eligibility checked again, so parallel requests
+    /// run one after another and the later ones find the resend cooldown. A mail the limiter
+    /// refuses or that cannot be queued stores no code.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

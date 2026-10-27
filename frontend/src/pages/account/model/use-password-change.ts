@@ -12,9 +12,10 @@ import type { useAccount } from './use-account'
 
 /**
  * Dialog that changes the signed-in user's password: the new one must be long enough, differ from
- * the current one and be typed twice alike before it is sent with the current one. The API then
- * closes every session, this one included, so the local session ends too and the user signs in
- * again with the new password. Call it in `setup`.
+ * the current one and be typed twice alike before it is sent with the current one; a broken rule
+ * or a refused change is shown in `error`. The API then closes every session, this one included,
+ * so the local session ends too and the user lands on the login page to sign in again with the
+ * new password. Call it in `setup`.
  */
 export function usePasswordChange(account: Pick<ReturnType<typeof useAccount>, 'changePassword'>) {
   const { t } = useI18n()

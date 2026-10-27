@@ -14,7 +14,7 @@ namespace CodigoActivo.Infrastructure.Users;
 /// API only delays both until the next start, and then once per interval.
 /// </summary>
 /// <param name="scopes">Scope factory used to resolve the use cases of each run.</param>
-/// <param name="options">Configuration values used by the component.</param>
+/// <param name="options">Startup delay and interval of the runs.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class AdultDependentPurgeWorker(
     IServiceScopeFactory scopes,

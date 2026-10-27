@@ -23,7 +23,7 @@ public class Partner : AuditableEntity<PartnerId>
     public DateOnly FromDate { get; private set; }
 
     /// <summary>
-    /// Gets the sponsorship tier.
+    /// Gets the sponsorship tier; partner lists show the lowest tier first.
     /// </summary>
     public int Tier { get; private set; }
 
@@ -38,7 +38,7 @@ public class Partner : AuditableEntity<PartnerId>
     public StoredFileId ThumbnailId { get; private set; }
 
     /// <summary>
-    /// Creates a partner.
+    /// Creates a partner and raises <see cref="PartnerCreated"/>.
     /// </summary>
     /// <param name="details">Profile of the partner.</param>
     /// <param name="authorId">Identifier of the user who creates it.</param>
@@ -56,7 +56,8 @@ public class Partner : AuditableEntity<PartnerId>
     }
 
     /// <summary>
-    /// Replaces the profile of the partner.
+    /// Replaces the profile of the partner and raises <see cref="PartnerUpdated"/>, which releases
+    /// the previous logo when it was replaced.
     /// </summary>
     /// <param name="details">New profile.</param>
     /// <param name="editorId">Identifier of the user who edits it.</param>
@@ -72,7 +73,8 @@ public class Partner : AuditableEntity<PartnerId>
     }
 
     /// <summary>
-    /// Marks the partner as deleted, so the logo it showed can be released once it is gone.
+    /// Raises <see cref="PartnerDeleted"/> before the partner is removed, so the logo it showed is
+    /// released once it is gone.
     /// </summary>
     public void Delete()
     {

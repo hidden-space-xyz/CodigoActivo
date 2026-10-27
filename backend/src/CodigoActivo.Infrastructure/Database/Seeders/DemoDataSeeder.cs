@@ -22,12 +22,14 @@ using Microsoft.EntityFrameworkCore;
 namespace CodigoActivo.Infrastructure.Database.Seeders;
 
 /// <summary>
-/// Creates the initial demo data records when they are missing.
+/// Creates the invented content of demo mode: accounts and their children, events with activities,
+/// signups and ratings, news, resources, partners, terms documents and legal policies, illustrated
+/// with images downloaded from picsum.photos.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
-/// <param name="storage">Repository used to persist and retrieve storage.</param>
+/// <param name="storage">Storage the encoded variants of the demo images are written to.</param>
 /// <param name="processor">Service that encodes the stored variants of each demo image.</param>
-/// <param name="passwordHasher">Service used to securely hash and verify passwords.</param>
+/// <param name="passwordHasher">Hasher of the unusable password every demo adult gets.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class DemoDataSeeder(
     CodigoActivoDbContext context,
@@ -93,7 +95,9 @@ public sealed class DemoDataSeeder(
     ];
 
     /// <summary>
-    /// Creates the required demo data records when they do not exist.
+    /// Adds the demo data unless the first demo account already exists, so it adds everything or
+    /// nothing. The images are downloaded and stored first and the rows are then added in one
+    /// transaction; on any failure the stored images are discarded and the exception is rethrown.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>

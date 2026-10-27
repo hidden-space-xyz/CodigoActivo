@@ -5,41 +5,41 @@ using CodigoActivo.Application.Common.Validation;
 namespace CodigoActivo.Application.Activities.Contracts;
 
 /// <summary>
-/// Carries the criteria used to activity list.
+/// Carries the criteria used to list activities; every criterion left empty matches every activity.
 /// </summary>
 public sealed class ActivityListQuery : PageQuery
 {
     /// <summary>
-    /// Gets or sets the identifier of the associated event.
+    /// Gets or sets the identifier of the event whose activities are listed.
     /// </summary>
     public Guid? EventId { get; set; }
 
     /// <summary>
-    /// Gets or sets the title displayed to users.
+    /// Gets or sets the text the title must contain, ignoring case and accents.
     /// </summary>
     [MaxLength(MaxTextLength)]
     [SingleLine]
     public string? Title { get; set; }
 
     /// <summary>
-    /// Gets or sets the identifier of the associated modality type.
+    /// Gets or sets the identifier of the modality the activities must have.
     /// </summary>
     public Guid? ModalityTypeId { get; set; }
 
     /// <summary>
-    /// Gets or sets the location value.
+    /// Gets or sets the text the location must contain, ignoring case and accents.
     /// </summary>
     [MaxLength(MaxTextLength)]
     [SingleLine]
     public string? Location { get; set; }
 
     /// <summary>
-    /// Gets or sets the activity date from value.
+    /// Gets or sets the first local day of the range; activities that end on or after it match.
     /// </summary>
     public DateOnly? ActivityDateFrom { get; set; }
 
     /// <summary>
-    /// Gets or sets the activity date to value.
+    /// Gets or sets the last local day of the range; activities that start on or before it match.
     /// </summary>
     public DateOnly? ActivityDateTo { get; set; }
 }

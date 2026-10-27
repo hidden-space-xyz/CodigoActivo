@@ -53,6 +53,7 @@ public sealed class DataHistoryProtector
     /// <exception cref="System.Security.Cryptography.CryptographicException">
     /// The payload was altered, belongs to another entry or its key is no longer in the key ring.
     /// </exception>
+    /// <exception cref="JsonException">The decrypted record is not valid JSON or is empty.</exception>
     public DataHistoryRecord Unprotect(Guid entryId, byte[] payload)
     {
         return JsonSerializer.Deserialize<DataHistoryRecord>(

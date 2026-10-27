@@ -24,7 +24,10 @@ public sealed class LogDatabase : IDisposable, IAsyncDisposable
     /// <summary>
     /// Initializes a new instance of the <see cref="LogDatabase"/> class.
     /// </summary>
-    /// <param name="connectionString">Connection string of the application database.</param>
+    /// <param name="connectionString">
+    /// Connection string of the application database; its application name, pool size and
+    /// timeouts are replaced by those of the logging pool.
+    /// </param>
     public LogDatabase(string connectionString)
     {
         dataSource = NpgsqlDataSource.Create(

@@ -30,7 +30,10 @@ public sealed class ListLegalPolicyVersionsQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the versions, or an application error when none was published yet.</returns>
+    /// <returns>
+    /// A task whose result contains the versions, or
+    /// <see cref="ApplicationErrorCode.LegalPolicyNotFound"/> when none was published yet.
+    /// </returns>
     public async Task<Result<IReadOnlyList<LegalPolicyVersionResponse>>> HandleAsync(
         ListLegalPolicyVersionsQuery query,
         CancellationToken ct = default

@@ -68,13 +68,17 @@ public class BlockedDataConsultation : AggregateRoot<BlockedDataConsultationId>
     public IReadOnlyCollection<BlockedDataExtract> Extracts => extracts;
 
     /// <summary>
-    /// Opens a consultation for a request.
+    /// Opens a consultation for a request, valid for <see cref="Validity"/>, and raises
+    /// <see cref="BlockedDataConsultationOpened"/>.
     /// </summary>
     /// <param name="officerId">Identifier of the designated account that opens it.</param>
     /// <param name="authority">Who the data is made available to.</param>
-    /// <param name="reference">Reference of the request.</param>
+    /// <param name="reference">Reference of the request; surrounding spaces are removed.</param>
     /// <param name="now">Current time.</param>
-    /// <returns>The consultation, or the error that refused it.</returns>
+    /// <returns>
+    /// The consultation, or <see cref="DomainErrorCode.BlockedDataReferenceRequired"/> when the
+    /// reference is blank or the authority is not one of the defined values.
+    /// </returns>
     public static Result<BlockedDataConsultation> Open(
         UserId officerId,
         BlockedDataAuthority authority,

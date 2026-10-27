@@ -127,7 +127,8 @@ function toAccountHistoryActivity(activity: EventHistoryActivityResponse): Accou
 
 /**
  * Maps an attended event with its activities for the account history, joining participant names.
- * The account's own rating comes as form values, with missing answers as `''`, so it can be edited.
+ * The account's own rating comes as form values, with missing comments as `''` and a missing score
+ * as `null`, so it can be edited.
  */
 export function toAccountHistoryEntry(entry: EventHistoryResponse): AccountHistoryEntry {
   return {

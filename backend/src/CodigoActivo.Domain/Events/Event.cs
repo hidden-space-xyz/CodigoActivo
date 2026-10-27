@@ -71,7 +71,7 @@ public class Event : AuditableEntity<EventId>, IFeaturable
     private DateTimeOffset SignupEndsAt { get; set; }
 
     /// <summary>
-    /// Creates an event.
+    /// Creates an event and raises <see cref="EventCreated"/>.
     /// </summary>
     /// <param name="content">Titles, description and thumbnail.</param>
     /// <param name="schedule">Days and signup window.</param>
@@ -97,7 +97,8 @@ public class Event : AuditableEntity<EventId>, IFeaturable
     }
 
     /// <summary>
-    /// Replaces the event, keeping the categories and terms links that are still wanted.
+    /// Replaces the event, keeping the categories and terms links that are still wanted, and raises
+    /// <see cref="EventUpdated"/> with the thumbnail and description images it no longer references.
     /// </summary>
     /// <param name="content">New titles, description and thumbnail.</param>
     /// <param name="schedule">New days and signup window.</param>
@@ -164,8 +165,8 @@ public class Event : AuditableEntity<EventId>, IFeaturable
     }
 
     /// <summary>
-    /// Marks the event as deleted together with its activities, so the files they reference can
-    /// be released once they are gone.
+    /// Raises <see cref="EventDeleted"/> before the event is removed together with its activities, so
+    /// the files they reference are released once they are gone.
     /// </summary>
     /// <param name="activityThumbnailIds">Thumbnails of the activities deleted with the event.</param>
     public void Delete(IReadOnlyCollection<StoredFileId> activityThumbnailIds)
@@ -184,7 +185,11 @@ public class Event : AuditableEntity<EventId>, IFeaturable
     /// category, so it refuses to lose its only one.
     /// </summary>
     /// <param name="categoryTypeId">Identifier of the category being deleted.</param>
-    /// <returns>A conflict when the category is the only one of the event.</returns>
+    /// <returns>
+    /// Success, also when the event is not tagged with the category, or
+    /// <see cref="DomainErrorCode.EventCategoryTypeOnlyCategoryOfEvent"/> when it is the only
+    /// category of the event.
+    /// </returns>
     public Result RemoveCategory(EventCategoryTypeId categoryTypeId)
     {
         var category = categories.Find(item => item.EventCategoryTypeId == categoryTypeId);

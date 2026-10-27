@@ -6,14 +6,16 @@ namespace CodigoActivo.Infrastructure.Diagnostics;
 
 /// <summary>
 /// Declares the operational events of the infrastructure layer: outbound email trouble, failed
-/// background runs, failed effects of committed changes, unreadable authenticator keys and
+/// background runs and log table maintenance, failed effects of committed changes, unreadable
+/// authenticator keys and data history entries, data protection keys left out of the key ring and
 /// disposable email domain list refreshes. Templates carry counts, enum values, handler type names
 /// and exceptions, never identifiers, addresses, names or values typed by the client.
 /// </summary>
 public static partial class InfrastructureLog
 {
     /// <summary>
-    /// Records a failed delivery attempt that will be retried.
+    /// Records a failed delivery attempt that will be retried. The deliverer logs it at most once
+    /// per alert interval of the email guard, since the failure repeats while its cause lasts.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="attempts">Attempts already spent on the message.</param>
@@ -36,7 +38,10 @@ public static partial class InfrastructureLog
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="kind">Email category of the message.</param>
     /// <param name="attempts">Attempts spent before giving up.</param>
-    /// <param name="exception">Last failure reported by the transport, when there is one.</param>
+    /// <param name="exception">
+    /// Failure of the last attempt, or <see langword="null"/> when the message was abandoned during
+    /// its last attempt and removed once its lease expired.
+    /// </param>
     [LoggerMessage(
         Level = LogLevel.Error,
         Message = "Gave up on a {Kind} email after {Attempts} failed delivery attempts and removed it from the outbox"
@@ -49,8 +54,9 @@ public static partial class InfrastructureLog
     );
 
     /// <summary>
-    /// Records that a failed attempt could not be written back, so the message waits for its lease
-    /// to expire instead.
+    /// Records that the result of a failed attempt could not be written back, so the message waits
+    /// for its lease to expire instead: it is then retried or, when that was its last attempt,
+    /// removed and logged as given up.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="attempts">Attempts already spent on the message.</param>
@@ -68,7 +74,8 @@ public static partial class InfrastructureLog
     );
 
     /// <summary>
-    /// Records that the messages whose attempts are spent could not be removed.
+    /// Records that the messages whose attempts are spent could not be removed. The deliverer logs
+    /// it at most once per alert interval of the email guard.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="exception">Failure raised while removing the rows.</param>
@@ -79,7 +86,8 @@ public static partial class InfrastructureLog
     public static partial void ExhaustedEmailNotRemoved(this ILogger logger, Exception exception);
 
     /// <summary>
-    /// Records that the stored content of delivered email could not be cleared.
+    /// Records that the stored content no pending message references any more, left by delivered
+    /// or given-up email, could not be cleared.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="exception">Failure raised while clearing the content.</param>
@@ -90,7 +98,8 @@ public static partial class InfrastructureLog
     public static partial void EmailContentSweepFailed(this ILogger logger, Exception exception);
 
     /// <summary>
-    /// Records that a whole delivery run failed.
+    /// Records that a whole delivery run failed. The delivery worker logs it at most once per alert
+    /// interval of the email guard, since an unreachable dependency fails every poll.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="exception">Failure that ended the run.</param>
@@ -112,7 +121,8 @@ public static partial class InfrastructureLog
     public static partial void EmailOutboxFull(this ILogger logger, int capacity);
 
     /// <summary>
-    /// Records that the global outbound budget is spent and automatic mail is being denied.
+    /// Records that the global outbound budget is spent and automatic mail is being denied. The
+    /// send limiter raises it at most once per alert interval of the email guard.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     [LoggerMessage(
@@ -123,7 +133,8 @@ public static partial class InfrastructureLog
     public static partial void GlobalEmailBudgetExhausted(this ILogger logger);
 
     /// <summary>
-    /// Records that the quota stopped tracking new recipients individually.
+    /// Records that the quota stopped tracking new recipients individually. The send limiter
+    /// raises it at most once per alert interval of the email guard.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="limit">Recipients the quota tracks at once.</param>
@@ -160,8 +171,9 @@ public static partial class InfrastructureLog
     public static partial void DataHistoryPurgeFailed(this ILogger logger, Exception exception);
 
     /// <summary>
-    /// Records that an entry of the data history could not be decrypted: it was altered or its key
-    /// is no longer in the Data Protection key ring.
+    /// Records that an entry of the data history could not be read: it could not be decrypted,
+    /// because it was altered or its key is no longer in the Data Protection key ring, or its
+    /// decrypted record is not valid JSON. The entry is still listed, without its content.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="exception">Failure that prevented reading it.</param>
@@ -294,7 +306,7 @@ public static partial class InfrastructureLog
     /// change and the other effects stand.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="effect">Type name of the handler that failed.</param>
+    /// <param name="effect">Short type name, without namespace, of the listener or handler that failed.</param>
     /// <param name="exception">Failure raised by the handler.</param>
     [LoggerMessage(
         Level = LogLevel.Error,
