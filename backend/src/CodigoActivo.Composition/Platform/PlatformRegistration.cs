@@ -43,6 +43,9 @@ internal static class PlatformRegistration
             options.MaximumPayloadBytes = CacheLimits.MaximumPayloadBytes
         );
 
+        services.AddValidatedOptions<DeploymentModeOptions>(options =>
+            options.Demo = settings.RequiredBoolean("DEMO_MODE")
+        );
         services.AddSingleton<DeploymentModeLock>();
         AddDataProtection(services, settings);
         return services;

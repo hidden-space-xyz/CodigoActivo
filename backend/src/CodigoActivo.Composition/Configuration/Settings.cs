@@ -49,6 +49,19 @@ internal sealed class Settings(IConfiguration configuration)
     }
 
     /// <summary>
+    /// Reads a setting that has no default and must be <c>true</c> or <c>false</c>, ignoring case.
+    /// </summary>
+    /// <param name="key">Configuration key.</param>
+    /// <returns>The value.</returns>
+    /// <exception cref="InvalidOperationException">The setting is missing or not a boolean.</exception>
+    public bool RequiredBoolean(string key)
+    {
+        return bool.TryParse(configuration[key], out var value)
+            ? value
+            : throw Invalid(key, "true or false");
+    }
+
+    /// <summary>
     /// Reads a positive whole number.
     /// </summary>
     /// <param name="key">Configuration key.</param>

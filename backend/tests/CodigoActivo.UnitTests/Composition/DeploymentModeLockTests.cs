@@ -22,9 +22,8 @@ public sealed class DeploymentModeLockTests : IDisposable
     {
         var path = Path.Join(directory, "deployment-mode");
 
-        var result = LockInContainer(Build(path), demoMode.ToString());
+        LockInContainer(Build(path), demoMode);
 
-        result.Should().Be(demoMode);
         File.ReadAllText(path).Trim().Should().Be(expected);
     }
 
@@ -33,11 +32,12 @@ public sealed class DeploymentModeLockTests : IDisposable
     {
         var path = Path.Join(directory, "deployment-mode");
         var modeLock = Build(path);
-        LockInContainer(modeLock, "true");
+        LockInContainer(modeLock, true);
 
-        var result = LockInContainer(modeLock, "true");
+        var act = () => LockInContainer(modeLock, true);
 
-        result.Should().BeTrue();
+        act.Should().NotThrow();
+        File.ReadAllText(path).Trim().Should().Be("demo");
     }
 
     [Fact]
@@ -45,26 +45,13 @@ public sealed class DeploymentModeLockTests : IDisposable
     {
         var path = Path.Join(directory, "deployment-mode");
         var modeLock = Build(path);
-        LockInContainer(modeLock, "true");
+        LockInContainer(modeLock, true);
 
-        var act = () => LockInContainer(modeLock, "false");
+        var act = () => LockInContainer(modeLock, false);
 
         act.Should()
             .Throw<InvalidOperationException>()
             .WithMessage("*initialized in demo mode*cannot start in normal mode*");
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("yes")]
-    public void LockInvalidConfiguredModeFails(string? value)
-    {
-        var path = Path.Join(directory, "deployment-mode");
-
-        var act = () => LockInContainer(Build(path), value);
-
-        act.Should().Throw<InvalidOperationException>().WithMessage("*DEMO_MODE*");
     }
 
     [Theory]
@@ -76,10 +63,8 @@ public sealed class DeploymentModeLockTests : IDisposable
     {
         var path = Path.Join(directory, "deployment-mode");
 
-        var result = Build(path)
-            .Lock(BuildConfiguration("true", containerFlag), Environment("Development"));
+        Build(path).Lock(true, BuildConfiguration(containerFlag), Environment("Development"));
 
-        result.Should().BeTrue();
         File.Exists(path).Should().BeFalse();
         Directory.Exists(directory).Should().BeFalse();
     }
@@ -93,10 +78,9 @@ public sealed class DeploymentModeLockTests : IDisposable
     {
         var path = Path.Join(directory, "deployment-mode");
 
-        var result = Build(path)
-            .Lock(BuildConfiguration("true", containerFlag: null), Environment(environmentName));
+        Build(path)
+            .Lock(true, BuildConfiguration(containerFlag: null), Environment(environmentName));
 
-        result.Should().BeTrue();
         File.ReadAllText(path).Trim().Should().Be("demo");
     }
 
@@ -108,36 +92,87 @@ public sealed class DeploymentModeLockTests : IDisposable
     {
         var path = Path.Join(directory, "deployment-mode");
 
-        var result = Build(path)
-            .Lock(BuildConfiguration("false", containerFlag), Environment("Development"));
+        Build(path).Lock(false, BuildConfiguration(containerFlag), Environment("Development"));
 
-        result.Should().BeFalse();
         File.ReadAllText(path).Trim().Should().Be("normal");
-    }
-
-    [Fact]
-    public void LockOnADevelopmentHostStillRejectsAnInvalidConfiguredMode()
-    {
-        var path = Path.Join(directory, "deployment-mode");
-
-        var act = () =>
-            Build(path)
-                .Lock(BuildConfiguration("maybe", containerFlag: null), Environment("Development"));
-
-        act.Should().Throw<InvalidOperationException>().WithMessage("*DEMO_MODE*");
     }
 
     [Fact]
     public void LockOnADevelopmentHostIgnoresAConflictingPersistedMode()
     {
         var path = Path.Join(directory, "deployment-mode");
-        LockInContainer(Build(path), "true");
+        LockInContainer(Build(path), true);
 
-        var result = Build(path)
-            .Lock(BuildConfiguration("false", containerFlag: null), Environment("Development"));
+        var act = () =>
+            Build(path)
+                .Lock(false, BuildConfiguration(containerFlag: null), Environment("Development"));
 
-        result.Should().BeFalse();
+        act.Should().NotThrow();
         File.ReadAllText(path).Trim().Should().Be("demo");
+    }
+
+    [Fact]
+    public void CheckFirstStartWritesNothing()
+    {
+        var path = Path.Join(directory, "deployment-mode");
+
+        var act = () => CheckInContainer(Build(path), true);
+
+        act.Should().NotThrow();
+        Directory.Exists(directory).Should().BeFalse();
+    }
+
+    [Fact]
+    public void CheckSamePersistedModeIsAccepted()
+    {
+        var path = Path.Join(directory, "deployment-mode");
+        var modeLock = Build(path);
+        LockInContainer(modeLock, false);
+
+        var act = () => CheckInContainer(modeLock, false);
+
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void CheckDifferentPersistedModeFails()
+    {
+        var path = Path.Join(directory, "deployment-mode");
+        var modeLock = Build(path);
+        LockInContainer(modeLock, true);
+
+        var act = () => CheckInContainer(modeLock, false);
+
+        act.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("*initialized in demo mode*cannot start in normal mode*");
+    }
+
+    [Fact]
+    public void CheckUnreadablePersistedModeFails()
+    {
+        var path = Path.Join(directory, "deployment-mode");
+        Directory.CreateDirectory(directory);
+        File.WriteAllText(path, "maybe");
+
+        var act = () => CheckInContainer(Build(path), true);
+
+        act.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("*deployment mode file is invalid*");
+    }
+
+    [Fact]
+    public void CheckOnADevelopmentHostIgnoresAConflictingPersistedMode()
+    {
+        var path = Path.Join(directory, "deployment-mode");
+        LockInContainer(Build(path), true);
+
+        var act = () =>
+            Build(path)
+                .Check(false, BuildConfiguration(containerFlag: null), Environment("Development"));
+
+        act.Should().NotThrow();
     }
 
     public void Dispose()
@@ -153,9 +188,14 @@ public sealed class DeploymentModeLockTests : IDisposable
         return new DeploymentModeLock(path);
     }
 
-    private static bool LockInContainer(DeploymentModeLock modeLock, string? demoMode)
+    private static void LockInContainer(DeploymentModeLock modeLock, bool demoMode)
     {
-        return modeLock.Lock(InContainer(demoMode), Environment("Production"));
+        modeLock.Lock(demoMode, BuildConfiguration("true"), Environment("Production"));
+    }
+
+    private static void CheckInContainer(DeploymentModeLock modeLock, bool demoMode)
+    {
+        modeLock.Check(demoMode, BuildConfiguration("true"), Environment("Production"));
     }
 
     private static IHostEnvironment Environment(string environmentName)
@@ -165,20 +205,11 @@ public sealed class DeploymentModeLockTests : IDisposable
         return environment;
     }
 
-    private static IConfiguration InContainer(string? demoMode)
-    {
-        return BuildConfiguration(demoMode, "true");
-    }
-
-    private static IConfiguration BuildConfiguration(string? demoMode, string? containerFlag)
+    private static IConfiguration BuildConfiguration(string? containerFlag)
     {
         return new ConfigurationBuilder()
             .AddInMemoryCollection(
-                new Dictionary<string, string?>
-                {
-                    ["DEMO_MODE"] = demoMode,
-                    ["DOTNET_RUNNING_IN_CONTAINER"] = containerFlag,
-                }
+                new Dictionary<string, string?> { ["DOTNET_RUNNING_IN_CONTAINER"] = containerFlag }
             )
             .Build();
     }

@@ -51,6 +51,19 @@ public sealed class StartupInitializationTests
         act.Should().Throw<OptionsValidationException>().WithMessage("*PRIVACY_OFFICER_EMAIL*");
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("yes")]
+    public void ValidateConfigurationInvalidDemoModeStopsTheStart(string? demoMode)
+    {
+        using var provider = BuildProvider(("DEMO_MODE", demoMode));
+
+        var act = () => provider.ValidateConfiguration();
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*DEMO_MODE*");
+    }
+
     [Fact]
     public void ValidateConfigurationHighestSmtpPortIsAccepted()
     {
@@ -119,6 +132,7 @@ public sealed class StartupInitializationTests
                     ["SMTP_HOST"] = "smtp.app.test",
                     ["SMTP_FROM_ADDRESS"] = "sender@app.test",
                     ["PRIVACY_OFFICER_EMAIL"] = "officer@app.test",
+                    ["DEMO_MODE"] = "false",
                     [setting.Key] = setting.Value,
                 }
             )

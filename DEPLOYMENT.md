@@ -100,11 +100,11 @@ ring. Production startup (`ProductionConfiguration`) also fails when:
   `secrets/smtp_password` is set;
 - any of `LEGAL_NAME`, `LEGAL_TAX_ID`, `LEGAL_ADDRESS`, `LEGAL_REGISTRY` or `LEGAL_EMAIL` is blank.
 
-These settings and every application setting except `DEMO_MODE` are checked before anything is written to
-`api-state` or the database. `BOOTSTRAP_ADMIN_EMAIL` is checked once the database is migrated, and `DEMO_MODE`
-only after that check, when the deployment mode is locked, so a start either one stops has migrated the database
-but written no mode lock. Demo seeding runs after the lock; a start it stops keeps the lock and seeds again on
-the next start.
+These settings and every application setting, `DEMO_MODE` included, are checked before anything is written to
+`api-state` or the database, and so is a `DEMO_MODE` other than the locked one. `BOOTSTRAP_ADMIN_EMAIL` is
+checked once the database is migrated and the mode is locked only after that check, so a start it stops has
+migrated the database but written no mode lock. Demo seeding runs after the lock; a start it stops keeps the
+lock and seeds again on the next start.
 
 The privacy and cookie policies are not in the repository: administrators write and publish them in
 «Políticas» of the administration panel, and the database keeps every version. A new installation without demo

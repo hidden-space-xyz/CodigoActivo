@@ -13,6 +13,7 @@ internal static class ApplicationInitializer
         var services = scope.ServiceProvider;
         services.ValidateConfiguration();
         services.VerifyKeyRing();
+        services.CheckDeploymentMode();
 
         await services.MigrateDatabaseAsync(cancellationToken);
         await services.MaintainLogTablesAsync(cancellationToken);
