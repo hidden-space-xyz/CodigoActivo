@@ -13,9 +13,9 @@ internal static class ScheduledCommandRunner
     /// <summary>
     /// Runs <paramref name="run"/> after <paramref name="startupDelay"/> and then once per
     /// <paramref name="interval"/> until shutdown. A failed run is handed to
-    /// <paramref name="logFailure"/> and never stops the host or the following runs; an
-    /// <see cref="OperationCanceledException"/> ends the runs without being logged, whatever token
-    /// cancelled it.
+    /// <paramref name="logFailure"/> and never stops the host or the following runs. Only the
+    /// shutdown token ends the runs: a cancellation raised by a timeout or any other dependency is a
+    /// failed run, logged like any other.
     /// </summary>
     /// <param name="startupDelay">Delay before the first run, so startup work finishes first.</param>
     /// <param name="interval">Interval between two runs.</param>
@@ -43,13 +43,16 @@ internal static class ScheduledCommandRunner
                 {
                     await run(stoppingToken);
                 }
-                catch (Exception ex) when (ex is not OperationCanceledException)
+                catch (Exception ex)
+                    when (ex is not OperationCanceledException
+                        || !stoppingToken.IsCancellationRequested
+                    )
                 {
                     logFailure(ex);
                 }
             } while (await timer.WaitForNextTickAsync(stoppingToken));
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
             return;
         }
