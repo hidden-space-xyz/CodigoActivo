@@ -77,6 +77,9 @@ const hasNoPastResults = computed(
           <h2 class="events-section__title">{{ $t('pages.events.upcomingTitle') }}</h2>
         </div>
         <p v-if="isLoadingUpcoming" class="events-loading">{{ $t('common.loading') }}</p>
+        <p v-else-if="upcomingEvents.length === 0" class="events-loading">
+          {{ $t('pages.events.noUpcoming') }}
+        </p>
         <EventBoard v-else :events="upcomingEvents" />
         <div v-if="hasMoreUpcoming" class="events-more">
           <ActionButton

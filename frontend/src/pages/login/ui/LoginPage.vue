@@ -3,7 +3,7 @@ import { useLogin } from '../model/use-login'
 import { BrandButton } from '@/shared/ui/brand-button'
 import { PageHeading } from '@/shared/ui/page-heading'
 
-const { form, submit, isSubmitting, isError } = useLogin()
+const { form, submit, isSubmitting, errorMessage } = useLogin()
 </script>
 
 <template>
@@ -60,8 +60,8 @@ const { form, submit, isSubmitting, isError } = useLogin()
             </el-checkbox>
           </div>
 
-          <p v-if="isError" class="ca-form-alert" role="alert">
-            {{ $t('pages.login.error') }}
+          <p v-if="errorMessage" class="ca-form-alert" role="alert">
+            {{ errorMessage }}
           </p>
 
           <BrandButton type="submit" variant="primary" block :loading="isSubmitting">

@@ -61,6 +61,17 @@ describe('resources page', () => {
     expect(wrapper.find('.resources-loading').text()).toBe(t('common.loading'))
   })
 
+  it('says so when no resource is published', async () => {
+    server.use(http.get('/api/resources', () => HttpResponse.json(paged([]))))
+
+    const { wrapper } = await renderWithProviders(ResourcesPage, { route: '/resources' })
+
+    await vi.waitFor(() =>
+      expect(wrapper.find('.resources-loading').text()).toBe(t('pages.resources.empty')),
+    )
+    expect(wrapper.find('.resources-grid').exists()).toBe(false)
+  })
+
   it('loads more resources, linking external ones directly', async () => {
     const queries = serveResources(2)
 

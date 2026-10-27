@@ -5,7 +5,7 @@ import { useLogin } from '@/pages/login/model/use-login'
 
 import { apiError, http, HttpResponse, server } from '../../../../support/server'
 import { buildLoginChallenge } from '../../../../support/builders'
-import { mountComposable } from '../../../../support/render'
+import { mountComposable, t } from '../../../../support/render'
 import { sessionOf } from '../../../../support/session'
 
 function serveLogin() {
@@ -25,7 +25,7 @@ describe('useLogin', () => {
 
     expect(result.form).toEqual({ identifier: '', password: '', keepSignedIn: false })
     expect(result.isSubmitting.value).toBe(false)
-    expect(result.isError.value).toBe(false)
+    expect(result.errorMessage.value).toBeNull()
   })
 
   it('moves to the verification page without opening a session when the password is accepted', async () => {
@@ -112,17 +112,44 @@ describe('useLogin', () => {
     expect(router.currentRoute.value.query).toEqual({ redirect: '/account' })
   })
 
-  it('flags an error and stays on the login page when the password is rejected', async () => {
+  it('shows the generic message and stays on the login page when the password is rejected', async () => {
     server.use(http.post('/api/auth/login', () => apiError(401, 'InvalidCredentials')))
     const { result, router, queryClient } = await mountComposable(() => useLogin(), {
       route: '/login',
     })
 
     result.submit()
-    await vi.waitFor(() => expect(result.isError.value).toBe(true))
+    await vi.waitFor(() => expect(result.errorMessage.value).toBe(t('pages.login.error')))
     await flushPromises()
 
     expect(sessionOf(queryClient).isAuthenticated).toBe(false)
     expect(router.currentRoute.value.name).toBe('login')
   })
+
+  it('keeps the generic message for a failure without a known code', async () => {
+    server.use(http.post('/api/auth/login', () => apiError(500)))
+    const { result } = await mountComposable(() => useLogin(), { route: '/login' })
+
+    result.submit()
+
+    await vi.waitFor(() => expect(result.errorMessage.value).toBe(t('pages.login.error')))
+  })
+
+  it.each([
+    [403, 'UserAccountPendingVerification'],
+    [403, 'UserAccountBlocked'],
+    [403, 'TwoFactorLocked'],
+    [429, 'TooManyRequests'],
+  ] as const)(
+    'explains the %i %s refusal instead of blaming the credentials',
+    async (status, code) => {
+      server.use(http.post('/api/auth/login', () => apiError(status, code)))
+      const { result, router } = await mountComposable(() => useLogin(), { route: '/login' })
+
+      result.submit()
+
+      await vi.waitFor(() => expect(result.errorMessage.value).toBe(t(`errors.${code}`)))
+      expect(router.currentRoute.value.name).toBe('login')
+    },
+  )
 })

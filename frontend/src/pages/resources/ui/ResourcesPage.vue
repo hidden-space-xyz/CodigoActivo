@@ -17,9 +17,7 @@ const {
   isLoading,
 } = usePagedList(() => resourcePages(search.value))
 
-const hasNoResults = computed(
-  () => search.value !== '' && !isLoading.value && resources.value.length === 0,
-)
+const isEmpty = computed(() => !isLoading.value && resources.value.length === 0)
 </script>
 
 <template>
@@ -44,8 +42,8 @@ const hasNoResults = computed(
         </div>
 
         <p v-if="isLoading" class="resources-loading">{{ $t('common.loading') }}</p>
-        <p v-else-if="hasNoResults" class="resources-loading">
-          {{ $t('pages.resources.noResults') }}
+        <p v-else-if="isEmpty" class="resources-loading">
+          {{ search ? $t('pages.resources.noResults') : $t('pages.resources.empty') }}
         </p>
         <div v-else class="resources-grid">
           <ResourceCard v-for="resource in resources" :key="resource.id" :resource="resource" />

@@ -113,6 +113,18 @@ describe('useSponsorCarousel', () => {
     expect(offsets(carousel)).toEqual([-1, 0])
   })
 
+  it('keeps a sponsor centred when the list shrinks below the active one', async () => {
+    const source = ref<readonly Sponsor[] | undefined>(sponsors(5))
+    const { carousel } = mountCarousel(source)
+    carousel.prev()
+    expect(offsets(carousel)).toEqual([1, 2, -2, -1, 0])
+
+    source.value = sponsors(2)
+    await nextTick()
+
+    expect(offsets(carousel)).toEqual([-1, 0])
+  })
+
   it('stops the timer on unmount', () => {
     const { wrapper } = mountCarousel(ref(sponsors(3)))
     expect(vi.getTimerCount()).toBe(1)
