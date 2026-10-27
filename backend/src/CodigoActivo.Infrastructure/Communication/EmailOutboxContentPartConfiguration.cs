@@ -6,7 +6,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace CodigoActivo.Infrastructure.Communication;
 
 /// <summary>
-/// Defines the Entity Framework mapping for email outbox content part.
+/// Defines the Entity Framework mapping for email outbox content part, which keeps no data history
+/// and stores its disposition by name.
 /// </summary>
 public sealed class EmailOutboxContentPartConfiguration
     : IEntityTypeConfiguration<EmailOutboxContentPart>

@@ -12,7 +12,8 @@ import { toQrCodeDataUrl } from '../lib/qr-code'
  * Second-factor settings of the signed-in user. Enrolling an authenticator is a two-step
  * dialog: the password unlocks the shared key (shown as a QR code and in text), and the first
  * code the application generates activates it. Dropping the authenticator needs the password and
- * a current code. Both changes refresh the cached profile and the session user afterwards.
+ * a current code. Both changes refresh the cached profile and the session user afterwards. A
+ * failed request is kept in `errorMessage` until `reset` or the next success. Call it in `setup`.
  */
 export function useTwoFactor() {
   const { t } = useI18n()

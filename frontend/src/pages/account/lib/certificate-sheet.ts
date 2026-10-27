@@ -930,7 +930,8 @@ async function renderTo(
 
 /**
  * Paints the certificate onto an on-screen canvas at preview resolution, scaled by the device pixel
- * ratio (capped at 2). Waits for the logo and fonts, and rejects if no 2D context is available.
+ * ratio (capped at 2), with the texts translated by `t`. Waits for the logo and fonts; a logo that
+ * fails to load is left out, while fonts that fail to load or a missing 2D context reject.
  */
 export async function renderCertificatePreview(
   canvas: HTMLCanvasElement,
@@ -1040,7 +1041,10 @@ function buildPdf(width: number, height: number, image: Uint8Array): Blob {
   return new Blob(parts, { type: 'application/pdf' })
 }
 
-/** Renders the certificate off-screen at 300 DPI and downloads it as a PNG. */
+/**
+ * Renders the certificate off-screen at 300 DPI and downloads it as a PNG named after the event and
+ * the participant. Rejects when the sheet cannot be painted or encoded.
+ */
 export async function downloadCertificatePng(
   certificate: AccountCertificate,
   t: Translate,

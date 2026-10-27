@@ -19,7 +19,8 @@ public sealed record ChangeAssignmentRoleCommand(
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to change the role of a person signed up to an activity.
+/// Executes the command to change the role of a person signed up to an activity, keeping the status
+/// and date of the signup. The type of the person is not checked against the role.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
 public sealed class ChangeAssignmentRoleCommandHandler(IActivityRepository activities)
@@ -30,7 +31,11 @@ public sealed class ChangeAssignmentRoleCommandHandler(IActivityRepository activ
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result reports success, also when the role does not change, or
+    /// <see cref="DomainErrorCode.ActivityAssignmentNotFound"/> when the activity or the signup is
+    /// missing.
+    /// </returns>
     public async Task<Result> HandleAsync(
         ChangeAssignmentRoleCommand command,
         CancellationToken ct = default

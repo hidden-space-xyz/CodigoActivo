@@ -15,9 +15,9 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the input required to change password.
 /// </summary>
-/// <param name="UserId">Identifier of the account.</param>
+/// <param name="UserId">Identifier of the account; it must be the signed-in user's own.</param>
 /// <param name="CurrentPassword">Current password of the account.</param>
-/// <param name="NewPassword">New password.</param>
+/// <param name="NewPassword">New password; it must differ from the current one.</param>
 public sealed record ChangePasswordCommand(
     UserId UserId,
     [property: Required, MaxLength(128), NotBlank] string CurrentPassword,
@@ -30,11 +30,13 @@ public sealed record ChangePasswordCommand(
 /// the current password was checked against, so a concurrent password step or code request waits
 /// for it instead of making it fail. Only the holder changes their own password: it needs the
 /// current one, which nobody else should know, and a wrong guess counts toward the account's lock.
+/// Once the change is committed every session of the account ends and the holder is emailed a
+/// security alert.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="accountLock">Runs the change with the account locked.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
-/// <param name="hasher">The hasher value.</param>
+/// <param name="hasher">Hasher of the new password.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 public sealed class ChangePasswordCommandHandler(
@@ -51,7 +53,14 @@ public sealed class ChangePasswordCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <returns>
+    /// A task whose result indicates success,
+    /// <see cref="ApplicationErrorCode.ActingForAnotherUserForbidden"/> for another account,
+    /// <see cref="ApplicationErrorCode.UserPasswordNotSet"/>,
+    /// <see cref="ApplicationErrorCode.UserNewPasswordSameAsCurrent"/>, or
+    /// <see cref="ApplicationErrorCode.UserCurrentPasswordIncorrect"/> when the current password is
+    /// wrong, was replaced meanwhile or the account is locked by wrong passwords.
+    /// </returns>
     public async Task<Result> HandleAsync(
         ChangePasswordCommand command,
         CancellationToken ct = default

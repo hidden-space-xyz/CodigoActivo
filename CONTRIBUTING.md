@@ -31,7 +31,7 @@ docker compose up -d db mailpit
 
 export POSTGRES_PASSWORD="$(cat secrets/postgres_password)"
 export DATA_PROTECTION_KEY="$(cat secrets/data_protection_key)"
-export BOOTSTRAP_ADMIN_EMAIL=admin@example.test
+export DEMO_MODE=false BOOTSTRAP_ADMIN_EMAIL=admin@example.test PRIVACY_OFFICER_EMAIL=admin@example.test
 export SMTP_HOST=localhost SMTP_PORT=1025 SMTP_SECURITY=None SMTP_FROM_ADDRESS=no-reply@codigoactivo.local
 cd backend
 dotnet run --project src/CodigoActivo.API

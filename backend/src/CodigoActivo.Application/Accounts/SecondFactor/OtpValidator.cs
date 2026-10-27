@@ -10,7 +10,8 @@ namespace CodigoActivo.Application.Accounts.SecondFactor;
 public sealed class OtpValidator(IOneTimeCodeHasher codeHasher)
 {
     /// <summary>
-    /// Determines whether the typed code is the stored one; spacing and casing are ignored.
+    /// Determines whether the typed code is the stored one; surrounding whitespace and letter case
+    /// are ignored.
     /// </summary>
     /// <param name="code">Code as typed.</param>
     /// <param name="usableCodeHash">Hash of the stored code, or <see langword="null"/> when there is no usable code.</param>

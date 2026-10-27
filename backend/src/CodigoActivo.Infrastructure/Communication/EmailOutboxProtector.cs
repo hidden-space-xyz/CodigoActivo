@@ -11,11 +11,15 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// and held in memory once instead of once per recipient. It is only worth keeping for the run that
 /// reads it: the next one reads the rows it claims again.
 /// </summary>
-/// <param name="Subject">The subject value.</param>
-/// <param name="HtmlBody">The html body value.</param>
-/// <param name="TextBody">The text body value.</param>
-/// <param name="Attachments">The attachments value.</param>
-/// <param name="InlineImages">The inline images value.</param>
+/// <param name="Subject">Readable subject.</param>
+/// <param name="HtmlBody">
+/// Readable HTML body shared by every recipient, before their unsubscribe link is put in.
+/// </param>
+/// <param name="TextBody">
+/// Readable text body shared by every recipient, before their unsubscribe link is put in.
+/// </param>
+/// <param name="Attachments">Readable attachments, in their stored order.</param>
+/// <param name="InlineImages">Readable inline images, in their stored order.</param>
 public sealed record EmailOutboxPayload(
     string Subject,
     string HtmlBody,
@@ -47,10 +51,14 @@ public sealed class EmailOutboxProtector
 
     /// <summary>
     /// Builds the stored content of an email batch, with every text and binary payload protected.
+    /// The recipients are left to the caller, which stores one message per recipient.
     /// </summary>
     /// <param name="batch">Email batch to store for delivery.</param>
     /// <param name="now">Current timestamp stored on the created rows.</param>
-    /// <returns>The resulting email outbox content value.</returns>
+    /// <returns>
+    /// A new content row whose parts hold the inline images first and then the attachments, each in
+    /// the order of the batch.
+    /// </returns>
     public EmailOutboxContent ToContent(EmailBatch batch, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(batch);
@@ -102,8 +110,8 @@ public sealed class EmailOutboxProtector
     /// Reads the stored content of an email once, so every message that delivers it reuses the same
     /// unprotected text and binary payloads.
     /// </summary>
-    /// <param name="content">Stored content that is read.</param>
-    /// <returns>The resulting email outbox payload value.</returns>
+    /// <param name="content">Stored content that is read, with its parts loaded.</param>
+    /// <returns>The readable subject, bodies, attachments and inline images.</returns>
     /// <exception cref="System.Security.Cryptography.CryptographicException">
     /// The stored payload cannot be read with the current key ring.
     /// </exception>
@@ -148,7 +156,7 @@ public sealed class EmailOutboxProtector
     /// </summary>
     /// <param name="message">Stored message that carries the recipient and the kind.</param>
     /// <param name="payload">Content already read with <see cref="Unprotect"/>.</param>
-    /// <returns>The resulting email message value.</returns>
+    /// <returns>The message addressed to that recipient, ready for the transport.</returns>
     public static EmailMessage ToMessage(EmailOutboxMessage message, EmailOutboxPayload payload)
     {
         ArgumentNullException.ThrowIfNull(message);

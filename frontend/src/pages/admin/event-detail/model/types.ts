@@ -34,7 +34,7 @@ export interface AttendeeAssignment {
   readonly statusId: string
   readonly statusName: string
   readonly signedUpAt: string
-  /** The attendee has another signup of the event at the same time. */
+  /** This signup overlaps in time another signup of the attendee to the event, neither denied. */
   readonly hasTimeConflict: boolean
 }
 

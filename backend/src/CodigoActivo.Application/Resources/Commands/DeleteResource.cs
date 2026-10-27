@@ -13,7 +13,8 @@ namespace CodigoActivo.Application.Resources.Commands;
 public sealed record DeleteResourceCommand(ResourceId ResourceId) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to delete the resource.
+/// Executes the command to delete the resource. Its thumbnail and body images are removed after the
+/// commit when nothing else uses them.
 /// </summary>
 /// <param name="resources">Repository used to persist and retrieve resources.</param>
 public sealed class DeleteResourceCommandHandler(IResourceRepository resources)
@@ -24,7 +25,9 @@ public sealed class DeleteResourceCommandHandler(IResourceRepository resources)
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <returns>
+    /// A task whose result reports success, or <see cref="ApplicationErrorCode.ResourceNotFound"/>.
+    /// </returns>
     public async Task<Result> HandleAsync(
         DeleteResourceCommand command,
         CancellationToken ct = default

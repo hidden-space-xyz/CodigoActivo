@@ -16,8 +16,8 @@ namespace CodigoActivo.Application.Users.Commands;
 public sealed record DeleteUserCommand(UserId UserId) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to delete the user, keeping their data history blocked and handing
-/// the content credited to the account over to the initial administrator. It serves an
+/// Executes the command to delete the user and their dependents, keeping their data history blocked
+/// and handing the content credited to them over to the initial administrator. It serves an
 /// administrator removing somebody else, another administrator included, and a guardian removing
 /// one of their minors; deleting one's own account goes through
 /// <see cref="DeleteOwnAccountCommand"/>, which also demands the password and the second factor.
@@ -26,7 +26,7 @@ public sealed record DeleteUserCommand(UserId UserId) : ICommand<Result>;
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="actingUser">Policy that decides for whom the signed-in user may act.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
-/// <param name="accountEraser">Use case that erases the account after copying it.</param>
+/// <param name="accountEraser">Eraser that deletes the account and its dependents, keeping their data history.</param>
 public sealed class DeleteUserCommandHandler(
     IUserRepository users,
     ActingUserPolicy actingUser,
@@ -39,7 +39,15 @@ public sealed class DeleteUserCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <returns>
+    /// A task whose result reports success;
+    /// <see cref="ApplicationErrorCode.ActingForAnotherUserForbidden"/> when the caller is neither an
+    /// administrator nor the guardian, <see cref="DomainErrorCode.UserDeleteInitialAdminForbidden"/>
+    /// for the initial administrator,
+    /// <see cref="ApplicationErrorCode.UserSelfDeleteRequiresVerification"/> for the caller's own
+    /// account, or <see cref="ApplicationErrorCode.UserNotFound"/> when the user is missing or was
+    /// erased meanwhile.
+    /// </returns>
     public async Task<Result> HandleAsync(DeleteUserCommand command, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(command);

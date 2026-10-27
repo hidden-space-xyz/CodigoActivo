@@ -1,7 +1,8 @@
 namespace CodigoActivo.Application.Abstractions.Storage;
 
 /// <summary>
-/// Stores the binary content of uploaded files, keyed by their storage-safe name.
+/// Stores the binary content of uploaded files, keyed by their storage-safe name. Every method throws
+/// <see cref="ArgumentException"/> for a blank name or one that is not a bare file name.
 /// </summary>
 public interface IFileStorage
 {
@@ -10,7 +11,7 @@ public interface IFileStorage
     /// name only once it is complete and on disk, and never replaces content already stored there.
     /// </summary>
     /// <param name="storedName">Storage-safe file name identifying the content.</param>
-    /// <param name="content">Content stream to store or inspect.</param>
+    /// <param name="content">Content to store, read from its current position to the end.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     /// <exception cref="IOException">Content is already stored under the name, or it could not be written.</exception>
@@ -25,7 +26,7 @@ public interface IFileStorage
     public IReadOnlyList<string> ListWrittenUpTo(DateTimeOffset cutoff);
 
     /// <summary>
-    /// Opens the stored file as a read-only stream.
+    /// Opens the stored file as a read-only stream, which the caller disposes.
     /// </summary>
     /// <param name="storedName">Storage-safe file name identifying the content.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -33,7 +34,7 @@ public interface IFileStorage
     public Task<Stream?> OpenReadAsync(string storedName, CancellationToken ct = default);
 
     /// <summary>
-    /// Deletes the stored content, if any.
+    /// Deletes the stored content, if any. A failure of the storage itself is thrown.
     /// </summary>
     /// <param name="storedName">Storage-safe file name identifying the content.</param>
     public void Delete(string storedName);

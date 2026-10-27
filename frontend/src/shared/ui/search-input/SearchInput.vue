@@ -6,7 +6,7 @@ import { AppIcon } from '@/shared/ui/app-icon'
 
 const props = withDefaults(
   defineProps<{
-    /** Current search term. */
+    /** Applied search term; a change from outside replaces the text in the box. */
     modelValue: string
     /** Used as both placeholder and accessible name, since there is no visible label. */
     label: string

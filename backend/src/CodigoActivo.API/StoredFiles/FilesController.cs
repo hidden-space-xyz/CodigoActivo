@@ -19,7 +19,8 @@ using Microsoft.Net.Http.Headers;
 namespace CodigoActivo.API.StoredFiles;
 
 /// <summary>
-/// Exposes HTTP endpoints for querying and managing files.
+/// Exposes HTTP endpoints for querying and managing the uploaded image files: anyone may read them
+/// and only administrators upload or delete them.
 /// </summary>
 [ApiController]
 [Route("api/files")]
@@ -28,12 +29,12 @@ public class FilesController : ApiControllerBase
     private const string ImmutableContentCacheControl = "public, max-age=31536000, immutable";
 
     /// <summary>
-    /// Gets the requested file.
+    /// Gets the metadata of the requested file, without its content.
     /// </summary>
     /// <param name="fileId">Identifier of the file.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a file, or an error response.</returns>
+    /// <returns>An HTTP response containing the file metadata, or an error response.</returns>
     [HttpGet("{fileId:guid}")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Files)]
@@ -53,7 +54,7 @@ public class FilesController : ApiControllerBase
     /// <param name="fileId">Identifier of the file.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>The bytes of the file with their cache validators, or an error response.</returns>
     [HttpGet("{fileId:guid}/content")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Files)]
@@ -73,7 +74,7 @@ public class FilesController : ApiControllerBase
     /// <param name="fileId">Identifier of the file.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>The bytes of the thumbnail with their cache validators, or an error response.</returns>
     [HttpGet("{fileId:guid}/thumbnail")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Files)]
@@ -87,13 +88,14 @@ public class FilesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Creates a file from the validated request.
+    /// Uploads an image: it is validated and only the variants encoded from it are stored, never
+    /// the upload itself.
     /// </summary>
-    /// <param name="file">The file value.</param>
+    /// <param name="file">Uploaded image; a missing one is refused by the use case.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getById">Query handler that reads the result of the command.</param>
+    /// <param name="getById">Query handler that reads the created file.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a file, or an error response.</returns>
+    /// <returns>A 201 response with the file metadata and its location, or an error response.</returns>
     [HttpPost]
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
@@ -115,12 +117,12 @@ public class FilesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Deletes the selected file.
+    /// Deletes the selected file, which is refused while any content still references it.
     /// </summary>
     /// <param name="fileId">Identifier of the file.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpDelete("{fileId:guid}")]
     [AllowOnlyAdmin]
     public async Task<IActionResult> DeleteAsync(

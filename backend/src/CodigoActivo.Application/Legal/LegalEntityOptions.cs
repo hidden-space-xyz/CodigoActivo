@@ -9,7 +9,8 @@ namespace CodigoActivo.Application.Legal;
 public sealed class LegalEntityOptions
 {
     /// <summary>
-    /// Longest value accepted for any field.
+    /// Longest name, tax identification number, address and registry accepted; the email and the
+    /// phone follow their own formats.
     /// </summary>
     public const int MaxLength = 300;
 

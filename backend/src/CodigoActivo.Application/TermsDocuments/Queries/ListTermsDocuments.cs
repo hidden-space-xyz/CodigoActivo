@@ -31,7 +31,9 @@ public sealed class ListTermsDocumentsQueryHandler(IReadStore readStore, IQueryE
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a paged terms document.</returns>
+    /// <returns>
+    /// A task whose result contains the requested page of terms documents, ordered by name.
+    /// </returns>
     public Task<PagedResult<TermsDocumentResponse>> HandleAsync(
         ListTermsDocumentsQuery query,
         CancellationToken ct = default

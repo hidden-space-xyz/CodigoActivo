@@ -14,7 +14,8 @@ import { getErrorMessage, useCrudFeedback } from '@/shared/lib/feedback'
  * session and every cached query are dropped and the browser lands on the home page, because the
  * account behind them no longer exists; a failed sign-out is ignored, since the API already ended
  * the session. Only administrators ask the API whether they may delete their account, since the
- * initial administrator may not; until it answers, `canDelete` stays false.
+ * initial administrator may not; until it answers, `canDelete` stays false. A failed request is
+ * kept in `errorMessage` until `reset` or the next success. Call it in `setup`.
  */
 export function useDeleteAccount() {
   const { t } = useI18n()

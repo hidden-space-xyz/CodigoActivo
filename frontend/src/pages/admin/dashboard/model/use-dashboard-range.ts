@@ -47,7 +47,7 @@ function monthsAgo(months: number): Date {
 
 /**
  * Dashboard range state, defaulting to the last 12 months. `range` yields inclusive `YYYY-MM-DD`
- * bounds ending today (local time); presets span 30 days, 90 days or 12 months. Picking a preset
+ * bounds in local time; presets end today and span 30 days, 90 days or 12 months. Picking a preset
  * clears the custom dates, and clearing the custom dates falls back to `12m`. A custom range
  * without an end date ends today.
  */

@@ -26,6 +26,8 @@ public sealed record BeginAuthenticatorSetupCommand(
 /// stolen session cannot replace the second factor, and the secret only becomes active once
 /// <see cref="ConfirmAuthenticatorCommandHandler"/> sees a code generated from it. An account that
 /// already uses an authenticator is refused: it returns to email first, which takes a current code.
+/// A new enrollment replaces any pending one and can be confirmed for
+/// <see cref="TwoFactorOptions.SetupLifetime"/>.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
@@ -49,7 +51,12 @@ public sealed class BeginAuthenticatorSetupCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the enrollment data on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the enrollment data, shown only now, on success;
+    /// <see cref="ApplicationErrorCode.UserCurrentPasswordIncorrect"/> when the password is wrong or
+    /// the account is locked by wrong passwords, or
+    /// <see cref="DomainErrorCode.AuthenticatorAlreadyEnabled"/> when an authenticator is active.
+    /// </returns>
     public async Task<Result<AuthenticatorSetup>> HandleAsync(
         BeginAuthenticatorSetupCommand command,
         CancellationToken ct = default

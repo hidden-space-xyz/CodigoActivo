@@ -27,7 +27,10 @@ public sealed class GetAssignmentsQueryHandler(IReadStore readStore, IQueryExecu
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the existing assignments in the requested user order.</returns>
+    /// <returns>
+    /// A task whose result contains the existing assignments in the requested user order; users not
+    /// signed up are left out.
+    /// </returns>
     public async Task<IReadOnlyList<AssignmentResponse>> HandleAsync(
         GetAssignmentsQuery query,
         CancellationToken ct = default

@@ -11,8 +11,9 @@ import { refreshSession, useSession } from '@/entities/session'
 
 /**
  * Signed-in user's profile, minors and account mutations. A saved profile replaces the cached one
- * and refreshes the session user. Deleting the own account lives in `useDeleteAccount`, because it
- * needs the password and the second factor.
+ * and refreshes the session user; adding, editing or removing a minor refetches the minors.
+ * Deleting the own account lives in `useDeleteAccount`, because it needs the password and the
+ * second factor.
  */
 export function useAccount() {
   const session = useSession()

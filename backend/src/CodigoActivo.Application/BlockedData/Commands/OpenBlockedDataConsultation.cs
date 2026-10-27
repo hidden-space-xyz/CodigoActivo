@@ -17,7 +17,7 @@ namespace CodigoActivo.Application.BlockedData.Commands;
 /// <param name="Authority">Who the data is made available to.</param>
 /// <param name="Reference">Reference of the request, such as the number of the proceedings.</param>
 /// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize it.</param>
-/// <param name="Code">Code of the second factor.</param>
+/// <param name="Code">Code from the consultation email or the authenticator application.</param>
 public sealed record OpenBlockedDataConsultationCommand(
     [property: EnumDataType(typeof(BlockedDataAuthority))] BlockedDataAuthority Authority,
     [property:
@@ -36,8 +36,9 @@ public sealed record OpenBlockedDataConsultationCommand(
 /// authority. Only the account designated for data protection opens one, after its current
 /// password and a code of its second factor, emailed on demand or read from its authenticator app.
 /// The code is checked and spent with the account locked, so it opens a single consultation, and
-/// wrong codes count towards the same lockout as logins; the opening is announced to the legal
-/// contact.
+/// wrong codes count towards the same lockout as logins. The consultation stays open for
+/// <see cref="BlockedDataConsultation.Validity"/>, and its opening is announced to the legal
+/// contact once it is committed.
 /// </summary>
 /// <param name="officer">Policy that tells who may consult the blocked data.</param>
 /// <param name="accountLock">Runs the check of the code with the account locked.</param>
@@ -59,7 +60,14 @@ public sealed class OpenBlockedDataConsultationCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result carries the identifier of the consultation, or the error.</returns>
+    /// <returns>
+    /// A task whose result carries the identifier of the consultation;
+    /// <see cref="ApplicationErrorCode.BlockedDataOfficerOnly"/> for any other account,
+    /// <see cref="ApplicationErrorCode.UserCurrentPasswordIncorrect"/>,
+    /// <see cref="DomainErrorCode.TwoFactorLocked"/>,
+    /// <see cref="ApplicationErrorCode.TwoFactorCodeInvalid"/>, or
+    /// <see cref="DomainErrorCode.BlockedDataReferenceRequired"/>.
+    /// </returns>
     public async Task<Result<BlockedDataConsultationId>> HandleAsync(
         OpenBlockedDataConsultationCommand command,
         CancellationToken ct = default

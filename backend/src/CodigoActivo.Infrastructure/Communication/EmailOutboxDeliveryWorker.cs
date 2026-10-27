@@ -8,12 +8,13 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// <summary>
 /// Runs the email outbox in the background: it delivers due messages as soon as this process stores
 /// one and polls for the rest, which also picks up the work of other instances and the retries that
-/// became due. A failed run never stops the loop or the host; it is logged at most once per
+/// became due; a run that claims a full batch is followed at once by the next. A failed run never
+/// stops the loop or the host; it is logged at most once per
 /// <see cref="EmailGuardOptions.AlertInterval"/>, since an unreachable dependency fails every poll.
 /// </summary>
 /// <param name="deliverer">Component that claims and delivers one batch of due messages.</param>
 /// <param name="signal">Signal raised when this process stores email.</param>
-/// <param name="options">Configuration values used by the component.</param>
+/// <param name="options">Outbox policy: poll interval, batch size and shutdown drain.</param>
 /// <param name="guard">Email guard configuration, whose alert interval spaces repeated failures.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
@@ -29,8 +30,9 @@ public sealed class EmailOutboxDeliveryWorker(
     private readonly LogThrottle runFailures = new(guard.AlertInterval);
 
     /// <summary>
-    /// Stops claiming new messages and waits for the deliveries in flight, up to the configured
-    /// drain. Whatever is not delivered stays in the outbox for the next start.
+    /// Stops claiming new messages and waits for the deliveries in flight, up to
+    /// <see cref="EmailQueueOptions.ShutdownDrain"/>. A message not delivered by then stays in the
+    /// outbox with its attempt counted and is claimed again once its lease expires.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
@@ -43,7 +45,8 @@ public sealed class EmailOutboxDeliveryWorker(
     }
 
     /// <summary>
-    /// Delivers due email until shutdown, waiting for a signal or the poll interval between runs.
+    /// Delivers due email until shutdown, waiting for a signal or the poll interval between runs
+    /// unless the last run claimed a full batch.
     /// Only the shutdown token ends the loop: a cancellation raised by a send timeout, a database
     /// command or any other dependency is a failed run like any other and the worker keeps going.
     /// </summary>

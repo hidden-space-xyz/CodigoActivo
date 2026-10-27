@@ -19,7 +19,8 @@ public static class UserProjections
     ];
 
     /// <summary>
-    /// Stores the shared user value.
+    /// Projects a user as the holder of the account sees it, without the membership type, the
+    /// guardian's name and the dependent count.
     /// </summary>
     public static readonly Expression<Func<UserRow, UserResponse>> User = user => new UserResponse
     {
@@ -51,7 +52,7 @@ public static class UserProjections
     };
 
     /// <summary>
-    /// Stores the shared user with type value.
+    /// Projects a user with the membership type, the guardian's name and the dependent count.
     /// </summary>
     public static readonly Expression<Func<UserRow, UserResponse>> UserWithType =
         user => new UserResponse
@@ -92,7 +93,7 @@ public static class UserProjections
         };
 
     /// <summary>
-    /// Stores the shared user status type value.
+    /// Projects an entry of the user status catalog.
     /// </summary>
     public static readonly Expression<
         Func<UserStatusTypeRow, UserStatusTypeResponse>
@@ -105,7 +106,7 @@ public static class UserProjections
     };
 
     /// <summary>
-    /// Stores the shared user type value.
+    /// Projects an entry of the membership type catalog.
     /// </summary>
     public static readonly Expression<Func<UserTypeRow, UserTypeResponse>> UserType =
         userType => new UserTypeResponse

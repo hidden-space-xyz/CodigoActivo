@@ -10,14 +10,15 @@ using CodigoActivo.Domain.Events;
 namespace CodigoActivo.Application.Activities.Queries;
 
 /// <summary>
-/// Carries the criteria used to retrieve household assignments.
+/// Carries the criteria used to retrieve the signups of the signed-in user's household to an event.
 /// </summary>
-/// <param name="EventId">Identifier of the event.</param>
+/// <param name="EventId">Identifier of the event whose activities are read.</param>
 public sealed record GetHouseholdAssignmentsQuery(EventId EventId)
     : IQuery<Result<IReadOnlyList<HouseholdMemberAssignmentResponse>>>;
 
 /// <summary>
-/// Executes the query to retrieve household assignments.
+/// Executes the query to retrieve the signups of the signed-in user and their dependents to the
+/// activities of an event.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -37,7 +38,10 @@ public sealed class GetHouseholdAssignmentsQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the matching household member assignment items on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the signups ordered by member name and activity start, or
+    /// <see cref="ApplicationErrorCode.EventNotFound"/>.
+    /// </returns>
     public async Task<Result<IReadOnlyList<HouseholdMemberAssignmentResponse>>> HandleAsync(
         GetHouseholdAssignmentsQuery query,
         CancellationToken ct = default

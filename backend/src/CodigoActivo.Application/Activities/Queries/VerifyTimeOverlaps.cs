@@ -11,15 +11,16 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Activities.Queries;
 
 /// <summary>
-/// Carries the criteria used to verify time overlaps.
+/// Carries the criteria used to find which signups of a person overlap in time with an activity.
 /// </summary>
-/// <param name="ActivityId">Identifier of the activity.</param>
-/// <param name="UserId">Identifier of the user.</param>
+/// <param name="ActivityId">Identifier of the activity the person would sign up to.</param>
+/// <param name="UserId">Identifier of the signed-in user or of someone they may act for.</param>
 public sealed record VerifyTimeOverlapsQuery(ActivityId ActivityId, UserId UserId)
     : IQuery<Result<TimeOverlapResponse>>;
 
 /// <summary>
-/// Executes the query to verify time overlaps.
+/// Executes the query to find the other activities the person is signed up to, unless denied,
+/// whose time range overlaps the activity.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -35,7 +36,11 @@ public sealed class VerifyTimeOverlapsQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a time overlap on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the overlapping activities ordered by start;
+    /// <see cref="ApplicationErrorCode.ActingForAnotherUserForbidden"/> when the user may not act
+    /// for the person, or <see cref="ApplicationErrorCode.ActivityNotFound"/>.
+    /// </returns>
     public async Task<Result<TimeOverlapResponse>> HandleAsync(
         VerifyTimeOverlapsQuery query,
         CancellationToken ct = default

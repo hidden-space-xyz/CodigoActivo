@@ -81,13 +81,19 @@ public sealed class EventRatingRow
     /// <summary>Gets the score, or <see langword="null"/> when the participant gave none.</summary>
     public int? Score { get; init; }
 
-    /// <summary>Gets what the participant liked most.</summary>
+    /// <summary>
+    /// Gets what the participant liked most, or <see langword="null"/> when they did not answer.
+    /// </summary>
     public string? MostLiked { get; init; }
 
-    /// <summary>Gets what the participant liked least.</summary>
+    /// <summary>
+    /// Gets what the participant liked least, or <see langword="null"/> when they did not answer.
+    /// </summary>
     public string? LeastLiked { get; init; }
 
-    /// <summary>Gets the suggestions.</summary>
+    /// <summary>
+    /// Gets the participant's suggestions, or <see langword="null"/> when they did not answer.
+    /// </summary>
     public string? Suggestions { get; init; }
 }
 
@@ -147,7 +153,9 @@ public sealed class EventTermsDocumentRow
     /// <summary>Gets a value indicating whether accepting the document is required to sign up.</summary>
     public bool IsRequired { get; init; }
 
-    /// <summary>Gets the position of the document in the event.</summary>
+    /// <summary>
+    /// Gets the zero-based position of the document among the terms documents of the event.
+    /// </summary>
     public int DisplayOrder { get; init; }
 }
 
@@ -183,13 +191,19 @@ public sealed class EventTermsAcceptanceRow
     /// <summary>Gets the version of the document the decision was last taken on.</summary>
     public int TermsDocumentVersion { get; init; }
 
-    /// <summary>Gets a value indicating whether the document was accepted.</summary>
+    /// <summary>
+    /// Gets a value indicating whether the document is accepted now; <see langword="false"/> once it
+    /// was declined or withdrawn.
+    /// </summary>
     public bool Accepted { get; init; }
 
-    /// <summary>Gets when the decision was taken.</summary>
+    /// <summary>Gets when the decision was last taken.</summary>
     public DateTimeOffset DecidedAt { get; init; }
 
-    /// <summary>Gets the PNG image of the signature drawn to accept the document, if any.</summary>
+    /// <summary>
+    /// Gets the PNG image of the signature drawn to accept the document, when it asked for one and
+    /// is accepted now.
+    /// </summary>
     public byte[]? Signature { get; init; }
 
     /// <summary>Gets every change of the decision.</summary>
@@ -213,7 +227,10 @@ public sealed class TermsDecisionChangeRow
     /// <summary>Gets the identifier of the terms document.</summary>
     public Guid TermsDocumentId { get; init; }
 
-    /// <summary>Gets the version of the document the change was made on.</summary>
+    /// <summary>
+    /// Gets the version of the document the change was made on; a withdrawal keeps the version it
+    /// withdraws.
+    /// </summary>
     public int TermsDocumentVersion { get; init; }
 
     /// <summary>Gets whether the document was accepted; false for a decline or a withdrawal.</summary>

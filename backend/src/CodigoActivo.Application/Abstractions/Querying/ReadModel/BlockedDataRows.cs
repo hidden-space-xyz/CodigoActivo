@@ -43,7 +43,7 @@ public sealed class BlockedDataFindingRow
     /// <summary>Gets the identifier of the consultation.</summary>
     public Guid ConsultationId { get; init; }
 
-    /// <summary>Gets the identifier of the account.</summary>
+    /// <summary>Gets the identifier of the account found, which may no longer exist.</summary>
     public Guid AccountId { get; init; }
 
     /// <summary>Gets when it was first found.</summary>
@@ -55,7 +55,7 @@ public sealed class BlockedDataFindingRow
 /// </summary>
 public sealed class BlockedDataExtractRow
 {
-    /// <summary>Gets the database sequence.</summary>
+    /// <summary>Gets the identifier the database generates for the extract, in insertion order.</summary>
     public long Id { get; init; }
 
     /// <summary>Gets the identifier of the consultation.</summary>

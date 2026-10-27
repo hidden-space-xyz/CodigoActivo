@@ -95,7 +95,9 @@ public sealed class UnitOfWorkCommandDecorator<TCommand, TResult>(
 
 /// <summary>
 /// Records every command in the audit log: who ran it and from where, what it acted on and how it
-/// ended. The main thing is the one the handler named through
+/// ended. Registered outside validation and the commit, it queues the entry once both are over: a
+/// failed result, a concurrent update or a unique constraint violation is recorded as rejected and
+/// any other exception as failed. The main thing is the one the handler named through
 /// <see cref="IAuditSubject"/>, else the one a successful result created, else the first typed
 /// identifier of the command; every other identifier it names is related. Auditing never changes
 /// the outcome of a command: a failure to record is logged, and the result or exception of the

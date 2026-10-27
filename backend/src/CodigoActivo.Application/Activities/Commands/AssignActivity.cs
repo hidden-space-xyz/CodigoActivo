@@ -31,9 +31,9 @@ public sealed record AssignActivityCommand(
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to sign a person up to an activity. The signed-in user may sign up
-/// themselves or one of their dependents; an administrator may sign up anyone, even outside the
-/// signup window.
+/// Executes the command to sign a person up to an activity, pending a decision. The signed-in user
+/// may sign up themselves or one of their dependents; an administrator may sign up anyone, even
+/// outside the signup window, and without terms decisions when signing up someone else.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
 /// <param name="users">Repository used to persist and retrieve users.</param>
@@ -59,7 +59,16 @@ public sealed class AssignActivityCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result reports success;
+    /// <see cref="ApplicationErrorCode.ActingForAnotherUserForbidden"/> when the user may not act
+    /// for the person, <see cref="ApplicationErrorCode.ActivityNotFound"/> or
+    /// <see cref="ApplicationErrorCode.UserNotFound"/> when either is missing,
+    /// <see cref="DomainErrorCode.ActivityAssignmentAlreadyExists"/> when the person is already
+    /// signed up, <see cref="ApplicationErrorCode.EventTermsAcceptanceRequired"/> when a required
+    /// terms document is left unaccepted, or the domain error of the signup window, role or terms
+    /// rule that refuses the signup.
+    /// </returns>
     public async Task<Result> HandleAsync(
         AssignActivityCommand command,
         CancellationToken ct = default

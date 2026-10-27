@@ -11,8 +11,9 @@ import { downloadCertificatePdf, downloadCertificatePng } from '../lib/certifica
 export type CertificateFormat = 'png' | 'pdf'
 
 /**
- * Loads the user's certificates and tracks the one open in the preview dialog. Downloads are
- * tracked per certificate and format, so a repeated click while one is rendering is ignored.
+ * Loads the certificates of the user and their minors and tracks the one open in the preview
+ * dialog. Downloads are tracked per certificate and format, so a repeated click while one is
+ * rendering is ignored; a download that cannot be rendered rejects, for the caller to report.
  */
 export function useAccountCertificates() {
   const { t } = useI18n()

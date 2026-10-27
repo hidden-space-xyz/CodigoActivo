@@ -12,17 +12,25 @@ namespace CodigoActivo.API.Events.Contracts;
 /// <summary>
 /// Contains the client-supplied data used to create an event.
 /// </summary>
-/// <param name="Title">The title value.</param>
-/// <param name="Subtitle">The subtitle value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="EventStartsAt">The event starts at value.</param>
-/// <param name="EventEndsAt">The event ends at value.</param>
-/// <param name="EarlySignupStartsAt">The early signup starts at value.</param>
-/// <param name="SignupStartsAt">The signup starts at value.</param>
-/// <param name="SignupEndsAt">The signup ends at value.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
-/// <param name="CategoryTypeIds">Identifiers of the category type items.</param>
-/// <param name="TermsDocuments">The requested terms document links, in display order.</param>
+/// <param name="Title">Title of the event.</param>
+/// <param name="Subtitle">Line shown below the title.</param>
+/// <param name="Description">Body as rich text JSON within the rich text allowlist.</param>
+/// <param name="EventStartsAt">First day of the event.</param>
+/// <param name="EventEndsAt">Last day of the event, not before the first.</param>
+/// <param name="EarlySignupStartsAt">
+/// Start of the early signup, before the regular one; null when there is none.
+/// </param>
+/// <param name="SignupStartsAt">Start of the signup.</param>
+/// <param name="SignupEndsAt">
+/// End of the signup, after its start and no later than the last day of the event.
+/// </param>
+/// <param name="ThumbnailId">Identifier of the uploaded thumbnail file, which must exist.</param>
+/// <param name="CategoryTypeIds">
+/// Identifiers of the category types of the event; at least one, each existing.
+/// </param>
+/// <param name="TermsDocuments">
+/// Terms documents linked to the event, in display order, each once; a consent cannot be required.
+/// </param>
 public record CreateEventRequest(
     [Required] [MaxLength(200)] string Title,
     [Required] [MaxLength(300)] string Subtitle,
@@ -62,19 +70,27 @@ public record CreateEventRequest(
 }
 
 /// <summary>
-/// Contains the client-supplied data used to update the event.
+/// Contains the client-supplied data that replaces every editable field of an event.
 /// </summary>
-/// <param name="Title">The title value.</param>
-/// <param name="Subtitle">The subtitle value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="EventStartsAt">The event starts at value.</param>
-/// <param name="EventEndsAt">The event ends at value.</param>
-/// <param name="EarlySignupStartsAt">The early signup starts at value.</param>
-/// <param name="SignupStartsAt">The signup starts at value.</param>
-/// <param name="SignupEndsAt">The signup ends at value.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
-/// <param name="CategoryTypeIds">Identifiers of the category type items.</param>
-/// <param name="TermsDocuments">The requested terms document links, in display order.</param>
+/// <param name="Title">Title of the event.</param>
+/// <param name="Subtitle">Line shown below the title.</param>
+/// <param name="Description">Body as rich text JSON within the rich text allowlist.</param>
+/// <param name="EventStartsAt">First day of the event; every activity must stay within the new days.</param>
+/// <param name="EventEndsAt">Last day of the event, not before the first.</param>
+/// <param name="EarlySignupStartsAt">
+/// Start of the early signup, before the regular one; null when there is none.
+/// </param>
+/// <param name="SignupStartsAt">Start of the signup.</param>
+/// <param name="SignupEndsAt">
+/// End of the signup, after its start and no later than the last day of the event.
+/// </param>
+/// <param name="ThumbnailId">Identifier of the uploaded thumbnail file, which must exist.</param>
+/// <param name="CategoryTypeIds">
+/// Identifiers of the category types of the event; at least one, each existing.
+/// </param>
+/// <param name="TermsDocuments">
+/// Terms documents linked to the event, in display order, each once; a consent cannot be required.
+/// </param>
 public record UpdateEventRequest(
     [Required] [MaxLength(200)] string Title,
     [Required] [MaxLength(300)] string Subtitle,
@@ -119,7 +135,9 @@ public record UpdateEventRequest(
 /// Contains the client-supplied data used to link a terms document to an event.
 /// </summary>
 /// <param name="TermsDocumentId">Identifier of the terms document.</param>
-/// <param name="Required">Whether accepting the document is mandatory to complete the signup.</param>
+/// <param name="Required">
+/// Whether accepting the document is mandatory to complete the signup; never for a consent.
+/// </param>
 public record EventTermsDocumentRequest([Required] Guid TermsDocumentId, bool Required = false);
 
 internal static class EventRequestMapping

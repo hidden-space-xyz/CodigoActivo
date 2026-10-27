@@ -11,12 +11,17 @@ namespace CodigoActivo.API.Resources.Contracts;
 /// <summary>
 /// Contains the client-supplied data used to create a resource.
 /// </summary>
-/// <param name="Title">The title value.</param>
-/// <param name="Subtitle">The subtitle value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="Url">The url value.</param>
-/// <param name="ResourceTypeId">Identifier of the resource type.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
+/// <param name="Title">Title of the resource.</param>
+/// <param name="Subtitle">Line shown below the title.</param>
+/// <param name="Description">
+/// Body as rich text JSON; required for a resource written on the site and refused for an
+/// external one.
+/// </param>
+/// <param name="Url">
+/// HTTP or HTTPS link; required for an external resource and refused for one written on the site.
+/// </param>
+/// <param name="ResourceTypeId">Identifier of the resource type, which decides which of the two applies.</param>
+/// <param name="ThumbnailId">Identifier of the uploaded thumbnail file, which must exist.</param>
 public record CreateResourceRequest(
     [Required] [MaxLength(200)] string Title,
     [Required] [MaxLength(300)] string Subtitle,
@@ -54,14 +59,19 @@ public record CreateResourceRequest(
 }
 
 /// <summary>
-/// Contains the client-supplied data used to update the resource.
+/// Contains the client-supplied data that replaces every editable field of a resource.
 /// </summary>
-/// <param name="Title">The title value.</param>
-/// <param name="Subtitle">The subtitle value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="Url">The url value.</param>
-/// <param name="ResourceTypeId">Identifier of the resource type.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
+/// <param name="Title">Title of the resource.</param>
+/// <param name="Subtitle">Line shown below the title.</param>
+/// <param name="Description">
+/// Body as rich text JSON; required for a resource written on the site and refused for an
+/// external one.
+/// </param>
+/// <param name="Url">
+/// HTTP or HTTPS link; required for an external resource and refused for one written on the site.
+/// </param>
+/// <param name="ResourceTypeId">Identifier of the resource type, which decides which of the two applies.</param>
+/// <param name="ThumbnailId">Identifier of the uploaded thumbnail file, which must exist.</param>
 public record UpdateResourceRequest(
     [Required] [MaxLength(200)] string Title,
     [Required] [MaxLength(300)] string Subtitle,

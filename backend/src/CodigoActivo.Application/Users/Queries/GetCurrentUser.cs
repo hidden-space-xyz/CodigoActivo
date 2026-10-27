@@ -22,11 +22,14 @@ public sealed class GetCurrentUserQueryHandler(
 ) : IQueryHandler<GetCurrentUserQuery, Result<UserResponse>>
 {
     /// <summary>
-    /// Handles the request to retrieve current user.
+    /// Handles the request to retrieve the account of the signed-in user.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a user on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the account, or the error of
+    /// <see cref="GetAccountQueryHandler"/> when it no longer exists.
+    /// </returns>
     public Task<Result<UserResponse>> HandleAsync(
         GetCurrentUserQuery query,
         CancellationToken ct = default

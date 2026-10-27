@@ -16,10 +16,10 @@ public sealed record GetFileContentQuery(StoredFileId FileId, FileVariant Varian
     : IQuery<Result<FileContent>>;
 
 /// <summary>
-/// Executes the query to retrieve file content.
+/// Executes the query to open the stored content of one variant of a file.
 /// </summary>
-/// <param name="getById">Handler used to retrieve file by identifier.</param>
-/// <param name="storage">Repository used to persist and retrieve storage.</param>
+/// <param name="getById">Handler that reads the metadata of the file.</param>
+/// <param name="storage">Storage holding the content of the files.</param>
 public sealed class GetFileContentQueryHandler(
     IQueryHandler<GetFileByIdQuery, Result<FileResponse>> getById,
     IFileStorage storage
@@ -32,7 +32,12 @@ public sealed class GetFileContentQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a file content on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the content; <see cref="ApplicationErrorCode.FileNotFound"/>
+    /// when the file is unknown, or
+    /// <see cref="ApplicationErrorCode.FileContentMissingFromStorage"/> when its row exists but the
+    /// variant is not in storage.
+    /// </returns>
     public async Task<Result<FileContent>> HandleAsync(
         GetFileContentQuery query,
         CancellationToken ct = default

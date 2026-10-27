@@ -13,7 +13,7 @@ namespace CodigoActivo.Infrastructure.Logs;
 public static class LogJson
 {
     /// <summary>
-    /// Identifies the maximum length of each text value.
+    /// Identifies the maximum length, in UTF-16 code units, of each text value and property name.
     /// </summary>
     public const int TextMaxLength = 4_000;
 

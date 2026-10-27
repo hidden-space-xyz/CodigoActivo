@@ -14,8 +14,9 @@ export interface TimelineCluster {
 
 /**
  * Merges an event's activities with the signups of the user and their household. High-demand roles
- * are only flagged once `showDemand` says the user's own signups are known, and activities that
- * begin at or before `now` are marked as started.
+ * are flagged only when `showDemand` is set, which the page does once the signups and household of
+ * a signed-in visitor have loaded, and activities that begin at or before `now` are marked as
+ * started.
  */
 export function toTimelineActivities(
   activities: readonly EventActivity[],

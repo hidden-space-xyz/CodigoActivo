@@ -9,8 +9,9 @@ using Microsoft.Extensions.Logging;
 namespace CodigoActivo.Infrastructure.Messaging;
 
 /// <summary>
-/// Publishes committed domain events to the handlers registered in the current scope, in the
-/// order the events were raised. Each handler runs without the cancellation of the request and
+/// Publishes committed domain events to the handlers registered in the current scope: first every
+/// <see cref="ICommittedEventsHandler"/> with the whole batch, then the listeners of each event in
+/// the order the events were raised. Each handler runs without the cancellation of the request and
 /// apart from the others: a failure is logged and the remaining handlers still run.
 /// </summary>
 /// <param name="services">Service provider of the current scope.</param>

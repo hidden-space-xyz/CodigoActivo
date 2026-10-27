@@ -17,7 +17,7 @@ export function toBlockedDataAccess(response: BlockedDataAccessResponse): Blocke
   }
 }
 
-/** Maps a consultation. */
+/** Maps a consultation; `officerName` is `null` once the officer's account no longer exists. */
 export function toConsultation(response: BlockedDataConsultationResponse): Consultation {
   return {
     id: response.id,
@@ -31,7 +31,7 @@ export function toConsultation(response: BlockedDataConsultationResponse): Consu
   }
 }
 
-/** Maps an account a search found. */
+/** Maps an account a search found, joining its names and adding up its history entries. */
 export function toCandidate(response: BlockedDataCandidateResponse): Candidate {
   return {
     accountId: response.accountId,

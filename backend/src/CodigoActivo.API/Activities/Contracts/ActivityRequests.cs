@@ -12,10 +12,13 @@ using EventId = CodigoActivo.Domain.Events.EventId;
 namespace CodigoActivo.API.Activities.Contracts;
 
 /// <summary>
-/// Contains the client-supplied data used to activity role capacity.
+/// Contains the client-supplied number of people an activity role takes.
 /// </summary>
-/// <param name="ActivityRoleTypeId">Identifier of the activity role type.</param>
-/// <param name="DesiredCount">Number of desired allowed or reported.</param>
+/// <param name="ActivityRoleTypeId">Identifier of the activity role type; each role at most once.</param>
+/// <param name="DesiredCount">
+/// Number of people wanted in the role, from <see cref="RoleCapacity.MinDesiredCount"/> to
+/// <see cref="RoleCapacity.MaxDesiredCount"/>.
+/// </param>
 public record ActivityRoleCapacityRequest(
     [Required] Guid ActivityRoleTypeId,
     [Required] [Range(RoleCapacity.MinDesiredCount, RoleCapacity.MaxDesiredCount)] int? DesiredCount
@@ -35,14 +38,16 @@ public record ActivityRoleCapacityRequest(
 /// <summary>
 /// Contains the client-supplied data used to create an activity.
 /// </summary>
-/// <param name="Title">The title value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="Location">The location value.</param>
+/// <param name="Title">Title of the activity.</param>
+/// <param name="Description">Plain-text description of the activity.</param>
+/// <param name="Location">Where the activity takes place.</param>
 /// <param name="ActivityModalityTypeId">Identifier of the activity modality type.</param>
-/// <param name="ActivityStartsAt">The activity starts at value.</param>
-/// <param name="ActivityEndsAt">The activity ends at value.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
-/// <param name="RoleCapacities">The role capacities value.</param>
+/// <param name="ActivityStartsAt">When the activity starts, within the calendar of its event.</param>
+/// <param name="ActivityEndsAt">When the activity ends, later than the start.</param>
+/// <param name="ThumbnailId">Identifier of the uploaded thumbnail file, which must exist.</param>
+/// <param name="RoleCapacities">
+/// How many people each role takes; null or empty when no role has a capacity.
+/// </param>
 public record CreateActivityRequest(
     [Required] [MaxLength(200)] string Title,
     [Required] [MaxLength(4000)] string Description,
@@ -88,16 +93,18 @@ public record CreateActivityRequest(
 }
 
 /// <summary>
-/// Contains the client-supplied data used to update the activity.
+/// Contains the client-supplied data that replaces every editable field of an activity.
 /// </summary>
-/// <param name="Title">The title value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="Location">The location value.</param>
+/// <param name="Title">Title of the activity.</param>
+/// <param name="Description">Plain-text description of the activity.</param>
+/// <param name="Location">Where the activity takes place.</param>
 /// <param name="ActivityModalityTypeId">Identifier of the activity modality type.</param>
-/// <param name="ActivityStartsAt">The activity starts at value.</param>
-/// <param name="ActivityEndsAt">The activity ends at value.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
-/// <param name="RoleCapacities">The role capacities value.</param>
+/// <param name="ActivityStartsAt">When the activity starts, within the calendar of its event.</param>
+/// <param name="ActivityEndsAt">When the activity ends, later than the start.</param>
+/// <param name="ThumbnailId">Identifier of the uploaded thumbnail file, which must exist.</param>
+/// <param name="RoleCapacities">
+/// How many people each role takes; null or empty when no role has a capacity.
+/// </param>
 public record UpdateActivityRequest(
     [Required] [MaxLength(200)] string Title,
     [Required] [MaxLength(4000)] string Description,
@@ -163,10 +170,13 @@ public record TermsDecisionRequest(
 );
 
 /// <summary>
-/// Contains the client-supplied data used to assign.
+/// Contains the client-supplied data used to sign a person up to an activity.
 /// </summary>
-/// <param name="ActivityRoleTypeId">Identifier of the activity role type.</param>
-/// <param name="TermsDecisions">The terms decisions supplied for the event's linked documents.</param>
+/// <param name="ActivityRoleTypeId">Identifier of the role requested.</param>
+/// <param name="TermsDecisions">
+/// Decisions on the terms documents of the event for the person signed up, if any were asked; an
+/// administrator signing up someone else may leave them out.
+/// </param>
 public record AssignRequest(
     [Required] Guid ActivityRoleTypeId,
     [MaxLength(50)] IReadOnlyList<TermsDecisionRequest>? TermsDecisions = null
@@ -200,9 +210,13 @@ public record AssignRequest(
 }
 
 /// <summary>
-/// Contains the client-supplied data used to assign household.
+/// Contains the client-supplied data used to sign members of the signed-in user's household up to
+/// an activity.
 /// </summary>
-/// <param name="Assignments">Members to sign up, each with the terms decisions taken for them.</param>
+/// <param name="Assignments">
+/// Members to sign up, each with the terms decisions taken for them; at least one, and a member
+/// listed twice counts once, with the first entry.
+/// </param>
 public record AssignHouseholdRequest(
     [Required]
     [MaxLength(Household.MaxMembers)]
@@ -232,10 +246,10 @@ public record AssignHouseholdRequest(
 }
 
 /// <summary>
-/// Contains the client-supplied data used to household assignment.
+/// Contains the client-supplied signup of one household member.
 /// </summary>
-/// <param name="UserId">Identifier of the user.</param>
-/// <param name="ActivityRoleTypeId">Identifier of the activity role type.</param>
+/// <param name="UserId">Identifier of the signed-in user or one of their dependents.</param>
+/// <param name="ActivityRoleTypeId">Identifier of the role the member takes.</param>
 /// <param name="TermsDecisions">
 /// The terms decisions taken for this member about the event's linked documents.
 /// </param>
@@ -257,9 +271,9 @@ public record HouseholdAssignmentRequest(
 }
 
 /// <summary>
-/// Contains the client-supplied data used to change assignment status.
+/// Contains the client-supplied data used to change the status of a signup.
 /// </summary>
-/// <param name="AssignmentStatusId">Identifier of the assignment status.</param>
+/// <param name="AssignmentStatusId">Identifier of the new signup status.</param>
 public record ChangeAssignmentStatusRequest([Required] Guid AssignmentStatusId) : IValidatableObject
 {
     /// <inheritdoc />
@@ -289,9 +303,9 @@ public record ChangeAssignmentStatusRequest([Required] Guid AssignmentStatusId) 
 }
 
 /// <summary>
-/// Contains the client-supplied data used to change assignment role.
+/// Contains the client-supplied data used to change the role of a signup.
 /// </summary>
-/// <param name="ActivityRoleTypeId">Identifier of the activity role type.</param>
+/// <param name="ActivityRoleTypeId">Identifier of the new role.</param>
 public record ChangeAssignmentRoleRequest([Required] Guid ActivityRoleTypeId) : IValidatableObject
 {
     /// <inheritdoc />

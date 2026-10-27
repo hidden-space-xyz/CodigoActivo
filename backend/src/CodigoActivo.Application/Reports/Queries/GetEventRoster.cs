@@ -10,13 +10,14 @@ using CodigoActivo.Domain.Events;
 namespace CodigoActivo.Application.Reports.Queries;
 
 /// <summary>
-/// Carries the criteria used to retrieve event roster.
+/// Carries the criteria used to retrieve the roster of an event.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 public sealed record GetEventRosterQuery(EventId EventId) : IQuery<Result<EventRosterResponse>>;
 
 /// <summary>
-/// Executes the query to retrieve event roster.
+/// Executes the query to retrieve the roster of an event: its activities with confirmed signups,
+/// each listing the people confirmed in it with their contact details, as administrators see them.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -24,11 +25,14 @@ public sealed class GetEventRosterQueryHandler(IReadStore readStore, IQueryExecu
     : IQueryHandler<GetEventRosterQuery, Result<EventRosterResponse>>
 {
     /// <summary>
-    /// Handles the request to retrieve event roster.
+    /// Handles the request to retrieve the roster of an event.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains an event roster on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the activities in chronological order, or
+    /// <see cref="ApplicationErrorCode.EventNotFound"/>.
+    /// </returns>
     public async Task<Result<EventRosterResponse>> HandleAsync(
         GetEventRosterQuery query,
         CancellationToken ct = default

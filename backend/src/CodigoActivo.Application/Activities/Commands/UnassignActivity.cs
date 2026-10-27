@@ -41,7 +41,11 @@ public sealed class UnassignActivityCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <returns>
+    /// A task whose result reports success; <c>ActingForAnotherUserForbidden</c> when the user may
+    /// not act for the person, <see cref="DomainErrorCode.ActivityAssignmentNotFound"/> when the
+    /// activity or the signup is missing, or the domain error of the signup window that refuses it.
+    /// </returns>
     public async Task<Result> HandleAsync(
         UnassignActivityCommand command,
         CancellationToken ct = default

@@ -27,8 +27,9 @@ public sealed record SetAdminCommand(
 
 /// <summary>
 /// Executes the command to grant or revoke the administrator rights of a user. Nobody changes
-/// their own rights, administrators included, a dependent never gets them and the initial
-/// administrator never loses them.
+/// their own rights, administrators included, neither a dependent nor an account whose email is
+/// still unconfirmed gets them, and the initial administrator never loses them. The holder is told
+/// by email when the rights change.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
@@ -46,7 +47,15 @@ public sealed class SetAdminCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result reports success;
+    /// <see cref="ApplicationErrorCode.UserSelfAdminChangeForbidden"/> for the caller's own account,
+    /// <see cref="ApplicationErrorCode.UserCurrentPasswordIncorrect"/> when granting with a wrong,
+    /// missing or locked password, <see cref="ApplicationErrorCode.UserNotFound"/>,
+    /// <see cref="DomainErrorCode.UserDependentCannotBeAdmin"/>,
+    /// <see cref="DomainErrorCode.UserPendingVerificationCannotBeAdmin"/> or
+    /// <see cref="DomainErrorCode.UserCannotRemoveInitialAdmin"/>.
+    /// </returns>
     public async Task<Result> HandleAsync(SetAdminCommand command, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(command);

@@ -14,7 +14,8 @@ namespace CodigoActivo.Application.Activities.Commands;
 public sealed record DeleteActivityCommand(ActivityId ActivityId) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to delete the activity with its signups, keeping their data history.
+/// Executes the command to delete the activity with its signups, keeping their data history. Its
+/// thumbnail is removed after the commit when nothing else uses it.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
 /// <param name="eraser">Service that commits the removal with its data history.</param>
@@ -28,7 +29,9 @@ public sealed class DeleteActivityCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <returns>
+    /// A task whose result reports success, or <see cref="ApplicationErrorCode.ActivityNotFound"/>.
+    /// </returns>
     public async Task<Result> HandleAsync(
         DeleteActivityCommand command,
         CancellationToken ct = default

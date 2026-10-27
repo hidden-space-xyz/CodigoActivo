@@ -11,7 +11,8 @@ namespace CodigoActivo.Infrastructure.Files;
 /// from the header before any pixel is decoded, and at most
 /// <see cref="FileUploadOptions.MaxConcurrentProcessing"/> uploads are processed at once. The full
 /// variant fits in 2048 × 2048 pixels and the thumbnail is at most 800 pixels wide; neither is
-/// ever enlarged. Images with an alpha channel, such as logos, are encoded losslessly.
+/// ever enlarged. Both are encoded as WebP in sRGB without metadata; images with an alpha channel,
+/// such as logos, are encoded losslessly.
 /// </summary>
 public sealed class VipsImageProcessor : IImageProcessor, IDisposable
 {

@@ -102,7 +102,8 @@ public interface IAccountEmailComposer
     );
 
     /// <summary>
-    /// Composes the alert about a change to the authentication data of an account.
+    /// Composes the alert about a security-relevant change to an account, one of
+    /// <see cref="AccountSecurityChange"/>.
     /// </summary>
     /// <param name="recipient">Account holder receiving the message.</param>
     /// <param name="change">Change being notified.</param>

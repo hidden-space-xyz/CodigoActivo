@@ -26,7 +26,10 @@ public sealed class GetNewsItemByIdQueryHandler(IReadStore readStore, IQueryExec
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a news item on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the news item, or
+    /// <see cref="ApplicationErrorCode.NewsItemNotFound"/>.
+    /// </returns>
     public async Task<Result<NewsItemResponse>> HandleAsync(
         GetNewsItemByIdQuery query,
         CancellationToken ct = default

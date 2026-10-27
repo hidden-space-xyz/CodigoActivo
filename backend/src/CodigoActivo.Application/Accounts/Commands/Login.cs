@@ -32,7 +32,9 @@ public sealed record LoginCommand(
 /// The password is verified without holding the account locked; only an accepted one locks and
 /// reloads the account to open the challenge, and a password replaced or an account locked since
 /// the check is answered like a wrong password, without counting it, because the password was
-/// right when it was checked. So no challenge is ever opened for a replaced password.
+/// right when it was checked. So no challenge is ever opened for a replaced password. An account
+/// that uses email as its second factor is emailed a login code, unless one was sent within the
+/// resend cooldown, which the new challenge then accepts.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="accountLock">Opens the challenge with the account locked.</param>
@@ -56,7 +58,15 @@ public sealed class LoginCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result names the challenge just opened, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result names the challenge just opened;
+    /// <see cref="ApplicationErrorCode.InvalidCredentials"/> for an unknown identifier, a wrong
+    /// password or an account without a password or locked by wrong passwords;
+    /// <see cref="ApplicationErrorCode.UserAccountBlocked"/>,
+    /// <see cref="ApplicationErrorCode.UserAccountPendingVerification"/> or
+    /// <see cref="DomainErrorCode.TwoFactorLocked"/> after a correct password; or the failure of
+    /// emailing the login code.
+    /// </returns>
     public async Task<Result<LoginChallengeKey>> HandleAsync(
         LoginCommand command,
         CancellationToken ct = default

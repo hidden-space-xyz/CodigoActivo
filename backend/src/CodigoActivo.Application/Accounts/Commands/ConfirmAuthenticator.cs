@@ -21,8 +21,13 @@ public sealed record ConfirmAuthenticatorCommand(
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command that activates the pending authenticator once the user proves the
-/// application was set up correctly. From then on logins require its codes instead of email.
+/// Executes the command that activates the pending authenticator of the signed-in user once they
+/// prove the application was set up correctly. From then on logins require its codes instead of
+/// email, and the holder is emailed a security alert once the change is committed. A wrong code is
+/// answered with <see cref="ApplicationErrorCode.TwoFactorCodeInvalid"/> without being counted; an
+/// enrollment that expired or was never started with
+/// <see cref="DomainErrorCode.AuthenticatorSetupExpired"/>, and an account that already uses an
+/// authenticator with <see cref="DomainErrorCode.AuthenticatorAlreadyEnabled"/>.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="currentUser">Person the use case runs for.</param>

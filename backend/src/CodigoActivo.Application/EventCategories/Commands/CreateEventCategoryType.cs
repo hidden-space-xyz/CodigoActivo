@@ -11,7 +11,7 @@ namespace CodigoActivo.Application.EventCategories.Commands;
 /// <summary>
 /// Carries the input required to create an event category type.
 /// </summary>
-/// <param name="Name">Name, unique among category types.</param>
+/// <param name="Name">Name of up to 120 characters, unique among category types.</param>
 /// <param name="Color">Color as <c>#RRGGBB</c>.</param>
 public sealed record CreateEventCategoryTypeCommand(
     [property: Required, MaxLength(120), NotBlank] string Name,
@@ -31,7 +31,10 @@ public sealed class CreateEventCategoryTypeCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the identifier of the created item, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the identifier of the new category type, or
+    /// <see cref="ApplicationErrorCode.EventCategoryTypeNameAlreadyExists"/>.
+    /// </returns>
     public async Task<Result<EventCategoryTypeId>> HandleAsync(
         CreateEventCategoryTypeCommand command,
         CancellationToken ct = default

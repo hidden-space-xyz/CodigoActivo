@@ -71,12 +71,14 @@ export const activityMutations = {
       mutationFn: (input: ActivityInput) => createActivityRequest(eventId, input),
       meta: { invalidates: [activityKeys.all] },
     }),
+  /** Replaces the editable data of the activity `id`. */
   update: () =>
     mutationOptions({
       mutationFn: ({ id, input }: { id: string; input: ActivityInput }) =>
         updateActivityRequest(id, input),
       meta: { invalidates: [activityKeys.all] },
     }),
+  /** Deletes an activity with its signups. */
   remove: () =>
     mutationOptions({
       mutationFn: (id: string) => deleteActivityRequest(id),

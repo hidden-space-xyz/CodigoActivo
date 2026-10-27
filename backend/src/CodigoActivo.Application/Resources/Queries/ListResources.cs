@@ -41,7 +41,10 @@ public sealed class ListResourcesQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a paged resource list item.</returns>
+    /// <returns>
+    /// A task whose result contains the requested page of resources, the newest first unless the
+    /// sort names <c>createdAt</c>, <c>title</c>, <c>subtitle</c>, <c>type</c> or <c>url</c>.
+    /// </returns>
     public Task<PagedResult<ResourceListItemResponse>> HandleAsync(
         ListResourcesQuery query,
         CancellationToken ct = default

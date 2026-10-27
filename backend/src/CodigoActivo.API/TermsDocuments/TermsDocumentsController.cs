@@ -21,12 +21,12 @@ namespace CodigoActivo.API.TermsDocuments;
 public class TermsDocumentsController : ApiControllerBase
 {
     /// <summary>
-    /// Executes the terms documents endpoint for events.
+    /// Lists the terms documents that match the supplied filters.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a paged terms document, or an error response.</returns>
+    /// <returns>An HTTP response containing a page of terms documents.</returns>
     [HttpGet]
     [AllowOnlyAdmin]
     public async Task<ActionResult<PagedResult<TermsDocumentResponse>>> TermsDocumentsAsync(
@@ -44,9 +44,9 @@ public class TermsDocumentsController : ApiControllerBase
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getById">Query handler that reads the result of the command.</param>
+    /// <param name="getById">Query handler that reads the created terms document.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a terms document, or an error response.</returns>
+    /// <returns>A 201 response with the terms document and its location, or an error response.</returns>
     [HttpPost]
     [AllowOnlyAdmin]
     [ProducesResponseType<TermsDocumentResponse>(StatusCodes.Status201Created)]
@@ -71,9 +71,9 @@ public class TermsDocumentsController : ApiControllerBase
     /// <param name="termsDocumentId">Identifier of the terms document.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getById">Query handler that reads the result of the command.</param>
+    /// <param name="getById">Query handler that reads the updated terms document.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a terms document, or an error response.</returns>
+    /// <returns>An HTTP response containing the terms document, or an error response.</returns>
     [HttpPut("{termsDocumentId:guid}")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<TermsDocumentResponse>> UpdateTermsDocumentAsync(
@@ -93,12 +93,12 @@ public class TermsDocumentsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Deletes a terms document when it is no longer referenced.
+    /// Deletes a terms document; it is refused while an event links it or anyone decided on it.
     /// </summary>
     /// <param name="termsDocumentId">Identifier of the terms document.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpDelete("{termsDocumentId:guid}")]
     [AllowOnlyAdmin]
     public async Task<IActionResult> DeleteTermsDocumentAsync(

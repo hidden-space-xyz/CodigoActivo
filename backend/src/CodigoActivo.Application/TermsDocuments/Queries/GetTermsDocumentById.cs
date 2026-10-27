@@ -27,7 +27,10 @@ public sealed class GetTermsDocumentByIdQueryHandler(IReadStore readStore, IQuer
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the terms document, or an application error when it does not exist.</returns>
+    /// <returns>
+    /// A task whose result contains the terms document, or
+    /// <see cref="ApplicationErrorCode.TermsDocumentNotFound"/>.
+    /// </returns>
     public async Task<Result<TermsDocumentResponse>> HandleAsync(
         GetTermsDocumentByIdQuery query,
         CancellationToken ct = default

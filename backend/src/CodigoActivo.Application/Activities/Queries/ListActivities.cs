@@ -41,7 +41,11 @@ public sealed class ListActivitiesQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a paged activity.</returns>
+    /// <returns>
+    /// A task whose result contains the requested page of activities, by start unless the sort
+    /// names <c>activityEndsAt</c>, <c>title</c>, <c>modalityName</c>, <c>location</c> or
+    /// <c>createdAt</c>.
+    /// </returns>
     public Task<PagedResult<ActivityResponse>> HandleAsync(
         ListActivitiesQuery query,
         CancellationToken ct = default

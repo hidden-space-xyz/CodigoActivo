@@ -62,7 +62,8 @@ public static class ClientRequestRateLimiter
     }
 
     /// <summary>
-    /// Creates a named per-user policy for comparatively expensive endpoints.
+    /// Creates a named per-user policy for comparatively expensive endpoints; a request without a
+    /// signed-in user is counted by its IP.
     /// </summary>
     /// <param name="permitLimit">Requests allowed per user and window.</param>
     /// <returns>A partition factory for the named policy.</returns>

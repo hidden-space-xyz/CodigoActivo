@@ -5,7 +5,8 @@ using CodigoActivo.Application.Common.Validation;
 namespace CodigoActivo.Application.Resources.Contracts;
 
 /// <summary>
-/// Carries the criteria used to resource list.
+/// Carries the criteria used to list resources; every criterion left empty matches every resource.
+/// Text criteria match a part of the text, ignoring case and accents.
 /// </summary>
 public sealed class ResourceListQuery : PageQuery
 {
@@ -17,38 +18,38 @@ public sealed class ResourceListQuery : PageQuery
     public string? Search { get; set; }
 
     /// <summary>
-    /// Gets or sets the title displayed to users.
+    /// Gets or sets the text the title must contain.
     /// </summary>
     [MaxLength(MaxTextLength)]
     [SingleLine]
     public string? Title { get; set; }
 
     /// <summary>
-    /// Gets or sets the supporting subtitle displayed to users.
+    /// Gets or sets the text the subtitle must contain.
     /// </summary>
     [MaxLength(MaxTextLength)]
     [SingleLine]
     public string? Subtitle { get; set; }
 
     /// <summary>
-    /// Gets or sets the identifier of the associated resource type.
+    /// Gets or sets the catalog identifier of the type the resource must have.
     /// </summary>
     public Guid? ResourceTypeId { get; set; }
 
     /// <summary>
-    /// Gets or sets the url value.
+    /// Gets or sets the text the link of an external resource must contain.
     /// </summary>
     [MaxLength(MaxTextLength)]
     [SingleLine]
     public string? Url { get; set; }
 
     /// <summary>
-    /// Gets or sets the created from value.
+    /// Gets or sets the first local day of the range of creation dates.
     /// </summary>
     public DateOnly? CreatedFrom { get; set; }
 
     /// <summary>
-    /// Gets or sets the created to value.
+    /// Gets or sets the last local day of the range of creation dates.
     /// </summary>
     public DateOnly? CreatedTo { get; set; }
 }

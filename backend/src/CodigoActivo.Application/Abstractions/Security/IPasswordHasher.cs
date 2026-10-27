@@ -1,22 +1,26 @@
 namespace CodigoActivo.Application.Abstractions.Security;
 
 /// <summary>
-/// Hashes and verifies password values using the configured algorithm.
+/// Hashes and verifies account passwords with a salted, memory-hard hash (Argon2id) at fixed cost
+/// parameters.
 /// </summary>
 public interface IPasswordHasher
 {
     /// <summary>
-    /// Determines whether h exists.
+    /// Hashes a password with a fresh random salt for storage.
     /// </summary>
-    /// <param name="password">Plain-text password to hash or verify.</param>
-    /// <returns>The generated text.</returns>
+    /// <param name="password">Plain-text password to hash.</param>
+    /// <returns>The encoded hash, which carries the algorithm, its cost parameters and the salt.</returns>
     public string Hash(string password);
 
     /// <summary>
-    /// Verifies the supplied value against its stored cryptographic representation.
+    /// Verifies a password against a hash produced by <see cref="Hash"/>, in constant time.
     /// </summary>
-    /// <param name="password">Plain-text password to hash or verify.</param>
-    /// <param name="hash">Encoded password hash to verify.</param>
-    /// <returns><see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
+    /// <param name="password">Plain-text password to verify.</param>
+    /// <param name="hash">Encoded password hash to verify against.</param>
+    /// <returns>
+    /// <see langword="true"/> when the password matches; <see langword="false"/> when it does not or
+    /// the hash is malformed or uses other cost parameters.
+    /// </returns>
     public bool Verify(string password, string hash);
 }

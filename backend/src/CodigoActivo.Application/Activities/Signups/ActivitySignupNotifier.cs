@@ -9,12 +9,13 @@ using Microsoft.Extensions.Logging;
 namespace CodigoActivo.Application.Activities.Signups;
 
 /// <summary>
-/// Builds and sends notifications for activity signup. An address its account has not confirmed yet
-/// gets none, since anyone may have registered it with someone else's address.
+/// Emails the decision on an activity signup to the person, or to their guardian when the person
+/// has no address to write to. An address its account has not confirmed yet gets none, since
+/// anyone may have registered it with someone else's address.
 /// </summary>
 /// <param name="readStore">Read side used to describe the activity and reach the participant.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-/// <param name="emailSender">The email sender value.</param>
+/// <param name="emailSender">Sender that delivers the message.</param>
 /// <param name="composer">Composer that renders the decision messages.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ActivitySignupNotifier(
@@ -28,10 +29,12 @@ public sealed class ActivitySignupNotifier(
     private static readonly Guid PendingStatusId = CatalogIds.UserStatuses.IdOf(UserStatus.Pending);
 
     /// <summary>
-    /// Notifies the affected users about decision.
+    /// Tells the person signed up, or their guardian, that the signup was confirmed or denied.
+    /// Nothing is sent when the activity is gone or neither has an address to write to; a send
+    /// refused by the rate limit is dropped and any other failure but a cancellation is logged.
     /// </summary>
     /// <param name="activityId">Identifier of the activity.</param>
-    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="userId">Identifier of the person signed up.</param>
     /// <param name="status">Status that settled the signup.</param>
     /// <param name="role">Role of the signup.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -168,7 +171,7 @@ public sealed class ActivitySignupNotifier(
     )
     {
         /// <summary>
-        /// Gets the full name value.
+        /// Gets the first and last names of the participant, as the guardian's message names them.
         /// </summary>
         public string FullName => $"{FirstName} {LastName}".Trim();
     }

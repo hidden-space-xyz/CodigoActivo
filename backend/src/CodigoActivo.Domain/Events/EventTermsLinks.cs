@@ -30,7 +30,9 @@ public sealed class EventTermsLinks
     /// <param name="links">Links in display order; <see langword="null"/> means none.</param>
     /// <param name="consentDocumentIds">Linked documents that hold a consent.</param>
     /// <returns>
-    /// The list, or a validation error when a document is linked twice or a consent is required.
+    /// The list, or <see cref="DomainErrorCode.EventTermsDocumentDuplicated"/> when a document is
+    /// linked twice, or <see cref="DomainErrorCode.EventTermsConsentRequired"/> when a consent is
+    /// linked as required.
     /// </returns>
     public static Result<EventTermsLinks> Create(
         IReadOnlyList<EventTermsLink>? links,

@@ -3,11 +3,13 @@ import type { FormReading } from '@/shared/lib/form'
 
 /** What the second-factor dialogs bind their inputs to; each step reads only the fields it shows. */
 export interface TwoFactorDraft {
+  /** Current password of the account. */
   password: string
+  /** Code the authenticator application shows at the moment; sent trimmed. */
   code: string
 }
 
-/** A blank draft. */
+/** Empty draft each second-factor dialog opens with. */
 export function toTwoFactorDraft(): TwoFactorDraft {
   return { password: '', code: '' }
 }

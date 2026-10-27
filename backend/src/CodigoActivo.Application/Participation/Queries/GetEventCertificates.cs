@@ -12,12 +12,14 @@ using CodigoActivo.Domain.Common;
 namespace CodigoActivo.Application.Participation.Queries;
 
 /// <summary>
-/// Carries the criteria used to retrieve event certificates.
+/// Carries the request for the attendance certificates of the signed-in user and their dependents.
 /// </summary>
 public sealed record GetEventCertificatesQuery : IQuery<IReadOnlyList<EventCertificateResponse>>;
 
 /// <summary>
-/// Executes the query to retrieve event certificates.
+/// Executes the query for the attendance certificates of the signed-in user and their dependents:
+/// one per person and event whose last day has passed, for every event in which the person had a
+/// confirmed signup.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -35,11 +37,14 @@ public sealed class GetEventCertificatesQueryHandler(
     private const ulong FnvPrime = 1099511628211UL;
 
     /// <summary>
-    /// Handles the request to retrieve event certificates.
+    /// Handles the request for the attendance certificates of the household.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the matching event certificate items.</returns>
+    /// <returns>
+    /// A task whose result contains the certificates, the most recently ended event first and,
+    /// within an event, the signed-in user before their dependents.
+    /// </returns>
     public async Task<IReadOnlyList<EventCertificateResponse>> HandleAsync(
         GetEventCertificatesQuery query,
         CancellationToken ct = default
@@ -135,12 +140,12 @@ public sealed class GetEventCertificatesQueryHandler(
         public string EventSubtitle { get; init; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the date and time when the event starts.
+        /// Gets or sets the first day of the event.
         /// </summary>
         public DateOnly EventStartsAt { get; init; }
 
         /// <summary>
-        /// Gets or sets the date and time when the event ends.
+        /// Gets or sets the last day of the event.
         /// </summary>
         public DateOnly EventEndsAt { get; init; }
 

@@ -28,7 +28,8 @@ public sealed class LogPartitionMaintainer(
 
     /// <summary>
     /// Creates the partitions kept ready and removes everything past the retention, in every log
-    /// table.
+    /// table. Each statement commits on its own, so a failure, such as a lock wait that runs out,
+    /// is thrown and leaves the statements before it done.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
@@ -65,7 +66,7 @@ public sealed class LogPartitionMaintainer(
 
     /// <summary>
     /// Runs <see cref="MaintainAsync"/> and records a failure instead of throwing it, because no
-    /// caller depends on maintenance to go on.
+    /// caller depends on maintenance to go on. A cancellation is still thrown.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -88,8 +89,8 @@ public sealed class LogPartitionMaintainer(
     /// Creates the missing partitions of a table for the days of a batch that may still have one.
     /// </summary>
     /// <param name="connection">Open connection of the log database the batch is written on.</param>
-    /// <param name="table">Log table.</param>
-    /// <param name="days">UTC days the batch holds.</param>
+    /// <param name="table">Log table the batch is written to.</param>
+    /// <param name="days">UTC days the batch holds, repeats allowed.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
     /// A task whose result is <see langword="true"/> when at least one day is inside the window of

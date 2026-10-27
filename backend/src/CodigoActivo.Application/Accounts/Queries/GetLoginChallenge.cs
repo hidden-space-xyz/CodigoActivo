@@ -19,8 +19,8 @@ public sealed record GetLoginChallengeQuery(LoginChallengeKey Challenge)
     : IQuery<Result<LoginChallengeResponse>>;
 
 /// <summary>
-/// Executes the query that tells the client which second factor to ask for, while the challenge
-/// can still be answered.
+/// Executes the query that tells the client which second factor to ask for, and for emailed codes
+/// the masked address they went to, while the challenge can still be answered.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>

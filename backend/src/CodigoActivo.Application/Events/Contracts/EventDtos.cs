@@ -5,20 +5,22 @@ namespace CodigoActivo.Application.Events.Contracts;
 /// <summary>
 /// Contains the event data returned by the API.
 /// </summary>
-/// <param name="Id">Identifier of the target entity.</param>
-/// <param name="Title">The title value.</param>
-/// <param name="Subtitle">The subtitle value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="EventStartsAt">The event starts at value.</param>
-/// <param name="EventEndsAt">The event ends at value.</param>
-/// <param name="EarlySignupStartsAt">The early signup starts at value.</param>
-/// <param name="SignupStartsAt">The signup starts at value.</param>
-/// <param name="SignupEndsAt">The signup ends at value.</param>
+/// <param name="Id">Identifier of the event.</param>
+/// <param name="Title">Title of the event.</param>
+/// <param name="Subtitle">Line shown below the title.</param>
+/// <param name="Description">Body as rich text JSON.</param>
+/// <param name="EventStartsAt">First day of the event.</param>
+/// <param name="EventEndsAt">Last day of the event.</param>
+/// <param name="EarlySignupStartsAt">
+/// When the early signup opens, in UTC, or <see langword="null"/> when there is none.
+/// </param>
+/// <param name="SignupStartsAt">When the signup opens, in UTC.</param>
+/// <param name="SignupEndsAt">When the signup closes, in UTC.</param>
 /// <param name="CreatedAt">UTC timestamp when the record was created.</param>
 /// <param name="UpdatedAt">UTC timestamp of the most recent update.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
-/// <param name="Featured">Whether featured.</param>
-/// <param name="Categories">The categories value.</param>
+/// <param name="ThumbnailId">Identifier of the thumbnail file.</param>
+/// <param name="Featured">Whether this is the featured event.</param>
+/// <param name="Categories">Categories that tag the event.</param>
 /// <param name="TermsDocuments">The terms documents linked to this event, ordered for display.</param>
 /// <param name="Stage">Where the event stands, by the server clock, when the response is built.</param>
 public record EventResponse(
@@ -67,19 +69,21 @@ public record EventResponse(
 /// <summary>
 /// Contains the compact event list item data returned in list results.
 /// </summary>
-/// <param name="Id">Identifier of the target entity.</param>
-/// <param name="Title">The title value.</param>
-/// <param name="Subtitle">The subtitle value.</param>
-/// <param name="EventStartsAt">The event starts at value.</param>
-/// <param name="EventEndsAt">The event ends at value.</param>
-/// <param name="EarlySignupStartsAt">The early signup starts at value.</param>
-/// <param name="SignupStartsAt">The signup starts at value.</param>
-/// <param name="SignupEndsAt">The signup ends at value.</param>
+/// <param name="Id">Identifier of the event.</param>
+/// <param name="Title">Title of the event.</param>
+/// <param name="Subtitle">Line shown below the title.</param>
+/// <param name="EventStartsAt">First day of the event.</param>
+/// <param name="EventEndsAt">Last day of the event.</param>
+/// <param name="EarlySignupStartsAt">
+/// When the early signup opens, in UTC, or <see langword="null"/> when there is none.
+/// </param>
+/// <param name="SignupStartsAt">When the signup opens, in UTC.</param>
+/// <param name="SignupEndsAt">When the signup closes, in UTC.</param>
 /// <param name="CreatedAt">UTC timestamp when the record was created.</param>
 /// <param name="UpdatedAt">UTC timestamp of the most recent update.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
-/// <param name="Featured">Whether featured.</param>
-/// <param name="Categories">The categories value.</param>
+/// <param name="ThumbnailId">Identifier of the thumbnail file.</param>
+/// <param name="Featured">Whether this is the featured event.</param>
+/// <param name="Categories">Categories that tag the event.</param>
 /// <param name="Stage">Where the event stands, by the server clock, when the response is built.</param>
 public record EventListItemResponse(
     Guid Id,
@@ -124,8 +128,8 @@ public record EventListItemResponse(
 /// Contains the event category data returned by the API.
 /// </summary>
 /// <param name="CategoryTypeId">Identifier of the category type.</param>
-/// <param name="Name">The name value.</param>
-/// <param name="Color">The color value.</param>
+/// <param name="Name">Display name of the category.</param>
+/// <param name="Color">Color the category is shown with.</param>
 public record EventCategoryResponse(Guid CategoryTypeId, string Name, string Color)
 {
     /// <summary>
@@ -139,7 +143,7 @@ public record EventCategoryResponse(Guid CategoryTypeId, string Name, string Col
 /// Contains the event terms document link data returned by the API.
 /// </summary>
 /// <param name="TermsDocumentId">Identifier of the terms document.</param>
-/// <param name="Name">The name value.</param>
+/// <param name="Name">Name of the terms document.</param>
 /// <param name="Required">Whether accepting the document is mandatory to complete the signup.</param>
 /// <param name="DisplayOrder">The position in which the document is displayed.</param>
 public record EventTermsDocumentResponse(

@@ -39,7 +39,8 @@ public sealed class DemoLogSeeder(
 )
 {
     /// <summary>
-    /// Writes the history when the log tables have none.
+    /// Writes the history unless the audit log already holds an entry of a demo account within the
+    /// diagnostic retention. A failure other than a cancellation is logged and not thrown.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>

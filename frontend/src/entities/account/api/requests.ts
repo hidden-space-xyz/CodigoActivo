@@ -102,7 +102,7 @@ export async function getAccountDeletionAllowedRequest(): Promise<boolean> {
 /**
  * Asks the API to email the confirmation code that authorizes deleting the own account
  * (`POST /api/me/deletion/code`). The password is verified first and nothing is deleted yet; users
- * with an authenticator application get no email and read the code from their app instead.
+ * with an authenticator application do not need it, since they read the code from their app.
  */
 export async function requestAccountDeletionCodeRequest(currentPassword: string): Promise<void> {
   await postApiMeDeletionCode({ currentPassword })

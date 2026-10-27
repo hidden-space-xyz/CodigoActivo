@@ -21,8 +21,8 @@ public static class ComingOfAgeNoticeEmail
     /// <param name="dependentName">Full name of the dependent.</param>
     /// <param name="comingOfAgeOn">Day the dependent comes of age and is erased.</param>
     /// <param name="accountUrl">«Mi cuenta» page, where the guardian downloads the data.</param>
-    /// <param name="siteUrl">The site url value.</param>
-    /// <returns>The resulting email message value.</returns>
+    /// <param name="siteUrl">Public base URL of the site, linked from the footer.</param>
+    /// <returns>The message, of kind <see cref="EmailKind.ComingOfAgeNotice"/>.</returns>
     public static EmailMessage Create(
         string toAddress,
         string toName,

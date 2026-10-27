@@ -19,7 +19,7 @@ function traceOf(value: unknown): string {
 /**
  * Diagnostic page: the entries the API logged, newest first, with a message search, level,
  * source and date filters, a trace filter the page owns (taken from and kept in `?traceId=`, so the
- * audit page and an error reference can link here) and the dialog that loads one entry with its
+ * audit page can link here) and the dialog that loads one entry with its
  * exception. Call it in `setup`.
  */
 export function useDiagnostics() {

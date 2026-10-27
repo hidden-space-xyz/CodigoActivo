@@ -53,7 +53,10 @@ public sealed class UnsubscribeCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is success, or an application error when the link is not valid.</returns>
+    /// <returns>
+    /// A task whose result is success, or <see cref="ApplicationErrorCode.EmailUnsubscribeLinkInvalid"/>
+    /// when the token was not issued here or was altered.
+    /// </returns>
     public async Task<Result> HandleAsync(
         UnsubscribeCommand command,
         CancellationToken ct = default

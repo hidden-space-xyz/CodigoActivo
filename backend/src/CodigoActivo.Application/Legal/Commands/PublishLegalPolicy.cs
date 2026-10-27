@@ -23,8 +23,9 @@ public sealed record PublishLegalPolicyCommand(
 
 /// <summary>
 /// Executes the command to publish a new version of a legal policy: the first publication creates
-/// the policy and later ones revise it, keeping the version they replace. The policy is locked
-/// first, so concurrent publications run one after another and none is lost.
+/// the policy and later ones revise it, keeping the version they replace; the same content as the
+/// version in force publishes nothing new. The policy is locked first, so concurrent publications
+/// run one after another and none is lost.
 /// </summary>
 /// <param name="legalPolicies">Repository used to persist and retrieve legal policies.</param>
 /// <param name="uow">Unit of work that runs the publication in one transaction.</param>
@@ -42,7 +43,12 @@ public sealed class PublishLegalPolicyCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result reports success, or an error on failure.</returns>
+    /// <returns>
+    /// A task whose result reports success;
+    /// <see cref="DomainErrorCode.LegalPolicyContentRequired"/> when the content is empty, or
+    /// <see cref="ApplicationErrorCode.LegalPolicyPublishedConcurrently"/> when another first
+    /// publication of the same policy was saved meanwhile.
+    /// </returns>
     public async Task<Result> HandleAsync(
         PublishLegalPolicyCommand command,
         CancellationToken ct = default

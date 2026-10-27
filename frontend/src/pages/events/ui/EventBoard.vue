@@ -2,7 +2,7 @@
 import { EventCard, type EventSummary } from '@/entities/event'
 
 defineProps<{
-  /** Already filtered events, rendered as cards in the given order. */
+  /** Events rendered as cards in the given order; the board neither filters nor sorts them. */
   events: readonly EventSummary[]
 }>()
 </script>

@@ -3,12 +3,12 @@ using CodigoActivo.Domain.Common;
 namespace CodigoActivo.Domain.Users;
 
 /// <summary>
-/// Represents the persisted user domain entity and its relationships. A person is either an
-/// independent account, which logs in and needs an email, a phone and a DNI or NIE, or a dependent
-/// of a guardian, which has none of those and needs a birth date instead. Create them with
-/// <see cref="CreateIndependent"/> and <see cref="CreateDependent"/>, and edit them with
-/// <see cref="PlanProfileChange"/> and <see cref="ApplyProfileChange"/>, which own those rules, or
-/// with <see cref="ApplyProfileChangeConfirmingEmail"/> when a new email must be confirmed first.
+/// Account of a person: either an independent account, which logs in and needs an email, a phone
+/// and a DNI or NIE, or a dependent of a guardian, which has none of those and needs a birth date
+/// instead. Create them with <see cref="CreateIndependent"/> and <see cref="CreateDependent"/>,
+/// and edit them with <see cref="PlanProfileChange"/> and <see cref="ApplyProfileChange"/>, which
+/// own those rules, or with <see cref="ApplyProfileChangeConfirmingEmail"/> when a new email must
+/// be confirmed first.
 /// </summary>
 public class User : AggregateRoot<UserId>
 {
@@ -28,17 +28,18 @@ public class User : AggregateRoot<UserId>
     private User() { }
 
     /// <summary>
-    /// Gets the first name value.
+    /// Gets the given name, without surrounding spaces.
     /// </summary>
     public string FirstName { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Gets the last name value.
+    /// Gets the family name, without surrounding spaces.
     /// </summary>
     public string LastName { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Gets the email value.
+    /// Gets the email the account logs in with and is reached at; <see langword="null"/> for a
+    /// dependent.
     /// </summary>
     public EmailAddress? Email { get; private set; }
 
@@ -49,7 +50,8 @@ public class User : AggregateRoot<UserId>
     public EmailChange EmailChange { get; private set; }
 
     /// <summary>
-    /// Gets the phone value.
+    /// Gets the contact phone of an independent account; <see langword="null"/> for a dependent and
+    /// for the initial administrator until a profile change sets one.
     /// </summary>
     public PhoneNumber? Phone { get; private set; }
 
@@ -60,7 +62,8 @@ public class User : AggregateRoot<UserId>
     public PhoneNumber? SecondaryPhone { get; private set; }
 
     /// <summary>
-    /// Gets the password hash value.
+    /// Gets the hash of the password; <see langword="null"/> for a dependent and for a new account
+    /// until <see cref="AssignPassword"/> sets it.
     /// </summary>
     public string? PasswordHash { get; private set; }
 
@@ -89,29 +92,30 @@ public class User : AggregateRoot<UserId>
     public IReadOnlyCollection<NewsConsentChange> NewsConsentChanges => newsConsentChanges;
 
     /// <summary>
-    /// Gets the associated gender.
+    /// Gets the gender the person declared.
     /// </summary>
     public Gender Gender { get; private set; }
 
     /// <summary>
-    /// Gets the UTC timestamp of the user's most recent login.
+    /// Gets the UTC timestamp of the user's most recent login, or <see langword="null"/> before the
+    /// first one.
     /// </summary>
     public DateTimeOffset? LastLoginAt { get; private set; }
 
     /// <summary>
-    /// Gets the UTC timestamp when the entity was created.
+    /// Gets the UTC timestamp when the account was registered or created.
     /// </summary>
     public DateTimeOffset CreatedAt { get; private set; }
 
     /// <summary>
     /// Gets when the holder declared being of age while registering the account; null for the
-    /// initial administrator, for dependents and for accounts registered before it was recorded.
+    /// initial administrator and for dependents.
     /// </summary>
     public DateTimeOffset? AdultDeclaredAt { get; private set; }
 
     /// <summary>
     /// Gets when the guardian declared being the dependent's parent or legal guardian while adding
-    /// it; null for independent accounts and for dependents added before it was recorded.
+    /// it; null for independent accounts.
     /// </summary>
     public DateTimeOffset? GuardianshipDeclaredAt { get; private set; }
 
@@ -122,12 +126,14 @@ public class User : AggregateRoot<UserId>
     public DateTimeOffset? ComingOfAgeNoticeSentAt { get; private set; }
 
     /// <summary>
-    /// Gets the UTC timestamp of the most recent update.
+    /// Gets the UTC timestamp of the most recent update, or <see langword="null"/> when the account
+    /// never changed after its creation.
     /// </summary>
     public DateTimeOffset? UpdatedAt { get; private set; }
 
     /// <summary>
-    /// Gets the identifier of the associated parent.
+    /// Gets the identifier of the guardian of a dependent; <see langword="null"/> for an independent
+    /// account.
     /// </summary>
     public UserId? ParentId { get; private set; }
 
@@ -142,7 +148,7 @@ public class User : AggregateRoot<UserId>
     public UserType UserType { get; private set; }
 
     /// <summary>
-    /// Gets whether admin.
+    /// Gets a value indicating whether the account has administrator rights.
     /// </summary>
     public bool IsAdmin { get; private set; }
 
@@ -191,13 +197,24 @@ public class User : AggregateRoot<UserId>
     /// adults register, so the registrant must declare being of age, and the declaration is kept
     /// with its time. It needs a valid DNI or NIE, an email and a phone, may add a secondary phone
     /// different from the phone, and has no birth date. The caller sets the password hash and the
-    /// verification code once the checks that need I/O have passed.
+    /// verification code once the checks that need I/O have passed. It raises
+    /// <see cref="AccountRegistered"/>.
     /// </summary>
     /// <param name="details">Details as supplied by the registrant.</param>
     /// <param name="declaresAdult">Whether the registrant declared being of age.</param>
     /// <param name="now">Current timestamp, stored as the creation and declaration time.</param>
     /// <param name="id">Stable identifier for provisioned accounts; a new one otherwise.</param>
-    /// <returns>The unsaved account, or the error of the first broken rule.</returns>
+    /// <returns>
+    /// The unsaved account, or the error of the first broken rule:
+    /// <see cref="DomainErrorCode.UserAdultDeclarationRequired"/>,
+    /// <see cref="DomainErrorCode.UserBirthDateNotAllowedForAdult"/>,
+    /// <see cref="DomainErrorCode.UserNationalIdRequired"/>,
+    /// <see cref="DomainErrorCode.UserNationalIdInvalid"/>,
+    /// <see cref="DomainErrorCode.UserContactInfoRequired"/>,
+    /// <see cref="DomainErrorCode.UserPhoneInvalid"/>,
+    /// <see cref="DomainErrorCode.SecondaryPhoneSameAsPrimary"/> or
+    /// <see cref="DomainErrorCode.UserEmailInvalid"/>.
+    /// </returns>
     public static Result<User> CreateIndependent(
         PersonDetails details,
         bool declaresAdult,
@@ -237,7 +254,8 @@ public class User : AggregateRoot<UserId>
     /// guardian may add a minor, so the guardian must declare being one, and the declaration is
     /// kept with its time. It needs a birth date that is not in the future and makes it a minor on
     /// <paramref name="today"/>, and it has no email, phones, DNI, NIE, password or news consent. A
-    /// dependent cannot be a guardian.
+    /// dependent cannot be a guardian. It raises <see cref="DependentAdded"/>; the household limit
+    /// of <see cref="Household.EnsureMayAddDependent"/> is the caller's to check.
     /// </summary>
     /// <param name="guardian">Independent account the dependent is created under.</param>
     /// <param name="details">Details as supplied; only the names, gender and birth date apply.</param>
@@ -247,7 +265,14 @@ public class User : AggregateRoot<UserId>
     /// <param name="today">Local day on which the age is evaluated.</param>
     /// <param name="now">Current timestamp, stored as the creation and declaration time.</param>
     /// <param name="id">Stable identifier for provisioned accounts; a new one otherwise.</param>
-    /// <returns>The unsaved dependent, or the error of the first broken rule.</returns>
+    /// <returns>
+    /// The unsaved dependent, or the error of the first broken rule:
+    /// <see cref="DomainErrorCode.UserParentIsMinor"/> when the guardian is a dependent,
+    /// <see cref="DomainErrorCode.UserGuardianshipDeclarationRequired"/>,
+    /// <see cref="DomainErrorCode.UserChildBirthDateRequired"/>,
+    /// <see cref="DomainErrorCode.UserChildBirthDateInFuture"/> or
+    /// <see cref="DomainErrorCode.UserChildBirthDateNotMinor"/>.
+    /// </returns>
     public static Result<User> CreateDependent(
         User guardian,
         PersonDetails details,
@@ -304,7 +329,16 @@ public class User : AggregateRoot<UserId>
     /// Guardian named by the caller; only accepted for a dependent, repeating the one it has.
     /// </param>
     /// <param name="today">Local day on which a dependent's age is evaluated.</param>
-    /// <returns>The planned change, or the error of the first broken rule.</returns>
+    /// <returns>
+    /// The planned change, or the error of the first broken rule: for an independent account
+    /// <see cref="DomainErrorCode.UserBirthDateNotAllowedForAdult"/>,
+    /// <see cref="DomainErrorCode.UserParentNotAllowedForAdult"/> or a code of
+    /// <see cref="CreateIndependent"/> about the DNI, NIE and contact details; for a dependent
+    /// <see cref="DomainErrorCode.UserParentReassignmentForbidden"/>,
+    /// <see cref="DomainErrorCode.UserChildBirthDateRequired"/>,
+    /// <see cref="DomainErrorCode.UserChildBirthDateInFuture"/> or
+    /// <see cref="DomainErrorCode.UserChildBirthDateNotMinor"/>.
+    /// </returns>
     public Result<ProfileChange> PlanProfileChange(
         PersonDetails details,
         UserId? guardianId,
@@ -318,7 +352,8 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Marks the account as erased, so what depends on it reacts once the erasure commits.
+    /// Raises <see cref="AccountErased"/>, so what depends on the account reacts once the erasure
+    /// commits.
     /// </summary>
     public void Erase()
     {
@@ -328,7 +363,9 @@ public class User : AggregateRoot<UserId>
     /// <summary>
     /// Applies a change planned for this account by <see cref="PlanProfileChange"/>. A new email
     /// replaces the stored one at once and drops any email change still waiting for confirmation.
-    /// A changed news consent is recorded as decided in the profile.
+    /// A changed news consent is recorded as decided in the profile. It raises
+    /// <see cref="ProfileChanged"/> and, when the email or a phone is replaced,
+    /// <see cref="ContactDetailsReplaced"/>.
     /// </summary>
     /// <param name="change">Change planned for this account.</param>
     /// <param name="now">Current timestamp, stored as the update time.</param>
@@ -363,7 +400,8 @@ public class User : AggregateRoot<UserId>
     /// Applies a change the holder of this account planned with <see cref="PlanProfileChange"/>
     /// except its new email: the account keeps the stored one until
     /// <see cref="ConfirmEmailChange"/> proves, with the code emailed to the new address, that the
-    /// holder controls it. A later request replaces this one.
+    /// holder controls it. A later request replaces this one. It raises <see cref="ProfileChanged"/>
+    /// and, when a phone is replaced, <see cref="ContactDetailsReplaced"/>.
     /// </summary>
     /// <param name="change">Change planned for this account; it must replace the email.</param>
     /// <param name="codeHash">Hash of the code emailed to the new address.</param>
@@ -403,7 +441,8 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Moves the account to the pending email once the code emailed to it was accepted.
+    /// Moves the account to the pending email once the code emailed to it was accepted, and raises
+    /// <see cref="ProfileChanged"/> and <see cref="ContactDetailsReplaced"/>.
     /// </summary>
     /// <param name="now">Current timestamp, stored as the update time.</param>
     /// <exception cref="InvalidOperationException">No email change is waiting.</exception>
@@ -534,8 +573,8 @@ public class User : AggregateRoot<UserId>
 
     /// <summary>
     /// Withdraws the news consent through the unsubscribe link of a news email or
-    /// the unsubscribe button of the mail client. An account without the consent stays as it is,
-    /// so the link can be followed again.
+    /// the unsubscribe button of the mail client, raising <see cref="ProfileChanged"/>. An account
+    /// without the consent stays as it is and raises nothing, so the link can be followed again.
     /// </summary>
     /// <param name="source">
     /// <see cref="NewsConsentSource.UnsubscribeLink"/> or
@@ -577,11 +616,11 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Determines whether sue otp.
+    /// Stores a new code that verifies the email of the account, replacing any previous one.
     /// </summary>
-    /// <param name="codeHash">The code hash value.</param>
-    /// <param name="now">Current timestamp used to calculate replenishment.</param>
-    /// <param name="lifetime">The lifetime value.</param>
+    /// <param name="codeHash">Hash of the code that was emailed.</param>
+    /// <param name="now">Current timestamp, stored as the sending time.</param>
+    /// <param name="lifetime">How long the code stays valid.</param>
     public void IssueOtp(string codeHash, DateTimeOffset now, TimeSpan lifetime)
     {
         VerificationCode = OneTimeCode.Issue(codeHash, now, lifetime);
@@ -596,11 +635,11 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Determines whether sue password reset code.
+    /// Stores a new code that lets the holder choose a new password, replacing any previous one.
     /// </summary>
-    /// <param name="codeHash">The code hash value.</param>
-    /// <param name="now">Current timestamp used to calculate replenishment.</param>
-    /// <param name="lifetime">The lifetime value.</param>
+    /// <param name="codeHash">Hash of the code that was emailed.</param>
+    /// <param name="now">Current timestamp, stored as the sending time.</param>
+    /// <param name="lifetime">How long the code stays valid.</param>
     public void IssuePasswordResetCode(string codeHash, DateTimeOffset now, TimeSpan lifetime)
     {
         PasswordResetCode = OneTimeCode.Issue(codeHash, now, lifetime);
@@ -615,10 +654,12 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Resets the password using the supplied value.
+    /// Replaces the password once the emailed reset code was accepted, and raises
+    /// <see cref="PasswordReset"/>. It spends the reset code, lifts the password lock and closes the
+    /// open second-factor challenge.
     /// </summary>
-    /// <param name="passwordHash">The password hash value.</param>
-    /// <param name="now">Current timestamp used to calculate replenishment.</param>
+    /// <param name="passwordHash">Hash of the new password.</param>
+    /// <param name="now">Current timestamp, stored as the update time.</param>
     public void ResetPassword(string passwordHash, DateTimeOffset now)
     {
         ReplacePassword(passwordHash, now);
@@ -626,10 +667,12 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Replaces the password at the request of the holder, who proved the current one.
+    /// Replaces the password at the request of the holder, who proved the current one, and raises
+    /// <see cref="PasswordChanged"/>. Like <see cref="ResetPassword"/>, it spends any reset code,
+    /// lifts the password lock and closes the open second-factor challenge.
     /// </summary>
     /// <param name="passwordHash">Hash of the new password.</param>
-    /// <param name="now">Current timestamp.</param>
+    /// <param name="now">Current timestamp, stored as the update time.</param>
     public void ChangePassword(string passwordHash, DateTimeOffset now)
     {
         ReplacePassword(passwordHash, now);
@@ -670,7 +713,10 @@ public class User : AggregateRoot<UserId>
     /// an account that still waits for that verification can be activated this way.
     /// </summary>
     /// <param name="now">Current time.</param>
-    /// <returns>A failed result when the account no longer waits for its verification.</returns>
+    /// <returns>
+    /// Success, or <see cref="DomainErrorCode.UserNotPendingVerification"/> when the account no
+    /// longer waits for its verification.
+    /// </returns>
     public Result Verify(DateTimeOffset now)
     {
         if (!IsPendingVerification)
@@ -687,7 +733,7 @@ public class User : AggregateRoot<UserId>
     /// <summary>
     /// Records the login timestamp.
     /// </summary>
-    /// <param name="now">Current timestamp used to calculate replenishment.</param>
+    /// <param name="now">Current timestamp, stored as <see cref="LastLoginAt"/>.</param>
     public void RegisterLogin(DateTimeOffset now)
     {
         LastLoginAt = now;
@@ -698,7 +744,11 @@ public class User : AggregateRoot<UserId>
     /// email as its second factor and a second factor that is not locked.
     /// </summary>
     /// <param name="now">Current timestamp.</param>
-    /// <returns>A failed result naming the first rule the account breaks.</returns>
+    /// <returns>
+    /// Success, or <see cref="DomainErrorCode.UserContactInfoRequired"/> without an email,
+    /// <see cref="DomainErrorCode.TwoFactorResendNotAllowed"/> when the second factor is not email,
+    /// or <see cref="DomainErrorCode.TwoFactorLocked"/> while the second factor is locked.
+    /// </returns>
     public Result MayReceiveLoginCode(DateTimeOffset now)
     {
         if (Email is null)
@@ -723,7 +773,7 @@ public class User : AggregateRoot<UserId>
     /// <param name="codeHash">Hash of the code that was emailed.</param>
     /// <param name="now">Current timestamp.</param>
     /// <param name="lifetime">How long the code stays valid.</param>
-    /// <returns>A failed result when the account may not receive a code.</returns>
+    /// <returns>Success, or the failure of <see cref="MayReceiveLoginCode"/>.</returns>
     public Result IssueLoginCode(string codeHash, DateTimeOffset now, TimeSpan lifetime)
     {
         var allowed = MayReceiveLoginCode(now);
@@ -773,7 +823,8 @@ public class User : AggregateRoot<UserId>
 
     /// <summary>
     /// Counts a wrong second-factor code and locks verification once the limit is reached,
-    /// raising <see cref="TwoFactorLocked"/>.
+    /// raising <see cref="TwoFactorLocked"/>; locking also drops the emailed login code and closes
+    /// the open challenge.
     /// </summary>
     /// <param name="now">Current timestamp.</param>
     /// <param name="maxFailedAttempts">Failures allowed before locking.</param>
@@ -797,7 +848,8 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Completes a login after the second factor was accepted.
+    /// Completes a login after the second factor was accepted: it spends the emailed login code,
+    /// closes the challenge, forgets the wrong codes and their lock, and records the login time.
     /// </summary>
     /// <param name="now">Current timestamp.</param>
     public void CompleteTwoFactorLogin(DateTimeOffset now)
@@ -816,7 +868,10 @@ public class User : AggregateRoot<UserId>
     /// <param name="protectedKey">Protected shared secret.</param>
     /// <param name="now">Current timestamp.</param>
     /// <param name="lifetime">How long the enrollment can be confirmed.</param>
-    /// <returns>A failed result when the account already uses an authenticator.</returns>
+    /// <returns>
+    /// Success, or <see cref="DomainErrorCode.AuthenticatorAlreadyEnabled"/> when the account
+    /// already uses an authenticator.
+    /// </returns>
     public Result BeginAuthenticatorSetup(
         string protectedKey,
         DateTimeOffset now,
@@ -835,12 +890,14 @@ public class User : AggregateRoot<UserId>
     /// <summary>
     /// Promotes the pending authenticator to the active second factor. Only an enrollment that is
     /// still waiting can be promoted, and it never replaces an authenticator that is already
-    /// active.
+    /// active. It drops any emailed login code and raises <see cref="AuthenticatorEnabled"/>.
     /// </summary>
     /// <param name="usedStep">Time step of the code that confirmed the enrollment.</param>
     /// <param name="now">Current timestamp.</param>
     /// <returns>
-    /// A failed result when the account already uses an authenticator or no enrollment is waiting.
+    /// Success, or <see cref="DomainErrorCode.AuthenticatorAlreadyEnabled"/> when the account
+    /// already uses an authenticator, or <see cref="DomainErrorCode.AuthenticatorSetupExpired"/>
+    /// when no enrollment is waiting.
     /// </returns>
     public Result EnableAuthenticator(long usedStep, DateTimeOffset now)
     {
@@ -864,7 +921,8 @@ public class User : AggregateRoot<UserId>
 
     /// <summary>
     /// Goes back to email as the second factor at the request of the holder, who proved they still
-    /// control the authenticator, and forgets the failed attempts.
+    /// control the authenticator, forgets the failed attempts and raises
+    /// <see cref="AuthenticatorDisabled"/>.
     /// </summary>
     /// <param name="now">Current timestamp.</param>
     public void DisableAuthenticator(DateTimeOffset now)
@@ -887,8 +945,9 @@ public class User : AggregateRoot<UserId>
 
     /// <summary>
     /// Returns the second factor to its default state: email, no authenticator, no lock and no
-    /// open challenge. Used by administrators when a user loses access to their authenticator or
-    /// locked their second factor.
+    /// emailed login code. Used by administrators when a user loses access to their authenticator
+    /// or locked their second factor. It raises <see cref="TwoFactorReset"/> only when the account
+    /// used an authenticator.
     /// </summary>
     /// <param name="now">Current timestamp.</param>
     /// <returns><see langword="true"/> when the account used an authenticator and now uses email.</returns>
@@ -1140,7 +1199,7 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Changes the membership type.
+    /// Changes the membership type and raises <see cref="UserTypeChanged"/>.
     /// </summary>
     /// <param name="userType">New membership type.</param>
     /// <param name="now">Current time.</param>
@@ -1159,8 +1218,11 @@ public class User : AggregateRoot<UserId>
     /// <param name="isAdmin">Whether the account is an administrator from now on.</param>
     /// <param name="now">Current time.</param>
     /// <returns>
-    /// Whether the rights changed, or a failed result when they would be given to a dependent or an
-    /// unconfirmed account, or taken from the initial administrator.
+    /// Whether the rights changed, raising <see cref="AdministratorRightsChanged"/> when they did, or
+    /// <see cref="DomainErrorCode.UserDependentCannotBeAdmin"/> for a dependent,
+    /// <see cref="DomainErrorCode.UserPendingVerificationCannotBeAdmin"/> for an unconfirmed
+    /// account, or <see cref="DomainErrorCode.UserCannotRemoveInitialAdmin"/> when they would be
+    /// taken from the initial administrator.
     /// </returns>
     public Result<bool> SetAdministrator(bool isAdmin, DateTimeOffset now)
     {

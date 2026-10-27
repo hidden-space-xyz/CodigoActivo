@@ -10,7 +10,9 @@ export const ORGANIZATION = {
   locality: 'León',
   /** ISO 3166-1 country code, for structured data. */
   countryCode: 'ES',
+  /** Bare domain without scheme, printed in the decorative code of the certificate sheet. */
   webDomain: 'codigoactivo.es',
+  /** Public profile URLs, linked from the site footer and listed in the Organization JSON-LD. */
   social: {
     instagram: 'https://www.instagram.com/codigoactivo_',
     facebook: 'https://www.facebook.com/codigoactivo',

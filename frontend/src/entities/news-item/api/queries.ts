@@ -29,7 +29,7 @@ export const newsQueries = {
       queryKey: newsKeys.years(),
       queryFn: () => getNewsYearsRequest(),
     }),
-  /** Home page block: up to four news items, featured first. */
+  /** Home page block: the featured news item, if any, and up to three other latest ones. */
   home: () =>
     queryOptions({
       queryKey: newsKeys.home(),

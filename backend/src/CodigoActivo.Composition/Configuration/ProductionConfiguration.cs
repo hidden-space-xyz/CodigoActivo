@@ -12,9 +12,10 @@ namespace CodigoActivo.Composition.Configuration;
 internal static class ProductionConfiguration
 {
     /// <summary>
-    /// Validates the production configuration state and rejects unsafe configuration.
+    /// Checks every production rule and reports all the broken ones at once.
     /// </summary>
-    /// <param name="config">Application configuration to validate or consume.</param>
+    /// <param name="config">Configuration of the production process.</param>
+    /// <exception cref="InvalidOperationException">At least one production rule is broken.</exception>
     public static void Validate(IConfiguration config)
     {
         var errors = new List<string>();

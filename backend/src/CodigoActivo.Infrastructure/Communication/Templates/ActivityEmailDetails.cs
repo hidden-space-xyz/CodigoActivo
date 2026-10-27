@@ -5,14 +5,15 @@ using CodigoActivo.Application.Common.Localization;
 namespace CodigoActivo.Infrastructure.Communication.Templates;
 
 /// <summary>
-/// Contains the data produced for activity email.
+/// Activity a signup decision email is about, shown as a panel of details. Its texts are raw; the panel
+/// encodes them for the HTML part.
 /// </summary>
-/// <param name="ActivityTitle">The activity title value.</param>
-/// <param name="EventTitle">The event title value.</param>
-/// <param name="Location">The location value.</param>
-/// <param name="StartsAt">The starts at value.</param>
-/// <param name="EndsAt">The ends at value.</param>
-/// <param name="EventUrl">The event url value.</param>
+/// <param name="ActivityTitle">Title of the activity.</param>
+/// <param name="EventTitle">Title of the event the activity belongs to.</param>
+/// <param name="Location">Where the activity takes place.</param>
+/// <param name="StartsAt">When the activity starts.</param>
+/// <param name="EndsAt">When the activity ends.</param>
+/// <param name="EventUrl">Absolute link to the page of the event; the panel does not show it.</param>
 public sealed record ActivityEmailDetails(
     string ActivityTitle,
     string EventTitle,
@@ -29,7 +30,9 @@ public sealed record ActivityEmailDetails(
     /// Formats the activity schedule as localized human-readable text.
     /// </summary>
     /// <param name="timeZone">Time zone used to calculate local dates.</param>
-    /// <returns>The generated text.</returns>
+    /// <returns>
+    /// The day and the start and end times, with the end day too when the activity ends on another day.
+    /// </returns>
     public string ScheduleText(TimeZoneInfo timeZone)
     {
         var start = TimeZoneInfo.ConvertTime(StartsAt, timeZone);
@@ -49,11 +52,12 @@ public sealed record ActivityEmailDetails(
     }
 
     /// <summary>
-    /// Converts the value to block.
+    /// Builds the panel with one row each for the activity, the event, the schedule, the location and,
+    /// when given, the role; in the plain-text part each row is a line.
     /// </summary>
     /// <param name="timeZone">Time zone used to calculate local dates.</param>
-    /// <param name="roleName">The role name value.</param>
-    /// <returns>The resulting email block value.</returns>
+    /// <param name="roleName">Role the participant was confirmed in; null or blank leaves the row out.</param>
+    /// <returns>The details panel block.</returns>
     public EmailBlock ToBlock(TimeZoneInfo timeZone, string? roleName = null)
     {
         var rows = Rows(timeZone, roleName).ToList();

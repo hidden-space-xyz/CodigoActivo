@@ -15,8 +15,8 @@ public static class EmailInUseEmail
     /// <param name="toAddress">Address that already has an account.</param>
     /// <param name="toName">Name the message greets.</param>
     /// <param name="loginUrl">Login page of the site.</param>
-    /// <param name="siteUrl">The site url value.</param>
-    /// <returns>The resulting email message value.</returns>
+    /// <param name="siteUrl">Public base URL of the site, linked from the footer.</param>
+    /// <returns>The message, of kind <see cref="EmailKind.AccountVerification"/>.</returns>
     public static EmailMessage Create(
         string toAddress,
         string toName,

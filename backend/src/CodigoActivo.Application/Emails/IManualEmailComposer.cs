@@ -21,7 +21,11 @@ public interface IManualEmailComposer
     /// email also carries the contact address and, for each recipient, their own unsubscribe link.
     /// </summary>
     /// <param name="subject">Subject written by the administrator.</param>
-    /// <param name="body">Plain-text body written by the administrator; blank lines separate paragraphs.</param>
+    /// <param name="body">
+    /// Plain-text body written by the administrator; an empty line (two consecutive line breaks)
+    /// separates paragraphs, a line holding only spaces does not, and the line breaks inside a
+    /// paragraph are kept.
+    /// </param>
     /// <param name="purpose">What the email is written for.</param>
     /// <param name="recipients">Recipients of the batch.</param>
     /// <param name="attachments">Files attached to every message.</param>

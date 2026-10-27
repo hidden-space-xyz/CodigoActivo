@@ -3,11 +3,13 @@ namespace CodigoActivo.Application.Resources.Contracts;
 /// <summary>
 /// Contains the resource type data returned by the API.
 /// </summary>
-/// <param name="Id">Identifier of the target entity.</param>
-/// <param name="Name">The name value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="Color">The color value.</param>
-/// <param name="IsExternal">Whether external.</param>
+/// <param name="Id">Catalog identifier of the type.</param>
+/// <param name="Name">Display name of the type.</param>
+/// <param name="Description">Description of the type shown to people.</param>
+/// <param name="Color">Color the type is shown with.</param>
+/// <param name="IsExternal">
+/// Whether resources of this type link to an external page instead of carrying a body.
+/// </param>
 public record ResourceTypeResponse(
     Guid Id,
     string Name,
@@ -26,15 +28,19 @@ public record ResourceTypeResponse(
 /// <summary>
 /// Contains the resource data returned by the API.
 /// </summary>
-/// <param name="Id">Identifier of the target entity.</param>
-/// <param name="Title">The title value.</param>
-/// <param name="Subtitle">The subtitle value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="Url">The url value.</param>
-/// <param name="Type">The type value.</param>
+/// <param name="Id">Identifier of the resource.</param>
+/// <param name="Title">Title of the resource.</param>
+/// <param name="Subtitle">Line shown below the title.</param>
+/// <param name="Description">
+/// Body as rich text JSON; an empty document for an external resource.
+/// </param>
+/// <param name="Url">
+/// Link of an external resource; <see langword="null"/> for an internal one.
+/// </param>
+/// <param name="Type">Type of the resource.</param>
 /// <param name="CreatedAt">UTC timestamp when the record was created.</param>
 /// <param name="UpdatedAt">UTC timestamp of the most recent update.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
+/// <param name="ThumbnailId">Identifier of the thumbnail file.</param>
 public record ResourceResponse(
     Guid Id,
     string Title,
@@ -67,14 +73,16 @@ public record ResourceResponse(
 /// <summary>
 /// Contains the compact resource list item data returned in list results.
 /// </summary>
-/// <param name="Id">Identifier of the target entity.</param>
-/// <param name="Title">The title value.</param>
-/// <param name="Subtitle">The subtitle value.</param>
-/// <param name="Url">The url value.</param>
-/// <param name="Type">The type value.</param>
+/// <param name="Id">Identifier of the resource.</param>
+/// <param name="Title">Title of the resource.</param>
+/// <param name="Subtitle">Line shown below the title.</param>
+/// <param name="Url">
+/// Link of an external resource; <see langword="null"/> for an internal one.
+/// </param>
+/// <param name="Type">Type of the resource.</param>
 /// <param name="CreatedAt">UTC timestamp when the record was created.</param>
 /// <param name="UpdatedAt">UTC timestamp of the most recent update.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
+/// <param name="ThumbnailId">Identifier of the thumbnail file.</param>
 public record ResourceListItemResponse(
     Guid Id,
     string Title,

@@ -45,7 +45,12 @@ public sealed class ListEventsQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a paged event list item.</returns>
+    /// <returns>
+    /// A task whose result contains the requested page of events stamped with their stage, by
+    /// first day unless the sort names <c>eventEndsAt</c>, <c>signupStartsAt</c>,
+    /// <c>signupEndsAt</c>, <c>createdAt</c>, <c>title</c>, <c>subtitle</c>, <c>featured</c> or
+    /// <c>categories</c>.
+    /// </returns>
     public async Task<PagedResult<EventListItemResponse>> HandleAsync(
         ListEventsQuery query,
         CancellationToken ct = default

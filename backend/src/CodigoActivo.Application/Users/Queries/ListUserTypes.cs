@@ -6,7 +6,7 @@ using CodigoActivo.Application.Users.Contracts;
 namespace CodigoActivo.Application.Users.Queries;
 
 /// <summary>
-/// Carries the criteria used to list user types.
+/// Carries the request to list the membership types.
 /// </summary>
 public sealed record ListUserTypesQuery : IQuery<IReadOnlyList<UserTypeResponse>>, ICachedQuery
 {
@@ -24,7 +24,7 @@ public sealed record ListUserTypesQuery : IQuery<IReadOnlyList<UserTypeResponse>
 }
 
 /// <summary>
-/// Executes the query to list user types.
+/// Executes the query to list the membership types by name.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>

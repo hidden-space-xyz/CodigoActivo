@@ -6,12 +6,14 @@ using Microsoft.AspNetCore.Antiforgery;
 namespace CodigoActivo.API.Middlewares;
 
 /// <summary>
-/// Processes HTTP requests to enforce csrf validation. A rejected token is not logged: the client
-/// fetches a new token and sends the request again, which is how a token outlived by a sign-in or a
-/// sign-out in another tab recovers.
+/// Validates the antiforgery token of every unsafe request (any method but GET, HEAD, OPTIONS and
+/// TRACE) unless its endpoint opts out, answering a missing or wrong token with
+/// <see cref="ErrorCode.InvalidCsrfToken"/>. A rejected token is not logged: the client fetches a
+/// new token and sends the request again, which is how a token outlived by a sign-in or a sign-out
+/// in another tab recovers.
 /// </summary>
-/// <param name="next">The next value.</param>
-/// <param name="antiforgery">The antiforgery value.</param>
+/// <param name="next">Next middleware of the pipeline.</param>
+/// <param name="antiforgery">Antiforgery service that validates the cookie and header token pair.</param>
 public sealed class CsrfValidationMiddleware(RequestDelegate next, IAntiforgery antiforgery)
 {
     private static readonly HashSet<string> SafeMethods = new(StringComparer.OrdinalIgnoreCase)
@@ -23,9 +25,10 @@ public sealed class CsrfValidationMiddleware(RequestDelegate next, IAntiforgery 
     };
 
     /// <summary>
-    /// Processes the current HTTP request and invokes the next middleware.
+    /// Validates the token when the request needs it and invokes the next middleware only when it
+    /// passes.
     /// </summary>
-    /// <param name="context">Database context used for persistence.</param>
+    /// <param name="context">HTTP context of the request.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task InvokeAsync(HttpContext context)
     {

@@ -22,7 +22,10 @@ public sealed class EventCategorySelection
     /// Checks the chosen categories.
     /// </summary>
     /// <param name="categoryTypeIds">Identifiers as supplied; repeated ones count once.</param>
-    /// <returns>The selection, or an error when no category was chosen.</returns>
+    /// <returns>
+    /// The selection, or <see cref="DomainErrorCode.EventCategoriesRequired"/> when no category was
+    /// chosen.
+    /// </returns>
     public static Result<EventCategorySelection> Create(
         IReadOnlyList<EventCategoryTypeId>? categoryTypeIds
     )

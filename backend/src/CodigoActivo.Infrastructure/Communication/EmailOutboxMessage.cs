@@ -16,7 +16,7 @@ public class EmailOutboxMessage
     public Guid Id { get; init; } = Guid.NewGuid();
 
     /// <summary>
-    /// Identifies the maximum stored length of <see cref="LastError"/>.
+    /// Identifies the maximum stored length of <see cref="LastError"/>; a longer diagnostic is cut.
     /// </summary>
     public const int LastErrorMaxLength = 300;
 
@@ -31,7 +31,8 @@ public class EmailOutboxMessage
     public EmailOutboxContent Content { get; set; } = null!;
 
     /// <summary>
-    /// Gets or sets the email category whose limits were applied when the message was accepted.
+    /// Gets or sets the email category, which sets <see cref="Priority"/> and names the message in
+    /// the log.
     /// </summary>
     public EmailKind Kind { get; set; }
 
@@ -76,24 +77,27 @@ public class EmailOutboxMessage
     /// <summary>
     /// Gets or sets how many delivery attempts have been started. The claim increments it together
     /// with the lease, so an attempt counts even when the process delivering it dies, and the
-    /// attempts of a message are always spent after the configured maximum.
+    /// attempts of a message are always spent after <see cref="EmailQueueOptions.MaxAttempts"/>.
     /// </summary>
     public int AttemptCount { get; set; }
 
     /// <summary>
-    /// Gets or sets the UTC timestamp from which the message may be attempted again.
+    /// Gets or sets the UTC timestamp from which the message may be claimed: the time it was accepted,
+    /// and after each failed attempt the end of its retry delay.
     /// </summary>
     public DateTimeOffset NextAttemptAt { get; set; }
 
     /// <summary>
-    /// Gets or sets the UTC timestamp until which a worker holds the message. A row whose lease has
-    /// passed is claimable again, so a process that died mid-send neither loses the message nor
-    /// blocks it forever.
+    /// Gets or sets the UTC timestamp until which a worker holds the message; <see langword="null"/>
+    /// before the first claim and once a failed attempt is rescheduled. A row whose lease has passed
+    /// is claimable again, so a process that died mid-send neither loses the message nor blocks it
+    /// forever.
     /// </summary>
     public DateTimeOffset? LockedUntil { get; set; }
 
     /// <summary>
-    /// Gets or sets the truncated diagnostic left by the most recent failure.
+    /// Gets or sets the exception type and message of the most recent failed attempt that was
+    /// rescheduled, cut to <see cref="LastErrorMaxLength"/>; <see langword="null"/> until one fails.
     /// </summary>
     public string? LastError { get; set; }
 }

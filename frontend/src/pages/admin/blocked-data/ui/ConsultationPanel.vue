@@ -12,7 +12,7 @@ import type { Candidate, Consultation } from '../model/types'
 
 /** Text the search looks up. */
 const query = defineModel<string>('query', { required: true })
-/** Account the extract is about. */
+/** Account the extract is about; `null` while none is picked, which keeps the download disabled. */
 const accountId = defineModel<string | null>('accountId', { required: true })
 /** Days the extract covers; empty for no limit. */
 const range = defineModel<(Date | null)[] | null>('range', { required: true })

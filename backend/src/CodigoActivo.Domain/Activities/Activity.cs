@@ -23,7 +23,7 @@ public class Activity : AuditableEntity<ActivityId>
     public string Title { get; private set; } = string.Empty;
 
     /// <summary>
-    /// Gets the description.
+    /// Gets the plain-text description.
     /// </summary>
     public string Description { get; private set; } = string.Empty;
 
@@ -44,7 +44,7 @@ public class Activity : AuditableEntity<ActivityId>
     public EventId EventId { get; private set; }
 
     /// <summary>
-    /// Gets where the activity takes place.
+    /// Gets whether the activity takes place in person or online.
     /// </summary>
     public ActivityModality Modality { get; private set; }
 
@@ -68,10 +68,10 @@ public class Activity : AuditableEntity<ActivityId>
     private DateTimeOffset ActivityEndsAt { get; set; }
 
     /// <summary>
-    /// Creates an activity in an event.
+    /// Creates an activity in an event and raises <see cref="ActivityCreated"/>.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
-    /// <param name="details">Titles, place, modality and thumbnail.</param>
+    /// <param name="details">Title, description, place, modality and thumbnail.</param>
     /// <param name="schedule">When the activity takes place.</param>
     /// <param name="capacities">Desired number of people per role.</param>
     /// <param name="authorId">Identifier of the user who creates it.</param>
@@ -94,9 +94,10 @@ public class Activity : AuditableEntity<ActivityId>
     }
 
     /// <summary>
-    /// Replaces the activity, keeping its signups.
+    /// Replaces the activity, keeping its signups, and raises <see cref="ActivityUpdated"/>, which
+    /// releases the previous thumbnail when it was replaced.
     /// </summary>
-    /// <param name="details">New titles, place, modality and thumbnail.</param>
+    /// <param name="details">New title, description, place, modality and thumbnail.</param>
     /// <param name="schedule">When the activity takes place from now on.</param>
     /// <param name="capacities">Desired number of people per role from now on.</param>
     /// <param name="editorId">Identifier of the user who edits it.</param>
@@ -141,7 +142,10 @@ public class Activity : AuditableEntity<ActivityId>
     /// Tells whether a person may still sign up, which a person already signed up may not.
     /// </summary>
     /// <param name="userId">Identifier of the person.</param>
-    /// <returns>Success, or a conflict when the person is already signed up.</returns>
+    /// <returns>
+    /// Success, or <see cref="DomainErrorCode.ActivityAssignmentAlreadyExists"/> when the person is
+    /// already signed up.
+    /// </returns>
     public Result EnsureMaySignUp(UserId userId)
     {
         return AssignmentOf(userId) is null
@@ -150,12 +154,16 @@ public class Activity : AuditableEntity<ActivityId>
     }
 
     /// <summary>
-    /// Signs a person up with a role, pending a decision.
+    /// Signs a person up with a role, pending a decision, and raises
+    /// <see cref="AssignmentRequested"/>.
     /// </summary>
     /// <param name="userId">Identifier of the person.</param>
     /// <param name="role">Role asked for.</param>
     /// <param name="now">Current time.</param>
-    /// <returns>Success, or a conflict when the person is already signed up.</returns>
+    /// <returns>
+    /// Success, or <see cref="DomainErrorCode.ActivityAssignmentAlreadyExists"/> when the person is
+    /// already signed up.
+    /// </returns>
     public Result RequestAssignment(UserId userId, ActivityRole role, DateTimeOffset now)
     {
         var allowed = EnsureMaySignUp(userId);
@@ -170,10 +178,13 @@ public class Activity : AuditableEntity<ActivityId>
     }
 
     /// <summary>
-    /// Removes the signup of a person.
+    /// Removes the signup of a person and raises <see cref="AssignmentWithdrawn"/>.
     /// </summary>
     /// <param name="userId">Identifier of the person.</param>
-    /// <returns>Success, or not found when the person is not signed up.</returns>
+    /// <returns>
+    /// Success, or <see cref="DomainErrorCode.ActivityAssignmentNotFound"/> when the person is not
+    /// signed up.
+    /// </returns>
     public Result Unassign(UserId userId)
     {
         var assignment = AssignmentOf(userId);
@@ -188,12 +199,14 @@ public class Activity : AuditableEntity<ActivityId>
     }
 
     /// <summary>
-    /// Moves the signup of a person to another role, keeping its status and date.
+    /// Moves the signup of a person to another role, keeping its status and date, and raises
+    /// <see cref="AssignmentRoleChanged"/> when the role changes.
     /// </summary>
     /// <param name="userId">Identifier of the signed-up person.</param>
     /// <param name="role">New role.</param>
     /// <returns>
-    /// Whether the role changed, or a not found error when the person is not signed up.
+    /// Whether the role changed, or <see cref="DomainErrorCode.ActivityAssignmentNotFound"/> when
+    /// the person is not signed up.
     /// </returns>
     public Result<bool> ChangeAssignmentRole(UserId userId, ActivityRole role)
     {
@@ -214,12 +227,14 @@ public class Activity : AuditableEntity<ActivityId>
     }
 
     /// <summary>
-    /// Changes the status of the signup of a person.
+    /// Changes the status of the signup of a person and raises
+    /// <see cref="AssignmentStatusChanged"/> when the status changes.
     /// </summary>
     /// <param name="userId">Identifier of the signed-up person.</param>
     /// <param name="status">New status.</param>
     /// <returns>
-    /// The status the signup had before, or a not found error when the person is not signed up.
+    /// The status the signup had before, or <see cref="DomainErrorCode.ActivityAssignmentNotFound"/>
+    /// when the person is not signed up.
     /// </returns>
     public Result<AssignmentStatus> ChangeAssignmentStatus(UserId userId, AssignmentStatus status)
     {
@@ -240,7 +255,8 @@ public class Activity : AuditableEntity<ActivityId>
     }
 
     /// <summary>
-    /// Marks the activity as deleted, so its thumbnail can be released once it is gone.
+    /// Raises <see cref="ActivityDeleted"/> before the activity is removed, so its thumbnail is
+    /// released once it is gone.
     /// </summary>
     public void Delete()
     {

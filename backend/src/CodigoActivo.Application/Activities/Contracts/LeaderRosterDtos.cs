@@ -5,10 +5,10 @@ namespace CodigoActivo.Application.Activities.Contracts;
 /// attendees currently confirmed in it grouped by role, returned by the API.
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
-/// <param name="Title">The title value.</param>
+/// <param name="Title">Title of the activity.</param>
 /// <param name="Location">Concrete place or platform where the activity takes place.</param>
-/// <param name="ActivityStartsAt">The activity starts at value.</param>
-/// <param name="ActivityEndsAt">The activity ends at value.</param>
+/// <param name="ActivityStartsAt">When it starts, in UTC.</param>
+/// <param name="ActivityEndsAt">When it ends, in UTC.</param>
 /// <param name="Roles">Confirmed attendees grouped by role: leaders, volunteers, then participants.</param>
 public record LeaderRosterActivityResponse(
     Guid ActivityId,
@@ -23,8 +23,8 @@ public record LeaderRosterActivityResponse(
 /// Contains the confirmed attendees of one role in a led activity, split between independent
 /// accounts and dependents because each kind carries different data, returned by the API.
 /// </summary>
-/// <param name="RoleTypeId">Identifier of the role type.</param>
-/// <param name="RoleName">The role name value.</param>
+/// <param name="RoleTypeId">Catalog identifier of the role.</param>
+/// <param name="RoleName">Display name of the role.</param>
 /// <param name="Users">Attendees with an account of their own, reachable directly.</param>
 /// <param name="Dependents">Minors signed up by their guardian, reachable through the guardian.</param>
 public record LeaderRosterRoleResponse(

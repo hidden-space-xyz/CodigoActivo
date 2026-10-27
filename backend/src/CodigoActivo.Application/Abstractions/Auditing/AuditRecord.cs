@@ -12,10 +12,14 @@ namespace CodigoActivo.Application.Abstractions.Auditing;
 /// <param name="ActorType">Who ran it.</param>
 /// <param name="ActorId">Account that ran it, when a user was signed in.</param>
 /// <param name="ClientAddress">Address of the caller, when it came through a request.</param>
-/// <param name="Entity">Main thing it acted on.</param>
+/// <param name="Entity">Main thing it acted on, if any.</param>
 /// <param name="Related">Other things it named.</param>
 /// <param name="Outcome">How it ended.</param>
-/// <param name="ErrorCode">Code of the error that rejected it.</param>
+/// <param name="ErrorCode">
+/// Name of the error code that rejected it, or <c>ConcurrentUpdate</c> or
+/// <c>UniqueConstraintViolation</c> when the database refused its commit; <see langword="null"/> when
+/// it succeeded or failed.
+/// </param>
 public sealed record AuditRecord(
     AuditAction Action,
     AuditActorType ActorType,

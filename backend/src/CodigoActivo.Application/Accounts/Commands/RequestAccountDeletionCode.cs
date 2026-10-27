@@ -50,7 +50,13 @@ public sealed class RequestAccountDeletionCodeCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <returns>
+    /// A task whose result indicates success,
+    /// <see cref="DomainErrorCode.UserDeleteInitialAdminForbidden"/> for the initial administrator,
+    /// <see cref="ApplicationErrorCode.UserCurrentPasswordIncorrect"/>, or the refusal of
+    /// <see cref="LoginCodeIssuer"/>, such as
+    /// <see cref="ApplicationErrorCode.TwoFactorResendCooldownActive"/> within the resend cooldown.
+    /// </returns>
     public async Task<Result> HandleAsync(
         RequestAccountDeletionCodeCommand command,
         CancellationToken ct = default

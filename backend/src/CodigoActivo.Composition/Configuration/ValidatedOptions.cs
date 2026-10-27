@@ -32,8 +32,14 @@ internal static class ValidatedOptions
     /// <typeparam name="TOptions">Options added.</typeparam>
     /// <param name="services">Service collection to add to.</param>
     /// <param name="configure">Fills the options from configuration; throws on an unusable setting.</param>
-    /// <param name="validate">Checks the rules that involve more than one setting.</param>
-    /// <param name="failureMessage">Message reported when <paramref name="validate"/> fails.</param>
+    /// <param name="validate">
+    /// Checks the filled options, such as a required setting being present; null when
+    /// <paramref name="configure"/> checks everything.
+    /// </param>
+    /// <param name="failureMessage">
+    /// Message reported when <paramref name="validate"/> fails; null for a generic one naming the
+    /// options type.
+    /// </param>
     /// <returns>The same service collection.</returns>
     public static IServiceCollection AddValidatedOptions<TOptions>(
         this IServiceCollection services,

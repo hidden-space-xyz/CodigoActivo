@@ -20,9 +20,16 @@ namespace CodigoActivo.Application.Participation.Commands;
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 /// <param name="Score">Score from 1 to 5, if any.</param>
-/// <param name="MostLiked">What the participant liked most, if anything.</param>
-/// <param name="LeastLiked">What the participant liked least, if anything.</param>
-/// <param name="Suggestions">Suggestions, if any.</param>
+/// <param name="MostLiked">
+/// What the participant liked most, if anything, up to 2000 characters; blank counts as missing.
+/// </param>
+/// <param name="LeastLiked">
+/// What the participant liked least, if anything, up to 2000 characters; blank counts as missing.
+/// </param>
+/// <param name="Suggestions">
+/// Suggestions, if any, up to 2000 characters; blank counts as missing. The score and the three
+/// answers cannot all be missing.
+/// </param>
 public sealed record SaveEventRatingCommand(
     EventId EventId,
     [property: Range(EventRating.MinScore, EventRating.MaxScore)] int? Score,
@@ -56,11 +63,17 @@ public sealed class SaveEventRatingCommandHandler(
 ) : ICommandHandler<SaveEventRatingCommand, Result>
 {
     /// <summary>
-    /// Handles the request to save event rating.
+    /// Handles the request to save the signed-in account's rating of an event.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <returns>
+    /// A task whose result reports success; <see cref="ApplicationErrorCode.EventNotFound"/>;
+    /// <see cref="ApplicationErrorCode.EventRatingNotFinished"/> before the last day of the event
+    /// has passed; <see cref="ApplicationErrorCode.EventRatingAttendanceRequired"/> when nobody in
+    /// the household had a confirmed place, or the domain error of an out-of-range score, a too
+    /// long answer or an empty rating.
+    /// </returns>
     /// <exception cref="ConcurrentUpdateException">
     /// A concurrent request of the same account stored its first rating of the event meanwhile.
     /// </exception>

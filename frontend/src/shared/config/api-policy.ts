@@ -13,7 +13,7 @@ export const MAX_PAGE_SIZE = 100
 /** Fewest characters the API accepts in a password (`[MinLength(12)]` on the account requests). */
 export const PASSWORD_MIN_LENGTH = 12
 
-/** Largest image the API stores (`FileUploadOptions.DefaultMaxSizeBytes`). */
+/** Largest image the API stores, in bytes (`FileUploadOptions.MaxSizeBytes`). */
 export const MAX_IMAGE_UPLOAD_BYTES = 10 * 1024 * 1024
 
 /** File picker filter for the only image formats the API stores, detected from their content. */

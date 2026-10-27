@@ -4,15 +4,16 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 namespace CodigoActivo.API.OpenApi;
 
 /// <summary>
-/// Applies camel case query parameters conventions to the generated OpenAPI document.
+/// Names every query parameter of the generated OpenAPI document in camel case, as the properties
+/// of a bound query object would otherwise keep their PascalCase names.
 /// </summary>
 public sealed class CamelCaseQueryParametersFilter : IOperationFilter
 {
     /// <summary>
-    /// Applies the camel case query parameters filter rules to the supplied target.
+    /// Lowers the first letter of each query parameter of the operation that starts in upper case.
     /// </summary>
-    /// <param name="operation">The operation value.</param>
-    /// <param name="context">Database context used for persistence.</param>
+    /// <param name="operation">OpenAPI operation being generated.</param>
+    /// <param name="context">Operation filter context, unused.</param>
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
         if (operation.Parameters is null)

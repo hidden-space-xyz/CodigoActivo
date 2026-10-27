@@ -40,7 +40,7 @@ public sealed class ListAssignmentStatusTypesQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the matching assignment status type items.</returns>
+    /// <returns>A task whose result contains every signup status, ordered by name.</returns>
     public Task<IReadOnlyList<AssignmentStatusTypeResponse>> HandleAsync(
         ListAssignmentStatusTypesQuery query,
         CancellationToken ct = default

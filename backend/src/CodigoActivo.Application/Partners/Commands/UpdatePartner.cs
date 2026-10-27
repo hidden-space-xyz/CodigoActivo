@@ -17,11 +17,13 @@ namespace CodigoActivo.Application.Partners.Commands;
 /// Carries the input required to update the partner.
 /// </summary>
 /// <param name="PartnerId">Identifier of the partner.</param>
-/// <param name="Name">Human-readable name.</param>
+/// <param name="Name">Human-readable name, up to 200 characters.</param>
 /// <param name="FromDate">Day the collaboration started; today at the latest.</param>
-/// <param name="Tier">Sponsorship tier.</param>
-/// <param name="Website">Website, if any.</param>
-/// <param name="ThumbnailId">Identifier of the logo file.</param>
+/// <param name="Tier">Sponsorship tier, zero or more.</param>
+/// <param name="Website">
+/// HTTP or HTTPS address of up to 500 characters, or <see langword="null"/>.
+/// </param>
+/// <param name="ThumbnailId">Identifier of the logo file, which must exist.</param>
 public sealed record UpdatePartnerCommand(
     PartnerId PartnerId,
     [property: Required, MaxLength(200), NotBlank] string Name,
@@ -32,11 +34,12 @@ public sealed record UpdatePartnerCommand(
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to update the partner.
+/// Executes the command to update the partner. A replaced logo is removed after the commit when
+/// nothing else uses it.
 /// </summary>
 /// <param name="partners">Repository used to persist and retrieve partners.</param>
 /// <param name="files">Repository used to persist and retrieve files.</param>
-/// <param name="currentUser">Person the use case runs for.</param>
+/// <param name="currentUser">Person the use case runs for, recorded as the editor.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work whose transaction locks the logo and saves the partner.</param>
 public sealed class UpdatePartnerCommandHandler(
@@ -52,7 +55,10 @@ public sealed class UpdatePartnerCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result reports success; <see cref="ApplicationErrorCode.PartnerNotFound"/>, or
+    /// <see cref="ApplicationErrorCode.PartnerThumbnailNotFound"/> when the logo is missing.
+    /// </returns>
     public async Task<Result> HandleAsync(
         UpdatePartnerCommand command,
         CancellationToken ct = default

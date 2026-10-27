@@ -15,12 +15,15 @@ using Microsoft.EntityFrameworkCore;
 namespace CodigoActivo.Infrastructure.Logs;
 
 /// <summary>
-/// Reads the log tables through the read context. Every filter lands on an index: the trigram
-/// index of the message for its text search, the containment index of the related entities and
-/// the B-tree indexes of the other columns; a period also prunes the daily partitions. Audit
-/// entries get the names of the accounts and things they mention, one query per kind of thing on
-/// the page, left out for those that no longer exist and for the consultations of the blocked data,
-/// which the legal archive lists by their request.
+/// Reads the log tables through the read context. The message search uses the trigram index of
+/// the message, the entity filter the index of the main entity and the containment index of the
+/// related ones, and the level, actor, action, address and trace filters their B-tree indexes; a
+/// period also prunes the daily partitions. The category search, the person search and the actor
+/// type, entity type and outcome filters have no index of their own. The name and email of the
+/// actor, which the entry shows, and of a user the entry acted on are joined into the page query,
+/// where the person search matches them; the names of the main and related entities come from one
+/// query per kind of entity on the page, left out for those that no longer exist and for the
+/// consultations of the blocked data, which the legal archive lists by their request.
 /// </summary>
 /// <param name="context">Read-side database context.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>

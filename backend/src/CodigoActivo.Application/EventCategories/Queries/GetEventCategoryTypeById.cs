@@ -29,7 +29,10 @@ public sealed class GetEventCategoryTypeByIdQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the category type, or an application error when it does not exist.</returns>
+    /// <returns>
+    /// A task whose result contains the category type, or
+    /// <see cref="ApplicationErrorCode.EventCategoryTypeNotFound"/>.
+    /// </returns>
     public async Task<Result<EventCategoryTypeResponse>> HandleAsync(
         GetEventCategoryTypeByIdQuery query,
         CancellationToken ct = default

@@ -38,7 +38,10 @@ export function levelLabelKey(level: DiagnosticLevel): TranslationKey {
   return LEVEL_LABEL_KEYS[level]
 }
 
-/** Tag colour of a level: failures in red, warnings in amber, the rest neutral. */
+/**
+ * Tag colour of a level: failures in red, warnings in amber, information in neutral grey (the
+ * theme's `primary` tag) and trace or debug in blue (`info`).
+ */
 export function levelTagType(level: DiagnosticLevel): LevelTagType {
   return LEVEL_TAG_TYPES[level]
 }

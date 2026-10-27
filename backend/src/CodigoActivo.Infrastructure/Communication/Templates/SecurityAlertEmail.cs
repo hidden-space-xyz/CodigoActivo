@@ -6,24 +6,30 @@ using CodigoActivo.Application.Common.Localization;
 namespace CodigoActivo.Infrastructure.Communication.Templates;
 
 /// <summary>
-/// Builds the email content that tells an account owner their authentication data changed. The
-/// message carries no code, no secret and no link that performs an action.
+/// Builds the email content that tells an account owner of a security change to their account: password,
+/// second factor, administrator rights, email or phone, or a lock after wrong passwords. The message
+/// carries no code, no secret and no link that performs an action.
 /// </summary>
 public static class SecurityAlertEmail
 {
     private const string TimestampFormat = "dd/MM/yyyy, HH:mm";
 
     /// <summary>
-    /// Creates a security change notification from the affected account data.
+    /// Creates the alert: what changed, when, the masked new address when given, and the advice that fits
+    /// the change. A lock has a subject and heading of its own.
     /// </summary>
-    /// <param name="toAddress">The to address value.</param>
-    /// <param name="toName">The to name value.</param>
-    /// <param name="change">The change value.</param>
-    /// <param name="occurredAt">The occurred at value.</param>
+    /// <param name="toAddress">
+    /// Address of the account owner; the previous one when the email or phone changed.
+    /// </param>
+    /// <param name="toName">Name the message greets.</param>
+    /// <param name="change">Change being notified.</param>
+    /// <param name="occurredAt">When the change happened.</param>
     /// <param name="timeZone">Time zone used to calculate local dates.</param>
-    /// <param name="siteUrl">The site url value.</param>
-    /// <param name="maskedNewEmail">Masked new address, when the email changed.</param>
-    /// <returns>The resulting email message value.</returns>
+    /// <param name="siteUrl">Public base URL of the site, linked from the footer.</param>
+    /// <param name="maskedNewEmail">
+    /// Masked new address, when the email changed; null or blank leaves it out.
+    /// </param>
+    /// <returns>The message, of kind <see cref="EmailKind.SecurityAlert"/>.</returns>
     public static EmailMessage Create(
         string toAddress,
         string toName,

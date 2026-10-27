@@ -30,7 +30,10 @@ public sealed class TotpService : ITotpService
     /// <param name="secret">Base32 shared secret of the authenticator.</param>
     /// <param name="code">Code typed by the user.</param>
     /// <param name="now">Current timestamp used to compute the candidate time steps.</param>
-    /// <returns>The matching time step, or <see langword="null"/> when no candidate matches.</returns>
+    /// <returns>
+    /// The matching time step, or <see langword="null"/> when no candidate matches or the code is not
+    /// six digits (spaces aside) or the secret is not valid Base32.
+    /// </returns>
     public long? MatchStep(string secret, string code, DateTimeOffset now)
     {
         if (!TryNormalizeCode(code, out var typed) || !TryDecodeSecret(secret, out var key))
@@ -49,6 +52,7 @@ public sealed class TotpService : ITotpService
     /// <param name="secret">Base32 shared secret.</param>
     /// <param name="step">Time step (seconds since the Unix epoch divided by thirty).</param>
     /// <returns>The six-digit code.</returns>
+    /// <exception cref="ArgumentException">The secret is not valid Base32.</exception>
     public static string ComputeCode(string secret, long step)
     {
         if (!TryDecodeSecret(secret, out var key))

@@ -5,13 +5,14 @@ namespace CodigoActivo.Application.Logs;
 
 /// <summary>
 /// Read port of the diagnostic and audit log tables, which the read store does not expose: plain
-/// filters over their indexes in Infrastructure, with the names of the users the audit entries
-/// mention joined in.
+/// filters in Infrastructure, most of them over an index (the category and person searches and the
+/// actor type, entity type and outcome filters have none), with the names of the people and things
+/// the audit entries mention joined in.
 /// </summary>
 public interface ILogEntryReader
 {
     /// <summary>
-    /// Lists the diagnostic log entries that match the criteria.
+    /// Lists the diagnostic log entries that match the criteria, without their exceptions.
     /// </summary>
     /// <param name="criteria">Filters, sort and page.</param>
     /// <param name="period">Instants the entries must have occurred between.</param>

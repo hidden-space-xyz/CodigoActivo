@@ -3,17 +3,19 @@ namespace CodigoActivo.Application.Activities.Contracts;
 /// <summary>
 /// Contains the activity data returned by the API.
 /// </summary>
-/// <param name="Id">Identifier of the target entity.</param>
-/// <param name="Title">The title value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="Location">The location value.</param>
-/// <param name="ActivityStartsAt">The activity starts at value.</param>
-/// <param name="ActivityEndsAt">The activity ends at value.</param>
-/// <param name="EventId">Identifier of the event.</param>
-/// <param name="ModalityId">Identifier of the modality.</param>
-/// <param name="ModalityName">The modality name value.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
-/// <param name="RoleCapacities">The role capacities value.</param>
+/// <param name="Id">Identifier of the activity.</param>
+/// <param name="Title">Title of the activity.</param>
+/// <param name="Description">Plain-text description.</param>
+/// <param name="Location">Where it takes place.</param>
+/// <param name="ActivityStartsAt">When it starts, in UTC.</param>
+/// <param name="ActivityEndsAt">When it ends, in UTC.</param>
+/// <param name="EventId">Identifier of the event the activity belongs to.</param>
+/// <param name="ModalityId">Catalog identifier of how people attend it.</param>
+/// <param name="ModalityName">Display name of the modality.</param>
+/// <param name="ThumbnailId">Identifier of the thumbnail file.</param>
+/// <param name="RoleCapacities">
+/// Desired number of people per role, ordered by role identifier.
+/// </param>
 /// <param name="CreatedAt">UTC timestamp when the record was created.</param>
 /// <param name="UpdatedAt">UTC timestamp of the most recent update.</param>
 public record ActivityResponse(
@@ -56,9 +58,12 @@ public record ActivityResponse(
 /// <summary>
 /// Contains the activity role capacity data returned by the API.
 /// </summary>
-/// <param name="ActivityRoleTypeId">Identifier of the activity role type.</param>
-/// <param name="DesiredCount">Number of desired allowed or reported.</param>
-/// <param name="IsHighDemand">Whether high demand.</param>
+/// <param name="ActivityRoleTypeId">Catalog identifier of the role.</param>
+/// <param name="DesiredCount">Number of people wanted in the role.</param>
+/// <param name="IsHighDemand">
+/// Whether more people than <paramref name="DesiredCount"/> are signed up in the role, denied
+/// signups aside.
+/// </param>
 public record ActivityRoleCapacityResponse(
     Guid ActivityRoleTypeId,
     int DesiredCount,
@@ -68,11 +73,11 @@ public record ActivityRoleCapacityResponse(
 /// <summary>
 /// Contains the assignment data returned by the API.
 /// </summary>
-/// <param name="UserId">Identifier of the user.</param>
+/// <param name="UserId">Identifier of the person signed up.</param>
 /// <param name="ActivityId">Identifier of the activity.</param>
-/// <param name="RoleTypeId">Identifier of the role type.</param>
-/// <param name="RoleTypeName">The role type name value.</param>
-/// <param name="Status">The status value.</param>
+/// <param name="RoleTypeId">Catalog identifier of the role taken.</param>
+/// <param name="RoleTypeName">Display name of the role.</param>
+/// <param name="Status">Review status of the signup.</param>
 public record AssignmentResponse(
     Guid UserId,
     Guid ActivityId,
@@ -84,21 +89,21 @@ public record AssignmentResponse(
 /// <summary>
 /// Contains the assignment status data returned by the API.
 /// </summary>
-/// <param name="Id">Identifier of the target entity.</param>
-/// <param name="Name">The name value.</param>
+/// <param name="Id">Catalog identifier of the status.</param>
+/// <param name="Name">Display name of the status.</param>
 public record AssignmentStatusResponse(Guid Id, string Name);
 
 /// <summary>
-/// Contains the household member assignment data returned by the API.
+/// Contains the signup of a household member to an activity, returned by the API.
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
-/// <param name="UserId">Identifier of the user.</param>
-/// <param name="FirstName">User's given name.</param>
-/// <param name="LastName">User's family name.</param>
-/// <param name="RoleTypeId">Identifier of the role type.</param>
-/// <param name="RoleName">The role name value.</param>
-/// <param name="StatusId">Identifier of the status.</param>
-/// <param name="StatusName">The status name value.</param>
+/// <param name="UserId">Identifier of the household member.</param>
+/// <param name="FirstName">Member's given name.</param>
+/// <param name="LastName">Member's family name.</param>
+/// <param name="RoleTypeId">Catalog identifier of the role taken.</param>
+/// <param name="RoleName">Display name of the role.</param>
+/// <param name="StatusId">Catalog identifier of the review status.</param>
+/// <param name="StatusName">Display name of the status.</param>
 public record HouseholdMemberAssignmentResponse(
     Guid ActivityId,
     Guid UserId,
@@ -111,26 +116,26 @@ public record HouseholdMemberAssignmentResponse(
 );
 
 /// <summary>
-/// Contains the signup role data returned by the API.
+/// Contains a role a person may sign up in, returned by the API.
 /// </summary>
-/// <param name="Id">Identifier of the target entity.</param>
-/// <param name="Name">The name value.</param>
+/// <param name="Id">Catalog identifier of the role.</param>
+/// <param name="Name">Display name of the role.</param>
 public record SignupRoleResponse(Guid Id, string Name);
 
 /// <summary>
-/// Contains the household signup roles data returned by the API.
+/// Contains the roles a household member may sign up in, returned by the API.
 /// </summary>
-/// <param name="UserId">Identifier of the user.</param>
-/// <param name="Roles">The roles value.</param>
+/// <param name="UserId">Identifier of the household member.</param>
+/// <param name="Roles">Roles the type of the member allows.</param>
 public record HouseholdSignupRolesResponse(Guid UserId, IReadOnlyList<SignupRoleResponse> Roles);
 
 /// <summary>
-/// Contains the overlapping activity data returned by the API.
+/// Contains an activity whose time range overlaps another, returned by the API.
 /// </summary>
-/// <param name="ActivityId">Identifier of the activity.</param>
-/// <param name="Title">The title value.</param>
-/// <param name="StartsAt">The starts at value.</param>
-/// <param name="EndsAt">The ends at value.</param>
+/// <param name="ActivityId">Identifier of the overlapping activity.</param>
+/// <param name="Title">Title of the overlapping activity.</param>
+/// <param name="StartsAt">When it starts, in UTC.</param>
+/// <param name="EndsAt">When it ends, in UTC.</param>
 public record OverlappingActivityResponse(
     Guid ActivityId,
     string Title,
@@ -139,26 +144,26 @@ public record OverlappingActivityResponse(
 );
 
 /// <summary>
-/// Contains the time overlap data returned by the API.
+/// Contains the signups of a person that overlap in time with an activity, returned by the API.
 /// </summary>
-/// <param name="HasOverlaps">Whether has overlaps.</param>
-/// <param name="Overlaps">The overlaps value.</param>
+/// <param name="HasOverlaps">Whether <paramref name="Overlaps"/> lists any activity.</param>
+/// <param name="Overlaps">Overlapping activities, ordered by start.</param>
 public record TimeOverlapResponse(
     bool HasOverlaps,
     IReadOnlyList<OverlappingActivityResponse> Overlaps
 );
 
 /// <summary>
-/// Contains the assigned activity data returned by the API.
+/// Contains an activity the signed-in user is signed up to, returned by the API.
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
-/// <param name="Title">The title value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="ActivityStartsAt">The activity starts at value.</param>
-/// <param name="ActivityEndsAt">The activity ends at value.</param>
-/// <param name="EventId">Identifier of the event.</param>
-/// <param name="RoleType">The role type value.</param>
-/// <param name="Status">The status value.</param>
+/// <param name="Title">Title of the activity.</param>
+/// <param name="Description">Plain-text description of the activity.</param>
+/// <param name="ActivityStartsAt">When it starts, in UTC.</param>
+/// <param name="ActivityEndsAt">When it ends, in UTC.</param>
+/// <param name="EventId">Identifier of the event the activity belongs to.</param>
+/// <param name="RoleType">Role the user signed up in.</param>
+/// <param name="Status">Review status of the signup.</param>
 public record AssignedActivityResponse(
     Guid ActivityId,
     string Title,
@@ -179,25 +184,25 @@ public record AssignedActivityResponse(
 }
 
 /// <summary>
-/// Contains the assigned activity role data returned by the API.
+/// Contains the role of a signup, returned by the API.
 /// </summary>
-/// <param name="Id">Identifier of the target entity.</param>
-/// <param name="Name">The name value.</param>
+/// <param name="Id">Catalog identifier of the role.</param>
+/// <param name="Name">Display name of the role.</param>
 public record AssignedActivityRoleResponse(Guid Id, string Name);
 
 /// <summary>
-/// Contains the assigned activity status data returned by the API.
+/// Contains the review status of a signup, returned by the API.
 /// </summary>
-/// <param name="Id">Identifier of the target entity.</param>
-/// <param name="Name">The name value.</param>
+/// <param name="Id">Catalog identifier of the status.</param>
+/// <param name="Name">Display name of the status.</param>
 public record AssignedActivityStatusResponse(Guid Id, string Name);
 
 /// <summary>
 /// Contains the activity role type data returned by the API.
 /// </summary>
-/// <param name="Id">Identifier of the target entity.</param>
-/// <param name="Name">The name value.</param>
-/// <param name="Description">The description value.</param>
+/// <param name="Id">Catalog identifier of the role.</param>
+/// <param name="Name">Display name of the role.</param>
+/// <param name="Description">Description of the role shown to people.</param>
 public record ActivityRoleTypeResponse(Guid Id, string Name, string Description)
 {
     /// <summary>
@@ -210,10 +215,10 @@ public record ActivityRoleTypeResponse(Guid Id, string Name, string Description)
 /// <summary>
 /// Contains the assignment status type data returned by the API.
 /// </summary>
-/// <param name="Id">Identifier of the target entity.</param>
-/// <param name="Name">The name value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="Color">The color value.</param>
+/// <param name="Id">Catalog identifier of the status.</param>
+/// <param name="Name">Display name of the status.</param>
+/// <param name="Description">Description of the status shown to people.</param>
+/// <param name="Color">Color the status is shown with.</param>
 public record AssignmentStatusTypeResponse(Guid Id, string Name, string Description, string Color)
 {
     /// <summary>
@@ -226,8 +231,8 @@ public record AssignmentStatusTypeResponse(Guid Id, string Name, string Descript
 /// <summary>
 /// Contains the activity modality type data returned by the API.
 /// </summary>
-/// <param name="Id">Identifier of the target entity.</param>
-/// <param name="Name">The name value.</param>
+/// <param name="Id">Catalog identifier of the modality.</param>
+/// <param name="Name">Display name of the modality.</param>
 public record ActivityModalityTypeResponse(Guid Id, string Name)
 {
     /// <summary>

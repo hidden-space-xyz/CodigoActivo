@@ -16,10 +16,10 @@ namespace CodigoActivo.Application.News.Commands;
 /// <summary>
 /// Carries the input required to create a news item.
 /// </summary>
-/// <param name="Title">Headline.</param>
-/// <param name="Subtitle">Line shown below the headline.</param>
-/// <param name="Description">Body as rich text JSON.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail file.</param>
+/// <param name="Title">Headline, up to 200 characters.</param>
+/// <param name="Subtitle">Line shown below the headline, up to 300 characters.</param>
+/// <param name="Description">Body as rich text JSON within the rich text allowlist.</param>
+/// <param name="ThumbnailId">Identifier of the thumbnail file, which must exist.</param>
 public sealed record CreateNewsItemCommand(
     [property: Required, MaxLength(200), NotBlank] string Title,
     [property: Required, MaxLength(300), NotBlank] string Subtitle,
@@ -32,7 +32,7 @@ public sealed record CreateNewsItemCommand(
 /// </summary>
 /// <param name="news">Repository used to persist and retrieve news.</param>
 /// <param name="files">Repository used to persist and retrieve files.</param>
-/// <param name="currentUser">Person the use case runs for.</param>
+/// <param name="currentUser">Person the use case runs for, recorded as the creator.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work that saves the item in the transaction that locks its files.</param>
 public sealed class CreateNewsItemCommandHandler(
@@ -48,7 +48,11 @@ public sealed class CreateNewsItemCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the identifier of the created item, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the identifier of the new item;
+    /// <see cref="ApplicationErrorCode.NewsItemThumbnailNotFound"/> or
+    /// <see cref="ApplicationErrorCode.RichTextFileNotFound"/> when a file is missing.
+    /// </returns>
     public async Task<Result<NewsItemId>> HandleAsync(
         CreateNewsItemCommand command,
         CancellationToken ct = default

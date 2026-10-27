@@ -4,15 +4,15 @@ using CodigoActivo.API.Errors;
 namespace CodigoActivo.API.Extensions;
 
 /// <summary>
-/// Provides reusable extension methods for http context.
+/// Writes error responses outside MVC, such as from the authentication events and middlewares.
 /// </summary>
 public static class HttpContextExtensions
 {
     /// <summary>
-    /// Writes the api error to the response.
+    /// Writes the error response of a failure the API decides itself.
     /// </summary>
-    /// <param name="context">Database context used for persistence.</param>
-    /// <param name="error">Application error associated with a failed result or response.</param>
+    /// <param name="context">HTTP context of the request being answered.</param>
+    /// <param name="error">Failure with its status and wire code.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public static Task WriteApiErrorAsync(this HttpContext context, ApiError error)
     {

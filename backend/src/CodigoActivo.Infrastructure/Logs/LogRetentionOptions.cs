@@ -1,7 +1,8 @@
 namespace CodigoActivo.Infrastructure.Logs;
 
 /// <summary>
-/// Defines how long the entries of each log table are kept.
+/// Defines how long the entries of each log table are kept. The values are fixed in code: no
+/// setting reaches them.
 /// </summary>
 public sealed class LogRetentionOptions
 {
@@ -23,7 +24,7 @@ public sealed class LogRetentionOptions
     /// <summary>
     /// Gets the retention of a log table.
     /// </summary>
-    /// <param name="table">Log table.</param>
+    /// <param name="table">Log table whose retention is read, one of <see cref="LogTable.All"/>.</param>
     /// <returns>The age after which an entry of the table is removed.</returns>
     /// <exception cref="ArgumentOutOfRangeException">The table is not one of <see cref="LogTable.All"/>.</exception>
     public TimeSpan Of(LogTable table)

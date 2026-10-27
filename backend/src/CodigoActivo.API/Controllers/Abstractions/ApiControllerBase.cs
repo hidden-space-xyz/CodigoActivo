@@ -11,11 +11,11 @@ namespace CodigoActivo.API.Controllers.Abstractions;
 public abstract class ApiControllerBase : ControllerBase
 {
     /// <summary>
-    /// Converts the value to ok.
+    /// Answers a successful query with its value, or with the query error.
     /// </summary>
-    /// <typeparam name="T">Type of item processed by the operation.</typeparam>
-    /// <param name="result">The result value.</param>
-    /// <returns>An HTTP response containing a t, or an error response.</returns>
+    /// <typeparam name="T">Type of the value returned to the client.</typeparam>
+    /// <param name="result">Outcome of the query.</param>
+    /// <returns>A 200 response with the value, or the problem describing the failure.</returns>
     protected ActionResult<T> ToOk<T>(Result<T> result)
     {
         return result.IsSuccess ? Ok(result.Value) : ToProblem(result.Error!);
@@ -101,8 +101,10 @@ public abstract class ApiControllerBase : ControllerBase
     /// <typeparam name="T">Type of the read model returned to the client.</typeparam>
     /// <param name="result">Outcome of the command, carrying the identifier of the new resource.</param>
     /// <param name="read">Query that loads the read model of the new resource.</param>
-    /// <param name="location">Builds the relative location of the new resource.</param>
-    /// <returns>A created result with the read model, or the problem describing the failure.</returns>
+    /// <param name="location">Builds the relative location of the new resource from its raw id.</param>
+    /// <returns>
+    /// A 201 result with the read model and its location, or the problem describing the failure.
+    /// </returns>
     protected async Task<ActionResult<T>> ToCreatedAfterAsync<TId, T>(
         Result<TId> result,
         Func<TId, Task<Result<T>>> read,
@@ -125,20 +127,21 @@ public abstract class ApiControllerBase : ControllerBase
     }
 
     /// <summary>
-    /// Converts the value to no content.
+    /// Answers a successful command with an empty 204 response, or with the command error.
     /// </summary>
-    /// <param name="result">The result value.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <param name="result">Outcome of the command.</param>
+    /// <returns>A 204 response, or the problem describing the failure.</returns>
     protected ActionResult ToNoContent(Result result)
     {
         return result.IsSuccess ? NoContent() : ToProblem(result.Error!);
     }
 
     /// <summary>
-    /// Converts the value to problem.
+    /// Converts a failure reported by a use case to an error response, translating its code to
+    /// the wire code.
     /// </summary>
-    /// <param name="error">Application error associated with a failed result or response.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <param name="error">Failure reported by the domain or the application.</param>
+    /// <returns>The error response, with the status the kind of the failure maps to.</returns>
     protected ActionResult ToProblem(Error error)
     {
         return ToProblem(ApiError.From(error));
@@ -148,7 +151,7 @@ public abstract class ApiControllerBase : ControllerBase
     /// Converts a failure the API decides itself to an error response.
     /// </summary>
     /// <param name="error">Failure with its wire code.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>The error response, with the status the kind of the failure maps to.</returns>
     protected ActionResult ToProblem(ApiError error)
     {
         var (statusCode, body) = ApiErrorResponseExtensions.Create(error, HttpContext);

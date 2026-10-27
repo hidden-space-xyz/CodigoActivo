@@ -34,7 +34,11 @@ public sealed class ListPartnersQueryHandler(IReadStore readStore, IQueryExecuto
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a paged partner.</returns>
+    /// <returns>
+    /// A task whose result contains the requested page of partners, by tier and then the most
+    /// recent collaboration first, unless the sort names <c>name</c>, <c>tier</c>, <c>website</c>,
+    /// <c>fromDate</c> or <c>createdAt</c>.
+    /// </returns>
     public Task<PagedResult<PartnerResponse>> HandleAsync(
         ListPartnersQuery query,
         CancellationToken ct = default

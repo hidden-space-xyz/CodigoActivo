@@ -25,8 +25,8 @@ namespace CodigoActivo.API.Legal;
 public class LegalPoliciesController : ApiControllerBase
 {
     /// <summary>
-    /// Returns the version in force of a legal policy; anonymous answers are output cached until a
-    /// new version is published.
+    /// Returns the version in force of a legal policy; anonymous answers are output cached for a
+    /// minute at most and evicted when a new version is published.
     /// </summary>
     /// <param name="kind">Which policy to read.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
@@ -51,7 +51,7 @@ public class LegalPoliciesController : ApiControllerBase
     /// <param name="kind">Which policy to publish.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getPolicy">Query handler that reads the result of the command.</param>
+    /// <param name="getPolicy">Query handler that reads the version in force afterwards.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the version in force, or an error response.</returns>
     [HttpPut("{kind}")]

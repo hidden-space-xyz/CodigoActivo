@@ -54,7 +54,10 @@ public static class Household
     /// Checks that a guardian may add another dependent.
     /// </summary>
     /// <param name="dependents">Dependents the guardian has now.</param>
-    /// <returns>Success, or a conflict once the guardian has <see cref="MaxDependents"/> dependents.</returns>
+    /// <returns>
+    /// Success, or <see cref="DomainErrorCode.UserChildLimitReached"/> once the guardian has
+    /// <see cref="MaxDependents"/> dependents.
+    /// </returns>
     public static Result EnsureMayAddDependent(int dependents)
     {
         return dependents < MaxDependents

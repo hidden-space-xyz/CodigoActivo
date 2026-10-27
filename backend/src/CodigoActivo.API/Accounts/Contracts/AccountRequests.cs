@@ -7,10 +7,10 @@ using Gender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
 namespace CodigoActivo.API.Accounts.Contracts;
 
 /// <summary>
-/// Contains the client-supplied data used to login.
+/// Contains the client-supplied data of the password step of the login.
 /// </summary>
 /// <param name="Identifier">Email address of the account.</param>
-/// <param name="Password">Plain-text password to hash or verify.</param>
+/// <param name="Password">Password of the account.</param>
 /// <param name="KeepSignedIn">
 /// Whether the user explicitly asked to stay signed in on this device; the pending challenge
 /// remembers it, and only then does the session cookie outlive the browser session.
@@ -90,24 +90,30 @@ public record DisableAuthenticatorRequest(
 }
 
 /// <summary>
-/// Contains the client-supplied data used to register.
+/// Contains the client-supplied data used to register an adult and, optionally, the minors of their
+/// household.
 /// </summary>
-/// <param name="FirstName">User's given name.</param>
-/// <param name="LastName">User's family name.</param>
-/// <param name="Email">Email address to validate or locate.</param>
-/// <param name="Phone">Phone number to validate or locate.</param>
-/// <param name="Password">Plain-text password to hash or verify.</param>
+/// <param name="FirstName">Given name of the adult.</param>
+/// <param name="LastName">Family name of the adult.</param>
+/// <param name="Email">
+/// Email of the new account, verified before the first login; a disposable email domain is refused.
+/// </param>
+/// <param name="Phone">Contact phone of the adult.</param>
+/// <param name="Password">Password of the new account, at least 12 characters long.</param>
 /// <param name="NationalId">
 /// Spanish DNI or NIE of the adult. Not unique, so registering never reveals whether another
 /// account already uses it.
 /// </param>
-/// <param name="Gender">The gender value.</param>
+/// <param name="Gender">Gender of the adult.</param>
 /// <param name="DeclaresAdult">
 /// Whether the adult declares being of age; a registration without it is refused
 /// (<c>UserAdultDeclarationRequired</c>).
 /// </param>
 /// <param name="NewsConsent">Whether the adult agrees to receive news by email.</param>
-/// <param name="Minors">The minors value.</param>
+/// <param name="Minors">
+/// Minors registered in the household of the adult, at most <see cref="Household.MaxDependents"/>;
+/// null means none.
+/// </param>
 /// <param name="SecondaryPhone">
 /// Optional second contact phone of the adult; blank means none and it must differ from
 /// <paramref name="Phone"/>.
@@ -149,12 +155,13 @@ public record RegisterRequest(
 }
 
 /// <summary>
-/// Contains the client-supplied data used to register minor.
+/// Contains the client-supplied data of a minor added to a household, when the adult registers or
+/// later.
 /// </summary>
-/// <param name="FirstName">User's given name.</param>
-/// <param name="LastName">User's family name.</param>
-/// <param name="BirthDate">User's date of birth.</param>
-/// <param name="Gender">The gender value.</param>
+/// <param name="FirstName">Given name of the minor.</param>
+/// <param name="LastName">Family name of the minor.</param>
+/// <param name="BirthDate">Date of birth of the minor; today at the latest.</param>
+/// <param name="Gender">Gender of the minor.</param>
 /// <param name="DeclaresGuardianship">
 /// Whether the adult adding the minor declares being its parent or legal guardian; a minor without it
 /// is refused (<c>UserGuardianshipDeclarationRequired</c>).
@@ -168,9 +175,9 @@ public record RegisterMinorRequest(
 )
 {
     /// <summary>
-    /// Gets the details of the minor.
+    /// Builds the details of the minor that the registration and add-child commands carry.
     /// </summary>
-    /// <returns>The details.</returns>
+    /// <returns>The details of the minor.</returns>
     public MinorDraft ToDraft()
     {
         return new MinorDraft(
@@ -184,15 +191,15 @@ public record RegisterMinorRequest(
 }
 
 /// <summary>
-/// Contains the client-supplied data used to verify.
+/// Contains the code of an emailed link that verifies a new account or confirms an email change.
 /// </summary>
-/// <param name="Otp">The otp value.</param>
+/// <param name="Otp">One-time code carried by the link.</param>
 public record VerifyRequest([Required] [MaxLength(128)] string Otp);
 
 /// <summary>
-/// Contains the client-supplied data used to forgot password.
+/// Contains the client-supplied data used to ask for a password reset link.
 /// </summary>
-/// <param name="Email">Email address to validate or locate.</param>
+/// <param name="Email">Email of the account whose password is to be reset.</param>
 public record ForgotPasswordRequest([Required] [EmailAddress] [MaxLength(256)] string Email)
 {
     /// <summary>
@@ -222,10 +229,10 @@ public record ResendVerificationRequest([Required] [EmailAddress] [MaxLength(256
 }
 
 /// <summary>
-/// Contains the client-supplied data used to reset password.
+/// Contains the client-supplied data used to reset a password from the emailed link.
 /// </summary>
-/// <param name="Otp">The otp value.</param>
-/// <param name="NewPassword">The new password value.</param>
+/// <param name="Otp">One-time code carried by the reset link.</param>
+/// <param name="NewPassword">New password, at least 12 characters long.</param>
 public record ResetPasswordRequest(
     [Required] [MaxLength(128)] string Otp,
     [Required] [MinLength(12)] [MaxLength(128)] string NewPassword
@@ -279,10 +286,10 @@ public record DeleteAccountRequest(
 }
 
 /// <summary>
-/// Contains the client-supplied data used to change password.
+/// Contains the client-supplied data used to change the password of the signed-in user.
 /// </summary>
-/// <param name="CurrentPassword">The current password value.</param>
-/// <param name="NewPassword">The new password value.</param>
+/// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize the change.</param>
+/// <param name="NewPassword">New password, at least 12 characters long.</param>
 public record ChangePasswordRequest(
     [Required] [MaxLength(128)] string CurrentPassword,
     [Required] [MinLength(12)] [MaxLength(128)] string NewPassword

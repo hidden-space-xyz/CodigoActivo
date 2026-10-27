@@ -28,7 +28,8 @@ public sealed record WithdrawTermsConsentCommand(
 /// their dependents, and an administrator records the withdrawal someone asked for by email. The
 /// withdrawal is recorded as decided by whoever decides the consent of the person
 /// (<see cref="TermsConsent.DeciderOf"/>) and as recorded by the signed-in user; the acceptance it
-/// ends stays in the history of the decision.
+/// ends stays in the history of the decision. Once it is committed,
+/// <see cref="ConsentWithdrawalNotification"/> tells the association's legal contact.
 /// </summary>
 /// <param name="termsAcceptances">Repository of the terms decisions taken.</param>
 /// <param name="termsDocuments">Repository that tells whether the document holds a consent.</param>
@@ -50,7 +51,16 @@ public sealed class WithdrawTermsConsentCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result reports success;
+    /// <see cref="ApplicationErrorCode.ActingForAnotherUserForbidden"/> when the user may not act
+    /// for the person; <see cref="ApplicationErrorCode.UserNotFound"/>,
+    /// <see cref="ApplicationErrorCode.TermsDocumentNotFound"/> or
+    /// <see cref="ApplicationErrorCode.EventTermsDecisionNotFound"/> when one is missing;
+    /// <see cref="DomainErrorCode.EventTermsWithdrawalNotAllowed"/> when the document is not a
+    /// consent, or <see cref="DomainErrorCode.EventTermsConsentNotGiven"/> when it is not accepted
+    /// now.
+    /// </returns>
     public async Task<Result> HandleAsync(
         WithdrawTermsConsentCommand command,
         CancellationToken ct = default

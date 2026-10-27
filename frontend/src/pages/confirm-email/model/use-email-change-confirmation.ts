@@ -13,7 +13,8 @@ export type EmailChangeConfirmationState = 'confirming' | 'success' | 'error'
 /**
  * Confirmation page flow: `confirm` sends the link's user id and code (an incomplete link, or one
  * whose user id is not a GUID, fails without calling the API). Once the account uses its new email
- * the session is refreshed, so a holder signed in on this browser sees the new address.
+ * the session is refreshed and the cached profile invalidated, so a holder signed in on this
+ * browser sees the new address.
  */
 export function useEmailChangeConfirmation() {
   const { t } = useI18n()

@@ -10,7 +10,7 @@ namespace CodigoActivo.Application.EventCategories;
 public static class EventCategoryProjections
 {
     /// <summary>
-    /// Stores the shared event category type value.
+    /// Projects an event category type with its name and color.
     /// </summary>
     public static readonly Expression<
         Func<EventCategoryTypeRow, EventCategoryTypeResponse>

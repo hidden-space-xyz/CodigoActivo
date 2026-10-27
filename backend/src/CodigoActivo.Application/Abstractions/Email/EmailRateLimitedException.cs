@@ -1,58 +1,59 @@
 namespace CodigoActivo.Application.Abstractions.Email;
 
 /// <summary>
-/// Identifies the supported email limit scope values.
+/// Names the sending limit that refused an email.
 /// </summary>
 public enum EmailLimitScope
 {
     /// <summary>
-    /// No option is selected.
+    /// No limit is named.
     /// </summary>
     None,
 
     /// <summary>
-    /// Selects the recipient option.
+    /// The hourly or daily quota of the addressee.
     /// </summary>
     Recipient,
 
     /// <summary>
-    /// Selects the global option.
+    /// The budget the whole application shares, or the capacity of a full outbox.
     /// </summary>
     Global,
 }
 
 /// <summary>
-/// Represents a failure caused by email rate limited.
+/// Represents an email a sending limit refused, so it was not queued. Callers decide whether that
+/// fails their request.
 /// </summary>
 public sealed class EmailRateLimitedException : Exception
 {
     private const string DefaultMessage = "The outbound email quota denied this message.";
 
     /// <summary>
-    /// Initializes an email rate limited exception with its required dependencies.
+    /// Initializes a refusal without naming the limit.
     /// </summary>
     public EmailRateLimitedException()
         : base(DefaultMessage) { }
 
     /// <summary>
-    /// Initializes an email rate limited exception with its required dependencies.
+    /// Initializes a refusal with a diagnostic message.
     /// </summary>
-    /// <param name="message">Email message to deliver.</param>
+    /// <param name="message">Diagnostic message; it must not contain personal data.</param>
     public EmailRateLimitedException(string message)
         : base(message) { }
 
     /// <summary>
-    /// Initializes an email rate limited exception with its required dependencies.
+    /// Initializes a refusal with a diagnostic message and its cause.
     /// </summary>
-    /// <param name="message">Email message to deliver.</param>
+    /// <param name="message">Diagnostic message; it must not contain personal data.</param>
     /// <param name="innerException">Underlying exception that caused the failure.</param>
     public EmailRateLimitedException(string message, Exception innerException)
         : base(message, innerException) { }
 
     /// <summary>
-    /// Initializes an email rate limited exception with its required dependencies.
+    /// Initializes a refusal by a known limit.
     /// </summary>
-    /// <param name="scope">The scope value.</param>
+    /// <param name="scope">Limit that refused the email.</param>
     public EmailRateLimitedException(EmailLimitScope scope)
         : base(DefaultMessage)
     {
@@ -60,7 +61,7 @@ public sealed class EmailRateLimitedException : Exception
     }
 
     /// <summary>
-    /// Gets the scope value.
+    /// Gets the limit that refused the email; <see cref="EmailLimitScope.None"/> when it was not named.
     /// </summary>
     public EmailLimitScope Scope { get; }
 }

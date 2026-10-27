@@ -3,9 +3,9 @@ using CodigoActivo.Application.Abstractions.Email;
 namespace CodigoActivo.Infrastructure.Communication;
 
 /// <summary>
-/// Defines configuration values for email queue. The retry schedule and the delivery priority of
-/// each email kind live here so the delivery worker, the tests and the operator read the same policy
-/// in one place.
+/// Defines the policy of the email outbox: capacity, concurrency, leases, the retry schedule and the
+/// delivery priority of each email kind. It is registered with <c>AddFixedOptions</c>, so no setting
+/// changes it, and the delivery worker, the tests and the operator read the same policy in one place.
 /// </summary>
 public sealed class EmailQueueOptions
 {
@@ -17,24 +17,25 @@ public sealed class EmailQueueOptions
     public const int CriticalPriority = 0;
 
     /// <summary>
-    /// Identifies the stored priority of the automatic mail the application sends on its own, which
-    /// nobody is waiting in front of a screen for.
+    /// Identifies the stored priority of security alerts and activity notifications, automatic mail
+    /// that nobody is waiting in front of a screen for.
     /// </summary>
     public const int StandardPriority = 1;
 
     /// <summary>
-    /// Identifies the stored priority of bulk administrator-written mail, which yields to everything
-    /// else because one batch can hold hundreds of recipients.
+    /// Identifies the stored priority of administrator-written mail, which yields to everything else
+    /// because one batch can hold hundreds of recipients, and of every other kind
+    /// <see cref="PriorityOf"/> does not name, such as the coming-of-age and consent notices.
     /// </summary>
     public const int BulkPriority = 2;
 
     /// <summary>
-    /// Identifies the default workers configuration or policy value.
+    /// Identifies the default of <see cref="Workers"/>, the number of messages delivered concurrently.
     /// </summary>
     public const int DefaultWorkers = 4;
 
     /// <summary>
-    /// Identifies the default batch size configuration or policy value.
+    /// Identifies the default of <see cref="BatchSize"/>, the number of due messages claimed at once.
     /// </summary>
     public const int DefaultBatchSize = 10;
 
@@ -78,17 +79,22 @@ public sealed class EmailQueueOptions
     public int Workers { get; set; } = DefaultWorkers;
 
     /// <summary>
-    /// Gets or sets the number of due messages claimed at once.
+    /// Gets or sets the number of due messages claimed at once. A run that claims this many is
+    /// followed at once by the next one instead of waiting for <see cref="PollInterval"/>.
     /// </summary>
     public int BatchSize { get; set; } = DefaultBatchSize;
 
     /// <summary>
-    /// Gets or sets the shutdown drain value.
+    /// Gets or sets how long stopping the host waits for the sends already in flight. A message not
+    /// delivered by then stays in the outbox with its attempt counted and is claimed again once its
+    /// lease expires.
     /// </summary>
     public TimeSpan ShutdownDrain { get; set; } = TimeSpan.FromSeconds(20);
 
     /// <summary>
-    /// Gets or sets the send timeout value.
+    /// Gets or sets the longest time one send may take, connection to the SMTP server and
+    /// authentication included; a send still running then is cancelled and counts as a failed
+    /// attempt.
     /// </summary>
     public TimeSpan SendTimeout { get; set; } = TimeSpan.FromSeconds(60);
 
@@ -100,8 +106,8 @@ public sealed class EmailQueueOptions
     /// <summary>
     /// Gets how long a claimed message stays reserved for the worker that took it. The whole batch is
     /// leased when it is claimed, and <see cref="Workers"/> messages of it are delivered at a time, so
-    /// the last message of a batch of <see cref="BatchSize"/> waits for the
-    /// <see cref="DeliveryWaves"/> rounds before it, each of which may spend a full
+    /// the last message of a batch of <see cref="BatchSize"/> may only start after the rounds before
+    /// it and is done within <see cref="DeliveryWaves"/> rounds, each of which may spend a full
     /// <see cref="SendTimeout"/>. The lease covers that worst case plus <see cref="LeaseMargin"/>: no
     /// row becomes claimable again by another instance while the worker that claimed it may still be
     /// delivering it. It grows with the batch and shrinks with the workers.
@@ -109,7 +115,9 @@ public sealed class EmailQueueOptions
     public TimeSpan Lease => (DeliveryWaves * PositiveSendTimeout) + LeaseMargin;
 
     /// <summary>
-    /// Gets how many rounds of concurrent sends one claimed batch is delivered in.
+    /// Gets how many rounds of concurrent sends one claimed batch is delivered in:
+    /// <see cref="BatchSize"/> divided by <see cref="Workers"/>, rounded up, with values below one
+    /// counted as one.
     /// </summary>
     public int DeliveryWaves
     {
@@ -127,8 +135,11 @@ public sealed class EmailQueueOptions
     /// Gets the stored delivery priority of an email kind. The claim orders by this column first, so
     /// a login code never queues behind a bulk mailing that is already due.
     /// </summary>
-    /// <param name="kind">Email category whose limits are applied.</param>
-    /// <returns>The resulting priority value, lowest first.</returns>
+    /// <param name="kind">Email category whose priority is wanted.</param>
+    /// <returns>
+    /// <see cref="CriticalPriority"/>, <see cref="StandardPriority"/> or, for every other kind,
+    /// <see cref="BulkPriority"/>; lower values are claimed first.
+    /// </returns>
     public static int PriorityOf(EmailKind kind)
     {
         return kind switch
@@ -147,8 +158,11 @@ public sealed class EmailQueueOptions
     /// resetting a password or verifying a new account; those kinds stay bounded by the per-recipient
     /// quota and the global budget of the email guard instead.
     /// </summary>
-    /// <param name="kind">Email category whose limits are applied.</param>
-    /// <returns><see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
+    /// <param name="kind">Email category being stored.</param>
+    /// <returns>
+    /// <see langword="true"/> for the kinds of <see cref="CriticalPriority"/>; otherwise,
+    /// <see langword="false"/>.
+    /// </returns>
     public static bool IsCapacityExempt(EmailKind kind)
     {
         return PriorityOf(kind) == CriticalPriority;
@@ -159,7 +173,10 @@ public sealed class EmailQueueOptions
     /// and has to be discarded.
     /// </summary>
     /// <param name="attempts">Number of attempts that have already failed.</param>
-    /// <returns><see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    /// <see langword="true"/> when <paramref name="attempts"/> has reached <see cref="MaxAttempts"/>;
+    /// otherwise, <see langword="false"/>.
+    /// </returns>
     public static bool IsExhausted(int attempts)
     {
         return attempts >= MaxAttempts;
@@ -169,7 +186,10 @@ public sealed class EmailQueueOptions
     /// Gets the delay that separates the supplied number of failed attempts from the next one.
     /// </summary>
     /// <param name="attempts">Number of attempts that have already failed.</param>
-    /// <returns>The resulting time span value.</returns>
+    /// <returns>
+    /// The matching entry of <see cref="RetryDelays"/>; counts below one take the first entry and
+    /// counts past the end of the list take the last.
+    /// </returns>
     public static TimeSpan RetryDelayAfter(int attempts)
     {
         var index = Math.Clamp(attempts - 1, 0, RetryDelays.Count - 1);

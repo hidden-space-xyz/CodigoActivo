@@ -3,15 +3,16 @@ using Microsoft.Extensions.Primitives;
 namespace CodigoActivo.API.Middlewares;
 
 /// <summary>
-/// Processes HTTP requests to enforce cache control.
+/// Marks every <c>/api</c> response <c>Cache-Control: no-store</c> unless the endpoint set a
+/// <c>Cache-Control</c> of its own, so no browser or proxy keeps an API answer it was not meant to.
 /// </summary>
-/// <param name="next">The next value.</param>
+/// <param name="next">Next middleware of the pipeline.</param>
 public class CacheControlMiddleware(RequestDelegate next)
 {
     /// <summary>
-    /// Processes the current HTTP request and invokes the next middleware.
+    /// Registers the default header for an <c>/api</c> request and invokes the next middleware.
     /// </summary>
-    /// <param name="context">Database context used for persistence.</param>
+    /// <param name="context">HTTP context of the request.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task InvokeAsync(HttpContext context)
     {

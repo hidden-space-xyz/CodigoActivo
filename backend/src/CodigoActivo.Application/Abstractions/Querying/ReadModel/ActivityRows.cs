@@ -11,7 +11,7 @@ public sealed class ActivityRow
     /// <summary>Gets the title.</summary>
     public string Title { get; init; } = string.Empty;
 
-    /// <summary>Gets the description.</summary>
+    /// <summary>Gets the plain-text description.</summary>
     public string Description { get; init; } = string.Empty;
 
     /// <summary>Gets where the activity takes place.</summary>

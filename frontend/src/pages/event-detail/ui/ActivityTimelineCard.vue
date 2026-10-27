@@ -15,7 +15,7 @@ const props = defineProps<{
   activity: TimelineActivity
   /** Roles the current user may take; a single role is preselected and hides the selector. */
   roles: readonly ActivityRole[]
-  /** Signup roles are still loading; replaces the role selector with a loading note. */
+  /** Signup roles are still loading; shows a loading note or spins the household button. */
   rolesLoading: boolean
   /** An enrollment request for this activity is in flight; disables and spins its actions. */
   busy: boolean
@@ -27,7 +27,10 @@ const props = defineProps<{
   earlyOnly?: boolean
   /** The user manages household members, so enrollment goes through the household dialog. */
   hasHousehold: boolean
-  /** People the household dialog offers, the user included; once all are enrolled it is hidden. */
+  /**
+   * People the household dialog offers, the user included; once all are enrolled, a note replaces
+   * the household button.
+   */
   householdSize?: number
   /** Day of the timeline group; the schedule omits the date when the activity starts that day. */
   referenceDate?: Date | null
@@ -37,7 +40,7 @@ const emit = defineEmits<{
   signup: [roleId: string]
   /** Fired when the user withdraws their own enrollment. */
   unassign: []
-  /** Fired with a household member's user id to withdraw that member. */
+  /** Fired with the user id of a listed household signup to withdraw it, the user's own too. */
   unassignMember: [userId: string]
   /** Fired to open the household enrollment dialog for this activity. */
   household: []

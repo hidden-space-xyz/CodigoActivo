@@ -14,10 +14,10 @@ using Microsoft.Extensions.Logging;
 namespace CodigoActivo.Application.Emails;
 
 /// <summary>
-/// Represents a recipient value used by the application.
+/// A user matched by a manual email, with what decides whether the email may reach them.
 /// </summary>
 /// <param name="UserId">Identifier of the account.</param>
-/// <param name="Email">Email address to validate or locate.</param>
+/// <param name="Email">Email address of the account; dependents have none.</param>
 /// <param name="FirstName">User's given name.</param>
 /// <param name="NewsConsent">Whether the user agreed to receive news by email.</param>
 /// <param name="EmailConfirmed">
@@ -38,7 +38,7 @@ public sealed record Recipient(
 /// it: delivery happens in the background.
 /// </summary>
 /// <param name="outbox">Outbox the batch is stored in for background delivery.</param>
-/// <param name="options">Configuration values used by the component.</param>
+/// <param name="options">Limits on the recipients and attachments of one email.</param>
 /// <param name="composer">Composer that renders the batch.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ManualEmailDispatcher(
@@ -62,15 +62,24 @@ public sealed class ManualEmailDispatcher(
 
     /// <summary>
     /// Validates and queues the manual email for delivery, refusing a batch with no recipients or
-    /// more than <see cref="ManualEmailOptions.MaxRecipients"/>.
+    /// more than <see cref="ManualEmailOptions.MaxRecipients"/>, more than
+    /// <see cref="ManualEmailOptions.MaxAttachments"/> attachments, attachments that add up to more
+    /// than <see cref="ManualEmailOptions.MaxAttachmentsBytes"/>, or an empty attachment.
     /// </summary>
-    /// <param name="recipients">The recipients value.</param>
-    /// <param name="skipped">The skipped value.</param>
-    /// <param name="request">Validated client request data.</param>
+    /// <param name="recipients">Recipients the email reaches, already chosen for its purpose.</param>
+    /// <param name="skipped">Matching users left out for lack of a confirmed address, reported back as is.</param>
+    /// <param name="request">Subject and body, trimmed before they are rendered.</param>
     /// <param name="purpose">What the email is written for.</param>
-    /// <param name="attachments">The attachments value.</param>
+    /// <param name="attachments">Files attached to every message.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the dispatch counts on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the dispatch counts; <see cref="ApplicationErrorCode.EmailNoRecipients"/>,
+    /// <see cref="ApplicationErrorCode.EmailTooManyRecipients"/>,
+    /// <see cref="ApplicationErrorCode.EmailTooManyAttachments"/>,
+    /// <see cref="ApplicationErrorCode.EmailAttachmentsTooLarge"/>,
+    /// <see cref="ApplicationErrorCode.EmailAttachmentEmpty"/>, or
+    /// <see cref="ApplicationErrorCode.EmailSendFailed"/> when the outbox is full or fails.
+    /// </returns>
     public async Task<Result<EmailDispatch>> DispatchAsync(
         IReadOnlyList<Recipient> recipients,
         int skipped,

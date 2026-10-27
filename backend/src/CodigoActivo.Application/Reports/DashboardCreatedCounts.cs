@@ -9,11 +9,11 @@ namespace CodigoActivo.Application.Reports;
 /// </summary>
 /// <param name="Users">Accounts per membership type catalog identifier.</param>
 /// <param name="Inscriptions">Signups per status catalog identifier.</param>
-/// <param name="Events">Events.</param>
-/// <param name="Activities">Activities.</param>
-/// <param name="Resources">Resources.</param>
-/// <param name="News">News items.</param>
-/// <param name="Partners">Partners.</param>
+/// <param name="Events">Events created per interval.</param>
+/// <param name="Activities">Activities created per interval.</param>
+/// <param name="Resources">Resources created per interval.</param>
+/// <param name="News">News items created per interval.</param>
+/// <param name="Partners">Partners created per interval.</param>
 public sealed record DashboardCreatedCounts(
     IReadOnlyList<KeyedIntervalCount> Users,
     IReadOnlyList<KeyedIntervalCount> Inscriptions,

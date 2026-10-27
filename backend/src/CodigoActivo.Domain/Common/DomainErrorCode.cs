@@ -6,32 +6,32 @@ namespace CodigoActivo.Domain.Common;
 public enum DomainErrorCode
 {
     /// <summary>
-    /// Selects the activity assignment already exists option.
+    /// The person is already signed up to the activity.
     /// </summary>
     ActivityAssignmentAlreadyExists,
 
     /// <summary>
-    /// Selects the activity assignment not found option.
+    /// The person is not signed up to the activity.
     /// </summary>
     ActivityAssignmentNotFound,
 
     /// <summary>
-    /// Selects the activity schedule required option.
+    /// The start or the end of an activity is missing.
     /// </summary>
     ActivityScheduleRequired,
 
     /// <summary>
-    /// Selects the activity schedule invalid range option.
+    /// An activity does not end after it starts.
     /// </summary>
     ActivityScheduleInvalidRange,
 
     /// <summary>
-    /// Selects the activity schedule outside event range option.
+    /// An activity starts or ends outside the days of its event.
     /// </summary>
     ActivityScheduleOutsideEventRange,
 
     /// <summary>
-    /// Selects the activity role capacity duplicated option.
+    /// A role appears more than once among the capacities of an activity.
     /// </summary>
     ActivityRoleCapacityDuplicated,
 
@@ -46,7 +46,8 @@ public enum DomainErrorCode
     ActivitySignupEarlyOnly,
 
     /// <summary>
-    /// The activity has already started, so nobody can sign up for it or withdraw from it.
+    /// The activity has already started, so only an administrator can still sign people up for it or
+    /// withdraw them from it.
     /// </summary>
     ActivityAlreadyStarted,
 
@@ -56,37 +57,38 @@ public enum DomainErrorCode
     ActivityRoleNotAllowed,
 
     /// <summary>
-    /// Selects the event categories required option.
+    /// An event was given no category.
     /// </summary>
     EventCategoriesRequired,
 
     /// <summary>
-    /// Selects the event schedule required option.
+    /// A day of an event, or the opening or closing of its signup, is missing.
     /// </summary>
     EventScheduleRequired,
 
     /// <summary>
-    /// Selects the event schedule invalid range option.
+    /// An event ends before it starts, its signup does not close after it opens, or its signup
+    /// opens after the last day of the event.
     /// </summary>
     EventScheduleInvalidRange,
 
     /// <summary>
-    /// Selects the event early signup not before signup option.
+    /// The early signup of an event does not open before the regular signup.
     /// </summary>
     EventEarlySignupNotBeforeSignup,
 
     /// <summary>
-    /// Selects the event signup ends after event option.
+    /// The signup of an event closes after the last day of the event.
     /// </summary>
     EventSignupEndsAfterEvent,
 
     /// <summary>
-    /// Selects the event rating empty option.
+    /// A rating has neither a score nor any answer.
     /// </summary>
     EventRatingEmpty,
 
     /// <summary>
-    /// Selects the event terms document duplicated option.
+    /// A terms document is linked to an event more than once.
     /// </summary>
     EventTermsDocumentDuplicated,
 
@@ -122,120 +124,121 @@ public enum DomainErrorCode
     EventTermsSignatureInvalid,
 
     /// <summary>
-    /// Selects the resource description required option.
+    /// A resource hosted on the site has an empty body.
     /// </summary>
     ResourceDescriptionRequired,
 
     /// <summary>
-    /// Selects the resource description not allowed option.
+    /// An external resource has a body; it holds only a link.
     /// </summary>
     ResourceDescriptionNotAllowed,
 
     /// <summary>
-    /// Selects the resource url required option.
+    /// An external resource has no link.
     /// </summary>
     ResourceUrlRequired,
 
     /// <summary>
-    /// Selects the resource url not allowed option.
+    /// A resource hosted on the site has a link; it holds only a body.
     /// </summary>
     ResourceUrlNotAllowed,
 
     /// <summary>
-    /// Selects the user delete initial admin forbidden option.
+    /// The initial administrator was to be deleted.
     /// </summary>
     UserDeleteInitialAdminForbidden,
 
     /// <summary>
-    /// Selects the user cannot remove initial admin option.
+    /// The initial administrator was to lose its administrator rights.
     /// </summary>
     UserCannotRemoveInitialAdmin,
 
     /// <summary>
-    /// Selects the option for administrator rights given to a dependent.
+    /// Administrator rights were to be given to a dependent.
     /// </summary>
     UserDependentCannotBeAdmin,
 
     /// <summary>
-    /// Selects the option for administrator rights given to an account whose email is unconfirmed.
+    /// Administrator rights were to be given to an account whose email is unconfirmed.
     /// </summary>
     UserPendingVerificationCannotBeAdmin,
 
     /// <summary>
-    /// Selects the option for a parent that is itself a dependent.
+    /// A dependent was to be added under an account that is itself a dependent.
     /// </summary>
     UserParentIsMinor,
 
     /// <summary>
-    /// Selects the option for a dependent created, when registering or later, or given a new birth
-    /// date that does not make it a minor.
+    /// A dependent was created, when registering or later, or given a new birth date that does not
+    /// make it a minor.
     /// </summary>
     UserChildBirthDateNotMinor,
 
     /// <summary>
-    /// Selects the user parent reassignment forbidden option.
+    /// A change to a dependent names a guardian other than the one it has.
     /// </summary>
     UserParentReassignmentForbidden,
 
     /// <summary>
-    /// Selects the user child limit reached option.
+    /// The guardian already has the most dependents a household allows.
     /// </summary>
     UserChildLimitReached,
 
     /// <summary>
-    /// Selects the user parent not allowed for adult option.
+    /// A change to an independent account names a guardian.
     /// </summary>
     UserParentNotAllowedForAdult,
 
     /// <summary>
-    /// Selects the option for a birth date given to an account that is not a dependent.
+    /// A birth date was given to an account that is not a dependent.
     /// </summary>
     UserBirthDateNotAllowedForAdult,
 
     /// <summary>
-    /// Selects the option for a dependent updated without a birth date.
+    /// A dependent was created or updated without a birth date.
     /// </summary>
     UserChildBirthDateRequired,
 
     /// <summary>
-    /// Selects the option for an independent account registered or updated without an email or a
-    /// phone, or asked for an emailed code while it has no email.
+    /// An independent account was registered or updated without an email or a phone, or an emailed
+    /// code was asked for an account that has no email.
     /// </summary>
     UserContactInfoRequired,
 
     /// <summary>
-    /// Selects the option for an independent account registered or updated without a DNI or NIE.
+    /// An independent account was registered or updated without a DNI or NIE.
     /// </summary>
     UserNationalIdRequired,
 
     /// <summary>
-    /// Selects the option for a registration whose holder did not declare being of age.
+    /// An account was registered without its holder declaring being of age.
     /// </summary>
     UserAdultDeclarationRequired,
 
     /// <summary>
-    /// Selects the option for a dependent added by someone who did not declare being its parent or
-    /// legal guardian.
+    /// A dependent was added by someone who did not declare being its parent or legal guardian.
     /// </summary>
     UserGuardianshipDeclarationRequired,
 
     /// <summary>
-    /// Selects the option for a secondary phone equal to the main phone of the same account.
+    /// The secondary phone of an account equals its main phone.
     /// </summary>
     SecondaryPhoneSameAsPrimary,
 
     /// <summary>
-    /// Selects the user phone invalid option.
+    /// A phone does not have 7 to 15 digits, or has characters other than spaces, dots, hyphens,
+    /// parentheses and a leading plus sign.
     /// </summary>
     UserPhoneInvalid,
 
     /// <summary>
-    /// Selects the authenticator already enabled option.
+    /// An authenticator was to be enrolled or enabled for an account that already uses one.
     /// </summary>
     AuthenticatorAlreadyEnabled,
 
     /// <summary>
-    /// The DNI or NIE of an independent account has a control letter that does not match its number.
+    /// The DNI or NIE of an independent account is not shaped as one or has a control letter that
+    /// does not match its number.
     /// </summary>
     UserNationalIdInvalid,
 
@@ -290,7 +293,7 @@ public enum DomainErrorCode
     EventCategoryTypeOnlyCategoryOfEvent,
 
     /// <summary>
-    /// A legal policy was to be published without any text.
+    /// A legal policy was to be published without any text or image.
     /// </summary>
     LegalPolicyContentRequired,
 

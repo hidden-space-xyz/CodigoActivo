@@ -10,7 +10,10 @@ const props = defineProps<{
   visible: boolean
   /** Title of the rated event, shown above the form. */
   eventTitle: string
-  /** The account's stored rating of the event, or `null` to start from an empty form. */
+  /**
+   * The account's stored rating of the event, which the form starts from and which can be deleted;
+   * `null` to start from an empty form without the delete button.
+   */
   rating: EventRatingInput | null
   /** Shows a loading state on the save button while the rating is stored. */
   saving: boolean
@@ -19,7 +22,10 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  /** Fired on submit with the score (`null` without stars) and the free-text answers. */
+  /**
+   * Fired on submit with the score (`null` without stars) and the free-text answers; never for a
+   * rating with neither a score nor an answer.
+   */
   submit: [EventRatingInput]
   /** Fired when the user asks to delete the stored rating. */
   delete: []

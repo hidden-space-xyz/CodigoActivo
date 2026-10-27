@@ -18,12 +18,13 @@ public sealed record AddChildCommand(UserId ParentId, MinorDraft Child) : IComma
 
 /// <summary>
 /// Executes the command to add a minor to a household. Only the guardian may add one to their own
-/// household; an administrator cannot add minors to anyone else's.
+/// household; an administrator cannot add minors to anyone else's. The guardian stays locked while
+/// its dependents are counted, so a household never exceeds <see cref="Household.MaxDependents"/>.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="actingUser">Policy that decides whose personal data the signed-in user manages.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="uow">Unit of work that adds the minor in a transaction holding the guardian locked.</param>
 public sealed class AddChildCommandHandler(
     IUserRepository users,
     ActingUserPolicy actingUser,
@@ -36,7 +37,13 @@ public sealed class AddChildCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the identifier of the minor, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the identifier of the minor;
+    /// <see cref="ApplicationErrorCode.ActingForAnotherUserForbidden"/> when the caller is not the
+    /// guardian, <see cref="ApplicationErrorCode.ParentUserNotFound"/> when the guardian is missing,
+    /// <see cref="DomainErrorCode.UserChildLimitReached"/> once the household is full, or the domain
+    /// error of the guardianship or birth date rule that refuses the minor.
+    /// </returns>
     public async Task<Result<UserId>> HandleAsync(
         AddChildCommand command,
         CancellationToken ct = default

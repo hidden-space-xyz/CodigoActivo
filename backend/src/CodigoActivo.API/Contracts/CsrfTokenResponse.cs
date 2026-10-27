@@ -1,8 +1,8 @@
 namespace CodigoActivo.API.Contracts;
 
 /// <summary>
-/// Contains the csrf token data returned by the API.
+/// Contains the antiforgery request token the client echoes on unsafe requests.
 /// </summary>
-/// <param name="Token">The token value.</param>
-/// <param name="HeaderName">The header name value.</param>
+/// <param name="Token">Request token, paired with the antiforgery cookie set in the same response.</param>
+/// <param name="HeaderName">Name of the header that must carry the token.</param>
 public record CsrfTokenResponse(string Token, string HeaderName);

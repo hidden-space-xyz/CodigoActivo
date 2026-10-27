@@ -16,10 +16,13 @@ public static class FileNaming
     /// <summary>
     /// Creates the unique storage name of one variant of a file, keeping its safe extension.
     /// </summary>
-    /// <param name="id">Identifier of the target entity.</param>
-    /// <param name="extension">The extension value.</param>
+    /// <param name="id">Identifier of the file.</param>
+    /// <param name="extension">Extension of the stored format, without the dot.</param>
     /// <param name="variant">Variant of the file the name stores.</param>
-    /// <returns>The generated text.</returns>
+    /// <returns>
+    /// <c>{id}.{extension}</c> for the full image, <c>{id}.thumbnail.{extension}</c> for the
+    /// thumbnail.
+    /// </returns>
     public static string StoredName(StoredFileId id, string extension, FileVariant variant)
     {
         return variant is FileVariant.Thumbnail
@@ -30,8 +33,8 @@ public static class FileNaming
     /// <summary>
     /// Creates the storage names of every variant of a file.
     /// </summary>
-    /// <param name="id">Identifier of the target entity.</param>
-    /// <param name="extension">The extension value.</param>
+    /// <param name="id">Identifier of the file.</param>
+    /// <param name="extension">Extension of the stored format, without the dot.</param>
     /// <returns>The storage names, one per variant.</returns>
     public static IReadOnlyList<string> StoredNames(StoredFileId id, string extension)
     {
@@ -66,9 +69,11 @@ public static class FileNaming
     /// formatting characters (a right-to-left override can disguise the extension), trimmed and cut
     /// to 260 characters.
     /// </summary>
-    /// <param name="fileName">The file name value.</param>
+    /// <param name="fileName">
+    /// Name the client supplied, possibly with a path, or <see langword="null"/>.
+    /// </param>
     /// <param name="fallbackName">Name used when nothing remains.</param>
-    /// <returns>The generated text.</returns>
+    /// <returns>The sanitized name, never empty.</returns>
     public static string SanitizeName(string? fileName, string fallbackName)
     {
         var normalizedFileName = (fileName ?? string.Empty).Replace('\\', '/');
@@ -91,15 +96,23 @@ public static class FileNaming
 /// <summary>
 /// Validates file upload input before it is processed.
 /// </summary>
-/// <param name="options">Configuration values used by the component.</param>
+/// <param name="options">Upload limits, of which the maximum size applies here.</param>
 public sealed class FileUploadValidator(FileUploadOptions options)
 {
     /// <summary>
-    /// Validates the and detect and returns the normalized result.
+    /// Checks the size of an upload and detects its image format from the header, leaving the
+    /// content positioned at its start.
     /// </summary>
-    /// <param name="upload">The upload value.</param>
+    /// <param name="upload">Upload to check, or <see langword="null"/> when none was sent.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains an image format on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the detected JPEG, PNG or WebP format;
+    /// <see cref="ApplicationErrorCode.FileUploadMissing"/>,
+    /// <see cref="ApplicationErrorCode.FileUploadEmpty"/>,
+    /// <see cref="ApplicationErrorCode.FileUploadTooLarge"/>,
+    /// <see cref="ApplicationErrorCode.FileUploadStreamNotSeekable"/> or
+    /// <see cref="ApplicationErrorCode.FileUploadUnsupportedFormat"/>.
+    /// </returns>
     public async Task<Result<ImageFormat>> ValidateAndDetectAsync(
         FileUpload? upload,
         CancellationToken ct = default

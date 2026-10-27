@@ -19,7 +19,10 @@ import { i18n } from '@/shared/i18n'
 
 import { buildAuthUser } from './models'
 
-/** Query client without retries, so failures surface immediately. */
+/**
+ * Query client without retries, so failures surface immediately; unlike the app's client it keeps
+ * the data of queries no view observes any more.
+ */
 export function createTestQueryClient(): QueryClient {
   return createQueryClient({
     defaultOptions: {
@@ -51,7 +54,10 @@ function createStubRouter(extraRoutes: RouteRecordRaw[] = []): Router {
   return createRouter({ history: createMemoryHistory(), routes: [...extraRoutes, ...stubbed] })
 }
 
-/** Memory router with the real application routes, lazy pages, access guard and SEO hook. */
+/**
+ * Memory router with the real application routes and lazy pages, plus the access guard, session
+ * expiry and SEO hook.
+ */
 export function createAppRouter(queryClient: QueryClient): Router {
   return createRouterForApp({ history: createMemoryHistory(), queryClient })
 }

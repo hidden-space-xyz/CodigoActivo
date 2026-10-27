@@ -5,6 +5,9 @@ namespace CodigoActivo.Domain.Activities;
 /// <summary>
 /// A person signing up for an activity or withdrawing from it.
 /// </summary>
-/// <param name="Person">The person.</param>
-/// <param name="Guardian">Guardian of the person, whose type entitles a dependent to early signup.</param>
+/// <param name="Person">Account of the person.</param>
+/// <param name="Guardian">
+/// Guardian of a dependent, whose type entitles the dependent to early signup; <see langword="null"/>
+/// for an independent account.
+/// </param>
 public sealed record SignupCandidate(User Person, User? Guardian);

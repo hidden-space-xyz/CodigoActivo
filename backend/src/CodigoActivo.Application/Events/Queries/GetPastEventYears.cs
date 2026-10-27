@@ -5,12 +5,13 @@ using CodigoActivo.Application.Abstractions.Time;
 namespace CodigoActivo.Application.Events.Queries;
 
 /// <summary>
-/// Carries the criteria used to retrieve past event years.
+/// Carries the request for the years in which past events started.
 /// </summary>
 public sealed record GetPastEventYearsQuery : IQuery<IReadOnlyList<int>>;
 
 /// <summary>
-/// Executes the query to retrieve past event years.
+/// Executes the query for the years in which past events, those whose last day is before today,
+/// started.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -22,11 +23,11 @@ public sealed class GetPastEventYearsQueryHandler(
 ) : IQueryHandler<GetPastEventYearsQuery, IReadOnlyList<int>>
 {
     /// <summary>
-    /// Handles the request to retrieve past event years.
+    /// Handles the request for the years in which past events started.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the matching int items.</returns>
+    /// <returns>A task whose result contains each year once, the most recent first.</returns>
     public Task<IReadOnlyList<int>> HandleAsync(
         GetPastEventYearsQuery query,
         CancellationToken ct = default

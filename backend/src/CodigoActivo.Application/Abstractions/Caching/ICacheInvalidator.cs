@@ -6,9 +6,10 @@ namespace CodigoActivo.Application.Abstractions.Caching;
 public interface ICacheInvalidator
 {
     /// <summary>
-    /// Invalidates cached entries associated with the supplied tags.
+    /// Invalidates the entries of both caches associated with the supplied tags. The eviction is
+    /// not cancellable, so a caller that gives up never leaves one cache stale.
     /// </summary>
-    /// <param name="tags">The tags value.</param>
+    /// <param name="tags">Cache tags to evict, the same in both caches.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public ValueTask InvalidateAsync(params IReadOnlyCollection<string> tags);
 }

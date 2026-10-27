@@ -6,57 +6,58 @@ namespace CodigoActivo.Application.Common.Errors;
 public enum ApplicationErrorCode
 {
     /// <summary>
-    /// Selects the news item not found option.
+    /// No news item has the requested identifier.
     /// </summary>
     NewsItemNotFound,
 
     /// <summary>
-    /// Selects the news item thumbnail not found option.
+    /// The thumbnail chosen for a news item no longer exists.
     /// </summary>
     NewsItemThumbnailNotFound,
 
     /// <summary>
-    /// Selects the activity not found option.
+    /// No activity has the requested identifier.
     /// </summary>
     ActivityNotFound,
 
     /// <summary>
-    /// Selects the activity household assignments required option.
+    /// A household signup lists no member.
     /// </summary>
     ActivityHouseholdAssignmentsRequired,
 
     /// <summary>
-    /// Selects the activity household member not allowed option.
+    /// A household signup lists someone who does not exist or is neither the signed-in user nor one
+    /// of their dependents.
     /// </summary>
     ActivityHouseholdMemberNotAllowed,
 
     /// <summary>
-    /// Selects the activity thumbnail not found option.
+    /// The thumbnail chosen for an activity no longer exists.
     /// </summary>
     ActivityThumbnailNotFound,
 
     /// <summary>
-    /// Selects the event not found option.
+    /// No event has the requested identifier, such as the one an activity is placed in.
     /// </summary>
     EventNotFound,
 
     /// <summary>
-    /// Selects the event activities outside new range option.
+    /// The new dates of an event would leave some of its activities outside them.
     /// </summary>
     EventActivitiesOutsideNewRange,
 
     /// <summary>
-    /// Selects the event category type not found option.
+    /// The event category type asked for, or one selected for an event, does not exist.
     /// </summary>
     EventCategoryTypeNotFound,
 
     /// <summary>
-    /// Selects the event category type name already exists option.
+    /// Another event category type already has that name.
     /// </summary>
     EventCategoryTypeNameAlreadyExists,
 
     /// <summary>
-    /// Selects the event thumbnail not found option.
+    /// The thumbnail chosen for an event no longer exists.
     /// </summary>
     EventThumbnailNotFound,
 
@@ -66,12 +67,13 @@ public enum ApplicationErrorCode
     RichTextFileNotFound,
 
     /// <summary>
-    /// Selects the event rating not finished option.
+    /// The event cannot be rated before it ends.
     /// </summary>
     EventRatingNotFinished,
 
     /// <summary>
-    /// Selects the event rating attendance required option.
+    /// Neither the signed-in user nor any of their dependents has a confirmed signup to an activity
+    /// of the event they rate.
     /// </summary>
     EventRatingAttendanceRequired,
 
@@ -81,7 +83,7 @@ public enum ApplicationErrorCode
     EventRatingNotFound,
 
     /// <summary>
-    /// Selects the event terms acceptance required option.
+    /// A signup leaves a required terms document of the event unaccepted.
     /// </summary>
     EventTermsAcceptanceRequired,
 
@@ -96,7 +98,7 @@ public enum ApplicationErrorCode
     EventTermsDecisionNotFound,
 
     /// <summary>
-    /// Selects the terms document not found option.
+    /// The terms document asked for, or one linked to an event, does not exist.
     /// </summary>
     TermsDocumentNotFound,
 
@@ -106,12 +108,12 @@ public enum ApplicationErrorCode
     DiagnosticLogEntryNotFound,
 
     /// <summary>
-    /// Selects the terms document name already exists option.
+    /// Another terms document already has that name.
     /// </summary>
     TermsDocumentNameAlreadyExists,
 
     /// <summary>
-    /// Selects the terms document in use option.
+    /// A terms document cannot be deleted while an event links it or anyone decided on it.
     /// </summary>
     TermsDocumentInUse,
 
@@ -136,62 +138,62 @@ public enum ApplicationErrorCode
     LegalPolicyPublishedConcurrently,
 
     /// <summary>
-    /// Selects the resource not found option.
+    /// No resource has the requested identifier.
     /// </summary>
     ResourceNotFound,
 
     /// <summary>
-    /// Selects the resource thumbnail not found option.
+    /// The thumbnail chosen for a resource no longer exists.
     /// </summary>
     ResourceThumbnailNotFound,
 
     /// <summary>
-    /// Selects the partner not found option.
+    /// No partner has the requested identifier.
     /// </summary>
     PartnerNotFound,
 
     /// <summary>
-    /// Selects the partner thumbnail not found option.
+    /// The thumbnail chosen for a partner no longer exists.
     /// </summary>
     PartnerThumbnailNotFound,
 
     /// <summary>
-    /// Selects the file not found option.
+    /// No stored file has the requested identifier.
     /// </summary>
     FileNotFound,
 
     /// <summary>
-    /// Selects the file in use option.
+    /// A file cannot be deleted while some content still references it.
     /// </summary>
     FileInUse,
 
     /// <summary>
-    /// Selects the file content missing from storage option.
+    /// The file exists but the content of the variant asked for is missing from storage.
     /// </summary>
     FileContentMissingFromStorage,
 
     /// <summary>
-    /// Selects the file upload missing option.
+    /// No file was uploaded.
     /// </summary>
     FileUploadMissing,
 
     /// <summary>
-    /// Selects the file upload empty option.
+    /// The uploaded file is empty.
     /// </summary>
     FileUploadEmpty,
 
     /// <summary>
-    /// Selects the file upload too large option.
+    /// The uploaded file is larger than <c>FileUploadOptions.MaxSizeBytes</c>.
     /// </summary>
     FileUploadTooLarge,
 
     /// <summary>
-    /// Selects the file upload stream not seekable option.
+    /// The content of the upload cannot be rewound to detect its format.
     /// </summary>
     FileUploadStreamNotSeekable,
 
     /// <summary>
-    /// Selects the file upload unsupported format option.
+    /// The uploaded file is not a JPEG, PNG or WebP image.
     /// </summary>
     FileUploadUnsupportedFormat,
 
@@ -206,12 +208,13 @@ public enum ApplicationErrorCode
     FileUploadInvalidImage,
 
     /// <summary>
-    /// Selects the user not found option.
+    /// The account acted on, the signed-in one included, does not exist or no longer does.
     /// </summary>
     UserNotFound,
 
     /// <summary>
-    /// Selects the user self delete requires verification option.
+    /// The signed-in user tried to delete their own account the way another account is deleted,
+    /// instead of through the self-deletion, which asks for the password and the second factor.
     /// </summary>
     UserSelfDeleteRequiresVerification,
 
@@ -226,28 +229,28 @@ public enum ApplicationErrorCode
     UserSelfTypeChangeForbidden,
 
     /// <summary>
-    /// Selects the parent user not found option.
+    /// The guardian a dependent is added to does not exist.
     /// </summary>
     ParentUserNotFound,
 
     /// <summary>
-    /// Selects the user password not set option.
+    /// The account whose password would change has none.
     /// </summary>
     UserPasswordNotSet,
 
     /// <summary>
-    /// Selects the user current password incorrect option.
+    /// The password of the signed-in user, asked to confirm a sensitive change, is wrong.
     /// </summary>
     UserCurrentPasswordIncorrect,
 
     /// <summary>
-    /// Selects the user new password same as current option.
+    /// The new password is the same as the current one.
     /// </summary>
     UserNewPasswordSameAsCurrent,
 
     /// <summary>
-    /// Selects the option for an account registered or updated with an email another account
-    /// already uses.
+    /// The new email being confirmed already belongs to another account that owns it. Registering
+    /// with, or asking to change to, an email in use reports nothing: its holder is notified instead.
     /// </summary>
     UserEmailAlreadyInUse,
 
@@ -258,67 +261,71 @@ public enum ApplicationErrorCode
     DisposableEmailNotAllowed,
 
     /// <summary>
-    /// Selects the invalid credentials option.
+    /// The email and password given to sign in do not match an account.
     /// </summary>
     InvalidCredentials,
 
     /// <summary>
-    /// Selects the user account blocked option.
+    /// The account signing in with the right password is blocked.
     /// </summary>
     UserAccountBlocked,
 
     /// <summary>
-    /// Selects the user account pending verification option.
+    /// The account signing in with the right password has not confirmed its email yet.
     /// </summary>
     UserAccountPendingVerification,
 
     /// <summary>
-    /// Selects the current user not found option.
+    /// The account of the signed-in user no longer exists when it is read; answered as unauthorized.
     /// </summary>
     CurrentUserNotFound,
 
     /// <summary>
-    /// Selects the otp invalid or expired option.
+    /// The code that confirms the email of a new account, or a new email, is wrong, expired, already
+    /// used or not pending.
     /// </summary>
     OtpInvalidOrExpired,
 
     /// <summary>
-    /// Selects the otp resend cooldown active option.
+    /// The email limits or the full outbox refused the email that confirms a new email address.
     /// </summary>
     OtpResendCooldownActive,
 
     /// <summary>
-    /// Selects the password reset invalid or expired option.
+    /// The password reset code is wrong, expired or already used, or the account is blocked or a
+    /// dependent.
     /// </summary>
     PasswordResetInvalidOrExpired,
 
     /// <summary>
-    /// Selects the two factor code invalid option.
+    /// The second-factor code is wrong, expired or already used, or the first code of an
+    /// authenticator being set up does not match its key.
     /// </summary>
     TwoFactorCodeInvalid,
 
     /// <summary>
-    /// Selects the two factor challenge expired option.
+    /// The login challenge is unknown, expired or no longer open, or its account no longer exists.
     /// </summary>
     TwoFactorChallengeExpired,
 
     /// <summary>
-    /// Selects the two factor resend cooldown active option.
+    /// A new login code was asked for before the resend cooldown ended, or the email limits or the
+    /// full outbox refused it.
     /// </summary>
     TwoFactorResendCooldownActive,
 
     /// <summary>
-    /// Selects the authenticator not enabled option.
+    /// The signed-in account does not use an authenticator application as its second factor.
     /// </summary>
     AuthenticatorNotEnabled,
 
     /// <summary>
-    /// Selects the email no recipients option.
+    /// A manual email is left without any recipient.
     /// </summary>
     EmailNoRecipients,
 
     /// <summary>
-    /// Selects the email recipient without address option.
+    /// The account a manual email is written to has no email address.
     /// </summary>
     EmailRecipientWithoutAddress,
 
@@ -338,27 +345,29 @@ public enum ApplicationErrorCode
     EmailUnsubscribeLinkInvalid,
 
     /// <summary>
-    /// Selects the email too many recipients option.
+    /// A manual email has more recipients than <c>ManualEmailOptions.MaxRecipients</c>.
     /// </summary>
     EmailTooManyRecipients,
 
     /// <summary>
-    /// Selects the email too many attachments option.
+    /// A manual email has more attachments than <c>ManualEmailOptions.MaxAttachments</c>.
     /// </summary>
     EmailTooManyAttachments,
 
     /// <summary>
-    /// Selects the email attachment empty option.
+    /// An attachment of a manual email is empty.
     /// </summary>
     EmailAttachmentEmpty,
 
     /// <summary>
-    /// Selects the email attachments too large option.
+    /// The attachments of a manual email add up to more than
+    /// <c>ManualEmailOptions.MaxAttachmentsBytes</c>.
     /// </summary>
     EmailAttachmentsTooLarge,
 
     /// <summary>
-    /// Selects the email send failed option.
+    /// An email could not be queued for delivery: a login code or the confirmation of a new email
+    /// failed to compose or store, or the outbox could not store or had no room for a manual email.
     /// </summary>
     EmailSendFailed,
 
@@ -369,7 +378,8 @@ public enum ApplicationErrorCode
 
     /// <summary>
     /// The signed-in user tried to act for someone who is neither themselves nor one of their
-    /// dependents, without being an administrator.
+    /// dependents, without being an administrator. Personal data, the news consent and dependents
+    /// refuse administrators too, and only its holder changes a password.
     /// </summary>
     ActingForAnotherUserForbidden,
 

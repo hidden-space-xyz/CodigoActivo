@@ -10,7 +10,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace CodigoActivo.API.Participation;
 
 /// <summary>
-/// Exposes HTTP endpoints for the events the signed-in user took part in.
+/// Exposes HTTP endpoints for the participation of the signed-in user and their dependents: the
+/// events they signed up to, their attendance certificates and their consents.
 /// </summary>
 [ApiController]
 [Route("api/me")]
@@ -19,11 +20,12 @@ namespace CodigoActivo.API.Participation;
 public class MyParticipationController : ApiControllerBase
 {
     /// <summary>
-    /// Executes the event history endpoint for me.
+    /// Lists the events the signed-in user or their dependents signed up to; a past event shows only
+    /// the confirmed signups and is left out when it has none.
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an event history, or an error response.</returns>
+    /// <returns>An HTTP response containing the event history.</returns>
     [HttpGet("event-history")]
     public async Task<ActionResult<IReadOnlyList<EventHistoryResponse>>> EventHistoryAsync(
         [FromServices]
@@ -35,11 +37,12 @@ public class MyParticipationController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the certificates endpoint for me.
+    /// Lists the attendance certificates of the signed-in user and their dependents: one per person
+    /// and past event in which the person had a confirmed signup.
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an event certificate, or an error response.</returns>
+    /// <returns>An HTTP response containing the certificates.</returns>
     [HttpGet("certificates")]
     public async Task<ActionResult<IReadOnlyList<EventCertificateResponse>>> CertificatesAsync(
         [FromServices]

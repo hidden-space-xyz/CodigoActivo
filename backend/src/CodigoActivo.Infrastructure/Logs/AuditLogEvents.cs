@@ -49,7 +49,8 @@ public static class AuditLogEvents
     }
 
     /// <summary>
-    /// Builds the stored row of an event.
+    /// Builds the stored row of an event: the enumerated values become their names and the error
+    /// code is cleaned and truncated to <see cref="AuditLogEntry.NameMaxLength"/>.
     /// </summary>
     /// <param name="logEvent">Event built by <see cref="ToEvent"/>.</param>
     /// <returns>The row.</returns>

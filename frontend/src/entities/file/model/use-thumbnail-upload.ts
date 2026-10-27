@@ -13,10 +13,11 @@ const UPLOAD_REUSE_HOURS = 24
 
 /**
  * Holds the thumbnail picked in a form and uploads it only on save. `resolveThumbnailId` returns
- * the existing id when nothing was picked, uploads the picked image as a new file otherwise (the
- * same pick is uploaded once and reused for a day, so saving again after a refused save reuses it),
- * and returns `null` on failure with a translated message in `uploadError`. `reset` forgets the
- * upload.
+ * the existing id (`null` without one) when nothing was picked, uploads the picked image as a new
+ * file otherwise (the same pick is uploaded once and reused for a day, so saving again after a
+ * refused save reuses it), and returns `null` on failure with a translated message in
+ * `uploadError`. `missingThumbnail` is true while there is neither a pick nor an existing id, and
+ * `reset` forgets the pick and the upload.
  */
 export function useThumbnailUpload(existingId: MaybeRefOrGetter<string | null | undefined>) {
   const { t } = useI18n()

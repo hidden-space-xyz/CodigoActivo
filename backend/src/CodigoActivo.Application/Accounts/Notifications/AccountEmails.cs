@@ -6,12 +6,14 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Accounts.Notifications;
 
 /// <summary>
-/// Builds and sends the transactional emails for account.
+/// Builds the transactional emails of an account and hands them to the email sender, which applies
+/// the message limiter and queues them for delivery. A refused message throws
+/// <see cref="EmailRateLimitedException"/>; callers decide whether that fails their request.
 /// </summary>
-/// <param name="emailSender">The email sender value.</param>
+/// <param name="emailSender">Sender that applies the message limiter and queues the messages.</param>
 /// <param name="composer">Composer that renders the account messages.</param>
-/// <param name="verification">The verification value.</param>
-/// <param name="passwordReset">The password reset value.</param>
+/// <param name="verification">Account verification configuration, whose code lifetime the verification and email change messages state.</param>
+/// <param name="passwordReset">Password reset configuration, whose code lifetime the reset message states.</param>
 /// <param name="twoFactor">Second-factor configuration.</param>
 public sealed class AccountEmails(
     IEmailSender emailSender,
@@ -22,10 +24,11 @@ public sealed class AccountEmails(
 )
 {
     /// <summary>
-    /// Sends the verification email message to its recipients.
+    /// Sends the code that verifies the email of a new account, mentioning the news consent the
+    /// registration gave.
     /// </summary>
-    /// <param name="user">The user value.</param>
-    /// <param name="otpCode">The otp code value.</param>
+    /// <param name="user">Account waiting for its verification; greeted by nobody until it is verified.</param>
+    /// <param name="otpCode">Plain verification code; only its hash is stored.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task SendVerificationEmailAsync(User user, string otpCode, CancellationToken ct)
@@ -79,10 +82,10 @@ public sealed class AccountEmails(
     }
 
     /// <summary>
-    /// Sends the password reset email message to its recipients.
+    /// Sends the code that lets the holder of the account choose a new password.
     /// </summary>
-    /// <param name="user">The user value.</param>
-    /// <param name="code">The code value.</param>
+    /// <param name="user">Account whose password is reset; it must have an email.</param>
+    /// <param name="code">Plain reset code; only its hash is stored.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task SendPasswordResetEmailAsync(User user, string code, CancellationToken ct)
@@ -99,7 +102,7 @@ public sealed class AccountEmails(
     /// <summary>
     /// Sends the email carrying the one-time code that completes a login.
     /// </summary>
-    /// <param name="user">The user value.</param>
+    /// <param name="user">Account signing in; it must have an email.</param>
     /// <param name="code">Plain code the user must type; it is never stored.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
@@ -112,7 +115,7 @@ public sealed class AccountEmails(
     /// <summary>
     /// Sends the email carrying the one-time code that confirms deleting an account.
     /// </summary>
-    /// <param name="user">The user value.</param>
+    /// <param name="user">Account to delete; it must have an email.</param>
     /// <param name="code">Plain code the user must type; it is never stored.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
@@ -130,7 +133,7 @@ public sealed class AccountEmails(
     /// Sends the email carrying the one-time code that confirms opening a consultation of the
     /// blocked data.
     /// </summary>
-    /// <param name="user">The user value.</param>
+    /// <param name="user">Account designated for data protection; it must have an email.</param>
     /// <param name="code">Plain code the user must type; it is never stored.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>

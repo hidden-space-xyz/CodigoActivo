@@ -7,7 +7,9 @@ public interface IEmailOutbox
 {
     /// <summary>
     /// Stores every recipient of the batch as one pending message, all of them or none, in a unit of
-    /// work of its own that is committed before returning.
+    /// work of its own that is committed before returning. The cap on pending messages holds back
+    /// every kind except the login code, the password reset and the account verification, which are
+    /// stored past it; an empty batch stores nothing and counts as stored.
     /// </summary>
     /// <param name="batch">Email batch to store for delivery.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

@@ -10,7 +10,7 @@ namespace CodigoActivo.Application.Partners;
 public static class PartnerProjections
 {
     /// <summary>
-    /// Stores the shared partner value.
+    /// Projects a partner with its logo and website.
     /// </summary>
     public static readonly Expression<Func<PartnerRow, PartnerResponse>> Partner =
         partner => new PartnerResponse

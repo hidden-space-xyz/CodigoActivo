@@ -8,11 +8,14 @@ using Microsoft.Extensions.Logging;
 namespace CodigoActivo.Infrastructure.DataHistory;
 
 /// <summary>
-/// Physically deletes the data history whose retention has ended. It runs shortly after startup,
-/// so a stopped API only delays the purge until the next start, and then once per interval.
+/// Physically deletes the data history whose retention has ended and the consultations of the
+/// blocked data opened at least
+/// <see cref="CodigoActivo.Domain.BlockedData.BlockedDataConsultation.RetentionYears"/> years ago. It
+/// runs shortly after startup, so a stopped API only delays the purge until the next start, and then
+/// once per interval.
 /// </summary>
-/// <param name="scopes">Scope factory used to resolve the use cases of each run.</param>
-/// <param name="options">Configuration values used by the component.</param>
+/// <param name="scopes">Scope factory used to resolve the use case of each run.</param>
+/// <param name="options">Startup delay and interval of the purges.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class DataHistoryPurgeWorker(
     IServiceScopeFactory scopes,
@@ -21,10 +24,11 @@ public sealed class DataHistoryPurgeWorker(
 ) : BackgroundService
 {
     /// <summary>
-    /// Removes every entry whose retention has already ended.
+    /// Removes every entry whose retention has already ended and every consultation of the blocked
+    /// data past its retention.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the number of purged entries.</returns>
+    /// <returns>A task whose result contains the number of purged entries and consultations.</returns>
     public Task<int> PurgeAsync(CancellationToken ct = default)
     {
         return ScheduledCommandRunner.RunAsync(scopes, new PurgeDataHistoryCommand(), ct);

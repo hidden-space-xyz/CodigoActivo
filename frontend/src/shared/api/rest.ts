@@ -3,7 +3,7 @@ import { ApiError } from './http-client'
 /** `sort` query value that lists featured items first, then newest first. */
 export const FEATURED_FIRST_SORT = '-featured,-createdAt'
 
-/** Unwraps the response data; `null` when the request fails with one of `statuses` (404). */
+/** Response data, or `null` when the request fails with one of `statuses` (404 by default). */
 export async function unwrapOrNull<T>(
   request: Promise<{ data: T }>,
   statuses: readonly number[] = [404],

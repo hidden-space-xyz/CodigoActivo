@@ -6,18 +6,19 @@ using Microsoft.AspNetCore.Mvc.Filters;
 namespace CodigoActivo.API.Attributes;
 
 /// <summary>
-/// Applies allow only admin validation or authorization to the annotated target.
+/// Restricts the annotated target to administrators: a request without a signed-in user is
+/// challenged (401) and one from any other user is forbidden (403).
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public sealed class AllowOnlyAdminAttribute : AuthorizeAttribute, IAuthorizationFilter
 {
     /// <summary>
-    /// Identifies the admin role configuration or policy value.
+    /// Role claim value that the session cookie of an administrator carries.
     /// </summary>
     public const string AdminRole = "admin";
 
     /// <summary>
-    /// Initializes an allow only admin attribute with its required dependencies.
+    /// Initializes the attribute so it also requires the <see cref="AdminRole"/> role.
     /// </summary>
     public AllowOnlyAdminAttribute()
     {
@@ -25,9 +26,9 @@ public sealed class AllowOnlyAdminAttribute : AuthorizeAttribute, IAuthorization
     }
 
     /// <summary>
-    /// Authorizes the current request against the attribute requirements.
+    /// Challenges a request without a signed-in user and forbids one from a non-administrator.
     /// </summary>
-    /// <param name="context">Database context used for persistence.</param>
+    /// <param name="context">Authorization context of the request; its result is set to refuse it.</param>
     public void OnAuthorization(AuthorizationFilterContext context)
     {
         var user = context.HttpContext.User;

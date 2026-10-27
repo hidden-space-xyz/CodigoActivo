@@ -18,7 +18,8 @@ import { alsoInvalidates } from '@/shared/api'
 /**
  * Signup state for an event's activities: the user's and household signups, household members
  * (the user listed first), allowed signup roles and terms state. Queries about the user stay
- * disabled for guests. Signups refresh the activities, the signups and the terms state.
+ * disabled for guests. Signups refresh the activities, the signups and the terms state;
+ * withdrawals refresh the activities and the signups only.
  *
  * @param eventId - Getter so the queries follow route changes.
  * @param hasTerms - Getter; the terms state is only fetched when the event has terms documents.

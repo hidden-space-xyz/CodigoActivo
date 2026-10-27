@@ -8,13 +8,14 @@ using Microsoft.EntityFrameworkCore;
 namespace CodigoActivo.Infrastructure.Database.Seeders;
 
 /// <summary>
-/// Creates the initial database records when they are missing.
+/// Creates the rows of the catalog reference tables when they are missing. Rows that already exist
+/// are left as they are.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
 public class DatabaseSeeder(CodigoActivoDbContext context)
 {
     /// <summary>
-    /// Creates the required database records when they do not exist.
+    /// Adds every missing catalog row, matched by member, and saves them together.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>

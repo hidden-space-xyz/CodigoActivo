@@ -38,7 +38,7 @@ public sealed class ListResourceTypesQueryHandler(IReadStore readStore, IQueryEx
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the matching resource type items.</returns>
+    /// <returns>A task whose result contains every resource type, ordered by name.</returns>
     public Task<IReadOnlyList<ResourceTypeResponse>> HandleAsync(
         ListResourceTypesQuery query,
         CancellationToken ct = default

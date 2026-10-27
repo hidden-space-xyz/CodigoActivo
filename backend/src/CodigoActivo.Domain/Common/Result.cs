@@ -11,7 +11,7 @@ public class Result
     /// Initializes an operation result with its success state and optional error.
     /// </summary>
     /// <param name="isSuccess">Whether the operation completed successfully.</param>
-    /// <param name="error">Application error associated with a failed result or response.</param>
+    /// <param name="error">Error of a failed result; <see langword="null"/> on success.</param>
     protected Result(bool isSuccess, Error? error)
     {
         IsSuccess = isSuccess;
@@ -29,35 +29,35 @@ public class Result
     public bool IsFailure => !IsSuccess;
 
     /// <summary>
-    /// Gets the application error produced by a failed result.
+    /// Gets the error of a failed result, or <see langword="null"/> when the operation succeeded.
     /// </summary>
     public Error? Error { get; }
 
     /// <summary>
-    /// Creates a successful result, optionally containing a value.
+    /// Creates a successful result without a value.
     /// </summary>
-    /// <returns>The application operation outcome.</returns>
+    /// <returns>A successful result.</returns>
     public static Result Success()
     {
         return new Result(true, null);
     }
 
     /// <summary>
-    /// Creates a successful result, optionally containing a value.
+    /// Creates a successful result holding a value.
     /// </summary>
-    /// <typeparam name="T">Type of item processed by the operation.</typeparam>
-    /// <param name="value">Value to validate or convert.</param>
-    /// <returns>The application operation outcome.</returns>
+    /// <typeparam name="T">Type of the value.</typeparam>
+    /// <param name="value">Value the operation produced.</param>
+    /// <returns>A successful result holding <paramref name="value"/>.</returns>
     public static Result<T> Success<T>(T value)
     {
         return new Result<T>(value);
     }
 
     /// <summary>
-    /// Converts the source value to the declared target type.
+    /// Converts an error into a failed result.
     /// </summary>
-    /// <param name="error">Application error associated with a failed result or response.</param>
-    /// <returns>The application operation outcome.</returns>
+    /// <param name="error">Error that names the failure.</param>
+    /// <returns>A failed result carrying <paramref name="error"/>.</returns>
     public static implicit operator Result(Error error)
     {
         return new Result(false, error);
@@ -67,7 +67,7 @@ public class Result
 /// <summary>
 /// Represents the success or failure outcome of an application operation.
 /// </summary>
-/// <typeparam name="T">Type of item processed by the operation.</typeparam>
+/// <typeparam name="T">Type of the value a successful result holds.</typeparam>
 public sealed class Result<T> : Result
 {
     internal Result(T value)
@@ -83,7 +83,8 @@ public sealed class Result<T> : Result
     }
 
     /// <summary>
-    /// Gets the value produced by a successful result.
+    /// Gets the value produced by a successful result; reading it from a failed result throws
+    /// <see cref="InvalidOperationException"/>.
     /// </summary>
     [AllowNull]
     public T Value =>
@@ -92,20 +93,20 @@ public sealed class Result<T> : Result
             : throw new InvalidOperationException("Cannot access the value of a failed result.");
 
     /// <summary>
-    /// Converts the source value to the declared target type.
+    /// Converts a value into a successful result.
     /// </summary>
-    /// <param name="value">Value to validate or convert.</param>
-    /// <returns>The application operation outcome.</returns>
+    /// <param name="value">Value the operation produced.</param>
+    /// <returns>A successful result holding <paramref name="value"/>.</returns>
     public static implicit operator Result<T>(T value)
     {
         return new Result<T>(value);
     }
 
     /// <summary>
-    /// Converts the source value to the declared target type.
+    /// Converts an error into a failed result.
     /// </summary>
-    /// <param name="error">Application error associated with a failed result or response.</param>
-    /// <returns>The application operation outcome.</returns>
+    /// <param name="error">Error that names the failure.</param>
+    /// <returns>A failed result carrying <paramref name="error"/>.</returns>
     public static implicit operator Result<T>(Error error)
     {
         return new Result<T>(error);

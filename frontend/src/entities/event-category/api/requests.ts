@@ -40,7 +40,10 @@ export async function updateEventCategoryRequest(
   await putApiEventsCategoryTypeEventCategoryTypeId(id, toEventCategoryRequest(input))
 }
 
-/** Deletes a category; the API removes it from the events that use it. */
+/**
+ * Deletes a category; the API removes it from the events that use it and refuses with a conflict
+ * when it is the only category of one of them.
+ */
 export async function deleteEventCategoryRequest(id: string): Promise<void> {
   await deleteApiEventsCategoryTypeEventCategoryTypeId(id)
 }

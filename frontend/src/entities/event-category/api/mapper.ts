@@ -5,7 +5,7 @@ import type {
 
 import type { EventCategory, EventCategoryInput } from '../model/types'
 
-/** Maps an event category. */
+/** Maps a category the API returns to its id, name and `#rrggbb` color. */
 export function toEventCategory(category: EventCategoryTypeResponse): EventCategory {
   return { id: category.id, name: category.name, color: category.color }
 }

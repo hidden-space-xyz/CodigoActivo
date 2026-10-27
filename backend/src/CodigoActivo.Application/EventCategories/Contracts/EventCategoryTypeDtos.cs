@@ -3,9 +3,9 @@ namespace CodigoActivo.Application.EventCategories.Contracts;
 /// <summary>
 /// Contains the event category type data returned by the API.
 /// </summary>
-/// <param name="Id">Identifier of the target entity.</param>
-/// <param name="Name">The name value.</param>
-/// <param name="Color">The color value.</param>
+/// <param name="Id">Identifier of the category type.</param>
+/// <param name="Name">Name, unique among category types.</param>
+/// <param name="Color">Display color as <c>#RRGGBB</c>.</param>
 public record EventCategoryTypeResponse(Guid Id, string Name, string Color)
 {
     /// <summary>

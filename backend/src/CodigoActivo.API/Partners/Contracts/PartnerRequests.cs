@@ -8,11 +8,11 @@ namespace CodigoActivo.API.Partners.Contracts;
 /// <summary>
 /// Contains the client-supplied data used to create a partner.
 /// </summary>
-/// <param name="Name">The name value.</param>
+/// <param name="Name">Name of the partner.</param>
 /// <param name="FromDate">Day the collaboration started; today at the latest.</param>
-/// <param name="Tier">The tier value.</param>
-/// <param name="Website">The website value.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
+/// <param name="Tier">Sponsorship tier, zero or more.</param>
+/// <param name="Website">Website of the partner, if any.</param>
+/// <param name="ThumbnailId">Identifier of the uploaded logo file, which must exist.</param>
 public record CreatePartnerRequest(
     [Required] [MaxLength(200)] string Name,
     [Required] DateOnly? FromDate,
@@ -38,13 +38,13 @@ public record CreatePartnerRequest(
 }
 
 /// <summary>
-/// Contains the client-supplied data used to update the partner.
+/// Contains the client-supplied data that replaces every editable field of a partner.
 /// </summary>
-/// <param name="Name">The name value.</param>
+/// <param name="Name">Name of the partner.</param>
 /// <param name="FromDate">Day the collaboration started; today at the latest.</param>
-/// <param name="Tier">The tier value.</param>
-/// <param name="Website">The website value.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
+/// <param name="Tier">Sponsorship tier, zero or more.</param>
+/// <param name="Website">Website of the partner, if any.</param>
+/// <param name="ThumbnailId">Identifier of the uploaded logo file, which must exist.</param>
 public record UpdatePartnerRequest(
     [Required] [MaxLength(200)] string Name,
     [Required] DateOnly? FromDate,

@@ -21,7 +21,14 @@ public static class SignupEligibility
     /// only early signup is open.
     /// </param>
     /// <param name="now">Current time.</param>
-    /// <returns>Success when the window is open to them, or a validation error naming why not.</returns>
+    /// <returns>
+    /// Success when the window is open to them, or
+    /// <see cref="DomainErrorCode.ActivitySignupClosed"/> when the signup window is closed,
+    /// <see cref="DomainErrorCode.ActivityAlreadyStarted"/> when the activity has started, or
+    /// <see cref="DomainErrorCode.ActivitySignupEarlyOnly"/> when only early signup is open and
+    /// someone is not entitled to it.
+    /// </returns>
+    /// <exception cref="ArgumentException">The activity belongs to another event.</exception>
     public static Result EnsureWindowOpen(
         Event ev,
         Activity activity,
@@ -61,7 +68,8 @@ public static class SignupEligibility
     /// <param name="person">Person signing up.</param>
     /// <param name="role">Role asked for.</param>
     /// <returns>
-    /// Success when the type of the person allows the role, or a validation error when it does not.
+    /// Success when the type of the person allows the role, or
+    /// <see cref="DomainErrorCode.ActivityRoleNotAllowed"/> when it does not.
     /// </returns>
     public static Result EnsureRoleAllowed(User person, ActivityRole role)
     {

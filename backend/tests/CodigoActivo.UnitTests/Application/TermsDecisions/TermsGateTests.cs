@@ -25,8 +25,9 @@ namespace CodigoActivo.UnitTests.Application.TermsDecisions;
 /// Exercises <see cref="TermsGate"/> directly, at the unit that owns the terms decision rules,
 /// instead of only through the command handlers that call it. Some of these scenarios are also
 /// covered end-to-end by <c>AssignActivityCommandHandlerTests</c>; they are repeated here so the
-/// gate's own contract (idempotency, never persisting a rejected required document, never touching
-/// <see cref="IUnitOfWork"/>) is verified independently of any single caller.
+/// gate's own contract (idempotency and never staging a rejected required document) is verified
+/// independently of any single caller. The gate takes no <see cref="IUnitOfWork"/>, so committing
+/// is always left to the caller.
 /// </summary>
 public sealed class TermsGateTests
 {

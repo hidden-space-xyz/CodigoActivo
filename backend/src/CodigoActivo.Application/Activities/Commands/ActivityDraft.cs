@@ -10,14 +10,18 @@ namespace CodigoActivo.Application.Activities.Commands;
 /// <summary>
 /// Everything an activity is made of when it is created or replaced.
 /// </summary>
-/// <param name="Title">Title.</param>
-/// <param name="Description">Plain-text description.</param>
-/// <param name="Location">Where it takes place.</param>
+/// <param name="Title">Title, up to 200 characters.</param>
+/// <param name="Description">Plain-text description, up to 4000 characters.</param>
+/// <param name="Location">Where it takes place, up to 200 characters.</param>
 /// <param name="Modality">How people attend it.</param>
-/// <param name="ActivityStartsAt">When it starts.</param>
-/// <param name="ActivityEndsAt">When it ends.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail file.</param>
-/// <param name="RoleCapacities">How many people each role takes.</param>
+/// <param name="ActivityStartsAt">
+/// When it starts; required, and the activity must fall within the calendar of its event.
+/// </param>
+/// <param name="ActivityEndsAt">When it ends; required and later than the start.</param>
+/// <param name="ThumbnailId">Identifier of the thumbnail file, which must exist.</param>
+/// <param name="RoleCapacities">
+/// How many people each role takes, each role at most once; empty when no role has a capacity.
+/// </param>
 public sealed record ActivityDraft(
     [property: Required, MaxLength(200), NotBlank] string Title,
     [property: Required, MaxLength(4000), NotBlank] string Description,
@@ -42,8 +46,11 @@ public sealed record ActivityDraft(
 /// <summary>
 /// How many people a role of an activity takes.
 /// </summary>
-/// <param name="Role">Role.</param>
-/// <param name="DesiredCount">Number of people wanted in the role.</param>
+/// <param name="Role">Role the capacity is for.</param>
+/// <param name="DesiredCount">
+/// Number of people wanted in the role, from <see cref="RoleCapacity.MinDesiredCount"/> to
+/// <see cref="RoleCapacity.MaxDesiredCount"/>.
+/// </param>
 public sealed record RoleCapacityDraft(
     ActivityRole Role,
     [property: Range(RoleCapacity.MinDesiredCount, RoleCapacity.MaxDesiredCount)] int DesiredCount

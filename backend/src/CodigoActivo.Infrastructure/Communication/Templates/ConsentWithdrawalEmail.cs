@@ -15,14 +15,17 @@ public static class ConsentWithdrawalEmail
     private const string TimestampFormat = "dd/MM/yyyy, HH:mm";
 
     /// <summary>
-    /// Creates the notice for the association's legal contact.
+    /// Creates the notice for the association's legal contact: whose consent was withdrawn, for which
+    /// document and event, who recorded it and when, and a callout with what to stop using.
     /// </summary>
     /// <param name="toAddress">Legal contact email of the association.</param>
     /// <param name="toName">Name the message greets.</param>
-    /// <param name="withdrawal">What was withdrawn, for whom and by whom.</param>
+    /// <param name="withdrawal">
+    /// What was withdrawn, for whom and by whom; its texts are raw and encoded for the HTML part.
+    /// </param>
     /// <param name="timeZone">Time zone used to calculate local dates.</param>
-    /// <param name="siteUrl">The site url value.</param>
-    /// <returns>The resulting email message value.</returns>
+    /// <param name="siteUrl">Public base URL of the site, linked from the footer.</param>
+    /// <returns>The message, of kind <see cref="EmailKind.ConsentWithdrawalNotice"/>.</returns>
     public static EmailMessage Create(
         string toAddress,
         string toName,

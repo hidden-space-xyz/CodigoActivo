@@ -34,7 +34,11 @@ public sealed class SecondFactorGuard(
     /// <param name="code">Code from the email or the authenticator application.</param>
     /// <param name="now">Current timestamp.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is success, or the reason the code was refused.</returns>
+    /// <returns>
+    /// A task whose result is success, <see cref="DomainErrorCode.TwoFactorLocked"/> while the
+    /// second factor is locked, or <see cref="ApplicationErrorCode.TwoFactorCodeInvalid"/> for a
+    /// wrong, expired or reused code.
+    /// </returns>
     public async Task<Result> VerifyLockedAsync(
         User user,
         string code,

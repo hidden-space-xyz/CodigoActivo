@@ -5,20 +5,26 @@ using CodigoActivo.Infrastructure.Diagnostics;
 namespace CodigoActivo.Infrastructure.Communication;
 
 /// <summary>
-/// Represents an email send decision value used by the application.
+/// Represents the outcome of <see cref="EmailSendLimiter.TryConsume"/>.
 /// </summary>
-/// <param name="Scope">The scope value.</param>
-/// <param name="Alert">The alert value.</param>
+/// <param name="Scope">
+/// Limit that denied the message; <see cref="EmailLimitScope.None"/> when it may be stored.
+/// </param>
+/// <param name="Alert">
+/// Condition the caller has to log now, which may accompany an accepted message;
+/// <see cref="EmailGuardAlert.None"/> when there is nothing to log.
+/// </param>
 public readonly record struct EmailSendDecision(EmailLimitScope Scope, EmailGuardAlert Alert);
 
 /// <summary>
-/// Enforces the configured limits for email send. The global budget is tiered: ordinary mail
-/// leaves the credential reserve untouched, and verification and password-reset mail, which anyone
-/// can trigger, leave the part of it kept for second-factor codes, which only a correct password
-/// triggers. Second-factor codes also have budgets of their own per destination, so flooding an
-/// address with other mail never stops its owner from receiving a login code.
+/// Enforces the limits of <see cref="EmailGuardOptions"/> with token buckets kept in memory behind a
+/// lock: a global one, and an hourly and a daily one per normalized address. The global budget is
+/// tiered: ordinary mail leaves the credential reserve untouched, and verification and password-reset
+/// mail, which anyone can trigger, leave the part of it kept for second-factor codes, which only a
+/// correct password triggers. Second-factor codes also have budgets of their own per destination, so
+/// flooding an address with other mail never stops its owner from receiving a login code.
 /// </summary>
-/// <param name="options">Configuration values used by the component.</param>
+/// <param name="options">Limits applied, and the interval that spaces repeated alerts.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
 {
@@ -35,7 +41,8 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
     private bool lastSweepFreedRoom = true;
 
     /// <summary>
-    /// Gets the tracked recipients value.
+    /// Gets how many address budgets the limiter holds; an address that received second-factor codes
+    /// and other mail counts twice.
     /// </summary>
     public int TrackedRecipients
     {
@@ -49,11 +56,17 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
     }
 
     /// <summary>
-    /// Attempts to consume capacity from the applicable email rate-limit buckets.
+    /// Checks the global budget, less the reserve the kind may not spend, and then the hourly and
+    /// daily budgets of the address, and spends one message from each when all of them allow it. A
+    /// denial spends nothing. A new address while <see cref="EmailGuardOptions.MaxTrackedRecipients"/>
+    /// budgets are held spends the global budget only.
     /// </summary>
     /// <param name="kind">Email category whose limits are applied.</param>
-    /// <param name="address">Recipient address used as a rate-limit key.</param>
-    /// <returns>The resulting email send decision value.</returns>
+    /// <param name="address">Recipient address, reduced with <see cref="NormalizeKey"/>.</param>
+    /// <returns>
+    /// The decision, with <see cref="EmailLimitScope.None"/> when the message was counted, or the
+    /// scope that denied it, and the alert to log, if any.
+    /// </returns>
     public EmailSendDecision TryConsume(EmailKind kind, string address)
     {
         var now = clock.UtcNow;
@@ -110,10 +123,13 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
     }
 
     /// <summary>
-    /// Normalizes the supplied key value.
+    /// Reduces an address to the key of its mailbox, so its aliases share one budget: trimmed and
+    /// lower-cased, without a <c>+tag</c> in the local part and, on <c>gmail.com</c> and
+    /// <c>googlemail.com</c>, without its dots. A value with nothing before its last <c>@</c> is only
+    /// trimmed and lower-cased.
     /// </summary>
     /// <param name="address">Recipient address used as a rate-limit key.</param>
-    /// <returns>The generated text.</returns>
+    /// <returns>The normalized key.</returns>
     public static string NormalizeKey(string address)
     {
         var trimmed = address.Trim().ToLowerInvariant();
@@ -220,12 +236,14 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
     private sealed class RecipientState(Bucket hourly, Bucket daily)
     {
         /// <summary>
-        /// Gets or sets the hourly value.
+        /// Gets or sets the budget that holds <see cref="EmailGuardOptions.RecipientBurst"/> and gets
+        /// <see cref="EmailGuardOptions.RecipientPerHour"/> back per hour.
         /// </summary>
         public Bucket Hourly { get; set; } = hourly;
 
         /// <summary>
-        /// Gets or sets the daily value.
+        /// Gets or sets the budget that holds <see cref="EmailGuardOptions.RecipientPerDay"/> and gets
+        /// it back over a day.
         /// </summary>
         public Bucket Daily { get; set; } = daily;
     }
@@ -233,23 +251,24 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
     private readonly record struct Bucket(double Tokens, DateTimeOffset UpdatedAt)
     {
         /// <summary>
-        /// Creates a rate-limit decision indicating that no capacity remains.
+        /// Creates a bucket that holds its whole capacity.
         /// </summary>
         /// <param name="capacity">Maximum number of permits held by the bucket.</param>
-        /// <param name="now">Current timestamp used to calculate replenishment.</param>
-        /// <returns>The resulting bucket value.</returns>
+        /// <param name="now">Current timestamp, from which the bucket refills.</param>
+        /// <returns>The full bucket.</returns>
         public static Bucket Full(double capacity, DateTimeOffset now)
         {
             return new Bucket(capacity, now);
         }
 
         /// <summary>
-        /// Replenishes the rate-limit bucket according to elapsed time.
+        /// Replenishes the rate-limit bucket according to elapsed time, up to its capacity. A clock that
+        /// has not moved forward leaves the bucket as it is.
         /// </summary>
         /// <param name="now">Current timestamp used to calculate replenishment.</param>
         /// <param name="capacity">Maximum number of permits held by the bucket.</param>
         /// <param name="perHour">Number of permits replenished per hour.</param>
-        /// <returns>The resulting bucket value.</returns>
+        /// <returns>The refilled bucket.</returns>
         public Bucket Refill(DateTimeOffset now, double capacity, double perHour)
         {
             var elapsed = now - UpdatedAt;
@@ -259,9 +278,9 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
         }
 
         /// <summary>
-        /// Consumes one available permit from the rate-limit bucket.
+        /// Takes one permit from the rate-limit bucket; the caller checks first that one is available.
         /// </summary>
-        /// <returns>The resulting bucket value.</returns>
+        /// <returns>The bucket with one permit fewer.</returns>
         public Bucket Consume()
         {
             return this with { Tokens = Tokens - 1 };
@@ -271,7 +290,10 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, IClock clock)
         /// Determines whether the rate-limit bucket is at capacity.
         /// </summary>
         /// <param name="capacity">Maximum number of permits held by the bucket.</param>
-        /// <returns><see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
+        /// <returns>
+        /// <see langword="true"/> when the bucket holds at least <paramref name="capacity"/> permits;
+        /// otherwise, <see langword="false"/>.
+        /// </returns>
         public bool IsFull(double capacity)
         {
             return Tokens >= capacity;

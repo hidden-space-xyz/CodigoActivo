@@ -18,7 +18,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// Carries the input required to delete the signed-in user's own account.
 /// </summary>
 /// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize the change.</param>
-/// <param name="Code">Code of the second factor.</param>
+/// <param name="Code">Code from the account deletion email or the authenticator application.</param>
 public sealed record DeleteOwnAccountCommand(
     [property: Required, MaxLength(128), NotBlank] string CurrentPassword,
     [property: Required, MaxLength(16), NotBlank] string Code
@@ -34,7 +34,7 @@ public sealed record DeleteOwnAccountCommand(
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
-/// <param name="accountEraser">Use case that erases the account after copying it.</param>
+/// <param name="accountEraser">Eraser that deletes the household and keeps its data history.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
@@ -54,7 +54,13 @@ public sealed class DeleteOwnAccountCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result indicates success or contains the application error.</returns>
+    /// <returns>
+    /// A task whose result indicates success,
+    /// <see cref="DomainErrorCode.UserDeleteInitialAdminForbidden"/> for the initial administrator,
+    /// <see cref="ApplicationErrorCode.UserCurrentPasswordIncorrect"/>,
+    /// <see cref="DomainErrorCode.TwoFactorLocked"/>, or
+    /// <see cref="ApplicationErrorCode.TwoFactorCodeInvalid"/>.
+    /// </returns>
     public async Task<Result> HandleAsync(
         DeleteOwnAccountCommand command,
         CancellationToken ct = default

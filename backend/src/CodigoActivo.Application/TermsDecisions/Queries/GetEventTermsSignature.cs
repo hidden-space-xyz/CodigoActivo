@@ -35,7 +35,11 @@ public sealed class GetEventTermsSignatureQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the PNG image of the signature, or an application error when the decision has none.</returns>
+    /// <returns>
+    /// A task whose result contains the PNG image of the signature, or
+    /// <see cref="ApplicationErrorCode.EventTermsSignatureNotFound"/> when there is no decision or
+    /// it has none, as after a withdrawal.
+    /// </returns>
     public async Task<Result<byte[]>> HandleAsync(
         GetEventTermsSignatureQuery query,
         CancellationToken ct = default

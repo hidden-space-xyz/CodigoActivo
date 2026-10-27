@@ -3,14 +3,14 @@ namespace CodigoActivo.Application.Partners.Contracts;
 /// <summary>
 /// Contains the partner data returned by the API.
 /// </summary>
-/// <param name="Id">Identifier of the target entity.</param>
-/// <param name="Name">The name value.</param>
-/// <param name="FromDate">The from date value.</param>
-/// <param name="Tier">The tier value.</param>
-/// <param name="Website">The website value.</param>
+/// <param name="Id">Identifier of the partner.</param>
+/// <param name="Name">Name of the partner.</param>
+/// <param name="FromDate">Day the collaboration started.</param>
+/// <param name="Tier">Sponsorship tier, zero or more.</param>
+/// <param name="Website">Website, or <see langword="null"/> when there is none.</param>
 /// <param name="CreatedAt">UTC timestamp when the record was created.</param>
 /// <param name="UpdatedAt">UTC timestamp of the most recent update.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
+/// <param name="ThumbnailId">Identifier of the logo file.</param>
 public record PartnerResponse(
     Guid Id,
     string Name,

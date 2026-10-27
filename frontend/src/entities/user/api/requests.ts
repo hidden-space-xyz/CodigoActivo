@@ -32,7 +32,7 @@ export async function getUserStatusesRequest(): Promise<readonly UserCatalogRef[
   return response.data.map(toUserCatalogRef)
 }
 
-/** Deletes a user. */
+/** Deletes a user together with their minors; the API never deletes the initial administrator. */
 export async function deleteUserRequest(id: string): Promise<void> {
   await deleteApiUsersUserId(id)
 }

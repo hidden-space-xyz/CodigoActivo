@@ -41,8 +41,8 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     /// <summary>
     /// Seeds a past or future event with a single activity, optionally granting the member an
     /// assignment with the requested status. When <paramref name="childAssignmentStatusId"/> is
-    /// supplied, the member's seeded minor gets the assignment instead, so tests can exercise
-    /// rating on behalf of a dependent.
+    /// supplied, the member's seeded minor gets an assignment of its own too, so tests can exercise
+    /// rating on behalf of a dependent by leaving the member's one out.
     /// </summary>
     private Task SeedEventAsync(
         DateOnly startsAt,

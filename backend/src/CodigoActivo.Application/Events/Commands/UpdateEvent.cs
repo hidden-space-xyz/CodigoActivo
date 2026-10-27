@@ -23,14 +23,16 @@ public sealed record UpdateEventCommand(EventId EventId, EventDraft Event) : ICo
 /// <summary>
 /// Executes the command to update the event. The event stays locked from the moment it is loaded
 /// until its new state is stored, so a concurrent change of its categories, such as the deletion of
-/// one of them, sees the stored categories and cannot leave the event without any.
+/// one of them, sees the stored categories and cannot leave the event without any. The new days
+/// must still hold every activity of the event. A thumbnail or description image it no longer
+/// references is removed after the commit when nothing else uses it.
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="termsDocuments">Repository used to persist and retrieve terms documents.</param>
-/// <param name="categoryChecker">The category checker value.</param>
-/// <param name="currentUser">Person the use case runs for.</param>
+/// <param name="categoryChecker">Checker of the chosen categories.</param>
+/// <param name="currentUser">Person the use case runs for, recorded as the editor.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="uow">Unit of work that stores the event while it is locked.</param>
 public sealed class UpdateEventCommandHandler(
@@ -49,7 +51,15 @@ public sealed class UpdateEventCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result reports success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result reports success; <see cref="ApplicationErrorCode.EventNotFound"/>;
+    /// <see cref="ApplicationErrorCode.EventActivitiesOutsideNewRange"/> when an activity falls
+    /// outside the new days; the domain error of an invalid schedule, category selection or terms
+    /// list; <see cref="ApplicationErrorCode.EventCategoryTypeNotFound"/> or
+    /// <see cref="ApplicationErrorCode.TermsDocumentNotFound"/> when a chosen one is missing, or
+    /// <see cref="ApplicationErrorCode.EventThumbnailNotFound"/> or
+    /// <see cref="ApplicationErrorCode.RichTextFileNotFound"/> when a file is missing.
+    /// </returns>
     public async Task<Result> HandleAsync(
         UpdateEventCommand command,
         CancellationToken ct = default

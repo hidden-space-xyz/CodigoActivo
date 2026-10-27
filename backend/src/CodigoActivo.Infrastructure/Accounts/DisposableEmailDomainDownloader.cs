@@ -18,7 +18,7 @@ public sealed class DisposableEmailDomainDownloader : IDisposable
     /// Initializes a new instance of the <see cref="DisposableEmailDomainDownloader"/> class.
     /// </summary>
     /// <param name="handler">Handler that sends the request; this instance owns and disposes it.</param>
-    /// <param name="options">Configuration values used by the component.</param>
+    /// <param name="options">Source address and download timeout of the list.</param>
     public DisposableEmailDomainDownloader(
         HttpMessageHandler handler,
         DisposableEmailDomainOptions options

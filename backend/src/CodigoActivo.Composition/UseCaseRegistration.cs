@@ -10,8 +10,9 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 namespace CodigoActivo.Composition;
 
 /// <summary>
-/// Registers every command handler, query handler and domain event listener of the application
-/// by the contract it implements, and wraps the handlers in the cross-cutting decorators.
+/// Registers every command handler, query handler, domain event listener and committed events
+/// handler of the application by the contract it implements, and wraps the handlers in the
+/// cross-cutting decorators.
 /// </summary>
 public static class UseCaseRegistration
 {

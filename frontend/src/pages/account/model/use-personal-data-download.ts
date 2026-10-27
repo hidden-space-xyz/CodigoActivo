@@ -9,8 +9,9 @@ import { useCrudFeedback } from '@/shared/lib/feedback'
 import { absoluteUrl } from '@/shared/lib/seo'
 
 /**
- * Downloads the copy of the signed-in user's personal data as a JSON file named after today's
- * date, linking the privacy policy page. A failed request is reported and saves nothing.
+ * Downloads the copy of the personal data of the signed-in user and their minors as a JSON file
+ * named after today's date, linking the privacy policy page. A click while it is downloading is
+ * ignored, and a failed request is reported with a toast and saves nothing.
  */
 export function usePersonalDataDownload() {
   const { t } = useI18n()

@@ -11,7 +11,8 @@ namespace CodigoActivo.Application.Events;
 public static class EventProjections
 {
     /// <summary>
-    /// Stores the shared event value.
+    /// Projects an event with its categories and its terms documents in display order, before
+    /// <see cref="EventStages"/> stamps its stage.
     /// </summary>
     public static readonly Expression<Func<EventRow, EventResponse>> Event =
         @event => new EventResponse
@@ -50,7 +51,8 @@ public static class EventProjections
         };
 
     /// <summary>
-    /// Stores the shared event list item value.
+    /// Projects an event to a list item, without its description and terms documents, before
+    /// <see cref="EventStages"/> stamps its stage.
     /// </summary>
     public static readonly Expression<Func<EventRow, EventListItemResponse>> EventListItem =
         @event => new EventListItemResponse

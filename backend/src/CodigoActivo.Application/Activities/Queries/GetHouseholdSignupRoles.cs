@@ -9,18 +9,19 @@ using CodigoActivo.Domain.Activities;
 namespace CodigoActivo.Application.Activities.Queries;
 
 /// <summary>
-/// Carries the criteria used to retrieve household signup roles.
+/// Carries the request for the roles each member of the signed-in user's household may sign up in.
 /// </summary>
 public sealed record GetHouseholdSignupRolesQuery
     : IQuery<IReadOnlyList<HouseholdSignupRolesResponse>>;
 
 /// <summary>
-/// Executes the query to retrieve household signup roles.
+/// Executes the query for the roles each member of the signed-in user's household (the user and
+/// their dependents) may sign up in, which depend on the type of each member.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="currentUser">Person the query runs for.</param>
-/// <param name="roleTypesQuery">Handler used to list activity role types.</param>
+/// <param name="roleTypesQuery">Handler that lists the role types, used to name the roles.</param>
 public sealed class GetHouseholdSignupRolesQueryHandler(
     IReadStore readStore,
     IQueryExecutor executor,
@@ -36,7 +37,7 @@ public sealed class GetHouseholdSignupRolesQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the matching household signup roles items.</returns>
+    /// <returns>A task whose result contains one entry per household member.</returns>
     public async Task<IReadOnlyList<HouseholdSignupRolesResponse>> HandleAsync(
         GetHouseholdSignupRolesQuery query,
         CancellationToken ct = default

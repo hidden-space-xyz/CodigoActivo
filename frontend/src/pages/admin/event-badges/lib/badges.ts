@@ -29,7 +29,7 @@ export function accentColor(badge: Badge): string {
   return hexLuminance(hex) > MIN_READABLE_LUMINANCE ? FALLBACK_ACCENT : hex
 }
 
-/** Activities listed on the badge. */
+/** Activities listed on the badge: the first six, in the order the report gives them. */
 export function visibleActivities(badge: Badge): Badge['activities'] {
   return badge.activities.slice(0, MAX_ACTIVITY_CHIPS)
 }

@@ -39,7 +39,7 @@ public interface IStoredFileRepository : IRepository<StoredFile>
 
     /// <summary>
     /// Returns which of the given files exist and, inside a transaction, keeps them from being
-    /// deleted until it ends (`FOR KEY SHARE`), so content that is about to reference them can be
+    /// deleted until it ends (<c>FOR KEY SHARE</c>), so content that is about to reference them can be
     /// saved first.
     /// </summary>
     /// <param name="ids">Identifiers of the files.</param>
@@ -51,7 +51,7 @@ public interface IStoredFileRepository : IRepository<StoredFile>
     );
 
     /// <summary>
-    /// Locks the given files for deletion (`FOR UPDATE`) until the transaction ends, waiting for any
+    /// Locks the given files for deletion (<c>FOR UPDATE</c>) until the transaction ends, waiting for any
     /// save that is about to reference them, and returns which of them exist.
     /// </summary>
     /// <param name="ids">Identifiers of the files.</param>

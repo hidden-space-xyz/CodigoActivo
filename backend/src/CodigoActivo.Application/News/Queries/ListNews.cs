@@ -39,7 +39,10 @@ public sealed class ListNewsQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a paged news list item.</returns>
+    /// <returns>
+    /// A task whose result contains the requested page of news items, the newest first unless the
+    /// sort names <c>createdAt</c>, <c>title</c>, <c>subtitle</c> or <c>featured</c>.
+    /// </returns>
     public Task<PagedResult<NewsListItemResponse>> HandleAsync(
         ListNewsQuery query,
         CancellationToken ct = default

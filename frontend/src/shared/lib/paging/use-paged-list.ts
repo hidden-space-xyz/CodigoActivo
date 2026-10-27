@@ -17,6 +17,7 @@ export interface PagedListSource<T> {
 }
 
 interface UsePagedListOptions {
+  /** Whether the query may run; always when absent. */
   readonly enabled?: (() => boolean) | undefined
 }
 

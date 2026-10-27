@@ -1,42 +1,45 @@
 namespace CodigoActivo.Application.Common.Caching;
 
 /// <summary>
-/// Defines the shared cache tags used for cache and authorization configuration.
+/// Names the tags that evict cached data, both application cache entries
+/// (<see cref="ICachedQuery.Tags"/>) and HTTP output cache responses, whose policies are named
+/// after the tags in <see cref="OutputCached"/>. <see cref="CacheTagsByEvent"/> says which domain
+/// events invalidate each one.
 /// </summary>
 public static class CacheTags
 {
     /// <summary>
-    /// Identifies the events configuration or policy value.
+    /// Tags the cached data of events.
     /// </summary>
     public const string Events = "events";
 
     /// <summary>
-    /// Identifies the event category types configuration or policy value.
+    /// Tags the cached data of event category types.
     /// </summary>
     public const string EventCategoryTypes = "event-category-types";
 
     /// <summary>
-    /// Identifies the news configuration or policy value.
+    /// Tags the cached data of news items.
     /// </summary>
     public const string News = "news";
 
     /// <summary>
-    /// Identifies the resources configuration or policy value.
+    /// Tags the cached data of resources.
     /// </summary>
     public const string Resources = "resources";
 
     /// <summary>
-    /// Identifies the partners configuration or policy value.
+    /// Tags the cached data of partners.
     /// </summary>
     public const string Partners = "partners";
 
     /// <summary>
-    /// Identifies the activities configuration or policy value.
+    /// Tags the cached data of activities and their signups.
     /// </summary>
     public const string Activities = "activities";
 
     /// <summary>
-    /// Identifies the files configuration or policy value.
+    /// Tags the cached content of stored files.
     /// </summary>
     public const string Files = "files";
 
@@ -46,17 +49,17 @@ public static class CacheTags
     public const string LegalPolicies = "legal-policies";
 
     /// <summary>
-    /// Identifies the users configuration or policy value.
+    /// Tags the cached data derived from accounts, such as the dashboard counts.
     /// </summary>
     public const string Users = "users";
 
     /// <summary>
-    /// Identifies the catalogs configuration or policy value.
+    /// Tags the closed catalogs. No domain event invalidates it: they only change with a release.
     /// </summary>
     public const string Catalogs = "catalogs";
 
     /// <summary>
-    /// Stores the sources used by dashboard counts.
+    /// Stores the tags whose invalidation evicts the dashboard summary.
     /// </summary>
     public static readonly IReadOnlyList<string> DashboardSummarySources =
     [
@@ -69,7 +72,8 @@ public static class CacheTags
     ];
 
     /// <summary>
-    /// Stores the sources used by dashboard analytics.
+    /// Stores the tags whose invalidation evicts the dashboard analytics: those of the summary and
+    /// the event category types.
     /// </summary>
     public static readonly IReadOnlyList<string> DashboardAnalyticsSources =
     [
@@ -78,7 +82,7 @@ public static class CacheTags
     ];
 
     /// <summary>
-    /// Stores the shared output cached value.
+    /// Stores the tags that each name an HTTP output cache policy, whose responses they evict.
     /// </summary>
     public static readonly IReadOnlyList<string> OutputCached =
     [
@@ -103,7 +107,7 @@ public static class CacheTags
     ];
 
     /// <summary>
-    /// Stores the shared all value.
+    /// Stores every tag, whose invalidation evicts everything cached.
     /// </summary>
     public static readonly IReadOnlyList<string> All =
     [

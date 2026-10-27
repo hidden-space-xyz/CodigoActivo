@@ -129,14 +129,17 @@ public class EventTermsAcceptance : IAggregateRoot, IHasDomainEvents
     }
 
     /// <summary>
-    /// Withdraws a consent given before, on the version that was accepted. The acceptance it ends,
-    /// with its signature, stays in <see cref="Changes"/>, since withdrawing never makes unlawful
-    /// what was done before.
+    /// Withdraws a consent given before, on the version that was accepted, and raises
+    /// <see cref="TermsConsentWithdrawn"/>. The acceptance it ends, with its signature, stays in
+    /// <see cref="Changes"/>, since withdrawing never makes unlawful what was done before.
     /// </summary>
     /// <param name="decidedById">Identifier of the person who withdraws it.</param>
     /// <param name="recordedById">Identifier of the account that records the withdrawal.</param>
     /// <param name="now">Current time.</param>
-    /// <returns>A failed result when the document is not accepted now.</returns>
+    /// <returns>
+    /// Success, or <see cref="DomainErrorCode.EventTermsConsentNotGiven"/> when the document is not
+    /// accepted now.
+    /// </returns>
     public Result Withdraw(UserId decidedById, UserId recordedById, DateTimeOffset now)
     {
         if (!Accepted)

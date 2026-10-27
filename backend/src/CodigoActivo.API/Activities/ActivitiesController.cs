@@ -19,7 +19,8 @@ using UserId = CodigoActivo.Domain.Users.UserId;
 namespace CodigoActivo.API.Activities;
 
 /// <summary>
-/// Exposes HTTP endpoints for querying and managing activities.
+/// Exposes HTTP endpoints for querying and managing the activities of the events, the signups to
+/// them and their catalogs.
 /// </summary>
 [ApiController]
 [Route("api/activities")]
@@ -31,7 +32,7 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a paged activity, or an error response.</returns>
+    /// <returns>An HTTP response containing a page of activities.</returns>
     [HttpGet]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Activities)]
@@ -66,13 +67,14 @@ public class ActivitiesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Checks whether the user's assigned activities overlap the selected activity.
+    /// Lists the other activities the person is signed up to, except denied signups, whose times
+    /// overlap the selected activity. It answers for any person the signed-in user may act for.
     /// </summary>
     /// <param name="activityId">Identifier of the activity.</param>
-    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="userId">Identifier of the person whose signups are checked.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a time overlap, or an error response.</returns>
+    /// <returns>An HTTP response containing the overlapping activities, or an error response.</returns>
     [HttpGet("{activityId:guid}/overlaps/{userId:guid}")]
     [AllowOnlySelf]
     public async Task<ActionResult<TimeOverlapResponse>> OverlapsAsync(
@@ -91,12 +93,12 @@ public class ActivitiesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the household assignments endpoint for activities.
+    /// Lists the signups of the signed-in user and their dependents to the activities of an event.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a household member assignment response>>, or an error response.</returns>
+    /// <returns>An HTTP response containing the household signups, or an error response.</returns>
     [HttpGet("household-assignments/{eventId:guid}")]
     [Authorize]
     public async Task<
@@ -117,11 +119,11 @@ public class ActivitiesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the role types endpoint for activities.
+    /// Lists the catalog of activity roles.
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an activity role type, or an error response.</returns>
+    /// <returns>An HTTP response containing the activity roles.</returns>
     [HttpGet("roleType")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<IReadOnlyList<ActivityRoleTypeResponse>>> RoleTypesAsync(
@@ -137,11 +139,11 @@ public class ActivitiesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the signup roles endpoint for activities.
+    /// Lists, for the signed-in user and each of their dependents, the roles they may sign up with.
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a household signup roles, or an error response.</returns>
+    /// <returns>An HTTP response containing the signup roles of each household member.</returns>
     [HttpGet("signup-roles")]
     [Authorize]
     public async Task<ActionResult<IReadOnlyList<HouseholdSignupRolesResponse>>> SignupRolesAsync(
@@ -157,11 +159,11 @@ public class ActivitiesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Assigns ment status types according to the validated request.
+    /// Lists the catalog of signup statuses.
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an assignment status type response>>, or an error response.</returns>
+    /// <returns>An HTTP response containing the signup statuses.</returns>
     [HttpGet("assignment-status-types")]
     [AllowOnlyAdmin]
     public async Task<
@@ -179,11 +181,11 @@ public class ActivitiesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Executes the modality types endpoint for activities.
+    /// Lists the catalog of activity modalities.
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an activity modality type, or an error response.</returns>
+    /// <returns>An HTTP response containing the activity modalities.</returns>
     [HttpGet("modality-types")]
     [AllowOnlyAdmin]
     public async Task<ActionResult<IReadOnlyList<ActivityModalityTypeResponse>>> ModalityTypesAsync(
@@ -199,14 +201,14 @@ public class ActivitiesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Creates an activity from the validated request.
+    /// Creates an activity of the event from the validated request.
     /// </summary>
-    /// <param name="eventId">Identifier of the event.</param>
+    /// <param name="eventId">Identifier of the event the activity belongs to.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="getById">Query handler that reads the created activity.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an activity, or an error response.</returns>
+    /// <returns>A 201 response with the created activity and its location, or an error response.</returns>
     [HttpPost("{eventId:guid}")]
     [AllowOnlyAdmin]
     [ProducesResponseType<ActivityResponse>(StatusCodes.Status201Created)]
@@ -251,12 +253,12 @@ public class ActivitiesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Deletes the selected activity.
+    /// Deletes the selected activity with its signups, keeping their data history.
     /// </summary>
     /// <param name="activityId">Identifier of the activity.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpDelete("{activityId:guid}")]
     [AllowOnlyAdmin]
     public async Task<IActionResult> DeleteAsync(
@@ -271,10 +273,12 @@ public class ActivitiesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Assigns the selected user to the activity with the requested role.
+    /// Signs the person up to the activity with the requested role, pending a decision. The
+    /// signed-in user may sign up themselves or a dependent; an administrator may sign up anyone,
+    /// even outside the signup window.
     /// </summary>
     /// <param name="activityId">Identifier of the activity.</param>
-    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="userId">Identifier of the person signed up.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="getAssignment">Query handler that reads the resulting assignment.</param>
@@ -305,14 +309,15 @@ public class ActivitiesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Assigns household according to the validated request.
+    /// Signs members of the signed-in user's household up to the activity; members already signed
+    /// up are left as they are.
     /// </summary>
     /// <param name="activityId">Identifier of the activity.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="getAssignments">Query handler that reads the created assignments.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an assignment, or an error response.</returns>
+    /// <returns>An HTTP response containing the signups made now, or an error response.</returns>
     [HttpPost("{activityId:guid}/assign-household")]
     [Authorize]
     public async Task<ActionResult<IReadOnlyList<AssignmentResponse>>> AssignHouseholdAsync(
@@ -336,13 +341,14 @@ public class ActivitiesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Removes the selected user's activity assignment.
+    /// Withdraws the person from the activity. The signed-in user may withdraw themselves or a
+    /// dependent while the signup is open; an administrator may withdraw anyone at any time.
     /// </summary>
     /// <param name="activityId">Identifier of the activity.</param>
-    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="userId">Identifier of the person withdrawn.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an action, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPatch("{activityId:guid}/{userId:guid}/unassign")]
     [AllowOnlySelf]
     public async Task<IActionResult> UnassignAsync(
@@ -361,10 +367,11 @@ public class ActivitiesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Changes the status to the requested value.
+    /// Changes the status of the person's signup to the activity; the person is told about a
+    /// decision once it is committed.
     /// </summary>
     /// <param name="activityId">Identifier of the activity.</param>
-    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="userId">Identifier of the person signed up.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="getAssignment">Query handler that reads the resulting assignment.</param>
@@ -395,10 +402,10 @@ public class ActivitiesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Changes the role to the requested value.
+    /// Changes the role of the person's signup to the activity.
     /// </summary>
     /// <param name="activityId">Identifier of the activity.</param>
-    /// <param name="userId">Identifier of the user.</param>
+    /// <param name="userId">Identifier of the person signed up.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="getAssignment">Query handler that reads the resulting assignment.</param>

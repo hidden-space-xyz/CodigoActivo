@@ -36,7 +36,7 @@ export async function getConsultationPageRequest(
 /**
  * Asks the API to email the code that confirms opening a consultation
  * (`POST /api/blocked-data/consultations/code`). The password is verified first; an account with
- * an authenticator application gets no email and reads the code from its app instead.
+ * an authenticator application skips this call and reads the code from its app instead.
  */
 export async function requestConsultationCodeRequest(currentPassword: string): Promise<void> {
   await postApiBlockedDataConsultationsCode({ currentPassword })

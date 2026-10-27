@@ -18,7 +18,10 @@ namespace CodigoActivo.Application.Activities.Commands;
 /// Carries the input required to sign members of the signed-in user's household up to an activity.
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
-/// <param name="Assignments">Members to sign up with their roles and the terms decisions taken for them.</param>
+/// <param name="Assignments">
+/// Members to sign up with their roles and the terms decisions taken for them; at least one, and a
+/// member listed twice counts once, with the first entry.
+/// </param>
 public sealed record AssignHouseholdCommand(
     ActivityId ActivityId,
     [property: MaxLength(Household.MaxMembers)] IReadOnlyList<HouseholdMemberSignup> Assignments
@@ -29,7 +32,8 @@ public sealed record AssignHouseholdCommand(
 /// Every member must belong to the household (<see cref="Household.Includes"/>) and may take the
 /// role asked for; members already signed up are left as they are, and the result lists those
 /// signed up now. The required terms documents of the event must end up accepted for each member
-/// signed up now.
+/// signed up now. The early signup is checked for the signed-in user, whose type also decides it
+/// for their dependents.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
 /// <param name="users">Repository used to persist and retrieve users.</param>
@@ -53,7 +57,17 @@ public sealed class AssignHouseholdCommandHandler(
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the identifiers of the members signed up, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the identifiers of the members signed up now;
+    /// <see cref="ApplicationErrorCode.ActivityHouseholdAssignmentsRequired"/> when no member is
+    /// listed, <see cref="ApplicationErrorCode.ActivityNotFound"/>,
+    /// <see cref="ApplicationErrorCode.ActivityHouseholdMemberNotAllowed"/> when a member is
+    /// missing or outside the household,
+    /// <see cref="ApplicationErrorCode.EventTermsAcceptanceRequired"/> when a required terms
+    /// document is left unaccepted,
+    /// <see cref="DomainErrorCode.ActivityAssignmentAlreadyExists"/> when a signup is saved
+    /// concurrently, or the domain error of the signup window, role or terms rule that refuses it.
+    /// </returns>
     public async Task<Result<IReadOnlyList<UserId>>> HandleAsync(
         AssignHouseholdCommand command,
         CancellationToken ct = default

@@ -11,7 +11,7 @@ import { useLegalPolicyEditor } from '../model/use-legal-policy-editor'
 import LegalPolicyVersionDialog from './LegalPolicyVersionDialog.vue'
 
 const props = defineProps<{
-  /** Policy edited. */
+  /** Policy whose version in force and earlier versions are loaded and published. */
   kind: LegalPolicyKind
   /** Accessible name of the editor, the name of the policy. */
   label: string

@@ -15,9 +15,10 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Reports.Queries;
 
 /// <summary>
-/// Carries the criteria used to retrieve dashboard analytics.
+/// Carries the criteria used to retrieve dashboard analytics, cached for a minute per window or
+/// until a change to one of their sources evicts them.
 /// </summary>
-/// <param name="Filters">Filtering, sorting, and paging criteria supplied by the client.</param>
+/// <param name="Filters">Days the analytics cover, as supplied by the client.</param>
 public sealed record GetDashboardAnalyticsQuery(DashboardAnalyticsQuery Filters)
     : IQuery<DashboardAnalyticsResponse>,
         ICachedQuery
@@ -37,10 +38,13 @@ public sealed record GetDashboardAnalyticsQuery(DashboardAnalyticsQuery Filters)
 
     /// <summary>
     /// Resolves the days the analytics cover, the twelve months up to the end when no start is
-    /// given, and the bucket size that keeps the charts readable.
+    /// given and swapped when given in reverse, and the bucket size that keeps the charts readable.
     /// </summary>
     /// <param name="today">Current day, the end when none is given.</param>
-    /// <returns>The first and last day, in order, and the granularity.</returns>
+    /// <returns>
+    /// The first and last day, in order, and the granularity: <c>day</c> up to 45 days,
+    /// <c>week</c> up to 182 and <c>month</c> beyond.
+    /// </returns>
     public (DateOnly Start, DateOnly End, string Granularity) Window(DateOnly today)
     {
         ArgumentNullException.ThrowIfNull(Filters);
@@ -118,7 +122,7 @@ public sealed class GetDashboardAnalyticsQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a dashboard analytics.</returns>
+    /// <returns>A task whose result contains every section of the analytics.</returns>
     public async Task<DashboardAnalyticsResponse> HandleAsync(
         GetDashboardAnalyticsQuery query,
         CancellationToken ct = default

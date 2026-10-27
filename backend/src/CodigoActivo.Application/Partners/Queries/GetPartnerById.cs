@@ -26,7 +26,10 @@ public sealed class GetPartnerByIdQueryHandler(IReadStore readStore, IQueryExecu
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains a partner on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the partner, or
+    /// <see cref="ApplicationErrorCode.PartnerNotFound"/>.
+    /// </returns>
     public async Task<Result<PartnerResponse>> HandleAsync(
         GetPartnerByIdQuery query,
         CancellationToken ct = default

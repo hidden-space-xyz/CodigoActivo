@@ -7,7 +7,8 @@ using Konscious.Security.Cryptography;
 namespace CodigoActivo.Infrastructure.Security;
 
 /// <summary>
-/// Hashes and verifies argon2id password values using the configured algorithm.
+/// Hashes and verifies passwords with Argon2id through Konscious, at the fixed cost parameters of
+/// this class. A stored hash with other cost parameters never verifies.
 /// </summary>
 public sealed class Argon2idPasswordHasher : IPasswordHasher
 {
@@ -30,7 +31,7 @@ public sealed class Argon2idPasswordHasher : IPasswordHasher
     /// <summary>
     /// Hashes a password with a fresh random salt.
     /// </summary>
-    /// <param name="password">Plain-text password to hash or verify.</param>
+    /// <param name="password">Plain-text password to hash.</param>
     /// <returns>The algorithm, its cost parameters, the salt and the hash, separated by <c>$</c>.</returns>
     public string Hash(string password)
     {
@@ -49,11 +50,14 @@ public sealed class Argon2idPasswordHasher : IPasswordHasher
     }
 
     /// <summary>
-    /// Verifies the supplied value against its stored cryptographic representation.
+    /// Verifies a password against a hash produced by <see cref="Hash"/>, comparing in constant time.
     /// </summary>
-    /// <param name="password">Plain-text password to hash or verify.</param>
-    /// <param name="hash">Encoded password hash to verify.</param>
-    /// <returns><see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
+    /// <param name="password">Plain-text password to verify.</param>
+    /// <param name="hash">Encoded password hash to verify against.</param>
+    /// <returns>
+    /// <see langword="true"/> when the password matches; <see langword="false"/> when it does not or
+    /// the hash is malformed or uses other cost parameters.
+    /// </returns>
     public bool Verify(string password, string hash)
     {
         if (hash.Length > MaxEncodedHashLength)

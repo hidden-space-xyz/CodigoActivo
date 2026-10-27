@@ -10,7 +10,7 @@ namespace CodigoActivo.API.TermsDocuments.Contracts;
 /// <summary>
 /// Contains the client-supplied data used to create a terms document.
 /// </summary>
-/// <param name="Name">The name value.</param>
+/// <param name="Name">Name, unique among terms documents.</param>
 /// <param name="Description">Rich-text document holding text only; images are refused.</param>
 /// <param name="RequiresSignature">Whether accepting the document asks for a handwritten signature.</param>
 /// <param name="Kind">Whether the document holds conditions or a consent.</param>
@@ -39,10 +39,13 @@ public record CreateTermsDocumentRequest(
 /// <summary>
 /// Contains the client-supplied data used to update the terms document.
 /// </summary>
-/// <param name="Name">The name value.</param>
+/// <param name="Name">Name, unique among terms documents.</param>
 /// <param name="Description">Rich-text document holding text only; images are refused.</param>
 /// <param name="RequiresSignature">Whether accepting the document asks for a handwritten signature.</param>
-/// <param name="Kind">Whether the document holds conditions or a consent.</param>
+/// <param name="Kind">
+/// Whether the document holds conditions or a consent; it cannot change while an event links the
+/// document or anyone decided on it.
+/// </param>
 public record UpdateTermsDocumentRequest(
     [Required] [MaxLength(120)] string Name,
     [Required] [MaxLength(RichTextAllowlist.MaxJsonLength)] string Description,

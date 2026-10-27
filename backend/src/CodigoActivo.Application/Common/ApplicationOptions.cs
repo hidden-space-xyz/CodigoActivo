@@ -1,12 +1,13 @@
 namespace CodigoActivo.Application.Common;
 
 /// <summary>
-/// Defines configuration values for application.
+/// Holds the public address of the site, read from <c>APP_BASE_URL</c> at startup.
 /// </summary>
 public sealed class ApplicationOptions
 {
     /// <summary>
-    /// Stores the shared default base url value.
+    /// Origin used when <c>APP_BASE_URL</c> is not set: the development server,
+    /// <c>http://localhost:5173</c>.
     /// </summary>
     public static readonly string DefaultBaseUrl = new UriBuilder(
         Uri.UriSchemeHttp,
@@ -15,7 +16,8 @@ public sealed class ApplicationOptions
     ).Uri.GetLeftPart(UriPartial.Authority);
 
     /// <summary>
-    /// Gets or sets the base url value.
+    /// Gets or sets the public origin of the site, without a trailing slash once registered, used
+    /// for the links in emails and the URLs of the sitemap and <c>robots.txt</c>.
     /// </summary>
     public string BaseUrl { get; set; } = DefaultBaseUrl;
 }

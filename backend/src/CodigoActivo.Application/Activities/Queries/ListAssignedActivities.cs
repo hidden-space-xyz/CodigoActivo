@@ -8,14 +8,17 @@ using CodigoActivo.Domain.Events;
 namespace CodigoActivo.Application.Activities.Queries;
 
 /// <summary>
-/// Carries the criteria used to list assigned activities.
+/// Carries the criteria used to list the activities the signed-in user is signed up to.
 /// </summary>
-/// <param name="EventId">Identifier of the event.</param>
+/// <param name="EventId">
+/// Identifier of the event whose activities are listed, or <see langword="null"/> for every event.
+/// </param>
 public sealed record ListAssignedActivitiesQuery(EventId? EventId)
     : IQuery<IReadOnlyList<AssignedActivityResponse>>;
 
 /// <summary>
-/// Executes the query to list assigned activities.
+/// Executes the query to list the activities the signed-in user is signed up to, whatever the
+/// status of each signup; those of their dependents are not included.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -31,7 +34,7 @@ public sealed class ListAssignedActivitiesQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the matching assigned activity items.</returns>
+    /// <returns>A task whose result contains the signups, ordered by activity start.</returns>
     public async Task<IReadOnlyList<AssignedActivityResponse>> HandleAsync(
         ListAssignedActivitiesQuery query,
         CancellationToken ct = default

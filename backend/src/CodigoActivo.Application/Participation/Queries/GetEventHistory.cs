@@ -10,12 +10,13 @@ using CodigoActivo.Domain.Common;
 namespace CodigoActivo.Application.Participation.Queries;
 
 /// <summary>
-/// Carries the criteria used to retrieve event history.
+/// Carries the request for the participation history of the signed-in user and their dependents.
 /// </summary>
 public sealed record GetEventHistoryQuery : IQuery<IReadOnlyList<EventHistoryResponse>>;
 
 /// <summary>
-/// Executes the query to retrieve event history.
+/// Executes the query for the events the signed-in user or their dependents signed up to. A past
+/// event shows only the confirmed signups and is left out when it has none.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -29,11 +30,14 @@ public sealed class GetEventHistoryQueryHandler(
 ) : IQueryHandler<GetEventHistoryQuery, IReadOnlyList<EventHistoryResponse>>
 {
     /// <summary>
-    /// Handles the request to retrieve event history.
+    /// Handles the request for the participation history of the household.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the matching event history items.</returns>
+    /// <returns>
+    /// A task whose result contains the upcoming events, the soonest first, followed by the past
+    /// ones, the most recently ended first.
+    /// </returns>
     public async Task<IReadOnlyList<EventHistoryResponse>> HandleAsync(
         GetEventHistoryQuery query,
         CancellationToken ct = default
@@ -178,12 +182,12 @@ public sealed class GetEventHistoryQueryHandler(
         public string EventSubtitle { get; init; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the date and time when the event starts.
+        /// Gets or sets the first day of the event.
         /// </summary>
         public DateOnly EventStartsAt { get; init; }
 
         /// <summary>
-        /// Gets or sets the date and time when the event ends.
+        /// Gets or sets the last day of the event.
         /// </summary>
         public DateOnly EventEndsAt { get; init; }
 

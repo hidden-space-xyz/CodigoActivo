@@ -28,8 +28,8 @@ Official website and management platform for `<Codigoactivo/>`, a nonprofit asso
 introduces young people to programming and computational thinking through free, practical activities. It
 provides a public site for events and resources, self-service registration with mandatory two-factor login
 (emailed code or authenticator app), activity signup and participation history, event ratings and
-certificates, and an administration area for content, events, users and email. The interface is Spanish,
-managed through Vue I18n.
+certificates, and an administration area for content, events, users, email, legal policies, metrics and the
+audit and diagnostic logs. The interface is Spanish, managed through Vue I18n.
 
 ## Technology
 

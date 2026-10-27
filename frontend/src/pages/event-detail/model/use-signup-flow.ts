@@ -38,7 +38,7 @@ interface HouseholdRow {
 /** What the signup flow of an event page works with. */
 interface SignupFlowOptions {
   readonly eventId: () => string
-  /** Whether the user may sign up right now. */
+  /** Whether the user may sign up or withdraw right now; gates own signups and withdrawals. */
   readonly signupOpen: () => boolean
   /** Whether the event has terms documents the user may have to decide on. */
   readonly hasTerms: () => boolean
@@ -50,9 +50,11 @@ interface SignupFlowOptions {
  * activities and asks for confirmation when there are some; signing the household up asks for a
  * role per member. Either way, the terms documents still pending for each person signed up are
  * offered before sending, each decided by the user or, for the consents of a minor from the age of
- * 14, by the minor, and a signup the API refuses for missing terms reopens them. Withdrawals ask
- * for confirmation first, and activities that already started accept neither. Only one activity is
- * busy at a time. Call it in `setup`.
+ * 14, by the minor. A signup the API refuses for missing terms reopens them when the event lists
+ * some, and one refused for a document changed since it was shown warns, refreshes the terms and
+ * reopens them. Withdrawals ask for confirmation first. Own signups and withdrawals are ignored
+ * while signup is closed or once the activity has started. Only one activity is busy at a time.
+ * Call it in `setup`.
  */
 export function useSignupFlow(options: SignupFlowOptions) {
   const { t } = useI18n()
@@ -80,7 +82,7 @@ export function useSignupFlow(options: SignupFlowOptions) {
     action: null,
   })
 
-  /** Dialog sections of the people a signup includes, those with nothing left to decide left out. */
+  /** Dialog sections of the people a signup includes, leaving out those with nothing to decide. */
   function sectionsFor(personIds: readonly string[]): TermsDialogSection[] {
     return termsSections(
       termsState.data.value?.documents ?? [],

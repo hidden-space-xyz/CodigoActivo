@@ -14,22 +14,22 @@ using Microsoft.Extensions.Logging;
 namespace CodigoActivo.Application.Accounts.Commands;
 
 /// <summary>
-/// Carries the input required to resend verification.
+/// Carries the input required to ask for a new verification link.
 /// </summary>
-/// <param name="Email">Email of the account.</param>
+/// <param name="Email">Email of the account waiting for its verification.</param>
 public sealed record ResendVerificationCommand(
     [property: Required, EmailAddress, MaxLength(256)] string Email
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to resend verification.
+/// Executes the command that emails a new verification link, replacing the previous one.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="accountLock">Runs the issue of the link with the account locked.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="codeHasher">Hasher used so the verification code is never stored in plaintext.</param>
-/// <param name="verification">The verification value.</param>
-/// <param name="accountEmails">The account emails value.</param>
+/// <param name="verification">Account verification configuration: code lifetime and resend cooldown.</param>
+/// <param name="accountEmails">Sender of the verification link.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 /// <param name="auditSubject">Names the account the request found for the audit log.</param>
 public sealed class ResendVerificationCommandHandler(

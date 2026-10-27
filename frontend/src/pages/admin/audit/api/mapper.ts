@@ -2,7 +2,10 @@ import type { AuditLogEntryResponse } from '@/shared/api/generated/models'
 
 import type { AuditEntry } from '../model/types'
 
-/** Maps an audit list row; missing values become empty strings. */
+/**
+ * Maps an audit list row; missing text becomes an empty string, and `entity` is `null` unless the
+ * row names both an entity type and an id.
+ */
 export function toAuditEntry(dto: AuditLogEntryResponse): AuditEntry {
   return {
     id: dto.id,

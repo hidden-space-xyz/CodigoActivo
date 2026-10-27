@@ -11,7 +11,8 @@ import { useActionConfirm, useCrudFeedback } from '@/shared/lib/feedback'
 /**
  * Consents section of the account: the consents decided for the user and their minors about the
  * documents of the events, and the withdrawal of the ones given, once confirmed. A withdrawal ends
- * the consent from then on and is reported with a toast. Call it in `setup`.
+ * the consent from then on, refreshes the consents and every event query, and is reported with a
+ * toast. Call it in `setup`.
  */
 export function useAccountConsents() {
   const { t } = useI18n()
@@ -40,7 +41,10 @@ export function useAccountConsents() {
     )
   }
 
-  /** Asks for confirmation and withdraws `consent`; a minor's own consent is theirs to withdraw. */
+  /**
+   * Asks for confirmation and withdraws `consent`; for a minor's consent the message warns that
+   * from 14 the decision is the minor's.
+   */
   function withdraw(consent: AccountConsent): void {
     const names = {
       document: consent.documentName,

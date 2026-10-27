@@ -8,11 +8,13 @@ using Microsoft.Extensions.Logging;
 namespace CodigoActivo.Application.Accounts.Notifications;
 
 /// <summary>
-/// Tells the owner of an account that its authentication data changed. Handlers call it after a
-/// successful commit: a delivery failure, including a refusal from the message limiter, is logged
-/// and swallowed, so it never undoes the change it reports.
+/// Tells the owner of an account about a security-relevant change to it: its password or password
+/// lock, its second factor, its administrator rights, or the email and phones it is reached at.
+/// <see cref="AccountSecurityNotifications"/> calls it once the change is committed: a delivery
+/// failure, including a refusal from the message limiter, is logged and swallowed, so it never
+/// undoes the change it reports.
 /// </summary>
-/// <param name="emailSender">The email sender value.</param>
+/// <param name="emailSender">Sender that applies the message limiter and queues the alert.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="composer">Composer that renders the security alert.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
@@ -26,8 +28,8 @@ public sealed class AccountSecurityNotifier(
     /// <summary>
     /// Notifies the account owner at their current address. Accounts without one are skipped.
     /// </summary>
-    /// <param name="user">The user value.</param>
-    /// <param name="change">The change value.</param>
+    /// <param name="user">Account whose owner is told; greeted by name only once the address is verified.</param>
+    /// <param name="change">Change the alert reports.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task NotifyAsync(User user, AccountSecurityChange change, CancellationToken ct)
@@ -45,9 +47,12 @@ public sealed class AccountSecurityNotifier(
     /// Notifies the address the account used before its email or phones were replaced, naming what
     /// changed. The new address is only ever quoted masked.
     /// </summary>
-    /// <param name="previousEmail">Address the account had before the change.</param>
-    /// <param name="recipientName">The recipient name value.</param>
-    /// <param name="newEmail">Address the account has now when it changed, quoted masked.</param>
+    /// <param name="previousEmail">Address the account had before the change; without one nothing is sent.</param>
+    /// <param name="recipientName">Name the message greets the holder with.</param>
+    /// <param name="newEmail">
+    /// Address the account has now when it changed, quoted masked; <see langword="null"/> when only
+    /// the phones changed.
+    /// </param>
     /// <param name="phonesChanged">Whether the phone or the secondary phone changed.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>

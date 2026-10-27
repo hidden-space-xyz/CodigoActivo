@@ -2,13 +2,13 @@ namespace CodigoActivo.Domain.Users;
 
 /// <summary>
 /// Details of a person exactly as a caller supplied them, before normalization. The kind of
-/// account decides which of them apply: an independent account uses the contact details, the DNI
-/// or NIE and the news consent and has no birth date, while a dependent uses only the birth
-/// date and ignores the rest.
+/// account decides which of them apply besides the names and the gender: an independent account
+/// uses the contact details, the DNI or NIE and the news consent and has no birth date, while a
+/// dependent uses only the birth date and ignores the rest.
 /// </summary>
 /// <param name="FirstName">Given name; stored trimmed.</param>
 /// <param name="LastName">Family name; stored trimmed.</param>
-/// <param name="Gender">The gender value.</param>
+/// <param name="Gender">Gender the person declares.</param>
 /// <param name="Email">Login email of an independent account; stored trimmed and lowercase.</param>
 /// <param name="Phone">Contact phone of an independent account; stored trimmed.</param>
 /// <param name="SecondaryPhone">

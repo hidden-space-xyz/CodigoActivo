@@ -11,13 +11,13 @@ using CodigoActivo.Domain.Events;
 namespace CodigoActivo.Application.Reports.Queries;
 
 /// <summary>
-/// Carries the criteria used to retrieve event summary.
+/// Carries the criteria used to retrieve the summary of the signups and ratings of an event.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 public sealed record GetEventSummaryQuery(EventId EventId) : IQuery<Result<EventSummaryResponse>>;
 
 /// <summary>
-/// Executes the query to retrieve event summary.
+/// Executes the query to retrieve the summary of the signups and ratings of an event.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -25,11 +25,14 @@ public sealed class GetEventSummaryQueryHandler(IReadStore readStore, IQueryExec
     : IQueryHandler<GetEventSummaryQuery, Result<EventSummaryResponse>>
 {
     /// <summary>
-    /// Handles the request to retrieve event summary.
+    /// Handles the request to retrieve the summary of an event.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains an event summary on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the summary, or
+    /// <see cref="ApplicationErrorCode.EventNotFound"/>.
+    /// </returns>
     public async Task<Result<EventSummaryResponse>> HandleAsync(
         GetEventSummaryQuery query,
         CancellationToken ct = default

@@ -9,10 +9,10 @@ namespace CodigoActivo.API.News.Contracts;
 /// <summary>
 /// Contains the client-supplied data used to create a news item.
 /// </summary>
-/// <param name="Title">The title value.</param>
-/// <param name="Subtitle">The subtitle value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
+/// <param name="Title">Headline.</param>
+/// <param name="Subtitle">Line shown below the headline.</param>
+/// <param name="Description">Body as rich text JSON within the rich text allowlist.</param>
+/// <param name="ThumbnailId">Identifier of the uploaded thumbnail file, which must exist.</param>
 public record CreateNewsItemRequest(
     [Required] [MaxLength(200)] string Title,
     [Required] [MaxLength(300)] string Subtitle,
@@ -36,12 +36,12 @@ public record CreateNewsItemRequest(
 }
 
 /// <summary>
-/// Contains the client-supplied data used to update the news item.
+/// Contains the client-supplied data that replaces every editable field of a news item.
 /// </summary>
-/// <param name="Title">The title value.</param>
-/// <param name="Subtitle">The subtitle value.</param>
-/// <param name="Description">The description value.</param>
-/// <param name="ThumbnailId">Identifier of the thumbnail.</param>
+/// <param name="Title">Headline.</param>
+/// <param name="Subtitle">Line shown below the headline.</param>
+/// <param name="Description">Body as rich text JSON within the rich text allowlist.</param>
+/// <param name="ThumbnailId">Identifier of the uploaded thumbnail file, which must exist.</param>
 public record UpdateNewsItemRequest(
     [Required] [MaxLength(200)] string Title,
     [Required] [MaxLength(300)] string Subtitle,

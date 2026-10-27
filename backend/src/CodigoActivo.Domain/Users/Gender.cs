@@ -1,7 +1,7 @@
 namespace CodigoActivo.Domain.Users;
 
 /// <summary>
-/// Identifies the supported gender values.
+/// Gender a person declares in their profile.
 /// </summary>
 public enum Gender
 {
@@ -16,7 +16,7 @@ public enum Gender
     Female = 2,
 
     /// <summary>
-    /// The value does not match the predefined options.
+    /// The user identifies with none of the other options.
     /// </summary>
     Other = 3,
 

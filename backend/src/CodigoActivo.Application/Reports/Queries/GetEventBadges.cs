@@ -10,13 +10,14 @@ using CodigoActivo.Domain.Events;
 namespace CodigoActivo.Application.Reports.Queries;
 
 /// <summary>
-/// Carries the criteria used to retrieve event badges.
+/// Carries the criteria used to retrieve the badges of an event.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 public sealed record GetEventBadgesQuery(EventId EventId) : IQuery<Result<EventBadgesResponse>>;
 
 /// <summary>
-/// Executes the query to retrieve event badges.
+/// Executes the query to retrieve one badge per person with a confirmed signup to the event,
+/// listing their confirmed activities.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -24,11 +25,14 @@ public sealed class GetEventBadgesQueryHandler(IReadStore readStore, IQueryExecu
     : IQueryHandler<GetEventBadgesQuery, Result<EventBadgesResponse>>
 {
     /// <summary>
-    /// Handles the request to retrieve event badges.
+    /// Handles the request to retrieve the badges of an event.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains an event badges on success, or an application error on failure.</returns>
+    /// <returns>
+    /// A task whose result contains the badges ordered by last and first name, or
+    /// <see cref="ApplicationErrorCode.EventNotFound"/>.
+    /// </returns>
     public async Task<Result<EventBadgesResponse>> HandleAsync(
         GetEventBadgesQuery query,
         CancellationToken ct = default

@@ -68,7 +68,8 @@ public class DiagnosticLogEntry
     public string? TraceId { get; init; }
 
     /// <summary>
-    /// Gets the values of the message template as a JSON object.
+    /// Gets the values of the message template as a JSON object, or <see langword="null"/> when the
+    /// template has none.
     /// </summary>
     public string? Properties { get; init; }
 }

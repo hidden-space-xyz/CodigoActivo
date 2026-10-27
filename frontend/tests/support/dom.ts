@@ -4,12 +4,12 @@ import { vi } from 'vitest'
 
 import { i18n } from '@/shared/i18n'
 
-/** Visible text of an element with collapsed whitespace. */
+/** Text content of an element, hidden descendants included, with collapsed whitespace. */
 export function textOf(element: Element | null | undefined): string {
   return (element?.textContent ?? '').replace(/\s+/g, ' ').trim()
 }
 
-/** Buttons under `root` whose visible text or accessible name (aria-label) equals `label`. */
+/** Buttons under `root` whose `textOf` text or `aria-label` equals `label`. */
 export function findButtons(label: string, root: ParentNode = document.body): HTMLButtonElement[] {
   return [...root.querySelectorAll('button')].filter(
     (button) => textOf(button) === label || button.getAttribute('aria-label') === label,
