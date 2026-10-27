@@ -42,7 +42,7 @@ public enum ErrorKind
 public sealed record Error(ErrorKind Kind, Enum Code)
 {
     /// <summary>
-    /// Creates a domain or application error with thevalidation classification.
+    /// Creates a domain or application error with the validation classification.
     /// </summary>
     /// <param name="code">Member of the error code enumeration that names the failure.</param>
     /// <returns>The resulting error value.</returns>
@@ -52,7 +52,7 @@ public sealed record Error(ErrorKind Kind, Enum Code)
     }
 
     /// <summary>
-    /// Creates a domain or application error with thenot found classification.
+    /// Creates a domain or application error with the not found classification.
     /// </summary>
     /// <param name="code">Member of the error code enumeration that names the failure.</param>
     /// <returns>The resulting error value.</returns>
@@ -62,7 +62,7 @@ public sealed record Error(ErrorKind Kind, Enum Code)
     }
 
     /// <summary>
-    /// Creates a domain or application error with theforbidden classification.
+    /// Creates a domain or application error with the forbidden classification.
     /// </summary>
     /// <param name="code">Member of the error code enumeration that names the failure.</param>
     /// <returns>The resulting error value.</returns>
@@ -72,7 +72,7 @@ public sealed record Error(ErrorKind Kind, Enum Code)
     }
 
     /// <summary>
-    /// Creates a domain or application error with theunauthorized classification.
+    /// Creates a domain or application error with the unauthorized classification.
     /// </summary>
     /// <param name="code">Member of the error code enumeration that names the failure.</param>
     /// <returns>The resulting error value.</returns>
@@ -82,7 +82,7 @@ public sealed record Error(ErrorKind Kind, Enum Code)
     }
 
     /// <summary>
-    /// Creates a domain or application error with theconflict classification.
+    /// Creates a domain or application error with the conflict classification.
     /// </summary>
     /// <param name="code">Member of the error code enumeration that names the failure.</param>
     /// <returns>The resulting error value.</returns>
