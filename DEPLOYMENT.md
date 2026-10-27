@@ -221,15 +221,17 @@ Administrator bulk email bypasses that budget but is queued the same way, so its
 (`{ queued, skipped }`) reports what was accepted, not what was delivered.
 
 Pending mail survives a restart: rows are claimed with `FOR UPDATE SKIP LOCKED` and a lease, in priority
-order (2FA/verification/reset codes first, security alerts and activity decisions next, other notices and
-administrator-written mail last), by a poll loop every 5 seconds, also woken immediately by same-process
-enqueues; each pass claims up to 10 due messages and sends 4 at a time, each within 60 seconds. A message is
+order (2FA/verification/reset codes first; security alerts, activity decisions and the coming-of-age, consent
+withdrawal and blocked data consultation notices next; administrator-written mail last), by a poll loop every
+5 seconds, also woken immediately by same-process enqueues; each pass claims up to 10 due messages and sends 4
+at a time, each within 60 seconds. A message is
 attempted up to 5 times, retried after 1 minute, 5 minutes, 30 minutes and 2 hours on the first four failures;
 the 5th failure discards the row and logs an error. Delivery is at-least-once: a crash between a successful
 send and removing the row can resend it. The outbox accepts about 1000 pending ordinary automatic and bulk
-messages; login, verification and password-reset codes are always accepted (and still bounded by the email
-guard). Shutdown only waits for sends already in flight, up to 20 seconds, below
-the API service's 30-second `stop_grace_period`; whatever is not delivered by then stays in the outbox for the
+messages; login, verification and password-reset codes and the consent withdrawal and blocked data consultation
+notices to the association are always accepted (and still bounded by the email guard). Shutdown only waits
+for sends already in flight, up to 20 seconds, below the API service's 30-second `stop_grace_period`; whatever
+is not delivered by then stays in the outbox for the
 next start. These values live in `EmailQueueOptions` and cannot be configured.
 
 A full outbox (`EmailOutboxFull`), an exhausted global budget (`GlobalEmailBudgetExhausted`) and exhausted
