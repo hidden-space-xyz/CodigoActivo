@@ -1,8 +1,8 @@
 namespace CodigoActivo.Application.Abstractions.Email;
 
 /// <summary>
-/// Names the kind of an outbound email, which sets the share of the sending budget it may use, its
-/// delivery priority and whether a full outbox still accepts it.
+/// Names the kind of an outbound email, which sets whether the email guard limits it, its delivery
+/// priority and how long it is worth delivering.
 /// </summary>
 public enum EmailKind
 {
@@ -112,7 +112,21 @@ public sealed record EmailMessage(
     IReadOnlyList<EmailAttachment>? Attachments = null,
     IReadOnlyList<EmailInlineImage>? InlineImages = null,
     string? OneClickUnsubscribeUrl = null
-);
+)
+{
+    /// <summary>
+    /// Gets what the message is about, from <see cref="EmailTopics"/>: a new message on the same
+    /// topic to the same address replaces the one still waiting, so a repeated action never piles
+    /// up mail. <see langword="null"/> keeps every message.
+    /// </summary>
+    public string? Topic { get; init; }
+
+    /// <summary>
+    /// Gets how long the message is worth delivering, such as the lifetime of the code it carries;
+    /// <see langword="null"/> leaves it to the kind.
+    /// </summary>
+    public TimeSpan? ValidFor { get; init; }
+}
 
 /// <summary>
 /// Represents one addressee of an email batch.
@@ -157,11 +171,22 @@ public sealed record EmailBatch(
 )
 {
     /// <summary>
+    /// Gets what every message of the batch is about; see <see cref="EmailMessage.Topic"/>.
+    /// </summary>
+    public string? Topic { get; init; }
+
+    /// <summary>
+    /// Gets how long the batch is worth delivering; see <see cref="EmailMessage.ValidFor"/>.
+    /// </summary>
+    public TimeSpan? ValidFor { get; init; }
+
+    /// <summary>
     /// Wraps a single message as a batch with one recipient.
     /// </summary>
     /// <param name="message">Email message to deliver.</param>
     /// <returns>
-    /// The batch; the one-click unsubscribe address of the message is not carried over.
+    /// The batch, with the topic and validity of the message; its one-click unsubscribe address is
+    /// not carried over.
     /// </returns>
     public static EmailBatch ForOne(EmailMessage message)
     {
@@ -175,6 +200,10 @@ public sealed record EmailBatch(
             [new EmailRecipient(message.ToAddress, message.ToName)],
             message.Attachments,
             message.InlineImages
-        );
+        )
+        {
+            Topic = message.Topic,
+            ValidFor = message.ValidFor,
+        };
     }
 }

@@ -45,6 +45,16 @@ public sealed class SmtpOptions
     public const int ImplicitTlsPort = 465;
 
     /// <summary>
+    /// Identifies the messages per minute sent when <c>SMTP_MAX_PER_MINUTE</c> is not set.
+    /// </summary>
+    public const int DefaultMaxPerMinute = 30;
+
+    /// <summary>
+    /// Identifies the messages per day sent when <c>SMTP_MAX_PER_DAY</c> is not set.
+    /// </summary>
+    public const int DefaultMaxPerDay = 2000;
+
+    /// <summary>
     /// Gets or sets the name or address of the SMTP server (<c>SMTP_HOST</c>); the sender refuses to
     /// send while it is empty.
     /// </summary>
@@ -84,6 +94,20 @@ public sealed class SmtpOptions
     /// when the setting is empty.
     /// </summary>
     public string FromName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets how many messages the SMTP provider accepts per minute
+    /// (<c>SMTP_MAX_PER_MINUTE</c>); the delivery never goes faster, and mail anyone can ask for
+    /// gets at most half of it.
+    /// </summary>
+    public int MaxPerMinute { get; set; } = DefaultMaxPerMinute;
+
+    /// <summary>
+    /// Gets or sets how many messages the SMTP provider accepts in 24 hours (<c>SMTP_MAX_PER_DAY</c>),
+    /// counted over a rolling window that survives restarts; each priority may spend the share
+    /// <see cref="EmailQueueOptions.DailySharePercent"/> gives it.
+    /// </summary>
+    public int MaxPerDay { get; set; } = DefaultMaxPerDay;
 
     /// <summary>
     /// Chooses the encryption a port implies when none is configured: TLS from the first byte on

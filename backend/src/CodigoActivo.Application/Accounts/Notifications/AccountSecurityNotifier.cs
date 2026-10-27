@@ -10,11 +10,11 @@ namespace CodigoActivo.Application.Accounts.Notifications;
 /// <summary>
 /// Tells the owner of an account about a security-relevant change to it: its password or password
 /// lock, its second factor, its administrator rights, or the email and phones it is reached at.
-/// <see cref="AccountSecurityNotifications"/> calls it once the change is committed: a delivery
-/// failure, including a refusal from the message limiter, is logged and swallowed, so it never
-/// undoes the change it reports.
+/// <see cref="AccountSecurityNotifications"/> calls it once the change is committed: the alert is
+/// always queued, replacing a pending alert about the same kind of change, and a failure to queue it
+/// is logged and swallowed, so it never undoes the change it reports.
 /// </summary>
-/// <param name="emailSender">Sender that applies the message limiter and queues the alert.</param>
+/// <param name="emailSender">Sender that queues the alert.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="composer">Composer that renders the security alert.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
@@ -94,11 +94,13 @@ public sealed class AccountSecurityNotifier(
                 clock.UtcNow,
                 maskedNewEmail
             );
-            await emailSender.SendAsync(message, ct);
-        }
-        catch (EmailRateLimitedException)
-        {
-            logger.SecurityNotificationRateLimited(change);
+            await emailSender.SendAsync(
+                message with
+                {
+                    Topic = EmailTopics.SecurityAlert(change),
+                },
+                ct
+            );
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

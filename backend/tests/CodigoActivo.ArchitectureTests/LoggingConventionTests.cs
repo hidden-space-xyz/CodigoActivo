@@ -17,15 +17,16 @@ public sealed partial class LoggingConventionTests
         "ElapsedMilliseconds",
         "UseCase",
         "Attempts",
-        "Capacity",
         "Count",
         "Effect",
+        "Failure",
+        "Hours",
         "Kind",
         "Limit",
         "MaxFailedAttempts",
         "Method",
+        "Minutes",
         "RouteTemplate",
-        "SecurityChange",
     ];
 
     private static readonly string[] ForbiddenPlaceholders =
@@ -61,7 +62,6 @@ public sealed partial class LoggingConventionTests
     private static readonly string[] SecurityEvents =
     [
         "PasswordLockoutTriggered",
-        "SecurityNotificationRateLimited",
         "TwoFactorLockoutTriggered",
     ];
 

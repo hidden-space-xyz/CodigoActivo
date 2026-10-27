@@ -1,5 +1,6 @@
 using System.Text;
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Emails;
 using CodigoActivo.Application.Emails.Commands;
@@ -245,7 +246,7 @@ public sealed class SendEmailToUsersCommandHandlerTests : IDisposable
             NewUserRow("Ana", "ana@test.local"),
             NewUserRow("Berto", "berto@test.local"),
         ]);
-        outbox.RejectAll = true;
+        outbox.Answer = EmailEnqueueResult.Full;
 
         var result = await sut.HandleAsync(
             new SendEmailToUsersCommand(

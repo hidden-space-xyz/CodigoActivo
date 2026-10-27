@@ -134,7 +134,7 @@ public sealed class EventTermsWithdrawalTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task WithdrawAsGuardianEndsTheConsentKeepsTheHistoryAndTellsTheLegalContact()
+    public async Task WithdrawAsGuardianEndsTheConsentKeepsTheHistoryAndTellsTheLegalContactOnTheNextRun()
     {
         await SeedAsync();
         var client = await LoginAsMemberAsync();
@@ -148,10 +148,21 @@ public sealed class EventTermsWithdrawalTests(CodigoActivoWebAppFactory factory)
             .Changes.Select(change => (change.Accepted, change.RecordedById.Value))
             .Should()
             .Equal((true, TestSeedData.Users.MemberId), (false, TestSeedData.Users.MemberId));
+        decision.WithdrawalNoticePending.Should().BeTrue();
+        Factory
+            .EmailSender.Sent.Should()
+            .BeEmpty("the legal contact is told by the scheduled notice");
+
+        (await Factory.SendLegalNoticesAsync()).Withdrawals.Should().Be(1);
+
         var notice = Factory.EmailSender.Sent.Should().ContainSingle().Subject;
         notice.ToAddress.Should().Be("contacto@codigoactivo.test");
         notice.Subject.Should().Be("Se ha retirado un consentimiento");
         notice.TextBody.Should().Contain("de Mateo Miembro para el evento «Feria»");
+        (await DecisionAsync(imageId)).WithdrawalNoticePending.Should().BeFalse();
+        (await Factory.SendLegalNoticesAsync())
+            .Withdrawals.Should()
+            .Be(0, "a withdrawal is told once");
     }
 
     [Fact]

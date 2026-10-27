@@ -10,10 +10,12 @@ public sealed record RescheduledMessage(
     string? Error
 );
 
+public sealed record ReleasedMessage(Guid Id, int AttemptCount, DateTimeOffset NextAttemptAt);
+
 /// <summary>
 /// In-memory stand-in for the PostgreSQL outbox: it keeps the same rows, protects the stored content
-/// with the supplied protector and claims by the same priority, schedule, lease and attempt rules, so
-/// the delivery policy can be exercised without a database.
+/// with the supplied protector and claims, replaces, expires and counts by the same rules, so the
+/// delivery policy can be exercised without a database.
 /// </summary>
 public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity = 100)
     : IEmailOutboxStore
@@ -21,6 +23,8 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
     private readonly List<EmailOutboxMessage> messages = [];
     private readonly List<EmailOutboxContent> contents = [];
     private readonly List<RescheduledMessage> rescheduled = [];
+    private readonly List<ReleasedMessage> released = [];
+    private readonly List<(DateTimeOffset At, int Sent)> sentRecords = [];
 
     public IReadOnlyList<EmailOutboxMessage> Messages
     {
@@ -55,23 +59,64 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
         }
     }
 
+    public IReadOnlyList<ReleasedMessage> Released
+    {
+        get
+        {
+            lock (messages)
+            {
+                return [.. released];
+            }
+        }
+    }
+
+    public int SentRecorded
+    {
+        get
+        {
+            lock (messages)
+            {
+                return sentRecords.Sum(record => record.Sent);
+            }
+        }
+    }
+
+    public DateTimeOffset EnqueuedAt { get; set; } = DateTimeOffset.UnixEpoch;
+
     public Exception? ThrowOnClaim { get; set; }
 
     public Action? OnClaim { get; set; }
 
-    public virtual Task<bool> TryEnqueueAsync(EmailBatch batch, CancellationToken ct = default)
+    public int? LastClaimMaxPriority { get; private set; }
+
+    public virtual Task<EmailEnqueueResult> TryEnqueueAsync(
+        EmailBatch batch,
+        CancellationToken ct = default
+    )
     {
         lock (messages)
         {
             if (
-                !EmailQueueOptions.IsCapacityExempt(batch.Kind)
-                && messages.Count + batch.Recipients.Count > capacity
+                EmailQueueOptions.IsCapped(batch.Kind)
+                && messages.Count(message => message.Priority == EmailQueueOptions.BulkPriority)
+                    + batch.Recipients.Count
+                    > capacity
             )
             {
-                return Task.FromResult(false);
+                return Task.FromResult(EmailEnqueueResult.Full);
             }
 
-            var content = protector.ToContent(batch, DateTimeOffset.UnixEpoch);
+            if (batch.Topic is { } topic)
+            {
+                messages.RemoveAll(message =>
+                    message.Topic == topic
+                    && batch.Recipients.Any(recipient => recipient.Address == message.ToAddress)
+                    && (message.LockedUntil is null || message.LockedUntil <= EnqueuedAt)
+                );
+            }
+
+            var lifetime = batch.ValidFor ?? EmailQueueOptions.LifetimeOf(batch.Kind);
+            var content = protector.ToContent(batch, EnqueuedAt);
             contents.Add(content);
             messages.AddRange(
                 batch.Recipients.Select(recipient => new EmailOutboxMessage
@@ -80,13 +125,23 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
                     Content = content,
                     Kind = batch.Kind,
                     Priority = EmailQueueOptions.PriorityOf(batch.Kind),
+                    Topic = batch.Topic,
                     ToAddress = recipient.Address,
                     ToName = recipient.Name,
-                    CreatedAt = DateTimeOffset.UnixEpoch,
-                    NextAttemptAt = DateTimeOffset.UnixEpoch,
+                    CreatedAt = EnqueuedAt,
+                    ExpiresAt = lifetime is { } span ? EnqueuedAt + span : null,
+                    NextAttemptAt = EnqueuedAt,
                 })
             );
-            return Task.FromResult(true);
+            return Task.FromResult(EmailEnqueueResult.Queued);
+        }
+    }
+
+    public Task<bool> AnyAsync(string topic, CancellationToken ct = default)
+    {
+        lock (messages)
+        {
+            return Task.FromResult(messages.Exists(message => message.Topic == topic));
         }
     }
 
@@ -105,6 +160,7 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
         DateTimeOffset now,
         DateTimeOffset leaseUntil,
         int batchSize,
+        int maxPriority,
         CancellationToken ct = default
     )
     {
@@ -116,11 +172,13 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
 
         lock (messages)
         {
+            LastClaimMaxPriority = maxPriority;
             var claimed = messages
                 .Where(message =>
                     message.NextAttemptAt <= now
                     && (message.LockedUntil is null || message.LockedUntil <= now)
-                    && message.AttemptCount < EmailQueueOptions.MaxAttempts
+                    && (message.ExpiresAt is null || message.ExpiresAt > now)
+                    && message.Priority <= maxPriority
                 )
                 .OrderBy(message => message.Priority)
                 .ThenBy(message => message.NextAttemptAt)
@@ -150,9 +208,11 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
             Content = message.Content,
             Kind = message.Kind,
             Priority = message.Priority,
+            Topic = message.Topic,
             ToAddress = message.ToAddress,
             ToName = message.ToName,
             CreatedAt = message.CreatedAt,
+            ExpiresAt = message.ExpiresAt,
             AttemptCount = message.AttemptCount,
             NextAttemptAt = message.NextAttemptAt,
             LockedUntil = message.LockedUntil,
@@ -204,31 +264,68 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
         }
     }
 
-    public virtual Task<IReadOnlyList<ExhaustedEmail>> RemoveExhaustedAsync(
+    public virtual Task<int> ReleaseAsync(
+        Guid messageId,
+        int attemptCount,
+        DateTimeOffset nextAttemptAt,
+        CancellationToken ct = default
+    )
+    {
+        lock (messages)
+        {
+            var message = messages.Find(candidate =>
+                candidate.Id == messageId && candidate.AttemptCount == attemptCount
+            );
+            if (message is null)
+            {
+                return Task.FromResult(0);
+            }
+
+            message.NextAttemptAt = nextAttemptAt;
+            message.LockedUntil = null;
+            message.AttemptCount = attemptCount - 1;
+            released.Add(new ReleasedMessage(messageId, attemptCount, nextAttemptAt));
+            return Task.FromResult(1);
+        }
+    }
+
+    public virtual Task<IReadOnlyList<EmailKind>> RemoveExpiredAsync(
         DateTimeOffset now,
         CancellationToken ct = default
     )
     {
         lock (messages)
         {
-            var exhausted = messages
+            var expired = messages
                 .Where(message =>
-                    EmailQueueOptions.IsExhausted(message.AttemptCount)
+                    message.ExpiresAt <= now
                     && (message.LockedUntil is null || message.LockedUntil <= now)
                 )
                 .ToList();
 
-            foreach (var message in exhausted)
+            foreach (var message in expired)
             {
                 messages.Remove(message);
             }
 
-            return Task.FromResult<IReadOnlyList<ExhaustedEmail>>([
-                .. exhausted.Select(message => new ExhaustedEmail(
-                    message.Kind,
-                    message.AttemptCount
-                )),
+            return Task.FromResult<IReadOnlyList<EmailKind>>([
+                .. expired.Select(message => message.Kind),
             ]);
+        }
+    }
+
+    public virtual Task<int> CountOverdueAsync(
+        DateTimeOffset acceptedBefore,
+        CancellationToken ct = default
+    )
+    {
+        lock (messages)
+        {
+            return Task.FromResult(
+                messages.Count(message =>
+                    message.ExpiresAt is null && message.CreatedAt < acceptedBefore
+                )
+            );
         }
     }
 
@@ -240,6 +337,32 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
                 contents.RemoveAll(content =>
                     !messages.Exists(message => message.ContentId == content.Id)
                 )
+            );
+        }
+    }
+
+    public virtual Task RecordSentAsync(
+        DateTimeOffset now,
+        int sent,
+        CancellationToken ct = default
+    )
+    {
+        lock (messages)
+        {
+            sentRecords.Add((now, sent));
+            return Task.CompletedTask;
+        }
+    }
+
+    public virtual Task<long> CountSentSinceAsync(
+        DateTimeOffset since,
+        CancellationToken ct = default
+    )
+    {
+        lock (messages)
+        {
+            return Task.FromResult(
+                (long)sentRecords.Where(record => record.At >= since).Sum(record => record.Sent)
             );
         }
     }

@@ -18,22 +18,31 @@ public sealed class EmailSendLimiterTests
             RecipientBurst = 3,
             RecipientPerHour = 2,
             RecipientPerDay = 5,
-            GlobalBurst = 10,
-            GlobalPerHour = 10,
-            GlobalCredentialReserve = 4,
+            AnonymousBurst = 6,
+            AnonymousPerHour = 6,
             MaxTrackedRecipients = 100,
         };
     }
 
+    private static EmailSendLimiter Limiter(EmailGuardOptions options, TestClock clock)
+    {
+        return new EmailSendLimiter(options, new SmtpOptions(), clock);
+    }
+
     private static EmailLimitScope Consume(EmailSendLimiter limiter, string address)
     {
-        return limiter.TryConsume(EmailKind.ActivityNotification, address).Scope;
+        return limiter.TryConsume(EmailKind.AccessRecovery, address).Scope;
+    }
+
+    private static string Address(string prefix, int index)
+    {
+        return $"{prefix}{index.ToString(CultureInfo.InvariantCulture)}@example.test";
     }
 
     [Fact]
     public void TryConsumeBeyondTheRecipientBurstDeniesWithRecipientScope()
     {
-        var limiter = new EmailSendLimiter(Options(), new TestClock());
+        var limiter = Limiter(Options(), new TestClock());
 
         for (var i = 0; i < 3; i++)
         {
@@ -47,7 +56,7 @@ public sealed class EmailSendLimiterTests
     public void TryConsumeAfterTheHourlyWindowRefillsAllowsAgain()
     {
         var clock = new TestClock();
-        var limiter = new EmailSendLimiter(Options(), clock);
+        var limiter = Limiter(Options(), clock);
 
         for (var i = 0; i < 4; i++)
         {
@@ -63,7 +72,10 @@ public sealed class EmailSendLimiterTests
     public void TryConsumeDailyCapReachedDeniesEvenAfterTheHourlyWindowRefills()
     {
         var clock = new TestClock();
-        var limiter = new EmailSendLimiter(Options(), clock);
+        var options = Options();
+        options.AnonymousBurst = 1000;
+        options.AnonymousPerHour = 1000;
+        var limiter = Limiter(options, clock);
 
         var delivered = 0;
         for (var hour = 0; hour < 8; hour++)
@@ -83,7 +95,7 @@ public sealed class EmailSendLimiterTests
     [Fact]
     public void TryConsumeSubAddressedAndMixedCaseVariantsShareOneRecipientBudget()
     {
-        var limiter = new EmailSendLimiter(Options(), new TestClock());
+        var limiter = Limiter(Options(), new TestClock());
 
         Consume(limiter, "victim@example.test").Should().Be(EmailLimitScope.None);
         Consume(limiter, "  VICTIM@Example.TEST  ").Should().Be(EmailLimitScope.None);
@@ -116,116 +128,71 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsumeGlobalBudgetDrainedByOtherRecipientsDeniesWithGlobalScope()
+    public void TryConsumeAnonymousBudgetDrainedByOtherRecipientsDeniesWithGlobalScope()
     {
-        var limiter = new EmailSendLimiter(Options(), new TestClock());
+        var limiter = Limiter(Options(), new TestClock());
 
         for (var i = 0; i < 6; i++)
         {
-            Consume(limiter, $"member{i.ToString(CultureInfo.InvariantCulture)}@example.test")
-                .Should()
-                .Be(EmailLimitScope.None);
+            Consume(limiter, Address("member", i)).Should().Be(EmailLimitScope.None);
         }
 
         Consume(limiter, "fresh@example.test").Should().Be(EmailLimitScope.Global);
-    }
-
-    [Fact]
-    public void TryConsumeActivityMailExhaustedTheBudgetStillDeliversAccountEmail()
-    {
-        var limiter = new EmailSendLimiter(Options(), new TestClock());
-
-        for (var i = 0; i < 6; i++)
-        {
-            Consume(limiter, $"member{i.ToString(CultureInfo.InvariantCulture)}@example.test");
-        }
-
-        limiter
-            .TryConsume(EmailKind.AccessRecovery, "locked-out@example.test")
-            .Scope.Should()
-            .Be(EmailLimitScope.None);
         limiter
             .TryConsume(EmailKind.AccountVerification, "newcomer@example.test")
             .Scope.Should()
-            .Be(EmailLimitScope.None);
-        limiter
-            .TryConsume(EmailKind.TwoFactorCode, "returning@example.test")
-            .Scope.Should()
-            .Be(EmailLimitScope.None, "login codes are credential mail and use the reserve");
+            .Be(EmailLimitScope.Global);
     }
 
     [Fact]
-    public void TryConsumeSecurityAlertCannotDipIntoTheCredentialReserve()
+    public void TryConsumeAnonymousFloodLeavesLoginCodesDeliverable()
     {
-        var limiter = new EmailSendLimiter(Options(), new TestClock());
+        var limiter = Limiter(Options(), new TestClock());
 
         for (var i = 0; i < 6; i++)
         {
-            Consume(limiter, $"member{i.ToString(CultureInfo.InvariantCulture)}@example.test");
+            Consume(limiter, Address("spray", i));
         }
 
-        limiter
-            .TryConsume(EmailKind.SecurityAlert, "owner@example.test")
-            .Scope.Should()
-            .Be(
-                EmailLimitScope.Global,
-                "a security notification is not credential mail and must not use the reserve"
-            );
+        for (var i = 0; i < 20; i++)
+        {
+            limiter
+                .TryConsume(EmailKind.TwoFactorCode, Address("returning", i))
+                .Scope.Should()
+                .Be(EmailLimitScope.None, "login codes never spend the anonymous budget");
+        }
     }
 
     [Fact]
-    public void TryConsumeVerificationAndResetMailCannotDipIntoTheLoginCodeReserve()
+    public void TryConsumeAnonymousBudgetNeverPassesHalfOfTheProviderPace()
     {
-        var limiter = new EmailSendLimiter(Options(), new TestClock());
+        var options = Options();
+        options.AnonymousBurst = 1000;
+        options.AnonymousPerHour = 1000;
+        var limiter = new EmailSendLimiter(
+            options,
+            new SmtpOptions { MaxPerMinute = 1 },
+            new TestClock()
+        );
 
-        for (var i = 0; i < 8; i++)
-        {
-            var kind = i % 2 == 0 ? EmailKind.AccountVerification : EmailKind.AccessRecovery;
-            limiter
-                .TryConsume(kind, $"spray{i.ToString(CultureInfo.InvariantCulture)}@example.test")
-                .Scope.Should()
-                .Be(EmailLimitScope.None);
-        }
+        var granted = Enumerable
+            .Range(0, 100)
+            .Count(i => Consume(limiter, Address("spray", i)) is EmailLimitScope.None);
 
-        limiter
-            .TryConsume(EmailKind.AccountVerification, "spray-more@example.test")
-            .Scope.Should()
-            .Be(EmailLimitScope.Global, "anonymous credential mail stops before the login reserve");
-        limiter
-            .TryConsume(EmailKind.AccessRecovery, "spray-more@example.test")
-            .Scope.Should()
-            .Be(EmailLimitScope.Global);
-        limiter
-            .TryConsume(EmailKind.TwoFactorCode, "returning@example.test")
-            .Scope.Should()
-            .Be(EmailLimitScope.None, "a correct password still gets its login code");
-        limiter
-            .TryConsume(EmailKind.TwoFactorCode, "another@example.test")
-            .Scope.Should()
-            .Be(EmailLimitScope.None);
-        limiter
-            .TryConsume(EmailKind.TwoFactorCode, "third@example.test")
-            .Scope.Should()
-            .Be(EmailLimitScope.Global);
+        granted.Should().Be(30);
     }
 
     [Fact]
     public void TryConsumeResetMailFloodingAnAddressLeavesItsLoginCodesDeliverable()
     {
-        var limiter = new EmailSendLimiter(Options(), new TestClock());
+        var limiter = Limiter(Options(), new TestClock());
 
         for (var i = 0; i < 3; i++)
         {
-            limiter
-                .TryConsume(EmailKind.AccessRecovery, Recipient)
-                .Scope.Should()
-                .Be(EmailLimitScope.None);
+            Consume(limiter, Recipient).Should().Be(EmailLimitScope.None);
         }
 
-        limiter
-            .TryConsume(EmailKind.AccessRecovery, Recipient)
-            .Scope.Should()
-            .Be(EmailLimitScope.Recipient);
+        Consume(limiter, Recipient).Should().Be(EmailLimitScope.Recipient);
         limiter
             .TryConsume(EmailKind.TwoFactorCode, Recipient)
             .Scope.Should()
@@ -235,7 +202,7 @@ public sealed class EmailSendLimiterTests
     [Fact]
     public void TryConsumeLoginCodesStayBoundedByTheirOwnRecipientBudget()
     {
-        var limiter = new EmailSendLimiter(Options(), new TestClock());
+        var limiter = Limiter(Options(), new TestClock());
 
         for (var i = 0; i < 3; i++)
         {
@@ -251,24 +218,13 @@ public sealed class EmailSendLimiterTests
             .Be(EmailLimitScope.Recipient);
         Consume(limiter, Recipient)
             .Should()
-            .Be(EmailLimitScope.None, "other mail keeps the budget of its own");
+            .Be(EmailLimitScope.None, "other codes keep the budget of their own");
     }
 
     [Fact]
-    public void TryConsumeReserveWiderThanTheGlobalBurstStillDeliversAutomaticMail()
+    public void TryConsumeRecipientDeniedLeavesTheAnonymousBudgetUntouched()
     {
-        var limiter = new EmailSendLimiter(
-            new EmailGuardOptions { GlobalBurst = 6 },
-            new TestClock()
-        );
-
-        Consume(limiter, Recipient).Should().Be(EmailLimitScope.None);
-    }
-
-    [Fact]
-    public void TryConsumeRecipientDeniedLeavesTheGlobalBudgetUntouched()
-    {
-        var limiter = new EmailSendLimiter(Options(), new TestClock());
+        var limiter = Limiter(Options(), new TestClock());
 
         for (var i = 0; i < 3; i++)
         {
@@ -284,21 +240,19 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsumeGlobalDenialDoesNotStartTrackingTheRecipient()
+    public void TryConsumeAnonymousDenialDoesNotStartTrackingTheRecipient()
     {
-        var limiter = new EmailSendLimiter(Options(), new TestClock());
+        var limiter = Limiter(Options(), new TestClock());
 
         for (var i = 0; i < 6; i++)
         {
-            Consume(limiter, $"member{i.ToString(CultureInfo.InvariantCulture)}@example.test");
+            Consume(limiter, Address("member", i));
         }
 
         var tracked = limiter.TrackedRecipients;
         for (var i = 0; i < 50; i++)
         {
-            Consume(limiter, $"sprayed{i.ToString(CultureInfo.InvariantCulture)}@example.test")
-                .Should()
-                .Be(EmailLimitScope.Global);
+            Consume(limiter, Address("sprayed", i)).Should().Be(EmailLimitScope.Global);
         }
 
         limiter.TrackedRecipients.Should().Be(tracked);
@@ -308,7 +262,7 @@ public sealed class EmailSendLimiterTests
     public void TryConsumeClockStepsBackwardsDoesNotMintTokens()
     {
         var clock = new TestClock();
-        var limiter = new EmailSendLimiter(Options(), clock);
+        var limiter = Limiter(Options(), clock);
 
         for (var i = 0; i < 3; i++)
         {
@@ -321,16 +275,16 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsumeTrackingTableSaturatedFallsBackToTheGlobalBudget()
+    public void TryConsumeTrackingTableSaturatedLetsTheAddressThroughAndAlerts()
     {
         var options = Options();
         options.MaxTrackedRecipients = 2;
-        var limiter = new EmailSendLimiter(options, new TestClock());
+        var limiter = Limiter(options, new TestClock());
 
         Consume(limiter, "first@example.test").Should().Be(EmailLimitScope.None);
         Consume(limiter, "second@example.test").Should().Be(EmailLimitScope.None);
 
-        var decision = limiter.TryConsume(EmailKind.ActivityNotification, "third@example.test");
+        var decision = limiter.TryConsume(EmailKind.AccessRecovery, "third@example.test");
 
         decision.Scope.Should().Be(EmailLimitScope.None);
         decision.Alert.Should().Be(EmailGuardAlert.TrackingSaturated);
@@ -341,7 +295,7 @@ public sealed class EmailSendLimiterTests
     public void TryConsumeSweepRunsEvictsOnlyFullyRefilledRecipients()
     {
         var clock = new TestClock();
-        var limiter = new EmailSendLimiter(Options(), clock);
+        var limiter = Limiter(Options(), clock);
 
         Consume(limiter, "barely-used@example.test");
         for (var i = 0; i < 3; i++)
@@ -358,56 +312,12 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
-    public void TryConsumeShippedDefaultsLetAnEventOpeningAndItsRosterReviewThrough()
-    {
-        var limiter = new EmailSendLimiter(new EmailGuardOptions(), new TestClock());
-
-        for (var i = 0; i < 200; i++)
-        {
-            Consume(limiter, $"attendee{i.ToString(CultureInfo.InvariantCulture)}@example.test")
-                .Should()
-                .Be(EmailLimitScope.None);
-        }
-
-        for (var i = 0; i < 200; i++)
-        {
-            Consume(limiter, $"attendee{i.ToString(CultureInfo.InvariantCulture)}@example.test")
-                .Should()
-                .Be(EmailLimitScope.None);
-        }
-
-        limiter
-            .TryConsume(EmailKind.AccessRecovery, "member@example.test")
-            .Scope.Should()
-            .Be(EmailLimitScope.None);
-    }
-
-    [Fact]
-    public void TryConsumeShippedDefaultsLetAGuardianReceiveEveryHouseholdNotification()
-    {
-        var clock = new TestClock();
-        var limiter = new EmailSendLimiter(new EmailGuardOptions(), clock);
-
-        for (var i = 0; i < 12; i++)
-        {
-            Consume(limiter, "guardian@example.test").Should().Be(EmailLimitScope.None);
-        }
-
-        clock.UtcNow = clock.UtcNow.AddHours(1);
-
-        for (var i = 0; i < 12; i++)
-        {
-            Consume(limiter, "guardian@example.test").Should().Be(EmailLimitScope.None);
-        }
-    }
-
-    [Fact]
     public void TryConsumeFromManyThreadsGrantsExactlyTheBurst()
     {
         var options = Options();
-        options.GlobalBurst = 1000;
-        options.GlobalPerHour = 1000;
-        var limiter = new EmailSendLimiter(options, new TestClock());
+        options.AnonymousBurst = 1000;
+        options.AnonymousPerHour = 1000;
+        var limiter = Limiter(options, new TestClock());
 
         var granted = 0;
         Parallel.For(

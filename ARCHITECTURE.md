@@ -91,10 +91,11 @@ no check enforces.
   `CacheTagsByEvent` maps; `ReleasedFilesCleanup` removes the files that events implementing `IReleasesFiles`
   stopped referencing, when nothing else references them) and then every `IDomainEventListener<T>` of each event
   runs (`AssignmentDecisionNotification`, `AccountSecurityNotifications`, `SessionsEndOnPasswordReplacedOrLocked`,
-  `AccountLockoutLog`, `ConsentWithdrawalNotification`, `BlockedDataConsultationNotification`). Effects run in the
-  request after the commit and to their end even when the client disconnects; a failing effect is logged and
-  neither stops the others nor fails the committed request. A crash between the commit and an effect loses that
-  effect, because there is no transactional outbox for events (emails themselves go through the email outbox).
+  `AccountLockoutLog`). Effects run in the request after the commit and to their end even when the client
+  disconnects; a failing effect is logged and neither stops the others nor fails the committed request. A crash
+  between the commit and an effect loses that effect, because there is no transactional outbox for events
+  (emails themselves go through the email outbox). Notices that must never be lost are state instead of events:
+  the aggregate marks them pending in the same commit, and a scheduled command sends them and clears the mark.
 - Rich text references a stored file only by its content URL `/api/files/{id}/content`, which saved documents
   keep and the frontend builds and checks; `RichTextFileReferences` in Domain owns it, so it cannot change
   without migrating saved documents.
@@ -284,8 +285,9 @@ records each decision as an `EventTermsAcceptance` about that person, which keep
 `TermsDecisionChange`; a rewritten document keeps the replaced version as a `TermsDocumentVersion`.
 `GET /api/events/{eventId}/terms` returns every linked document and, for the caller and each dependent, the
 decisions taken and whether they decide their own consents, and administrators list the decisions of an event
-under `/api/events/{eventId}/terms/decisions`. A withdrawal (`WithdrawTermsConsent`) records
-`TermsConsentWithdrawn`, which `ConsentWithdrawalNotification` turns into an email to the legal contact. Who
+under `/api/events/{eventId}/terms/decisions`. A withdrawal (`WithdrawTermsConsent`) leaves its notice pending
+(`WithdrawalNoticePending`, kept out of the data history), which `SendConsentWithdrawalNotices` turns into an
+email to the legal contact. Who
 decides, what each kind requires, withdrawals, versions and signatures are in
 [SECURITY.md](SECURITY.md#terms-documents-and-decisions).
 
@@ -362,11 +364,17 @@ ports `IAccountEmailComposer`, `ISignupEmailComposer`, `IManualEmailComposer`, `
 and `IBlockedDataEmailComposer`; Infrastructure renders the HTML, the branding and the links to the SPA
 (`Infrastructure/Communication/Templates`).
 
-Automatic messages (`IEmailSender`/`ThrottledEmailSender`, rate-limited per recipient and globally) and
+Automatic messages (`IEmailSender`/`ThrottledEmailSender`, which applies the email guard to codes only) and
 administrator-authored bulk mail (`ManualEmailDispatcher`) both store their batch through `IEmailOutbox` in
-a PostgreSQL outbox, in a unit of work of its own committed before the call returns; a background
-`EmailOutboxDeliveryWorker` hosted service claims due rows and delivers them through `IEmailTransport`
-(`SmtpEmailSender`), with retries and an attempt limit. The send commands (`SendEmailToUsers`,
+a PostgreSQL outbox, in a unit of work of its own committed before the call returns. Application names what a
+message is about with `EmailMessage.Topic` (`EmailTopics`), so a new message replaces the one waiting on the
+same topic and address, and how long a code is worth with `ValidFor`. A background
+`EmailOutboxDeliveryWorker` hosted service, on the one instance that holds `EmailDeliveryLock`, claims due rows
+and delivers them through one `IEmailTransport` session per run (`SmtpEmailSender`), paced by
+`EmailDeliveryPacer` and with retries, pauses and expiry by the fault `EmailDeliveryException` names. The notices
+to the legal contact are scheduled commands (`SendConsentWithdrawalNotices`,
+`SendBlockedDataConsultationNotices`, run by `LegalNoticeWorker`) that ask `IPendingEmails` whether their last
+summary is still waiting. The send commands (`SendEmailToUsers`,
 `SendEmailToEventAttendees`) and the audience-preview queries in `Application/Emails/Queries` share recipient
 selection through `ManualEmailAudience`, so a preview always matches what the corresponding send would reach;
 the send's `ManualEmailPurpose` decides whether recipients without news consent are left out. A

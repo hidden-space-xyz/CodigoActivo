@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Infrastructure.Communication;
 using Xunit;
 
 namespace CodigoActivo.ArchitectureTests;
@@ -17,6 +18,7 @@ public sealed class ErrorConventionTests
             .BeEquivalentTo(
                 [
                     typeof(ConcurrentUpdateException),
+                    typeof(EmailDeliveryException),
                     typeof(EmailRateLimitedException),
                     typeof(UniqueConstraintViolationException),
                 ],

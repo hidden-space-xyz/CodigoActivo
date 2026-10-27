@@ -28,27 +28,28 @@ public sealed class RecordingEmailOutbox : IEmailOutbox
         }
     }
 
-    public bool RejectAll { get; set; }
+    public EmailEnqueueResult Answer { get; set; } = EmailEnqueueResult.Queued;
 
     public Exception? ThrowOnEnqueue { get; set; }
 
-    public Task<bool> TryEnqueueAsync(EmailBatch batch, CancellationToken ct = default)
+    public Task<EmailEnqueueResult> TryEnqueueAsync(
+        EmailBatch batch,
+        CancellationToken ct = default
+    )
     {
         if (ThrowOnEnqueue is not null)
         {
             throw ThrowOnEnqueue;
         }
 
-        if (RejectAll)
+        if (Answer is EmailEnqueueResult.Queued)
         {
-            return Task.FromResult(false);
+            lock (batches)
+            {
+                batches.Add(batch);
+            }
         }
 
-        lock (batches)
-        {
-            batches.Add(batch);
-        }
-
-        return Task.FromResult(true);
+        return Task.FromResult(Answer);
     }
 }

@@ -3,17 +3,21 @@ using CodigoActivo.Application.Abstractions.Email;
 namespace CodigoActivo.Application.TermsDecisions;
 
 /// <summary>
-/// Composes the notice that tells the association a consent was withdrawn.
+/// Composes the notice that tells the association consents were withdrawn.
 /// </summary>
 public interface IConsentWithdrawalEmailComposer
 {
     /// <summary>
-    /// Composes the notice for the association's legal contact.
+    /// Composes one notice for the association's legal contact with every withdrawal it was not
+    /// told about yet.
     /// </summary>
     /// <param name="recipient">Legal contact of the association.</param>
-    /// <param name="withdrawal">What was withdrawn, for whom and by whom.</param>
+    /// <param name="withdrawals">What was withdrawn, for whom and by whom; at least one.</param>
     /// <returns>The composed message.</returns>
-    public EmailMessage Withdrawn(EmailRecipient recipient, ConsentWithdrawal withdrawal);
+    public EmailMessage Withdrawn(
+        EmailRecipient recipient,
+        IReadOnlyList<ConsentWithdrawal> withdrawals
+    );
 }
 
 /// <summary>

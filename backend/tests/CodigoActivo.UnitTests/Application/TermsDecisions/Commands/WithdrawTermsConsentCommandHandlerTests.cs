@@ -133,10 +133,7 @@ public sealed class WithdrawTermsConsentCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         decision.Changes.Last().DecidedById.Should().Be(guardianId);
         decision.Changes.Last().RecordedById.Should().Be(admin.Id!.Value);
-        decision
-            .PullDomainEvents()
-            .Should()
-            .Equal(new TermsConsentWithdrawn(eventId, child.Id, consent.Id, admin.Id!.Value));
+        decision.WithdrawalNoticePending.Should().BeTrue();
     }
 
     [Fact]

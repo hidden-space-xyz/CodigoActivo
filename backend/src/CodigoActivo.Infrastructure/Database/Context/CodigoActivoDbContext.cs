@@ -170,10 +170,15 @@ public class CodigoActivoDbContext(
     public DbSet<Partner> Partners => Set<Partner>();
 
     /// <summary>
-    /// Gets the pending deliveries of the email outbox; a row is deleted once it is delivered or its
-    /// attempts are spent.
+    /// Gets the pending deliveries of the email outbox; a row is deleted once it is delivered,
+    /// rejected for good, replaced or expired.
     /// </summary>
     public DbSet<EmailOutboxMessage> EmailOutboxMessages => Set<EmailOutboxMessage>();
+
+    /// <summary>
+    /// Gets the hourly counts of messages handed to the SMTP server.
+    /// </summary>
+    public DbSet<EmailDeliveryHour> EmailDeliveryHours => Set<EmailDeliveryHour>();
 
     /// <summary>
     /// Gets the protected subject and bodies of the outbox emails, shared by their pending deliveries.

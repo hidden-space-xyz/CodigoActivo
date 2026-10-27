@@ -53,7 +53,7 @@ public sealed class TermsDecisionHistoryTests
     }
 
     [Fact]
-    public void WithdrawEndsTheConsentKeepsTheAcceptanceInTheHistoryAndRaisesTheWithdrawal()
+    public void WithdrawEndsTheConsentKeepsTheAcceptanceInTheHistoryAndLeavesItsNoticePending()
     {
         var signature = HandwrittenSignature.Create(SignatureImages.Png()).Value;
         var decision = Decide(accepted: true, signature);
@@ -72,11 +72,29 @@ public sealed class TermsDecisionHistoryTests
             .Should()
             .Equal((true, guardianId, guardianId, Now), (false, personId, adminId, Now.AddDays(3)));
         decision.Changes.First().Signature.Should().BeSameAs(signature);
-        decision
-            .PullDomainEvents()
-            .Should()
-            .Equal(new TermsConsentWithdrawn(eventId, personId, documentId, adminId));
-        decision.PullDomainEvents().Should().BeEmpty();
+        decision.WithdrawalNoticePending.Should().BeTrue();
+    }
+
+    [Fact]
+    public void RecordWithdrawalNoticeClearsThePendingNotice()
+    {
+        var decision = Decide(accepted: true);
+        decision.Withdraw(personId, personId, Now.AddDays(1));
+
+        decision.RecordWithdrawalNotice();
+
+        decision.WithdrawalNoticePending.Should().BeFalse();
+    }
+
+    [Fact]
+    public void AcceptAgainBeforeTheNoticeLeavesNothingToTell()
+    {
+        var decision = Decide(accepted: true);
+        decision.Withdraw(personId, personId, Now.AddDays(1));
+
+        decision.Accept(personId, 1, null, personId, Now.AddDays(2));
+
+        decision.WithdrawalNoticePending.Should().BeFalse();
     }
 
     [Fact]
@@ -88,7 +106,7 @@ public sealed class TermsDecisionHistoryTests
 
         result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.EventTermsConsentNotGiven);
         decision.Changes.Should().ContainSingle();
-        decision.PullDomainEvents().Should().BeEmpty();
+        decision.WithdrawalNoticePending.Should().BeFalse();
     }
 
     [Fact]

@@ -76,9 +76,10 @@ public sealed class ManualEmailDispatcher(
     /// A task whose result contains the dispatch counts; <see cref="ApplicationErrorCode.EmailNoRecipients"/>,
     /// <see cref="ApplicationErrorCode.EmailTooManyRecipients"/>,
     /// <see cref="ApplicationErrorCode.EmailTooManyAttachments"/>,
-    /// <see cref="ApplicationErrorCode.EmailAttachmentsTooLarge"/>,
-    /// <see cref="ApplicationErrorCode.EmailAttachmentEmpty"/>, or
-    /// <see cref="ApplicationErrorCode.EmailSendFailed"/> when the outbox is full or fails.
+    /// <see cref="ApplicationErrorCode.EmailAttachmentsTooLarge"/>, also when the message is larger
+    /// than the SMTP server accepts, <see cref="ApplicationErrorCode.EmailAttachmentEmpty"/>, or
+    /// <see cref="ApplicationErrorCode.EmailSendFailed"/> when the outbox holds too much
+    /// administrator-written mail or fails.
     /// </returns>
     public async Task<Result<EmailDispatch>> DispatchAsync(
         IReadOnlyList<Recipient> recipients,
@@ -113,10 +114,10 @@ public sealed class ManualEmailDispatcher(
             buffered.Value
         );
 
-        bool queued;
+        EmailEnqueueResult result;
         try
         {
-            queued = await outbox.TryEnqueueAsync(batch, ct);
+            result = await outbox.TryEnqueueAsync(batch, ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -124,13 +125,17 @@ public sealed class ManualEmailDispatcher(
             return Error.Validation(ApplicationErrorCode.EmailSendFailed);
         }
 
-        if (!queued)
+        switch (result)
         {
-            logger.ManualEmailOutboxFull(batch.Recipients.Count);
-            return Error.Validation(ApplicationErrorCode.EmailSendFailed);
+            case EmailEnqueueResult.TooLarge:
+                return Error.Validation(ApplicationErrorCode.EmailAttachmentsTooLarge);
+            case EmailEnqueueResult.Full:
+                logger.ManualEmailOutboxFull(batch.Recipients.Count);
+                return Error.Validation(ApplicationErrorCode.EmailSendFailed);
+            case EmailEnqueueResult.Queued:
+            default:
+                return new EmailDispatch(batch.Recipients.Count, skipped);
         }
-
-        return new EmailDispatch(batch.Recipients.Count, skipped);
     }
 
     private async Task<Result<IReadOnlyList<EmailAttachment>>> BufferAsync(

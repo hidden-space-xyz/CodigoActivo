@@ -1,10 +1,11 @@
 namespace CodigoActivo.Infrastructure.Communication;
 
 /// <summary>
-/// Defines the limits of the email guard, the <see cref="EmailSendLimiter"/> that
-/// <see cref="ThrottledEmailSender"/> applies to automatic mail before storing it; administrator-written
-/// mail goes to the outbox directly and spends none of them. The values are fixed in code, and every API
-/// process keeps its budgets in memory, so a restart refills them and replicas multiply them.
+/// Defines the per-recipient budgets and the budget of mail anyone can ask for. The email guard,
+/// the <see cref="EmailSendLimiter"/> that <see cref="ThrottledEmailSender"/> applies before storing
+/// a code, spends them; the outbox deliverer paces notices and administrator-written mail with the
+/// same per-recipient budgets. The values are fixed in code, and every API process keeps its
+/// budgets in memory, so a restart refills them and replicas multiply them.
 /// </summary>
 public sealed class EmailGuardOptions
 {
@@ -27,45 +28,27 @@ public sealed class EmailGuardOptions
     public int RecipientPerDay { get; set; } = 50;
 
     /// <summary>
-    /// Gets or sets the capacity of the global budget that every message of the process spends from.
+    /// Gets or sets the capacity of the budget the mail anyone can ask for spends from: the
+    /// verification of a registration or a new email, the notice that an address already has an
+    /// account and the password reset. It applies through <see cref="AnonymousBudget"/>.
     /// </summary>
-    public int GlobalBurst { get; set; } = 1000;
+    public int AnonymousBurst { get; set; } = 1000;
 
     /// <summary>
-    /// Gets or sets how many messages per hour the global budget gets back.
+    /// Gets or sets how many messages per hour the anonymous budget gets back. It applies through
+    /// <see cref="AnonymousBudget"/>.
     /// </summary>
-    public int GlobalPerHour { get; set; } = 1000;
+    public int AnonymousPerHour { get; set; } = 1000;
 
     /// <summary>
-    /// Gets or sets the part of the global budget kept for second-factor, verification and
-    /// password-reset mail: any other message is denied when sending it would leave less than this.
-    /// It applies through <see cref="EffectiveCredentialReserve"/>.
-    /// </summary>
-    public int GlobalCredentialReserve { get; set; } = 200;
-
-    /// <summary>
-    /// Gets the credential reserve actually applied: <see cref="GlobalCredentialReserve"/> kept between
-    /// zero and one less than <see cref="GlobalBurst"/>, so a full global budget never denies a message.
-    /// </summary>
-    public int EffectiveCredentialReserve =>
-        Math.Clamp(GlobalCredentialReserve, 0, Math.Max(GlobalBurst - 1, 0));
-
-    /// <summary>
-    /// Gets the half of the credential reserve kept for second-factor codes alone: verification and
-    /// password-reset mail, which anyone can trigger, cannot spend it, so they never use up the
-    /// budget a login needs.
-    /// </summary>
-    public int EffectiveTwoFactorReserve => EffectiveCredentialReserve / 2;
-
-    /// <summary>
-    /// Gets or sets how many address budgets the guard keeps in memory. Once it holds this many, a new
-    /// address spends only the global budget and the guard reports
+    /// Gets or sets how many address budgets each limiter keeps in memory. Once it holds this many, a
+    /// new address is not limited on its own and the guard reports
     /// <see cref="EmailGuardAlert.TrackingSaturated"/>.
     /// </summary>
     public int MaxTrackedRecipients { get; set; } = 50_000;
 
     /// <summary>
-    /// Gets or sets how often the guard drops the address budgets that are full again and so hold
+    /// Gets or sets how often a limiter drops the address budgets that are full again and so hold
     /// nothing worth keeping. A sweep also runs early when <see cref="MaxTrackedRecipients"/> is
     /// reached and the previous sweep freed room.
     /// </summary>
@@ -76,4 +59,17 @@ public sealed class EmailGuardOptions
     /// or outbox failure.
     /// </summary>
     public TimeSpan AlertInterval { get; set; } = TimeSpan.FromMinutes(15);
+
+    /// <summary>
+    /// Gets the anonymous budget actually applied: <see cref="AnonymousBurst"/> and
+    /// <see cref="AnonymousPerHour"/>, each kept at or below half of what the SMTP provider delivers
+    /// in an hour, so mail anyone can ask for never takes more than half of the delivery.
+    /// </summary>
+    /// <param name="providerPerMinute">Messages the SMTP provider accepts per minute.</param>
+    /// <returns>The capacity and hourly refill of the anonymous budget.</returns>
+    public (int Burst, int PerHour) AnonymousBudget(int providerPerMinute)
+    {
+        var half = (int)Math.Min(int.MaxValue, Math.Max(providerPerMinute, 1) * 60L / 2);
+        return (Math.Min(AnonymousBurst, half), Math.Min(AnonymousPerHour, half));
+    }
 }

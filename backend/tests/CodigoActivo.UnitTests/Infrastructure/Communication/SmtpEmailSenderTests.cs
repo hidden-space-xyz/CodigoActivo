@@ -2,7 +2,6 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.UnitTests.TestSupport;
-using MailKit.Net.Smtp;
 using MimeKit;
 using Xunit;
 
@@ -10,6 +9,8 @@ namespace CodigoActivo.UnitTests.Infrastructure.Communication;
 
 public sealed class SmtpEmailSenderTests
 {
+    private readonly SmtpServerLimits limits = new();
+
     private static SmtpOptions Options(
         FakeSmtpServer server,
         SmtpSecurityMode security = SmtpSecurityMode.None,
@@ -28,9 +29,15 @@ public sealed class SmtpEmailSenderTests
         };
     }
 
-    private static SmtpEmailSender Create(SmtpOptions options)
+    private SmtpEmailSender Create(SmtpOptions options)
     {
-        return new SmtpEmailSender(options);
+        return new SmtpEmailSender(options, limits);
+    }
+
+    private async Task SendOneAsync(SmtpOptions options, EmailMessage message, CancellationToken ct)
+    {
+        await using var session = await Create(options).OpenAsync(ct);
+        await session.SendAsync(message, ct);
     }
 
     private static EmailMessage Message(
@@ -64,7 +71,6 @@ public sealed class SmtpEmailSenderTests
     public async Task SendAsyncAuthenticatedServerDeliversBodiesAttachmentsAndInlineImages()
     {
         await using var server = new FakeSmtpServer();
-        var sender = Create(Options(server, username: "mailer"));
         var message = Message(
             attachments:
             [
@@ -80,7 +86,7 @@ public sealed class SmtpEmailSenderTests
             inlineImages: [new EmailInlineImage("logo", "logo.png", "image/png", [137, 80, 78])]
         );
 
-        await sender.SendAsync(message, Timeout());
+        await SendOneAsync(Options(server, username: "mailer"), message, Timeout());
 
         server.AuthenticatedUser.Should().Be("mailer");
         server.AuthenticatedPassword.Should().Be("secret");
@@ -117,14 +123,60 @@ public sealed class SmtpEmailSenderTests
     }
 
     [Fact]
+    public async Task SendAsyncSeveralMessagesShareOneConnection()
+    {
+        await using var server = new FakeSmtpServer();
+        await using var session = await Create(Options(server)).OpenAsync(Timeout());
+
+        await session.SendAsync(Message("uno@example.test"), Timeout());
+        await session.SendAsync(Message("dos@example.test"), Timeout());
+        await session.SendAsync(Message("tres@example.test"), Timeout());
+
+        server.Messages.Should().HaveCount(3);
+        server.Connections.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task SendAsyncConnectionDroppedFailsAsTheServerAndTheNextMessageReconnects()
+    {
+        await using var server = new FakeSmtpServer { DropConnectionOnDataCommand = 1 };
+        await using var session = await Create(Options(server)).OpenAsync(Timeout());
+
+        var first = () => session.SendAsync(Message("uno@example.test"), Timeout());
+        (await first.Should().ThrowAsync<EmailDeliveryException>())
+            .Which.Failure.Should()
+            .Be(EmailDeliveryFailure.ServerUnavailable);
+        await session.SendAsync(Message("dos@example.test"), Timeout());
+
+        server.Messages.SelectMany(m => m.Recipients).Should().Equal("dos@example.test");
+        server.Connections.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task OpenAsyncRecordsTheSizeTheServerAnnounces()
+    {
+        await using var server = new FakeSmtpServer { AdvertisedSize = 10_485_760 };
+
+        await using var session = await Create(Options(server)).OpenAsync(Timeout());
+
+        limits.MaxMessageSize.Should().Be(10_485_760);
+    }
+
+    [Fact]
     public async Task SendAsyncOneClickUnsubscribeAddressAddsTheListUnsubscribeHeaders()
     {
         await using var server = new FakeSmtpServer();
-        var sender = Create(Options(server));
         var address =
             $"https://app.test/api/emails/unsubscribe/one-click?token={new string('a', 300)}";
 
-        await sender.SendAsync(Message() with { OneClickUnsubscribeUrl = address }, Timeout());
+        await SendOneAsync(
+            Options(server),
+            Message() with
+            {
+                OneClickUnsubscribeUrl = address,
+            },
+            Timeout()
+        );
 
         var headers = server.Messages.Should().ContainSingle().Subject.Message.Headers;
         headers
@@ -145,111 +197,111 @@ public sealed class SmtpEmailSenderTests
     public async Task SendAsyncWithoutOneClickUnsubscribeAddressOmitsTheListUnsubscribeHeaders()
     {
         await using var server = new FakeSmtpServer();
-        var sender = Create(Options(server));
 
-        await sender.SendAsync(Message(), Timeout());
+        await SendOneAsync(Options(server), Message(), Timeout());
 
         var headers = server.Messages.Should().ContainSingle().Subject.Message.Headers;
         headers.Contains(HeaderId.ListUnsubscribe).Should().BeFalse();
         headers.Contains(HeaderId.ListUnsubscribePost).Should().BeFalse();
     }
 
-    [Fact]
-    public async Task SendAsyncWithoutHostThrowsInvalidOperation()
+    [Theory]
+    [InlineData("", "no-reply@codigoactivo.test")]
+    [InlineData("127.0.0.1", "")]
+    public async Task OpenAsyncWithoutHostOrSenderIsTheServersFault(string host, string from)
     {
-        var sender = Create(new SmtpOptions { FromAddress = "no-reply@codigoactivo.test" });
+        var sender = Create(new SmtpOptions { Host = host, FromAddress = from });
 
-        var act = () => sender.SendAsync(Message(), TestContext.Current.CancellationToken);
+        var act = () => sender.OpenAsync(TestContext.Current.CancellationToken);
 
-        (await act.Should().ThrowAsync<InvalidOperationException>()).WithMessage("*SMTP_HOST*");
-    }
-
-    [Fact]
-    public async Task SendAsyncWithoutFromAddressThrowsInvalidOperation()
-    {
-        var sender = Create(new SmtpOptions { Host = "127.0.0.1" });
-
-        var act = () => sender.SendAsync(Message(), TestContext.Current.CancellationToken);
-
-        (await act.Should().ThrowAsync<InvalidOperationException>()).WithMessage(
-            "*SMTP_FROM_ADDRESS*"
-        );
+        var thrown = (await act.Should().ThrowAsync<EmailDeliveryException>()).Which;
+        thrown.Failure.Should().Be(EmailDeliveryFailure.ServerUnavailable);
+        thrown.Message.Should().Contain("SMTP_HOST").And.Contain("SMTP_FROM_ADDRESS");
     }
 
     [Theory]
     [InlineData(SmtpSecurityMode.StartTls)]
     [InlineData((SmtpSecurityMode)99)]
-    public async Task SendAsyncStartTlsWithoutServerSupportThrowsWithoutDelivering(
+    [InlineData(SmtpSecurityMode.SslOnConnect)]
+    public async Task OpenAsyncEncryptionTheServerCannotSpeakIsTheServersFault(
         SmtpSecurityMode security
     )
     {
         await using var server = new FakeSmtpServer();
-        var sender = Create(Options(server, security));
 
-        var act = () => sender.SendAsync(Message(), Timeout());
+        var act = () => Create(Options(server, security)).OpenAsync(Timeout());
 
-        await act.Should().ThrowAsync<NotSupportedException>();
+        (await act.Should().ThrowAsync<EmailDeliveryException>())
+            .Which.Failure.Should()
+            .Be(EmailDeliveryFailure.ServerUnavailable);
         server.Messages.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task SendAsyncSslOnConnectAgainstPlainServerFailsWithoutDelivering()
-    {
-        await using var server = new FakeSmtpServer();
-        var sender = Create(Options(server, SmtpSecurityMode.SslOnConnect));
-
-        var act = () => sender.SendAsync(Message(), Timeout());
-
-        await act.Should().ThrowAsync<Exception>();
-        server.Messages.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task SendAsyncRejectedRecipientThrowsWithoutTheAddress()
+    public async Task SendAsyncRejectedRecipientIsTheRecipientsFaultWithoutTheAddress()
     {
         await using var server = new FakeSmtpServer { RejectedRecipient = "bounce@example.test" };
-        var sender = Create(Options(server));
 
-        var act = () => sender.SendAsync(Message("bounce@example.test"), Timeout());
+        var act = () => SendOneAsync(Options(server), Message("bounce@example.test"), Timeout());
 
-        var thrown = (await act.Should().ThrowAsync<SmtpCommandException>()).Which;
-        thrown.ErrorCode.Should().Be(SmtpErrorCode.RecipientNotAccepted);
+        var thrown = (await act.Should().ThrowAsync<EmailDeliveryException>()).Which;
+        thrown.Failure.Should().Be(EmailDeliveryFailure.RecipientRejected);
         thrown.ToString().Should().NotContain("bounce@example.test");
+    }
+
+    [Fact]
+    public async Task SendAsyncGreylistedRecipientIsDeferredWithoutTheAddress()
+    {
+        await using var server = new FakeSmtpServer { DeferredRecipient = "later@example.test" };
+
+        var act = () => SendOneAsync(Options(server), Message("later@example.test"), Timeout());
+
+        var thrown = (await act.Should().ThrowAsync<EmailDeliveryException>()).Which;
+        thrown.Failure.Should().Be(EmailDeliveryFailure.RecipientDeferred);
+        thrown.ToString().Should().NotContain("later@example.test");
+    }
+
+    [Theory]
+    [InlineData("550 5.7.1 Sender rejected")]
+    [InlineData("421 4.7.0 Too many messages, slow down")]
+    [InlineData("451 4.7.1 Rate limited")]
+    public async Task SendAsyncRefusedSenderOrThrottlingIsTheServersFault(string reply)
+    {
+        await using var server = new FakeSmtpServer { MailReply = reply };
+
+        var act = () => SendOneAsync(Options(server), Message(), Timeout());
+
+        var thrown = (await act.Should().ThrowAsync<EmailDeliveryException>()).Which;
+        thrown.Failure.Should().Be(EmailDeliveryFailure.ServerUnavailable);
+        thrown.ToString().Should().NotContain("member@example.test");
     }
 
     [Fact]
     public async Task SendAsyncAutoSecurityDeliversWithoutAuthentication()
     {
         await using var server = new FakeSmtpServer();
-        var sender = Create(Options(server, SmtpSecurityMode.Auto));
 
-        await sender.SendAsync(Message("one@example.test"), Timeout());
+        await SendOneAsync(
+            Options(server, SmtpSecurityMode.Auto),
+            Message("one@example.test"),
+            Timeout()
+        );
 
         server.AuthenticatedUser.Should().BeNull();
         server.Messages.SelectMany(m => m.Recipients).Should().Equal("one@example.test");
     }
 
     [Fact]
-    public async Task SendAsyncConnectionDroppedThrowsWithoutDelivering()
-    {
-        await using var server = new FakeSmtpServer { DropConnectionOnDataCommand = 1 };
-        var sender = Create(Options(server));
-
-        var act = () => sender.SendAsync(Message(), Timeout());
-
-        await act.Should().ThrowAsync<Exception>();
-        server.Messages.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task SendAsyncCancelledWhileSendingThrowsOperationCanceled()
+    public async Task SendAsyncCancelledWhileSendingMayPass()
     {
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Timeout());
         await using var server = new FakeSmtpServer { OnMessageData = cancellation.Cancel };
-        var sender = Create(Options(server));
+        await using var session = await Create(Options(server)).OpenAsync(Timeout());
 
-        var act = () => sender.SendAsync(Message("one@example.test"), cancellation.Token);
+        var act = () => session.SendAsync(Message("one@example.test"), cancellation.Token);
 
-        await act.Should().ThrowAsync<OperationCanceledException>();
+        var thrown = (await act.Should().ThrowAsync<EmailDeliveryException>()).Which;
+        thrown.Failure.Should().Be(EmailDeliveryFailure.Transient);
+        thrown.InnerException.Should().BeAssignableTo<OperationCanceledException>();
     }
 }

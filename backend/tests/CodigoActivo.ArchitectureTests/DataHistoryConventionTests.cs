@@ -41,6 +41,7 @@ public sealed class DataHistoryConventionTests
         typeof(AccountErasureStore),
         typeof(BlockedDataConsultationRepository),
         typeof(DashboardCountsReader),
+        typeof(EmailDeliveryLock),
         typeof(EmailOutboxStore),
         typeof(EventCategoryTypeRepository),
         typeof(EventRepository),

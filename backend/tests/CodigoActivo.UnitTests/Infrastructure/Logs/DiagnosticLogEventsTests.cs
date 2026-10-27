@@ -73,7 +73,7 @@ public sealed class DiagnosticLogEventsTests
     {
         using var activity = new Activity("request").Start();
 
-        var logEvent = Capture(logger => logger.EmailOutboxFull(1000));
+        var logEvent = Capture(logger => logger.EmailDailyLimitReached(1000));
 
         DiagnosticLogEvents.ToEntry(logEvent).TraceId.Should().Be(activity.TraceId.ToHexString());
     }

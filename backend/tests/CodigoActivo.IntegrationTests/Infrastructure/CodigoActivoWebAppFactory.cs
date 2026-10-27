@@ -15,6 +15,7 @@ using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.Infrastructure.DataHistory;
 using CodigoActivo.Infrastructure.Files;
+using CodigoActivo.Infrastructure.Legal;
 using CodigoActivo.Infrastructure.Logs;
 using CodigoActivo.Infrastructure.Security;
 using CodigoActivo.Infrastructure.Users;
@@ -26,6 +27,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
@@ -73,9 +75,8 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, 
             RecipientBurst = Unbounded,
             RecipientPerHour = Unbounded,
             RecipientPerDay = Unbounded,
-            GlobalBurst = Unbounded,
-            GlobalPerHour = Unbounded,
-            GlobalCredentialReserve = 0,
+            AnonymousBurst = Unbounded,
+            AnonymousPerHour = Unbounded,
         };
     }
 
@@ -136,6 +137,8 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, 
         builder.UseSetting("DATA_PROTECTION_KEY", dataProtectionKey);
         builder.UseSetting("SMTP_HOST", "smtp.test");
         builder.UseSetting("SMTP_FROM_ADDRESS", "no-reply@codigoactivo.test");
+        builder.UseSetting("SMTP_MAX_PER_MINUTE", "1000000");
+        builder.UseSetting("SMTP_MAX_PER_DAY", "1000000");
         builder.UseSetting("LEGAL_NAME", "Asociación Código Activo");
         builder.UseSetting("LEGAL_TAX_ID", "G24000000");
         builder.UseSetting("LEGAL_ADDRESS", "Calle Ejemplo 1, 24001 León");
@@ -157,6 +160,7 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, 
             RemoveHostedService<EmailOutboxDeliveryWorker>(services);
             RemoveHostedService<DisposableEmailDomainRefreshWorker>(services);
             RemoveHostedService<LogRetentionWorker>(services);
+            RemoveHostedService<LegalNoticeWorker>(services);
 
             services.RemoveAll<DeploymentModeLock>();
             services.AddSingleton(new DeploymentModeLock(deploymentModeFile));
@@ -204,8 +208,9 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, 
     /// would delete rows behind a test that moves the clock on purpose, the email
     /// delivery worker would compete with the synchronous drain installed by
     /// <see cref="UseSynchronousEmailOutbox"/>, the disposable email domain refresh would reach
-    /// the internet and fill the list behind the tests, and the log retention would drop the
-    /// partitions a test prepared. All are exercised directly instead.
+    /// the internet and fill the list behind the tests, the log retention would drop the
+    /// partitions a test prepared and the legal contact notices would send mail behind a test that
+    /// counts it. All are exercised directly instead.
     /// </summary>
     /// <typeparam name="T">Hosted service to unregister.</typeparam>
     private static void RemoveHostedService<T>(IServiceCollection services)
@@ -241,12 +246,27 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, 
     /// <summary>
     /// Keeps the real PostgreSQL outbox but delivers it inline: a request that queues email leaves
     /// with the message already handed to <see cref="FakeEmailSender"/>, so tests observe mail
-    /// without polling, sleeping or racing a background worker.
+    /// without polling, sleeping or racing a background worker. Every drain and every resolved
+    /// deliverer starts without a pause, so one test never holds back the mail of the next.
     /// </summary>
     private static void UseSynchronousEmailOutbox(IServiceCollection services)
     {
         services.RemoveAll<IEmailOutbox>();
         services.AddSingleton<IEmailOutbox, DrainingEmailOutbox>();
+        services.RemoveAll<EmailOutboxDeliverer>();
+        services.AddTransient<EmailOutboxDeliverer>();
+    }
+
+    /// <summary>
+    /// Runs the scheduled notices to the legal contact once, which the outbox then delivers inline.
+    /// </summary>
+    public Task<(int Withdrawals, int Consultations)> SendLegalNoticesAsync()
+    {
+        return new LegalNoticeWorker(
+            Services.GetRequiredService<IServiceScopeFactory>(),
+            new LegalNoticeOptions(),
+            NullLogger<LegalNoticeWorker>.Instance
+        ).NotifyAsync(TestCancellation.Ct);
     }
 
     /// <summary>

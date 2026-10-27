@@ -1,4 +1,4 @@
-using CodigoActivo.Infrastructure.Communication;
+using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -7,8 +7,9 @@ namespace CodigoActivo.Infrastructure.Communication;
 
 /// <summary>
 /// Defines the Entity Framework mapping for email outbox message, which keeps no data history. The
-/// kind is stored by name, the rows are indexed by priority and schedule, the order of the claim, and a
-/// content cannot be deleted while a message references it.
+/// kind is stored by name, the rows are indexed by priority and schedule, the order of the claim, by
+/// topic and address, the key a newer message replaces, and by expiry, and a content cannot be
+/// deleted while a message references it.
 /// </summary>
 public sealed class EmailOutboxMessageConfiguration : IEntityTypeConfiguration<EmailOutboxMessage>
 {
@@ -31,9 +32,14 @@ public sealed class EmailOutboxMessageConfiguration : IEntityTypeConfiguration<E
         builder
             .Property(message => message.LastError)
             .HasMaxLength(EmailOutboxMessage.LastErrorMaxLength);
+        builder.Property(message => message.Topic).HasMaxLength(EmailTopics.MaxLength);
 
         builder.HasIndex(message => new { message.Priority, message.NextAttemptAt });
         builder.HasIndex(message => message.ContentId);
+        builder
+            .HasIndex(message => new { message.Topic, message.ToAddress })
+            .HasFilter("topic IS NOT NULL");
+        builder.HasIndex(message => message.ExpiresAt).HasFilter("expires_at IS NOT NULL");
 
         builder
             .HasOne(message => message.Content)

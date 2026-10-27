@@ -4,20 +4,20 @@ using CodigoActivo.Domain.BlockedData;
 namespace CodigoActivo.Application.BlockedData;
 
 /// <summary>
-/// Composes the notice that tells the association's legal contact a consultation of the blocked
-/// data was opened.
+/// Composes the notice that tells the association's legal contact consultations of the blocked
+/// data were opened.
 /// </summary>
 public interface IBlockedDataEmailComposer
 {
     /// <summary>
-    /// Composes the notice of an opened consultation.
+    /// Composes one notice with every opened consultation the legal contact was not told about yet.
     /// </summary>
     /// <param name="recipient">Legal contact of the association.</param>
-    /// <param name="consultation">The consultation opened.</param>
+    /// <param name="consultations">The consultations opened; at least one.</param>
     /// <returns>The message to send.</returns>
-    public EmailMessage ConsultationOpened(
+    public EmailMessage ConsultationsOpened(
         EmailRecipient recipient,
-        OpenedConsultation consultation
+        IReadOnlyList<OpenedConsultation> consultations
     );
 }
 

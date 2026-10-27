@@ -72,6 +72,8 @@ export type AuditAction =
   | 'OpenBlockedDataConsultation'
   | 'SearchBlockedData'
   | 'ExportBlockedData'
+  | 'SendConsentWithdrawalNotices'
+  | 'SendBlockedDataConsultationNotices'
 
 /** Kind of thing an audit entry points at. */
 export type AuditEntityType =

@@ -7,7 +7,8 @@ namespace CodigoActivo.Domain.BlockedData;
 /// One consultation of the blocked data (article 32 LOPDGDD) by the person designated for data
 /// protection, opened for a request of the authority it names: it lasts
 /// <see cref="Validity"/> and records the accounts its searches found and every extract taken.
-/// It is kept as long as the data history, so each access can be proven.
+/// It is kept as long as the data history, so each access can be proven, and waits in
+/// <see cref="NoticePending"/> until the association's legal contact is told it was opened.
 /// </summary>
 public class BlockedDataConsultation : AggregateRoot<BlockedDataConsultationId>
 {
@@ -58,6 +59,12 @@ public class BlockedDataConsultation : AggregateRoot<BlockedDataConsultationId>
     public DateTimeOffset ExpiresAt { get; private set; }
 
     /// <summary>
+    /// Gets a value indicating whether the association's legal contact has not been told yet that
+    /// the consultation was opened.
+    /// </summary>
+    public bool NoticePending { get; private set; }
+
+    /// <summary>
     /// Gets the accounts its searches found.
     /// </summary>
     public IReadOnlyCollection<BlockedDataFinding> Findings => findings;
@@ -68,8 +75,8 @@ public class BlockedDataConsultation : AggregateRoot<BlockedDataConsultationId>
     public IReadOnlyCollection<BlockedDataExtract> Extracts => extracts;
 
     /// <summary>
-    /// Opens a consultation for a request, valid for <see cref="Validity"/>, and raises
-    /// <see cref="BlockedDataConsultationOpened"/>.
+    /// Opens a consultation for a request, valid for <see cref="Validity"/>, with its notice to the
+    /// association's legal contact pending.
     /// </summary>
     /// <param name="officerId">Identifier of the designated account that opens it.</param>
     /// <param name="authority">Who the data is made available to.</param>
@@ -92,16 +99,23 @@ public class BlockedDataConsultation : AggregateRoot<BlockedDataConsultationId>
             return Error.Validation(DomainErrorCode.BlockedDataReferenceRequired);
         }
 
-        var consultation = new BlockedDataConsultation
+        return new BlockedDataConsultation
         {
             OfficerId = officerId,
             Authority = authority,
             Reference = trimmed,
             OpenedAt = now,
             ExpiresAt = now + Validity,
+            NoticePending = true,
         };
-        consultation.Raise(new BlockedDataConsultationOpened(consultation.Id));
-        return consultation;
+    }
+
+    /// <summary>
+    /// Records that the association's legal contact was told the consultation was opened.
+    /// </summary>
+    public void RecordNotice()
+    {
+        NoticePending = false;
     }
 
     /// <summary>

@@ -11,11 +11,9 @@ public sealed class EmailQueueOptionsTests
     [InlineData(1, 1)]
     [InlineData(2, 5)]
     [InlineData(3, 30)]
-    [InlineData(4, 120)]
-    public void RetryDelayAfterEachFailureGrowsThroughTheConfiguredSchedule(
-        int attempts,
-        int expectedMinutes
-    )
+    [InlineData(4, 60)]
+    [InlineData(40, 60)]
+    public void RetryDelayAfterEachFailureGrowsUpToAnHour(int attempts, int expectedMinutes)
     {
         EmailQueueOptions
             .RetryDelayAfter(attempts)
@@ -38,67 +36,68 @@ public sealed class EmailQueueOptionsTests
     }
 
     [Theory]
-    [InlineData(0, false)]
-    [InlineData(4, false)]
-    [InlineData(5, true)]
-    [InlineData(6, true)]
-    public void IsExhaustedOnlyTheFifthFailureEndsTheAttempts(int attempts, bool expected)
+    [InlineData(1, 1)]
+    [InlineData(2, 2)]
+    [InlineData(3, 5)]
+    [InlineData(4, 10)]
+    [InlineData(5, 30)]
+    [InlineData(50, 30)]
+    public void PauseDelayAfterEachServerFailureGrowsUpToHalfAnHour(
+        int failures,
+        int expectedMinutes
+    )
     {
-        EmailQueueOptions.IsExhausted(attempts).Should().Be(expected);
+        EmailQueueOptions
+            .PauseDelayAfter(failures)
+            .Should()
+            .Be(TimeSpan.FromMinutes(expectedMinutes));
     }
 
     [Fact]
-    public void RetryDelaysAlwaysCoverEveryAttemptButTheLast()
+    public void DelaySchedulesAlwaysGrow()
     {
-        EmailQueueOptions.RetryDelays.Should().HaveCount(EmailQueueOptions.MaxAttempts - 1);
         EmailQueueOptions.RetryDelays.Should().BeInAscendingOrder();
+        EmailQueueOptions.PauseDelays.Should().BeInAscendingOrder();
     }
 
     [Theory]
-    [InlineData(EmailQueueOptions.DefaultBatchSize, EmailQueueOptions.DefaultWorkers, 60, 3, 210)]
-    [InlineData(EmailQueueOptions.DefaultWorkers, EmailQueueOptions.DefaultWorkers, 60, 1, 90)]
-    [InlineData(2, 8, 60, 1, 90)]
-    [InlineData(100, EmailQueueOptions.DefaultWorkers, 60, 25, 1530)]
-    [InlineData(EmailQueueOptions.DefaultBatchSize, 1, 60, 10, 630)]
-    [InlineData(100, 1, 600, 100, 60030)]
-    [InlineData(0, 0, 60, 1, 90)]
-    [InlineData(EmailQueueOptions.DefaultBatchSize, EmailQueueOptions.DefaultWorkers, 0, 3, 30)]
-    public void LeaseCoversEveryDeliveryWaveOfTheClaimedBatch(
+    [InlineData(EmailQueueOptions.DefaultBatchSize, 60, 630)]
+    [InlineData(1, 60, 90)]
+    [InlineData(0, 60, 90)]
+    [InlineData(100, 600, 60030)]
+    [InlineData(EmailQueueOptions.DefaultBatchSize, 0, 30)]
+    public void LeaseCoversEverySendOfTheClaimedBatch(
         int batchSize,
-        int workers,
         int sendTimeoutSeconds,
-        int expectedWaves,
         int expectedLeaseSeconds
     )
     {
         var options = new EmailQueueOptions
         {
             BatchSize = batchSize,
-            Workers = workers,
             SendTimeout = TimeSpan.FromSeconds(sendTimeoutSeconds),
         };
 
-        options.DeliveryWaves.Should().Be(expectedWaves);
         options
             .Lease.Should()
             .Be(TimeSpan.FromSeconds(expectedLeaseSeconds))
             .And.BeGreaterThan(
-                expectedWaves * options.SendTimeout,
+                Math.Max(batchSize, 1) * options.SendTimeout,
                 "a claimed row may not become claimable again while its own worker can still be sending it"
             );
     }
 
     [Theory]
-    [InlineData(EmailKind.TwoFactorCode, EmailQueueOptions.CriticalPriority)]
-    [InlineData(EmailKind.AccessRecovery, EmailQueueOptions.CriticalPriority)]
-    [InlineData(EmailKind.AccountVerification, EmailQueueOptions.CriticalPriority)]
-    [InlineData(EmailKind.SecurityAlert, EmailQueueOptions.StandardPriority)]
-    [InlineData(EmailKind.ActivityNotification, EmailQueueOptions.StandardPriority)]
-    [InlineData(EmailKind.ComingOfAgeNotice, EmailQueueOptions.StandardPriority)]
-    [InlineData(EmailKind.ConsentWithdrawalNotice, EmailQueueOptions.StandardPriority)]
-    [InlineData(EmailKind.BlockedDataConsultationNotice, EmailQueueOptions.StandardPriority)]
+    [InlineData(EmailKind.TwoFactorCode, EmailQueueOptions.IdentifiedCodePriority)]
+    [InlineData(EmailKind.AccessRecovery, EmailQueueOptions.AnonymousCodePriority)]
+    [InlineData(EmailKind.AccountVerification, EmailQueueOptions.AnonymousCodePriority)]
+    [InlineData(EmailKind.SecurityAlert, EmailQueueOptions.NoticePriority)]
+    [InlineData(EmailKind.ActivityNotification, EmailQueueOptions.NoticePriority)]
+    [InlineData(EmailKind.ComingOfAgeNotice, EmailQueueOptions.NoticePriority)]
+    [InlineData(EmailKind.ConsentWithdrawalNotice, EmailQueueOptions.NoticePriority)]
+    [InlineData(EmailKind.BlockedDataConsultationNotice, EmailQueueOptions.NoticePriority)]
     [InlineData(EmailKind.Manual, EmailQueueOptions.BulkPriority)]
-    public void PriorityOfInteractiveMailLeavesBeforeAutomaticAndBulkMail(
+    public void PriorityOfLoginCodesLeaveBeforeAnonymousCodesNoticesAndBulkMail(
         EmailKind kind,
         int expected
     )
@@ -115,29 +114,91 @@ public sealed class EmailQueueOptionsTests
             .Equal(EmailKind.Manual);
     }
 
+    [Fact]
+    public void PrioritiesAlwaysRankLoginCodesFirstAndBulkMailLast()
+    {
+        int[] priorities =
+        [
+            EmailQueueOptions.IdentifiedCodePriority,
+            EmailQueueOptions.AnonymousCodePriority,
+            EmailQueueOptions.NoticePriority,
+            EmailQueueOptions.BulkPriority,
+        ];
+
+        priorities.Should().BeInAscendingOrder().And.OnlyHaveUniqueItems();
+    }
+
     [Theory]
     [InlineData(EmailKind.TwoFactorCode, true)]
     [InlineData(EmailKind.AccessRecovery, true)]
     [InlineData(EmailKind.AccountVerification, true)]
-    [InlineData(EmailKind.ConsentWithdrawalNotice, true)]
-    [InlineData(EmailKind.BlockedDataConsultationNotice, true)]
     [InlineData(EmailKind.SecurityAlert, false)]
     [InlineData(EmailKind.ActivityNotification, false)]
     [InlineData(EmailKind.ComingOfAgeNotice, false)]
+    [InlineData(EmailKind.ConsentWithdrawalNotice, false)]
+    [InlineData(EmailKind.BlockedDataConsultationNotice, false)]
     [InlineData(EmailKind.Manual, false)]
-    public void IsCapacityExemptOnlyTheMailAFullOutboxMayNotHoldBack(EmailKind kind, bool expected)
+    public void IsGuardedOnlyTheCodesSomebodyAsksFor(EmailKind kind, bool expected)
     {
-        EmailQueueOptions.IsCapacityExempt(kind).Should().Be(expected);
+        EmailQueueOptions.IsGuarded(kind).Should().Be(expected);
     }
 
     [Fact]
-    public void PrioritiesAlwaysRankCriticalMailFirstAndBulkMailLast()
+    public void IsCappedOnlyAdministratorWrittenMail()
     {
-        EmailQueueOptions
-            .CriticalPriority.Should()
-            .BeLessThan(EmailQueueOptions.StandardPriority)
-            .And.BeLessThan(EmailQueueOptions.BulkPriority);
-        EmailQueueOptions.StandardPriority.Should().BeLessThan(EmailQueueOptions.BulkPriority);
+        Enum.GetValues<EmailKind>()
+            .Where(EmailQueueOptions.IsCapped)
+            .Should()
+            .Equal(EmailKind.Manual);
+    }
+
+    [Theory]
+    [InlineData(EmailKind.ComingOfAgeNotice)]
+    [InlineData(EmailKind.ConsentWithdrawalNotice)]
+    [InlineData(EmailKind.BlockedDataConsultationNotice)]
+    public void LifetimeOfTheNoticesThatMustArriveNeverEnds(EmailKind kind)
+    {
+        EmailQueueOptions.LifetimeOf(kind).Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(EmailKind.TwoFactorCode)]
+    [InlineData(EmailKind.AccessRecovery)]
+    [InlineData(EmailKind.AccountVerification)]
+    [InlineData(EmailKind.SecurityAlert)]
+    [InlineData(EmailKind.ActivityNotification)]
+    [InlineData(EmailKind.Manual)]
+    public void LifetimeOfEveryOtherKindIsThreeDays(EmailKind kind)
+    {
+        EmailQueueOptions.LifetimeOf(kind).Should().Be(TimeSpan.FromDays(3));
+    }
+
+    [Theory]
+    [InlineData(0, EmailQueueOptions.BulkPriority)]
+    [InlineData(799, EmailQueueOptions.BulkPriority)]
+    [InlineData(800, EmailQueueOptions.AnonymousCodePriority)]
+    [InlineData(899, EmailQueueOptions.AnonymousCodePriority)]
+    [InlineData(900, EmailQueueOptions.IdentifiedCodePriority)]
+    [InlineData(999, EmailQueueOptions.IdentifiedCodePriority)]
+    public void ClaimablePriorityDailyLimitKeepsItsLastShareForLoginCodes(long sent, int expected)
+    {
+        EmailQueueOptions.ClaimablePriority(sent, dailyLimit: 1000).Should().Be(expected);
+    }
+
+    [Fact]
+    public void ClaimablePriorityDailyLimitSpentClaimsNothing()
+    {
+        EmailQueueOptions.ClaimablePriority(1000, dailyLimit: 1000).Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(EmailQueueOptions.IdentifiedCodePriority, false)]
+    [InlineData(EmailQueueOptions.AnonymousCodePriority, false)]
+    [InlineData(EmailQueueOptions.NoticePriority, true)]
+    [InlineData(EmailQueueOptions.BulkPriority, true)]
+    public void IsPacedPerRecipientOnlyNoticesAndBulkMail(int priority, bool expected)
+    {
+        EmailQueueOptions.IsPacedPerRecipient(priority).Should().Be(expected);
     }
 
     [Fact]
@@ -145,12 +206,13 @@ public sealed class EmailQueueOptionsTests
     {
         var options = new EmailQueueOptions();
 
-        options.Capacity.Should().Be(1000);
-        options.Workers.Should().Be(4);
+        options.Capacity.Should().Be(2000);
         options.BatchSize.Should().Be(10);
         options.PollInterval.Should().Be(TimeSpan.FromSeconds(5));
         options.SendTimeout.Should().Be(TimeSpan.FromSeconds(60));
         options.ShutdownDrain.Should().Be(TimeSpan.FromSeconds(20));
-        EmailQueueOptions.MaxAttempts.Should().Be(5);
+        EmailQueueOptions.FailuresBeforePause.Should().Be(3);
+        EmailQueueOptions.OverdueAge.Should().Be(TimeSpan.FromHours(24));
+        EmailQueueOptions.DailyWindow.Should().Be(TimeSpan.FromHours(24));
     }
 }

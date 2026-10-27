@@ -16,13 +16,13 @@ public enum EmailLimitScope
     Recipient,
 
     /// <summary>
-    /// The budget the whole application shares, or the capacity of a full outbox.
+    /// The budget shared by the mail anyone can ask for.
     /// </summary>
     Global,
 }
 
 /// <summary>
-/// Represents an email a sending limit refused, so it was not queued. Callers decide whether that
+/// Represents a code the email guard refused, so it was not queued. Callers decide whether that
 /// fails their request.
 /// </summary>
 public sealed class EmailRateLimitedException : Exception

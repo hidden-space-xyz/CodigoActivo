@@ -30,6 +30,11 @@ public sealed partial class FakeEmailSender : IEmailTransport
         }
     }
 
+    public Task<IEmailTransportSession> OpenAsync(CancellationToken ct = default)
+    {
+        return Task.FromResult<IEmailTransportSession>(new Session(this));
+    }
+
     public Task SendAsync(EmailMessage message, CancellationToken ct = default)
     {
         if (ThrowOnSend is not null)
@@ -41,8 +46,10 @@ public sealed partial class FakeEmailSender : IEmailTransport
         {
             if (failingRecipients.Contains(message.ToAddress))
             {
-                throw new InvalidOperationException(
-                    "The fake SMTP server rejected a configured recipient."
+                throw new EmailDeliveryException(
+                    EmailDeliveryFailure.RecipientDeferred,
+                    "The fake SMTP server deferred a configured recipient.",
+                    null
                 );
             }
 
@@ -119,6 +126,19 @@ public sealed partial class FakeEmailSender : IEmailTransport
                 $"The login code email sent to '{address}' does not contain a code."
             )
             : match.Groups["code"].Value;
+    }
+
+    private sealed class Session(FakeEmailSender sender) : IEmailTransportSession
+    {
+        public Task SendAsync(EmailMessage message, CancellationToken ct = default)
+        {
+            return sender.SendAsync(message, ct);
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            return ValueTask.CompletedTask;
+        }
     }
 
     [GeneratedRegex(

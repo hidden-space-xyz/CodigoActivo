@@ -136,6 +136,18 @@ public static class AppStrings
         Get("emails.blockedDataConsultation.note");
 
     /// <summary>
+    /// Gets the heading of the notice of several consultations of the blocked data.
+    /// </summary>
+    public static string EmailsBlockedDataConsultationHeadingMany =>
+        Get("emails.blockedDataConsultation.headingMany");
+
+    /// <summary>
+    /// Gets the closing note of the notice of several consultations of the blocked data.
+    /// </summary>
+    public static string EmailsBlockedDataConsultationNoteMany =>
+        Get("emails.blockedDataConsultation.noteMany");
+
+    /// <summary>
     /// Gets the name of a court as the authority of a consultation of the blocked data.
     /// </summary>
     public static string EmailsBlockedDataConsultationAuthorityCourt =>
@@ -210,6 +222,25 @@ public static class AppStrings
     /// Gets the subject of the notice of a withdrawn consent.
     /// </summary>
     public static string EmailsConsentWithdrawnSubject => Get("emails.consentWithdrawn.subject");
+
+    /// <summary>
+    /// Gets what the notice of several withdrawn consents tells the association to do from now on.
+    /// </summary>
+    public static string EmailsConsentWithdrawnActionMany =>
+        Get("emails.consentWithdrawn.actionMany");
+
+    /// <summary>
+    /// Gets the heading of the notice of several withdrawn consents.
+    /// </summary>
+    public static string EmailsConsentWithdrawnHeadingMany =>
+        Get("emails.consentWithdrawn.headingMany");
+
+    /// <summary>
+    /// Gets the note of the notice of several withdrawn consents on where the decisions stay
+    /// recorded.
+    /// </summary>
+    public static string EmailsConsentWithdrawnHistoryNoteMany =>
+        Get("emails.consentWithdrawn.historyNoteMany");
 
     /// <summary>
     /// Gets the label of the activity row in the details block of an email.
@@ -741,6 +772,26 @@ public static class AppStrings
     public static string EmailsBlockedDataConsultationOpened(string openedAt)
     {
         return Format("emails.blockedDataConsultation.opened", openedAt);
+    }
+
+    /// <summary>
+    /// Formats the subject of the notice of several consultations of the blocked data.
+    /// </summary>
+    /// <param name="count">Number of consultations.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsBlockedDataConsultationSubjectMany(int count)
+    {
+        return Format("emails.blockedDataConsultation.subjectMany", count);
+    }
+
+    /// <summary>
+    /// Formats the subject of the notice of several withdrawn consents.
+    /// </summary>
+    /// <param name="count">Number of withdrawn consents.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsConsentWithdrawnSubjectMany(int count)
+    {
+        return Format("emails.consentWithdrawn.subjectMany", count);
     }
 
     /// <summary>

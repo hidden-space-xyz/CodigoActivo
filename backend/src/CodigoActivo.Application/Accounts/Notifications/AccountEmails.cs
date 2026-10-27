@@ -7,8 +7,10 @@ namespace CodigoActivo.Application.Accounts.Notifications;
 
 /// <summary>
 /// Builds the transactional emails of an account and hands them to the email sender, which applies
-/// the message limiter and queues them for delivery. A refused message throws
-/// <see cref="EmailRateLimitedException"/>; callers decide whether that fails their request.
+/// the email guard to the codes and queues them for delivery. Every message names its topic, so a
+/// new one replaces the one still waiting, and a code says how long it is valid, so it is never
+/// delivered once useless. A refused code throws <see cref="EmailRateLimitedException"/>; callers
+/// decide whether that fails their request.
 /// </summary>
 /// <param name="emailSender">Sender that applies the message limiter and queues the messages.</param>
 /// <param name="composer">Composer that renders the account messages.</param>
@@ -40,7 +42,14 @@ public sealed class AccountEmails(
             verification.OtpLifetime,
             user.NewsConsent
         );
-        return emailSender.SendAsync(message, ct);
+        return emailSender.SendAsync(
+            message with
+            {
+                Topic = EmailTopics.AccountVerification,
+                ValidFor = verification.OtpLifetime,
+            },
+            ct
+        );
     }
 
     /// <summary>
@@ -65,7 +74,14 @@ public sealed class AccountEmails(
             code,
             verification.OtpLifetime
         );
-        return emailSender.SendAsync(message, ct);
+        return emailSender.SendAsync(
+            message with
+            {
+                Topic = EmailTopics.EmailChange,
+                ValidFor = verification.OtpLifetime,
+            },
+            ct
+        );
     }
 
     /// <summary>
@@ -78,7 +94,13 @@ public sealed class AccountEmails(
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task SendEmailInUseNoticeAsync(User holder, CancellationToken ct)
     {
-        return emailSender.SendAsync(composer.EmailInUse(Recipient(holder)), ct);
+        return emailSender.SendAsync(
+            composer.EmailInUse(Recipient(holder)) with
+            {
+                Topic = EmailTopics.EmailInUse,
+            },
+            ct
+        );
     }
 
     /// <summary>
@@ -96,7 +118,14 @@ public sealed class AccountEmails(
             code,
             passwordReset.CodeLifetime
         );
-        return emailSender.SendAsync(message, ct);
+        return emailSender.SendAsync(
+            message with
+            {
+                Topic = EmailTopics.PasswordReset,
+                ValidFor = passwordReset.CodeLifetime,
+            },
+            ct
+        );
     }
 
     /// <summary>
@@ -109,7 +138,7 @@ public sealed class AccountEmails(
     public Task SendLoginCodeEmailAsync(User user, string code, CancellationToken ct)
     {
         var message = composer.LoginCode(Recipient(user), code, twoFactor.ChallengeLifetime);
-        return emailSender.SendAsync(message, ct);
+        return SendAccountCodeAsync(message, ct);
     }
 
     /// <summary>
@@ -126,7 +155,7 @@ public sealed class AccountEmails(
             code,
             twoFactor.ChallengeLifetime
         );
-        return emailSender.SendAsync(message, ct);
+        return SendAccountCodeAsync(message, ct);
     }
 
     /// <summary>
@@ -148,7 +177,7 @@ public sealed class AccountEmails(
             code,
             twoFactor.ChallengeLifetime
         );
-        return emailSender.SendAsync(message, ct);
+        return SendAccountCodeAsync(message, ct);
     }
 
     /// <summary>
@@ -169,7 +198,13 @@ public sealed class AccountEmails(
             $"{dependent.FirstName} {dependent.LastName}",
             birthDate.ComingOfAgeOn()
         );
-        return emailSender.SendAsync(message, ct);
+        return emailSender.SendAsync(
+            message with
+            {
+                Topic = EmailTopics.ComingOfAge(dependent.Id.Value),
+            },
+            ct
+        );
     }
 
     /// <summary>
@@ -182,6 +217,18 @@ public sealed class AccountEmails(
     internal static string RecipientName(User user)
     {
         return user.IsPendingVerification ? string.Empty : user.FirstName;
+    }
+
+    private Task SendAccountCodeAsync(EmailMessage message, CancellationToken ct)
+    {
+        return emailSender.SendAsync(
+            message with
+            {
+                Topic = EmailTopics.AccountCode,
+                ValidFor = twoFactor.ChallengeLifetime,
+            },
+            ct
+        );
     }
 
     private static EmailRecipient Recipient(User user)

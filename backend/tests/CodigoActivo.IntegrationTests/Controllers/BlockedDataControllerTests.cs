@@ -248,7 +248,10 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
             TestSeedData.Users.MemberId
         );
 
-        await Factory.DrainEmailOutboxAsync();
+        Factory
+            .EmailSender.Sent.Should()
+            .NotContain(message => message.Kind == EmailKind.BlockedDataConsultationNotice);
+        (await Factory.SendLegalNoticesAsync()).Consultations.Should().Be(1);
         Factory
             .EmailSender.Sent.Should()
             .ContainSingle(message => message.Kind == EmailKind.BlockedDataConsultationNotice)

@@ -33,12 +33,16 @@ internal static class EmailsRegistration
         services.AddFixedOptions<EmailGuardOptions>();
         services.AddFixedOptions<ManualEmailOptions>();
 
+        services.AddSingleton<SmtpServerLimits>();
         services.AddSingleton<IEmailTransport, SmtpEmailSender>();
         services.AddSingleton<EmailOutboxSignal>();
         services.AddSingleton<EmailOutboxProtector>();
         services.AddSingleton<IEmailOutboxStore, EmailOutboxStore>();
         services.AddSingleton<IEmailOutbox>(sp => sp.GetRequiredService<IEmailOutboxStore>());
+        services.AddSingleton<IPendingEmails>(sp => sp.GetRequiredService<IEmailOutboxStore>());
+        services.AddSingleton<EmailDeliveryPacer>();
         services.AddSingleton<EmailOutboxDeliverer>();
+        services.AddSingleton<IEmailDeliveryLock, EmailDeliveryLock>();
         services.AddHostedService<EmailOutboxDeliveryWorker>();
         services.AddSingleton<IEmailSender, ThrottledEmailSender>();
         services.AddSingleton<IUnsubscribeTokens, DataProtectionUnsubscribeTokens>();
@@ -62,6 +66,14 @@ internal static class EmailsRegistration
                 options.Password = settings.Verbatim("SMTP_PASSWORD");
                 options.FromAddress = settings.Text("SMTP_FROM_ADDRESS", string.Empty);
                 options.FromName = settings.Text("SMTP_FROM_NAME", Organization.Name);
+                options.MaxPerMinute = settings.PositiveInt(
+                    "SMTP_MAX_PER_MINUTE",
+                    SmtpOptions.DefaultMaxPerMinute
+                );
+                options.MaxPerDay = settings.PositiveInt(
+                    "SMTP_MAX_PER_DAY",
+                    SmtpOptions.DefaultMaxPerDay
+                );
             },
             options =>
                 !string.IsNullOrWhiteSpace(options.Host)

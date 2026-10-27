@@ -39,12 +39,10 @@ public sealed class CachingConventionTests
     [
         typeof(AuthenticatorDisabled),
         typeof(AuthenticatorEnabled),
-        typeof(BlockedDataConsultationOpened),
         typeof(ContactDetailsReplaced),
         typeof(PasswordChanged),
         typeof(PasswordLocked),
         typeof(PasswordReset),
-        typeof(TermsConsentWithdrawn),
         typeof(TermsDocumentDeleted),
         typeof(TwoFactorLocked),
         typeof(TwoFactorReset),

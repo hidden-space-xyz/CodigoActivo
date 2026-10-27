@@ -29,9 +29,9 @@ public sealed class ActivitySignupNotifier(
     private static readonly Guid PendingStatusId = CatalogIds.UserStatuses.IdOf(UserStatus.Pending);
 
     /// <summary>
-    /// Tells the person signed up, or their guardian, that the signup was confirmed or denied.
-    /// Nothing is sent when the activity is gone or neither has an address to write to; a send
-    /// refused by the rate limit is dropped and any other failure but a cancellation is logged.
+    /// Tells the person signed up, or their guardian, that the signup was confirmed or denied,
+    /// replacing a pending decision on the same signup. Nothing is sent when the activity is gone or
+    /// neither has an address to write to; any failure but a cancellation is logged.
     /// </summary>
     /// <param name="activityId">Identifier of the activity.</param>
     /// <param name="userId">Identifier of the person signed up.</param>
@@ -80,11 +80,13 @@ public sealed class ActivitySignupNotifier(
                     activity
                 );
 
-            await emailSender.SendAsync(message, ct);
-        }
-        catch (EmailRateLimitedException)
-        {
-            return;
+            await emailSender.SendAsync(
+                message with
+                {
+                    Topic = EmailTopics.SignupDecision(activityId.Value, userId.Value),
+                },
+                ct
+            );
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

@@ -9,7 +9,7 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Communication;
 
-public sealed class EmailOutboxDeliveryWorkerTests
+public sealed class EmailOutboxDeliveryWorkerTests : IAsyncDisposable
 {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
 
@@ -17,10 +17,16 @@ public sealed class EmailOutboxDeliveryWorkerTests
     private readonly EmailOutboxSignal signal = new();
     private readonly RecordingEmailSender transport = new();
     private readonly EmailGuardOptions guard = new();
+    private readonly FakeDeliveryLock deliveryLock = new();
     private readonly TestClock clock = new()
     {
         UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero),
     };
+
+    public ValueTask DisposeAsync()
+    {
+        return deliveryLock.DisposeAsync();
+    }
 
     private static EmailBatch Batch(string address = "ana@example.test")
     {
@@ -40,11 +46,14 @@ public sealed class EmailOutboxDeliveryWorkerTests
         ILogger<EmailOutboxDeliveryWorker>? logger = null
     )
     {
+        var smtp = new SmtpOptions();
         var deliverer = new EmailOutboxDeliverer(
             store,
             emailTransport ?? transport,
             protector,
+            new EmailDeliveryPacer(smtp, guard, clock),
             options,
+            smtp,
             guard,
             clock,
             NullLogger<EmailOutboxDeliverer>.Instance
@@ -52,6 +61,7 @@ public sealed class EmailOutboxDeliveryWorkerTests
 
         return new EmailOutboxDeliveryWorker(
             deliverer,
+            deliveryLock,
             signal,
             options,
             guard,
@@ -63,7 +73,7 @@ public sealed class EmailOutboxDeliveryWorkerTests
     [Fact]
     public async Task ExecuteAsyncStoredMessageIsDeliveredAfterTheSignalWithoutWaitingForThePoll()
     {
-        var store = new FakeEmailOutboxStore(protector);
+        var store = new FakeEmailOutboxStore(protector) { EnqueuedAt = clock.UtcNow };
         var options = new EmailQueueOptions { PollInterval = TimeSpan.FromMinutes(10) };
         var processor = Create(store, options);
         var delivered = new TaskCompletionSource();
@@ -85,6 +95,7 @@ public sealed class EmailOutboxDeliveryWorkerTests
     {
         var store = new FakeEmailOutboxStore(protector)
         {
+            EnqueuedAt = clock.UtcNow,
             ThrowOnClaim = new InvalidOperationException("The outbox is unreachable."),
         };
         var options = new EmailQueueOptions { PollInterval = TimeSpan.FromMilliseconds(5) };
@@ -116,7 +127,7 @@ public sealed class EmailOutboxDeliveryWorkerTests
     [Fact]
     public async Task StopAsyncDrainDeadlineElapsesReturnsWithoutLogging()
     {
-        var store = new FakeEmailOutboxStore(protector);
+        var store = new FakeEmailOutboxStore(protector) { EnqueuedAt = clock.UtcNow };
         await store.TryEnqueueAsync(Batch(), TestContext.Current.CancellationToken);
         var options = new EmailQueueOptions
         {
@@ -139,7 +150,7 @@ public sealed class EmailOutboxDeliveryWorkerTests
     [Fact]
     public async Task ExecuteAsyncFullBatchKeepsDeliveringWithoutWaitingForTheNextPoll()
     {
-        var store = new FakeEmailOutboxStore(protector);
+        var store = new FakeEmailOutboxStore(protector) { EnqueuedAt = clock.UtcNow };
         await store.TryEnqueueAsync(
             new EmailBatch(
                 EmailKind.Manual,
@@ -181,6 +192,7 @@ public sealed class EmailOutboxDeliveryWorkerTests
     {
         var store = new FakeEmailOutboxStore(protector)
         {
+            EnqueuedAt = clock.UtcNow,
             ThrowOnClaim = new OperationCanceledException("A database command timed out."),
         };
         var options = new EmailQueueOptions { PollInterval = TimeSpan.FromMilliseconds(5) };
@@ -232,9 +244,27 @@ public sealed class EmailOutboxDeliveryWorkerTests
     }
 
     [Fact]
+    public async Task ExecuteAsyncAnotherInstanceHoldsTheLockDeliversNothing()
+    {
+        var store = new FakeEmailOutboxStore(protector) { EnqueuedAt = clock.UtcNow };
+        await store.TryEnqueueAsync(Batch(), TestContext.Current.CancellationToken);
+        var options = new EmailQueueOptions { PollInterval = TimeSpan.FromMilliseconds(5) };
+        deliveryLock.Held = false;
+        var processor = Create(store, options);
+
+        await processor.StartAsync(TestContext.Current.CancellationToken);
+        await deliveryLock.Asked.Task.WaitAsync(Patience, TestContext.Current.CancellationToken);
+        await processor.StopAsync(TestContext.Current.CancellationToken);
+
+        transport.Sent.Should().BeEmpty("only the instance that holds the lock delivers");
+        store.Messages.Should().ContainSingle();
+        deliveryLock.Disposed.Should().BeTrue("stopping releases the lock");
+    }
+
+    [Fact]
     public async Task StopAsyncWithoutWorkInFlightReturnsWithoutWarning()
     {
-        var store = new FakeEmailOutboxStore(protector);
+        var store = new FakeEmailOutboxStore(protector) { EnqueuedAt = clock.UtcNow };
         var options = new EmailQueueOptions { PollInterval = TimeSpan.FromMilliseconds(5) };
         var logger = new RecordingLogger<EmailOutboxDeliveryWorker>();
         var processor = Create(store, options, logger: logger);
@@ -255,6 +285,7 @@ public sealed class EmailOutboxDeliveryWorkerTests
             DateTimeOffset now,
             DateTimeOffset leaseUntil,
             int batchSize,
+            int maxPriority,
             CancellationToken ct = default
         )
         {
@@ -264,7 +295,29 @@ public sealed class EmailOutboxDeliveryWorkerTests
         }
     }
 
-    private sealed class BlockingEmailTransport : IEmailTransport
+    private sealed class FakeDeliveryLock : IEmailDeliveryLock
+    {
+        public bool Held { get; set; } = true;
+
+        public bool Disposed { get; private set; }
+
+        public TaskCompletionSource Asked { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task<bool> HoldAsync(CancellationToken ct)
+        {
+            Asked.TrySetResult();
+            return Task.FromResult(Held);
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            Disposed = true;
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    private sealed class BlockingEmailTransport : IEmailTransport, IEmailTransportSession
     {
         private readonly TaskCompletionSource gate = new(
             TaskCreationOptions.RunContinuationsAsynchronously
@@ -278,10 +331,20 @@ public sealed class EmailOutboxDeliveryWorkerTests
             gate.TrySetResult();
         }
 
+        public Task<IEmailTransportSession> OpenAsync(CancellationToken ct = default)
+        {
+            return Task.FromResult<IEmailTransportSession>(this);
+        }
+
         public Task SendAsync(EmailMessage message, CancellationToken ct = default)
         {
             Reached.TrySetResult();
             return gate.Task;
+        }
+
+        public ValueTask DisposeAsync()
+        {
+            return ValueTask.CompletedTask;
         }
     }
 }
