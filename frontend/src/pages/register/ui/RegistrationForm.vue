@@ -14,7 +14,13 @@ import {
   type PersonField,
   type PersonProblem,
 } from '@/entities/user'
-import { PASSWORD_MIN_LENGTH } from '@/shared/config'
+import {
+  EMAIL_ADDRESS_MAX_LENGTH,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  PERSON_NAME_MAX_LENGTH,
+  PHONE_MAX_LENGTH,
+} from '@/shared/config'
 import { toDateOnly } from '@/shared/lib/date'
 import { BrandButton } from '@/shared/ui/brand-button'
 
@@ -131,7 +137,7 @@ function removeMinor(index: number): void {
               id="reg-firstname"
               v-model="model.firstName"
               autocomplete="given-name"
-              :maxlength="120"
+              :maxlength="PERSON_NAME_MAX_LENGTH"
               :class="{ 'ca-invalid': adultErrors.firstName }"
               :aria-invalid="!!adultErrors.firstName"
               :aria-describedby="adultErrors.firstName ? 'reg-firstname-error' : undefined"
@@ -147,7 +153,7 @@ function removeMinor(index: number): void {
               id="reg-lastname"
               v-model="model.lastName"
               autocomplete="family-name"
-              :maxlength="120"
+              :maxlength="PERSON_NAME_MAX_LENGTH"
               :class="{ 'ca-invalid': adultErrors.lastName }"
               :aria-invalid="!!adultErrors.lastName"
               :aria-describedby="adultErrors.lastName ? 'reg-lastname-error' : undefined"
@@ -199,7 +205,7 @@ function removeMinor(index: number): void {
               type="tel"
               inputmode="tel"
               autocomplete="tel"
-              :maxlength="40"
+              :maxlength="PHONE_MAX_LENGTH"
               :class="{ 'ca-invalid': adultErrors.phone }"
               :aria-invalid="!!adultErrors.phone"
               :aria-describedby="adultErrors.phone ? 'reg-phone-error' : undefined"
@@ -219,7 +225,7 @@ function removeMinor(index: number): void {
               type="tel"
               inputmode="tel"
               autocomplete="tel"
-              :maxlength="40"
+              :maxlength="PHONE_MAX_LENGTH"
               :class="{ 'ca-invalid': adultErrors.secondaryPhone }"
               :aria-invalid="!!adultErrors.secondaryPhone"
               :aria-describedby="
@@ -251,7 +257,7 @@ function removeMinor(index: number): void {
               autocapitalize="none"
               autocorrect="off"
               spellcheck="false"
-              :maxlength="256"
+              :maxlength="EMAIL_ADDRESS_MAX_LENGTH"
               :class="{ 'ca-invalid': adultErrors.email }"
               :aria-invalid="!!adultErrors.email"
               :aria-describedby="adultErrors.email ? 'reg-email-error' : undefined"
@@ -270,7 +276,7 @@ function removeMinor(index: number): void {
               type="password"
               show-password
               autocomplete="new-password"
-              :maxlength="128"
+              :maxlength="PASSWORD_MAX_LENGTH"
               :class="{ 'ca-invalid': showPasswordTooShort }"
               :aria-invalid="showPasswordTooShort"
               :aria-describedby="showPasswordTooShort ? 'reg-password-error' : undefined"
@@ -291,7 +297,7 @@ function removeMinor(index: number): void {
               type="password"
               show-password
               autocomplete="new-password"
-              :maxlength="128"
+              :maxlength="PASSWORD_MAX_LENGTH"
               :class="{ 'ca-invalid': showMismatch }"
               :aria-invalid="showMismatch"
               :aria-describedby="showMismatch ? 'reg-password-confirm-error' : undefined"
@@ -333,7 +339,7 @@ function removeMinor(index: number): void {
                 <el-input
                   :id="`minor-firstname-${index}`"
                   v-model="minor.firstName"
-                  :maxlength="120"
+                  :maxlength="PERSON_NAME_MAX_LENGTH"
                   :class="{ 'ca-invalid': minorError(index, 'firstName') }"
                   :aria-invalid="!!minorError(index, 'firstName')"
                   :aria-describedby="
@@ -355,7 +361,7 @@ function removeMinor(index: number): void {
                 <el-input
                   :id="`minor-lastname-${index}`"
                   v-model="minor.lastName"
-                  :maxlength="120"
+                  :maxlength="PERSON_NAME_MAX_LENGTH"
                   :class="{ 'ca-invalid': minorError(index, 'lastName') }"
                   :aria-invalid="!!minorError(index, 'lastName')"
                   :aria-describedby="

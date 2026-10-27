@@ -1,13 +1,8 @@
+import { MANUAL_EMAIL_MAX_ATTACHMENTS, MANUAL_EMAIL_MAX_ATTACHMENTS_BYTES } from '@/shared/config'
 import type { FormProblem, FormReading } from '@/shared/lib/form'
 import { hasControlCharacter } from '@/shared/lib/navigation'
 
 import type { EmailAudience, EmailPurpose, SendEmailPayload } from './types'
-
-/** Maximum number of files attached to one email. */
-export const MAX_ATTACHMENTS = 10
-
-/** Maximum combined attachment size in bytes (8 MiB). */
-export const MAX_ATTACHMENTS_BYTES = 8 * 1024 * 1024
 
 /** What the email dialog binds its inputs to; `purpose` stays `null` until the admin chooses it. */
 export interface EmailDraft {
@@ -63,7 +58,7 @@ export function readEmailDraft(draft: EmailDraft): FormReading<EmailField, SendE
 
 /**
  * The attachments once `picked` files are added, or why they do not fit: no empty file, and at
- * most `MAX_ATTACHMENTS` files of `MAX_ATTACHMENTS_BYTES` together.
+ * most `MANUAL_EMAIL_MAX_ATTACHMENTS` files of `MANUAL_EMAIL_MAX_ATTACHMENTS_BYTES` together.
  */
 export function addAttachments(
   current: readonly File[],
@@ -71,8 +66,8 @@ export function addAttachments(
 ): { readonly attachments: File[] } | { readonly problem: AttachmentProblem } {
   if (picked.some((file) => file.size === 0)) return { problem: 'empty' }
   const attachments = [...current, ...picked]
-  if (attachments.length > MAX_ATTACHMENTS) return { problem: 'tooMany' }
+  if (attachments.length > MANUAL_EMAIL_MAX_ATTACHMENTS) return { problem: 'tooMany' }
   const size = attachments.reduce((sum, file) => sum + file.size, 0)
-  if (size > MAX_ATTACHMENTS_BYTES) return { problem: 'tooLarge' }
+  if (size > MANUAL_EMAIL_MAX_ATTACHMENTS_BYTES) return { problem: 'tooLarge' }
   return { attachments }
 }

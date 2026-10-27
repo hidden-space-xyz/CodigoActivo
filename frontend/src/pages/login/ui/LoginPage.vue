@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useLogin } from '../model/use-login'
+import { EMAIL_ADDRESS_MAX_LENGTH, PASSWORD_MAX_LENGTH } from '@/shared/config'
 import { BrandButton } from '@/shared/ui/brand-button'
 import { PageHeading } from '@/shared/ui/page-heading'
 
@@ -26,7 +27,7 @@ const { form, submit, isSubmitting, errorMessage } = useLogin()
               v-model="form.identifier"
               type="email"
               autocomplete="username"
-              :maxlength="256"
+              :maxlength="EMAIL_ADDRESS_MAX_LENGTH"
               autocapitalize="none"
               autocorrect="off"
               spellcheck="false"
@@ -41,7 +42,7 @@ const { form, submit, isSubmitting, errorMessage } = useLogin()
               type="password"
               show-password
               autocomplete="current-password"
-              :maxlength="128"
+              :maxlength="PASSWORD_MAX_LENGTH"
               required
             />
           </div>

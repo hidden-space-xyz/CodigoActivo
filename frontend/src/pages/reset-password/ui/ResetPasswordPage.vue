@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useResetPassword } from '../model/use-reset-password'
+import { PASSWORD_MAX_LENGTH } from '@/shared/config'
 import { useLinkFragment } from '@/shared/lib/navigation'
 import { BrandButton } from '@/shared/ui/brand-button'
 import { PageHead } from '@/shared/ui/page-head'
@@ -60,7 +61,7 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
               type="password"
               show-password
               autocomplete="new-password"
-              :maxlength="128"
+              :maxlength="PASSWORD_MAX_LENGTH"
               required
             />
           </div>
@@ -74,7 +75,7 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
               type="password"
               show-password
               autocomplete="new-password"
-              :maxlength="128"
+              :maxlength="PASSWORD_MAX_LENGTH"
               required
             />
           </div>

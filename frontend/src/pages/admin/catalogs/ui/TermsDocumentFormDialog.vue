@@ -2,6 +2,7 @@
 import { watch } from 'vue'
 
 import type { TermsDocument, TermsDocumentInput } from '@/entities/terms-document'
+import { CATALOG_NAME_MAX_LENGTH } from '@/shared/config'
 import { useForm } from '@/shared/lib/form'
 import { ActionButton } from '@/shared/ui/action-button'
 import { RichTextEditor } from '@/shared/ui/rich-text-editor'
@@ -60,7 +61,7 @@ function save(): void {
         <el-input
           id="terms-document-name"
           v-model="draft.name"
-          :maxlength="120"
+          :maxlength="CATALOG_NAME_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('name') }"
           :aria-invalid="invalid('name')"
         />

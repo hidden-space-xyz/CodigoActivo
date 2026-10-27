@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { PASSWORD_MAX_LENGTH, TWO_FACTOR_CODE_MAX_LENGTH } from '@/shared/config'
 import { BrandButton } from '@/shared/ui/brand-button'
 
 import { useDeleteAccount } from '../model/use-delete-account'
@@ -55,7 +56,7 @@ const {
               type="password"
               show-password
               autocomplete="current-password"
-              :maxlength="128"
+              :maxlength="PASSWORD_MAX_LENGTH"
               :aria-invalid="!!errors.password"
               :aria-describedby="errors.password ? 'del-password-error' : undefined"
             />
@@ -82,7 +83,7 @@ const {
               v-model="draft.code"
               inputmode="numeric"
               autocomplete="one-time-code"
-              :maxlength="16"
+              :maxlength="TWO_FACTOR_CODE_MAX_LENGTH"
             />
           </div>
           <p v-if="!isAuthenticator" class="acc-danger__resend">

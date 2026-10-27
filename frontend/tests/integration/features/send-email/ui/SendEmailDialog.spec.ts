@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { SendEmailDialog } from '@/features/send-email'
 import type { EmailPurpose, SendEmailPayload } from '@/features/send-email/model/types'
-import { MAX_ATTACHMENTS, MAX_ATTACHMENTS_BYTES } from '@/features/send-email/model/email-form'
+import { MANUAL_EMAIL_MAX_ATTACHMENTS, MANUAL_EMAIL_MAX_ATTACHMENTS_BYTES } from '@/shared/config'
 
 import { renderWithProviders, t } from '../../../../support/render'
 import {
@@ -270,15 +270,15 @@ describe('SendEmailDialog', () => {
   it('rejects more attachments than allowed', async () => {
     const { dialog } = await renderDialog()
 
-    await pickFiles(fileInput(dialog), files(MAX_ATTACHMENTS + 1))
+    await pickFiles(fileInput(dialog), files(MANUAL_EMAIL_MAX_ATTACHMENTS + 1))
 
     expect(dialog.textContent).toContain(
-      t('features.sendEmail.attachments.tooMany', { max: MAX_ATTACHMENTS }),
+      t('features.sendEmail.attachments.tooMany', { max: MANUAL_EMAIL_MAX_ATTACHMENTS }),
     )
     expect(dialog.querySelectorAll('.attachments__name')).toHaveLength(0)
 
-    await pickFiles(fileInput(dialog), files(MAX_ATTACHMENTS))
-    expect(dialog.querySelectorAll('.attachments__name')).toHaveLength(MAX_ATTACHMENTS)
+    await pickFiles(fileInput(dialog), files(MANUAL_EMAIL_MAX_ATTACHMENTS))
+    expect(dialog.querySelectorAll('.attachments__name')).toHaveLength(MANUAL_EMAIL_MAX_ATTACHMENTS)
     expect(findButton(t('features.sendEmail.attachments.add'), dialog).disabled).toBe(true)
   })
 
@@ -286,12 +286,14 @@ describe('SendEmailDialog', () => {
     const { dialog } = await renderDialog()
 
     await pickFiles(fileInput(dialog), [
-      new File([new Uint8Array(MAX_ATTACHMENTS_BYTES)], 'big.bin'),
+      new File([new Uint8Array(MANUAL_EMAIL_MAX_ATTACHMENTS_BYTES)], 'big.bin'),
       new File(['x'], 'extra.txt'),
     ])
 
     expect(dialog.textContent).toContain(
-      t('features.sendEmail.attachments.tooLarge', { max: formatFileSize(MAX_ATTACHMENTS_BYTES) }),
+      t('features.sendEmail.attachments.tooLarge', {
+        max: formatFileSize(MANUAL_EMAIL_MAX_ATTACHMENTS_BYTES),
+      }),
     )
     expect(dialog.querySelectorAll('.attachments__name')).toHaveLength(0)
   })

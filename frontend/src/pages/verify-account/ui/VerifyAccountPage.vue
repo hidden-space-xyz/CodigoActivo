@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 
 import { useAccountVerification } from '../model/use-account-verification'
+import { EMAIL_ADDRESS_MAX_LENGTH } from '@/shared/config'
 import { useLinkFragment } from '@/shared/lib/navigation'
 import { BrandButton } from '@/shared/ui/brand-button'
 import { PageHead } from '@/shared/ui/page-head'
@@ -63,7 +64,7 @@ onMounted(() => {
               autocapitalize="none"
               autocorrect="off"
               spellcheck="false"
-              :maxlength="256"
+              :maxlength="EMAIL_ADDRESS_MAX_LENGTH"
               required
             />
             <BrandButton type="submit" variant="primary" block :loading="isResending">

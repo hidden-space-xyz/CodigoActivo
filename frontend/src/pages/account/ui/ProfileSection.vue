@@ -1,5 +1,11 @@
 <script setup lang="ts">
 import { fullName, GENDERS, genderLabelKey, NationalIdInput } from '@/entities/user'
+import {
+  EMAIL_ADDRESS_MAX_LENGTH,
+  PASSWORD_MAX_LENGTH,
+  PERSON_NAME_MAX_LENGTH,
+  PHONE_MAX_LENGTH,
+} from '@/shared/config'
 import { BrandButton } from '@/shared/ui/brand-button'
 
 import { useAccount } from '../model/use-account'
@@ -95,7 +101,7 @@ const {
             <el-input
               id="p-firstname"
               v-model="draft.firstName"
-              :maxlength="120"
+              :maxlength="PERSON_NAME_MAX_LENGTH"
               :class="{ 'ca-invalid': errors.firstName }"
               :aria-invalid="!!errors.firstName"
               :aria-describedby="errors.firstName ? 'p-firstname-error' : undefined"
@@ -110,7 +116,7 @@ const {
             <el-input
               id="p-lastname"
               v-model="draft.lastName"
-              :maxlength="120"
+              :maxlength="PERSON_NAME_MAX_LENGTH"
               :class="{ 'ca-invalid': errors.lastName }"
               :aria-invalid="!!errors.lastName"
               :aria-describedby="errors.lastName ? 'p-lastname-error' : undefined"
@@ -150,7 +156,7 @@ const {
               id="p-phone"
               v-model="draft.phone"
               type="tel"
-              :maxlength="40"
+              :maxlength="PHONE_MAX_LENGTH"
               :class="{ 'ca-invalid': errors.phone }"
               :aria-invalid="!!errors.phone"
               :aria-describedby="errors.phone ? 'p-phone-error' : undefined"
@@ -168,7 +174,7 @@ const {
               id="p-secondary-phone"
               v-model="draft.secondaryPhone"
               type="tel"
-              :maxlength="40"
+              :maxlength="PHONE_MAX_LENGTH"
               :class="{ 'ca-invalid': errors.secondaryPhone }"
               :aria-invalid="!!errors.secondaryPhone"
               :aria-describedby="errors.secondaryPhone ? 'p-secondary-phone-error' : undefined"
@@ -186,7 +192,7 @@ const {
               id="p-email"
               v-model="draft.email"
               type="email"
-              :maxlength="256"
+              :maxlength="EMAIL_ADDRESS_MAX_LENGTH"
               :class="{ 'ca-invalid': errors.email }"
               :aria-invalid="!!errors.email"
               :aria-describedby="errors.email ? 'p-email-error' : undefined"
@@ -218,7 +224,7 @@ const {
               type="password"
               show-password
               autocomplete="current-password"
-              :maxlength="128"
+              :maxlength="PASSWORD_MAX_LENGTH"
               :aria-invalid="!!editError || (editSubmitted && passwordMissing)"
               :aria-describedby="
                 editError || (editSubmitted && passwordMissing) ? 'p-current-error' : undefined
@@ -263,7 +269,7 @@ const {
             type="password"
             show-password
             autocomplete="current-password"
-            :maxlength="128"
+            :maxlength="PASSWORD_MAX_LENGTH"
             required
           />
         </div>
@@ -277,7 +283,7 @@ const {
             type="password"
             show-password
             autocomplete="new-password"
-            :maxlength="128"
+            :maxlength="PASSWORD_MAX_LENGTH"
             required
           />
         </div>
@@ -291,7 +297,7 @@ const {
             type="password"
             show-password
             autocomplete="new-password"
-            :maxlength="128"
+            :maxlength="PASSWORD_MAX_LENGTH"
             required
           />
         </div>

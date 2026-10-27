@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { RATING_MAX_SCORE } from '@/shared/config'
 import { DataState } from '@/shared/ui/data-state'
 
 import { ratingAnswers } from '../lib/rating-answers'
@@ -34,8 +35,13 @@ const table = useEventRatings(
           <div class="opinion__head">
             <span class="opinion__author">{{ $t('pages.admin.eventDetail.opinions.author') }}</span>
             <template v-if="rating.score !== null">
-              <el-rate :model-value="rating.score" disabled :max="5" class="opinion__stars" />
-              <span class="opinion__score">{{ rating.score }}/5</span>
+              <el-rate
+                :model-value="rating.score"
+                disabled
+                :max="RATING_MAX_SCORE"
+                class="opinion__stars"
+              />
+              <span class="opinion__score">{{ rating.score }}/{{ RATING_MAX_SCORE }}</span>
             </template>
             <span v-else class="opinion__score">{{
               $t('pages.admin.eventDetail.opinions.noScore')

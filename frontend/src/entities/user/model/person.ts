@@ -1,3 +1,4 @@
+import { PHONE_MAX_DIGITS, PHONE_MIN_DIGITS } from '@/shared/config'
 import type { TranslationKey } from '@/shared/i18n'
 import { toDateOnly } from '@/shared/lib/date'
 
@@ -8,8 +9,6 @@ const EMAIL_PATTERN =
   /^[^\s@()<>[\]:;,\\"\p{Cc}]+@[^\s@()<>[\]:;,\\"\p{Cc}]+\.[^\s@()<>[\]:;,\\"\p{Cc}]+$/u
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
 const ADULT_AGE = 18
-const PHONE_MIN_DIGITS = 7
-const PHONE_MAX_DIGITS = 15
 const PHONE_SEPARATORS = ' -.()'
 
 /**
@@ -168,9 +167,9 @@ function birthDateProblem(value: string | null, rules: DependentRules): PersonPr
 
 /**
  * Checks and normalizes an independent account: names, gender, a valid DNI/NIE, an email with an
- * address shape, a phone, and an optional secondary phone different from the phone. Phones take 7
- * to 15 digits with optional spaces, dots, hyphens and parentheses and a leading `+`, as the API
- * requires.
+ * address shape, a phone, and an optional secondary phone different from the phone. Phones take
+ * `PHONE_MIN_DIGITS` to `PHONE_MAX_DIGITS` digits with optional spaces, dots, hyphens and
+ * parentheses and a leading `+`, as the API requires.
  */
 export function parseIndependentPerson(draft: IndependentDraft): ParsedPerson<IndependentPerson> {
   const problems = namesProblems(draft)
@@ -223,9 +222,6 @@ export function parseDependentPerson(
     },
   }
 }
-
-/** Most dependents one guardian may hold, as the API enforces (`Household.MaxDependents`). */
-export const MAX_DEPENDENTS = 20
 
 /**
  * Birth dates a new dependent may have on `today`, as `YYYY-MM-DD` bounds for date inputs: from

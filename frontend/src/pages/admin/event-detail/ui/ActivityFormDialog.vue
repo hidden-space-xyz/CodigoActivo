@@ -8,6 +8,13 @@ import type {
   ActivityRole,
 } from '@/entities/activity'
 import { ThumbnailField, useThumbnailUpload } from '@/entities/file'
+import {
+  ACTIVITY_DESCRIPTION_MAX_LENGTH,
+  ACTIVITY_LOCATION_MAX_LENGTH,
+  ROLE_MAX_DESIRED_COUNT,
+  ROLE_MIN_DESIRED_COUNT,
+  TITLE_MAX_LENGTH,
+} from '@/shared/config'
 import { isDayBefore } from '@/shared/lib/date'
 import { useForm } from '@/shared/lib/form'
 import { ActionButton } from '@/shared/ui/action-button'
@@ -105,7 +112,7 @@ async function save(): Promise<void> {
         <el-input
           id="activity-title"
           v-model="draft.title"
-          :maxlength="200"
+          :maxlength="TITLE_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('title') }"
           :aria-invalid="invalid('title')"
         />
@@ -118,7 +125,7 @@ async function save(): Promise<void> {
           id="activity-description"
           v-model="draft.description"
           type="textarea"
-          :maxlength="4000"
+          :maxlength="ACTIVITY_DESCRIPTION_MAX_LENGTH"
           :autosize="{ minRows: 3 }"
           :class="{ 'ca-invalid': invalid('description') }"
           :aria-invalid="invalid('description')"
@@ -151,7 +158,7 @@ async function save(): Promise<void> {
           <el-input
             id="activity-location"
             v-model="draft.location"
-            :maxlength="200"
+            :maxlength="ACTIVITY_LOCATION_MAX_LENGTH"
             :class="{ 'ca-invalid': invalid('location') }"
             :aria-invalid="invalid('location')"
             :aria-describedby="errors.location ? 'activity-location-error' : undefined"
@@ -202,8 +209,8 @@ async function save(): Promise<void> {
             <el-input-number
               v-model="draft.desiredCounts[role.id]"
               :aria-label="role.name"
-              :min="1"
-              :max="10000"
+              :min="ROLE_MIN_DESIRED_COUNT"
+              :max="ROLE_MAX_DESIRED_COUNT"
               :precision="0"
               controls-position="right"
               :placeholder="$t('pages.admin.eventDetail.activities.form.noTargetPlaceholder')"

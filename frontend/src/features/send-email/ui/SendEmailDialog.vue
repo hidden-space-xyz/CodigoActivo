@@ -2,24 +2,20 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import {
+  MANUAL_EMAIL_BODY_MAX_LENGTH,
+  MANUAL_EMAIL_MAX_ATTACHMENTS,
+  MANUAL_EMAIL_MAX_ATTACHMENTS_BYTES,
+  MANUAL_EMAIL_SUBJECT_MAX_LENGTH,
+} from '@/shared/config'
 import { useActionConfirm } from '@/shared/lib/feedback'
 import { useForm } from '@/shared/lib/form'
 import { formatFileSize } from '@/shared/lib/number'
 import { ActionButton } from '@/shared/ui/action-button'
 import { AppIcon } from '@/shared/ui/app-icon'
 
-import {
-  addAttachments,
-  MAX_ATTACHMENTS,
-  MAX_ATTACHMENTS_BYTES,
-  reachedBy,
-  readEmailDraft,
-  toEmailDraft,
-} from '../model/email-form'
+import { addAttachments, reachedBy, readEmailDraft, toEmailDraft } from '../model/email-form'
 import type { SendEmailPayload } from '../model/types'
-
-const SUBJECT_MAX_LENGTH = 200
-const BODY_MAX_LENGTH = 10000
 
 const props = defineProps<{
   /** Opens the dialog; each opening clears the purpose, subject, body and attachments. */
@@ -96,9 +92,9 @@ function onFilesPicked(event: Event): void {
       added.problem === 'empty'
         ? t('features.sendEmail.attachments.empty')
         : added.problem === 'tooMany'
-          ? t('features.sendEmail.attachments.tooMany', { max: MAX_ATTACHMENTS })
+          ? t('features.sendEmail.attachments.tooMany', { max: MANUAL_EMAIL_MAX_ATTACHMENTS })
           : t('features.sendEmail.attachments.tooLarge', {
-              max: formatFileSize(MAX_ATTACHMENTS_BYTES),
+              max: formatFileSize(MANUAL_EMAIL_MAX_ATTACHMENTS_BYTES),
             })
     return
   }
@@ -199,7 +195,7 @@ function send(): void {
         <el-input
           id="send-email-subject"
           v-model="draft.subject"
-          :maxlength="SUBJECT_MAX_LENGTH"
+          :maxlength="MANUAL_EMAIL_SUBJECT_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('subject') }"
           :aria-invalid="invalid('subject')"
           :aria-describedby="errors.subject ? 'send-email-subject-error' : undefined"
@@ -218,7 +214,7 @@ function send(): void {
           id="send-email-body"
           v-model="draft.body"
           type="textarea"
-          :maxlength="BODY_MAX_LENGTH"
+          :maxlength="MANUAL_EMAIL_BODY_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('body') }"
           :aria-invalid="invalid('body')"
           :aria-describedby="errors.body ? 'send-email-body-error' : undefined"
@@ -246,7 +242,7 @@ function send(): void {
             icon="paperclip"
             plain
             size="small"
-            :disabled="sending || draft.attachments.length >= MAX_ATTACHMENTS"
+            :disabled="sending || draft.attachments.length >= MANUAL_EMAIL_MAX_ATTACHMENTS"
             @click="pick"
           />
           <span v-if="draft.attachments.length > 0" class="attachments__summary">

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useTwoFactorLogin } from '../model/use-two-factor-login'
+import { TWO_FACTOR_CODE_MAX_LENGTH } from '@/shared/config'
 import { BrandButton } from '@/shared/ui/brand-button'
 import { PageHead } from '@/shared/ui/page-head'
 import { StatusPanel } from '@/shared/ui/status-panel'
@@ -73,7 +74,7 @@ const {
               autocapitalize="none"
               autocorrect="off"
               spellcheck="false"
-              :maxlength="16"
+              :maxlength="TWO_FACTOR_CODE_MAX_LENGTH"
               required
             />
           </div>

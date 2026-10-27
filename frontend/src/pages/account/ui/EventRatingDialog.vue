@@ -3,6 +3,7 @@ import { computed, reactive, watch } from 'vue'
 
 import { isEventRatingEmpty } from '@/entities/account'
 import type { EventRatingInput } from '@/entities/account'
+import { RATING_ANSWER_MAX_LENGTH, RATING_MAX_SCORE } from '@/shared/config'
 import { BrandButton } from '@/shared/ui/brand-button'
 
 const props = defineProps<{
@@ -32,8 +33,6 @@ const emit = defineEmits<{
   /** Fired on cancel or when the dialog is dismissed. */
   close: []
 }>()
-
-const MAX_ANSWER_LENGTH = 2000
 
 const form = reactive({
   stars: 0,
@@ -85,7 +84,7 @@ function onSubmit(): void {
           $t('pages.account.history.dialog.score')
         }}</label>
         <div class="acc-rating__stars">
-          <el-rate id="rating-score" v-model="form.stars" />
+          <el-rate id="rating-score" v-model="form.stars" :max="RATING_MAX_SCORE" />
           <BrandButton v-if="form.stars > 0" variant="link" type="button" @click="form.stars = 0">{{
             $t('pages.account.history.dialog.clearScore')
           }}</BrandButton>
@@ -100,7 +99,7 @@ function onSubmit(): void {
           id="rating-most"
           v-model="form.mostLiked"
           type="textarea"
-          :maxlength="MAX_ANSWER_LENGTH"
+          :maxlength="RATING_ANSWER_MAX_LENGTH"
           :autosize="{ minRows: 3, maxRows: 6 }"
         />
       </div>
@@ -113,7 +112,7 @@ function onSubmit(): void {
           id="rating-least"
           v-model="form.leastLiked"
           type="textarea"
-          :maxlength="MAX_ANSWER_LENGTH"
+          :maxlength="RATING_ANSWER_MAX_LENGTH"
           :autosize="{ minRows: 3, maxRows: 6 }"
         />
       </div>
@@ -126,7 +125,7 @@ function onSubmit(): void {
           id="rating-suggestions"
           v-model="form.suggestions"
           type="textarea"
-          :maxlength="MAX_ANSWER_LENGTH"
+          :maxlength="RATING_ANSWER_MAX_LENGTH"
           :autosize="{ minRows: 3, maxRows: 6 }"
         />
       </div>

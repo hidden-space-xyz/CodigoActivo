@@ -2,12 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import {
   addAttachments,
-  MAX_ATTACHMENTS,
-  MAX_ATTACHMENTS_BYTES,
   reachedBy,
   readEmailDraft,
   toEmailDraft,
 } from '@/features/send-email/model/email-form'
+import { MANUAL_EMAIL_MAX_ATTACHMENTS, MANUAL_EMAIL_MAX_ATTACHMENTS_BYTES } from '@/shared/config'
 
 function files(count: number, prefix = 'file'): File[] {
   return Array.from({ length: count }, (_, index) => new File(['x'], `${prefix}-${index}.txt`))
@@ -107,14 +106,16 @@ describe('addAttachments', () => {
   })
 
   it('accepts up to the maximum number of files and refuses more', () => {
-    expect(outcomeOf(addAttachments(files(MAX_ATTACHMENTS - 1), files(1)))).toHaveLength(
-      MAX_ATTACHMENTS,
+    expect(
+      outcomeOf(addAttachments(files(MANUAL_EMAIL_MAX_ATTACHMENTS - 1), files(1))),
+    ).toHaveLength(MANUAL_EMAIL_MAX_ATTACHMENTS)
+    expect(outcomeOf(addAttachments(files(MANUAL_EMAIL_MAX_ATTACHMENTS - 1), files(2)))).toBe(
+      'tooMany',
     )
-    expect(outcomeOf(addAttachments(files(MAX_ATTACHMENTS - 1), files(2)))).toBe('tooMany')
   })
 
   it('accepts up to the maximum combined size and refuses more', () => {
-    const limit = new File([new Uint8Array(MAX_ATTACHMENTS_BYTES)], 'big.bin')
+    const limit = new File([new Uint8Array(MANUAL_EMAIL_MAX_ATTACHMENTS_BYTES)], 'big.bin')
 
     expect(outcomeOf(addAttachments([], [limit]))).toEqual(['big.bin'])
     expect(outcomeOf(addAttachments([limit], files(1)))).toBe('tooLarge')

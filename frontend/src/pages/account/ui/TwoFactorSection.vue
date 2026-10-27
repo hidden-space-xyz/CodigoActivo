@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { PASSWORD_MAX_LENGTH, TWO_FACTOR_CODE_MAX_LENGTH } from '@/shared/config'
 import { BrandButton } from '@/shared/ui/brand-button'
 
 import { useAuthenticatorSetupDialog } from '../model/use-authenticator-setup-dialog'
@@ -92,7 +93,7 @@ const {
               type="password"
               show-password
               autocomplete="current-password"
-              :maxlength="128"
+              :maxlength="PASSWORD_MAX_LENGTH"
               :aria-invalid="!!setupPasswordErrors.password"
               :aria-describedby="
                 setupPasswordErrors.password ? 'tf-setup-password-error' : undefined
@@ -137,7 +138,7 @@ const {
               v-model="setupCode.code"
               inputmode="numeric"
               autocomplete="one-time-code"
-              :maxlength="16"
+              :maxlength="TWO_FACTOR_CODE_MAX_LENGTH"
               :aria-invalid="!!setupCodeErrors.code"
               :aria-describedby="setupCodeErrors.code ? 'tf-setup-code-error' : undefined"
             />
@@ -188,7 +189,7 @@ const {
             type="password"
             show-password
             autocomplete="current-password"
-            :maxlength="128"
+            :maxlength="PASSWORD_MAX_LENGTH"
             :aria-invalid="!!disableErrors.password"
             :aria-describedby="disableErrors.password ? 'tf-disable-password-error' : undefined"
           />
@@ -208,7 +209,7 @@ const {
             v-model="disableDraft.code"
             inputmode="numeric"
             autocomplete="one-time-code"
-            :maxlength="16"
+            :maxlength="TWO_FACTOR_CODE_MAX_LENGTH"
             :aria-invalid="!!disableErrors.code"
             :aria-describedby="disableErrors.code ? 'tf-disable-code-error' : undefined"
           />

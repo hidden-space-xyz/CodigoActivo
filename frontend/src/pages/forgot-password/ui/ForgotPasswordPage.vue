@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useForgotPassword } from '../model/use-forgot-password'
-import { ONE_TIME_CODE_LIFETIME_MINUTES } from '@/shared/config'
+import { EMAIL_ADDRESS_MAX_LENGTH, ONE_TIME_CODE_LIFETIME_MINUTES } from '@/shared/config'
 import { BrandButton } from '@/shared/ui/brand-button'
 import { PageHead } from '@/shared/ui/page-head'
 import { StatusPanel } from '@/shared/ui/status-panel'
@@ -33,7 +33,7 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
               autocapitalize="none"
               autocorrect="off"
               spellcheck="false"
-              :maxlength="256"
+              :maxlength="EMAIL_ADDRESS_MAX_LENGTH"
               required
             />
           </div>

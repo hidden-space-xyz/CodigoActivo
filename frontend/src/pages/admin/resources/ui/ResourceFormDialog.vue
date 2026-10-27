@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/vue-query'
 
 import { ThumbnailField, uploadFileRequest, useThumbnailUpload } from '@/entities/file'
 import { resourceQueries, type LearningResource, type ResourceInput } from '@/entities/resource'
+import { SUBTITLE_MAX_LENGTH, TITLE_MAX_LENGTH, URL_MAX_LENGTH } from '@/shared/config'
 import { useForm } from '@/shared/lib/form'
 import { ActionButton } from '@/shared/ui/action-button'
 import { RichTextEditor } from '@/shared/ui/rich-text-editor'
@@ -76,7 +77,7 @@ async function save(): Promise<void> {
         <el-input
           id="resource-title"
           v-model="draft.title"
-          :maxlength="200"
+          :maxlength="TITLE_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('title') }"
           :aria-invalid="invalid('title')"
         />
@@ -88,7 +89,7 @@ async function save(): Promise<void> {
         <el-input
           id="resource-subtitle"
           v-model="draft.subtitle"
-          :maxlength="300"
+          :maxlength="SUBTITLE_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('subtitle') }"
           :aria-invalid="invalid('subtitle')"
         />
@@ -130,7 +131,7 @@ async function save(): Promise<void> {
         <el-input
           id="resource-url"
           v-model="draft.url"
-          :maxlength="500"
+          :maxlength="URL_MAX_LENGTH"
           :placeholder="$t('pages.admin.resources.form.urlPlaceholder')"
           :class="{ 'ca-invalid': errors.url }"
           :aria-invalid="!!errors.url"

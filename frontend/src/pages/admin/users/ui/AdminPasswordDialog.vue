@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { watch } from 'vue'
 
+import { PASSWORD_MAX_LENGTH } from '@/shared/config'
 import { useForm } from '@/shared/lib/form'
 import { ActionButton } from '@/shared/ui/action-button'
 
@@ -58,7 +59,7 @@ function confirm(): void {
           type="password"
           show-password
           autocomplete="current-password"
-          :maxlength="128"
+          :maxlength="PASSWORD_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('password') || error }"
           :aria-invalid="invalid('password') || !!error"
           :aria-describedby="errors.password || error ? `${inputId}-error` : undefined"

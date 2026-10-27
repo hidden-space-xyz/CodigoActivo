@@ -11,6 +11,7 @@ import {
   minorBirthDateRange,
   usePersonForm,
 } from '@/entities/user'
+import { PERSON_NAME_MAX_LENGTH } from '@/shared/config'
 import { formatDate } from '@/shared/lib/date'
 import { useCrudFeedback } from '@/shared/lib/feedback'
 import { BrandButton } from '@/shared/ui/brand-button'
@@ -156,7 +157,7 @@ function confirmDelete(): void {
             <el-input
               id="m-firstname"
               v-model="draft.firstName"
-              :maxlength="120"
+              :maxlength="PERSON_NAME_MAX_LENGTH"
               :class="{ 'ca-invalid': errors.firstName }"
               :aria-invalid="!!errors.firstName"
               :aria-describedby="errors.firstName ? 'm-firstname-error' : undefined"
@@ -171,7 +172,7 @@ function confirmDelete(): void {
             <el-input
               id="m-lastname"
               v-model="draft.lastName"
-              :maxlength="120"
+              :maxlength="PERSON_NAME_MAX_LENGTH"
               :class="{ 'ca-invalid': errors.lastName }"
               :aria-invalid="!!errors.lastName"
               :aria-describedby="errors.lastName ? 'm-lastname-error' : undefined"
