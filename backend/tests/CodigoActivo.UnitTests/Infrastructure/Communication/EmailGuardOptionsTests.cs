@@ -7,20 +7,18 @@ namespace CodigoActivo.UnitTests.Infrastructure.Communication;
 public sealed class EmailGuardOptionsTests
 {
     [Fact]
-    public void EffectiveCredentialReserveNotBelowTheGlobalBurstClampsSoAccountEmailCanStillSend()
-    {
-        var options = new EmailGuardOptions { GlobalBurst = 50, GlobalCredentialReserve = 80 };
-
-        options.EffectiveCredentialReserve.Should().Be(49);
-        options.EffectiveTwoFactorReserve.Should().Be(24);
-    }
-
-    [Fact]
-    public void EffectiveCredentialReserveShippedKeepsHalfOfItForLoginCodes()
+    public void AnonymousBudgetSlowProviderKeepsItAtHalfOfWhatTheProviderDelivers()
     {
         var options = new EmailGuardOptions();
 
-        options.EffectiveCredentialReserve.Should().Be(200);
-        options.EffectiveTwoFactorReserve.Should().Be(100);
+        options.AnonymousBudget(providerPerMinute: 10).Should().Be((300, 300));
+    }
+
+    [Fact]
+    public void AnonymousBudgetFastProviderKeepsTheConfiguredBudget()
+    {
+        var options = new EmailGuardOptions();
+
+        options.AnonymousBudget(providerPerMinute: 600).Should().Be((1000, 1000));
     }
 }

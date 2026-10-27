@@ -9,7 +9,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace CodigoActivo.Infrastructure.TermsDecisions;
 
 /// <summary>
-/// Defines the Entity Framework mapping for event terms acceptance.
+/// Defines the Entity Framework mapping for event terms acceptance. Whether a withdrawal notice is
+/// pending stays out of the data history, and the pending ones are indexed in the order they are
+/// told.
 /// </summary>
 public sealed class EventTermsAcceptanceConfiguration
     : IEntityTypeConfiguration<EventTermsAcceptance>
@@ -55,5 +57,11 @@ public sealed class EventTermsAcceptanceConfiguration
         builder.Property(x => x.TermsDocumentId).IsRequired();
         builder.Property(x => x.Accepted).IsRequired();
         builder.Property(x => x.DecidedAt).IsRequired();
+        builder.Property(x => x.WithdrawalNoticePending).IsRequired().ExcludedFromHistory();
+
+        builder
+            .HasIndex(x => x.DecidedAt, nameof(EventTermsAcceptance.WithdrawalNoticePending))
+            .HasDatabaseName("ix_event_terms_acceptances_withdrawal_notice_pending")
+            .HasFilter("withdrawal_notice_pending");
     }
 }

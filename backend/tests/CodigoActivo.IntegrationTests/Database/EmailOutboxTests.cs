@@ -17,6 +17,7 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
     private const string Code = "482913";
+    private const int AnyPriority = EmailQueueOptions.BulkPriority;
 
     private IEmailOutboxStore Store => Factory.Services.GetRequiredService<IEmailOutboxStore>();
 
@@ -30,7 +31,10 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
             $"<p>{Code}</p>",
             Code,
             [.. addresses.Select(address => new EmailRecipient(address, "Ana"))]
-        );
+        )
+        {
+            ValidFor = TimeSpan.FromMinutes(10),
+        };
     }
 
     private static EmailBatch NotificationBatch(params string[] addresses)
@@ -69,6 +73,13 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
         );
     }
 
+    private Task<(int Contents, int Parts)> StoredContentAsync()
+    {
+        return Factory.QueryAsync(db =>
+            Task.FromResult((db.EmailOutboxContents.Count(), db.EmailOutboxContentParts.Count()))
+        );
+    }
+
     [Fact]
     public async Task TryEnqueueAsyncUsesItsOwnUnitOfWorkAndNeverCommitsTheCallersChanges()
     {
@@ -88,7 +99,7 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
 
         var queued = await Store.TryEnqueueAsync(Batch("ana@example.test"), Ct);
 
-        queued.Should().BeTrue();
+        queued.Should().Be(EmailEnqueueResult.Queued);
         (await PendingAsync()).Should().ContainSingle();
         callerContext.ChangeTracker.Entries<StoredFile>().Should().NotBeEmpty();
         var persisted = await Factory.QueryAsync(db =>
@@ -120,28 +131,148 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task TryEnqueueAsyncBeyondTheCapacityStoresNothing()
+    public async Task TryEnqueueAsyncDatesTheExpiryFromTheMessageOrItsKind()
+    {
+        var now = Factory.Clock.UtcNow;
+        await Store.TryEnqueueAsync(Batch("codigo@example.test"), Ct);
+        await Store.TryEnqueueAsync(NotificationBatch("aviso@example.test"), Ct);
+        await Store.TryEnqueueAsync(
+            new EmailBatch(
+                EmailKind.ConsentWithdrawalNotice,
+                "Retirada",
+                "<p>Hola</p>",
+                "Hola",
+                [new EmailRecipient("legal@example.test", "Legal")]
+            ),
+            Ct
+        );
+
+        (await PendingAsync())
+            .Select(message => (message.ToAddress, message.ExpiresAt))
+            .Should()
+            .Equal(
+                ("aviso@example.test", now + EmailQueueOptions.MessageLifetime),
+                ("codigo@example.test", now.AddMinutes(10)),
+                ("legal@example.test", (DateTimeOffset?)null)
+            );
+    }
+
+    [Fact]
+    public async Task TryEnqueueAsyncSameTopicReplacesTheWaitingMessageToThatAddressOnly()
+    {
+        await Store.TryEnqueueAsync(
+            Batch("ana@example.test") with
+            {
+                Topic = EmailTopics.AccountCode,
+            },
+            Ct
+        );
+        await Store.TryEnqueueAsync(
+            Batch("berto@example.test") with
+            {
+                Topic = EmailTopics.AccountCode,
+            },
+            Ct
+        );
+
+        await Store.TryEnqueueAsync(
+            Batch("ana@example.test") with
+            {
+                Topic = EmailTopics.AccountCode,
+            },
+            Ct
+        );
+
+        (await PendingAsync())
+            .Select(message => message.ToAddress)
+            .Should()
+            .Equal("ana@example.test", "berto@example.test");
+        Factory.Clock.UtcNow = Factory.Clock.UtcNow.AddSeconds(1);
+        await Deliverer().DeliverDueAsync(Ct);
+        (await StoredContentAsync()).Contents.Should().Be(0, "the replaced content is swept");
+    }
+
+    [Fact]
+    public async Task TryEnqueueAsyncSameTopicLeavesAMessageBeingDeliveredAlone()
+    {
+        var topic = EmailTopics.SecurityAlert(EmailKind.SecurityAlert);
+        await Store.TryEnqueueAsync(
+            NotificationBatch("ana@example.test") with
+            {
+                Topic = topic,
+            },
+            Ct
+        );
+        var now = Factory.Clock.UtcNow;
+        await Store.ClaimDueAsync(now, now + Options.Lease, 10, AnyPriority, Ct);
+
+        await Store.TryEnqueueAsync(
+            NotificationBatch("ana@example.test") with
+            {
+                Topic = topic,
+            },
+            Ct
+        );
+
+        (await PendingAsync()).Should().HaveCount(2, "a leased message may already be on its way");
+        (await Store.AnyAsync(topic, Ct)).Should().BeTrue();
+        (await Store.AnyAsync(EmailTopics.ConsentWithdrawals, Ct)).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task TryEnqueueAsyncLargerThanTheServerAcceptsStoresNothing()
+    {
+        var limits = Factory.Services.GetRequiredService<SmtpServerLimits>();
+        limits.Record(1_000);
+        try
+        {
+            var result = await Store.TryEnqueueAsync(
+                ManualBatchWithAttachment("ana@example.test"),
+                Ct
+            );
+
+            result.Should().Be(EmailEnqueueResult.TooLarge);
+            (await PendingAsync()).Should().BeEmpty();
+        }
+        finally
+        {
+            limits.Record(0);
+        }
+    }
+
+    [Fact]
+    public async Task TryEnqueueAsyncFullOutboxOnlyHoldsBackAdministratorWrittenMail()
     {
         var capacity = Options.Capacity;
         try
         {
-            Options.Capacity = 2;
-
-            (await Store.TryEnqueueAsync(NotificationBatch("uno@example.test"), Ct))
+            Options.Capacity = 1;
+            (await Store.TryEnqueueAsync(ManualBatchWithAttachment("uno@example.test"), Ct))
                 .Should()
-                .BeTrue();
-            (
-                await Store.TryEnqueueAsync(
-                    NotificationBatch("dos@example.test", "tres@example.test"),
-                    Ct
-                )
-            )
-                .Should()
-                .BeFalse();
+                .Be(EmailEnqueueResult.Queued);
 
-            (await PendingAsync()).Should().ContainSingle();
-            var contents = await Factory.QueryAsync(db => db.EmailOutboxContents.CountAsync(Ct));
-            contents.Should().Be(1, "a rejected batch leaves no content behind");
+            var manual = await Store.TryEnqueueAsync(
+                ManualBatchWithAttachment("dos@example.test"),
+                Ct
+            );
+            var notification = await Store.TryEnqueueAsync(
+                NotificationBatch("tres@example.test"),
+                Ct
+            );
+            var loginCode = await Store.TryEnqueueAsync(Batch("cuatro@example.test"), Ct);
+
+            manual
+                .Should()
+                .Be(EmailEnqueueResult.Full, "the administrator sees it and repeats later");
+            notification.Should().Be(EmailEnqueueResult.Queued, "a notice is never refused");
+            loginCode.Should().Be(EmailEnqueueResult.Queued);
+            (await PendingAsync())
+                .Select(message => message.ToAddress)
+                .Should()
+                .BeEquivalentTo("uno@example.test", "tres@example.test", "cuatro@example.test");
+            (await StoredContentAsync())
+                .Contents.Should()
+                .Be(3, "a refused batch leaves no content behind");
         }
         finally
         {
@@ -157,10 +288,9 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
-        queued.Should().BeTrue();
+        queued.Should().Be(EmailEnqueueResult.Queued);
         (await PendingAsync()).Should().BeEmpty();
-        var contents = await Factory.QueryAsync(db => db.EmailOutboxContents.CountAsync(Ct));
-        contents.Should().Be(0);
+        (await StoredContentAsync()).Contents.Should().Be(0);
     }
 
     [Fact]
@@ -168,7 +298,36 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     {
         var now = Factory.Clock.UtcNow;
 
-        var claimed = await Store.ClaimDueAsync(now, now + Options.Lease, 10, Ct);
+        var claimed = await Store.ClaimDueAsync(now, now + Options.Lease, 10, AnyPriority, Ct);
+
+        claimed.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ClaimDueAsyncLeavesOutWhatThePriorityCeilingHoldsBack()
+    {
+        await Store.TryEnqueueAsync(NotificationBatch("aviso@example.test"), Ct);
+        await Store.TryEnqueueAsync(Batch("codigo@example.test"), Ct);
+        var now = Factory.Clock.UtcNow;
+
+        var claimed = await Store.ClaimDueAsync(
+            now,
+            now + Options.Lease,
+            10,
+            EmailQueueOptions.AnonymousCodePriority,
+            Ct
+        );
+
+        claimed.Should().ContainSingle().Which.Kind.Should().Be(EmailKind.TwoFactorCode);
+    }
+
+    [Fact]
+    public async Task ClaimDueAsyncExpiredMessageIsNeverClaimed()
+    {
+        await Store.TryEnqueueAsync(Batch("ana@example.test"), Ct);
+        var later = Factory.Clock.UtcNow.AddMinutes(10);
+
+        var claimed = await Store.ClaimDueAsync(later, later + Options.Lease, 10, AnyPriority, Ct);
 
         claimed.Should().BeEmpty();
     }
@@ -178,7 +337,7 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     {
         await Store.TryEnqueueAsync(Batch("ana@example.test"), Ct);
         var now = Factory.Clock.UtcNow;
-        var message = (await Store.ClaimDueAsync(now, now + Options.Lease, 10, Ct))[0];
+        var message = (await Store.ClaimDueAsync(now, now + Options.Lease, 10, AnyPriority, Ct))[0];
         var longError = new string('e', EmailOutboxMessage.LastErrorMaxLength + 50);
 
         await Store.RescheduleAsync(
@@ -199,15 +358,36 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task ReleaseAsyncHandsTheMessageBackWithItsAttempt()
+    {
+        await Store.TryEnqueueAsync(Batch("ana@example.test"), Ct);
+        var now = Factory.Clock.UtcNow;
+        var message = (await Store.ClaimDueAsync(now, now + Options.Lease, 10, AnyPriority, Ct))[0];
+
+        var released = await Store.ReleaseAsync(
+            message.Id,
+            message.AttemptCount,
+            now.AddMinutes(2),
+            Ct
+        );
+
+        released.Should().Be(1);
+        var stored = (await PendingAsync()).Should().ContainSingle().Subject;
+        stored.AttemptCount.Should().Be(0, "a message handed back untried spent no attempt");
+        stored.LockedUntil.Should().BeNull();
+        stored.NextAttemptAt.Should().Be(now.AddMinutes(2));
+    }
+
+    [Fact]
     public async Task RescheduleAsyncOfAnExpiredLeaseLeavesTheReclaimedMessageAlone()
     {
         await Store.TryEnqueueAsync(Batch("ana@example.test"), Ct);
         var now = Factory.Clock.UtcNow;
-        var lost = (await Store.ClaimDueAsync(now, now, 10, Ct))[0];
+        var lost = (await Store.ClaimDueAsync(now, now, 10, AnyPriority, Ct))[0];
         var afterLease = now.AddSeconds(1);
-        var reclaimed = (await Store.ClaimDueAsync(afterLease, afterLease + Options.Lease, 10, Ct))[
-            0
-        ];
+        var reclaimed = (
+            await Store.ClaimDueAsync(afterLease, afterLease + Options.Lease, 10, AnyPriority, Ct)
+        )[0];
 
         var rescheduled = await Store.RescheduleAsync(
             lost.Id,
@@ -216,9 +396,11 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
             "the worker that lost its lease",
             Ct
         );
+        var released = await Store.ReleaseAsync(lost.Id, lost.AttemptCount, now.AddDays(1), Ct);
         var removed = await Store.RemoveAsync(lost.Id, lost.AttemptCount, Ct);
 
         rescheduled.Should().Be(0, "the message moved on to the next attempt");
+        released.Should().Be(0);
         removed.Should().Be(0);
         reclaimed.AttemptCount.Should().Be(2);
         var stored = (await PendingAsync()).Should().ContainSingle().Subject;
@@ -228,7 +410,7 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ClaimDueAsyncOrdersInteractiveMailBeforeOlderBulkMail()
+    public async Task ClaimDueAsyncOrdersLoginCodesBeforeOlderBulkMail()
     {
         await Store.TryEnqueueAsync(
             ManualBatchWithAttachment("uno@example.test", "dos@example.test"),
@@ -238,7 +420,7 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
         await Store.TryEnqueueAsync(Batch("ana@example.test"), Ct);
         var now = Factory.Clock.UtcNow;
 
-        var claimed = await Store.ClaimDueAsync(now, now + Options.Lease, 1, Ct);
+        var claimed = await Store.ClaimDueAsync(now, now + Options.Lease, 1, AnyPriority, Ct);
 
         claimed
             .Should()
@@ -256,7 +438,7 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
         );
         var now = Factory.Clock.UtcNow;
 
-        var claimed = await Store.ClaimDueAsync(now, now + Options.Lease, 10, Ct);
+        var claimed = await Store.ClaimDueAsync(now, now + Options.Lease, 10, AnyPriority, Ct);
 
         claimed.Should().HaveCount(3);
         claimed
@@ -275,7 +457,7 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     /// Stops the host in the narrowest window there is: the claim is already committed, so every row
     /// of the batch has spent an attempt, and the rows still have to be read out before anything can
     /// be delivered. The batch has to come back whole; a claim dropped here would sit out its lease
-    /// with one attempt fewer and nobody would have tried to send it.
+    /// and nobody would have tried to send it.
     /// </summary>
     [Fact]
     public async Task ClaimDueAsyncShutdownAfterTheClaimStillReturnsTheLeasedBatch()
@@ -291,12 +473,19 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
             provider.GetRequiredService<IServiceScopeFactory>(),
             protector,
             new EmailOutboxSignal(),
+            new SmtpServerLimits(),
             Options,
             Factory.Clock
         );
         var now = Factory.Clock.UtcNow;
 
-        var claimed = await store.ClaimDueAsync(now, now + Options.Lease, 10, shutdown.Token);
+        var claimed = await store.ClaimDueAsync(
+            now,
+            now + Options.Lease,
+            10,
+            AnyPriority,
+            shutdown.Token
+        );
 
         shutdown
             .IsCancellationRequested.Should()
@@ -346,59 +535,53 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task DeliverDueAsyncAbandonedLastAttemptRemovesTheMessageAndItsContent()
+    public async Task RemoveExpiredAsyncExpiredMessageReturnsItsKindAndItsContentIsSwept()
     {
         await Store.TryEnqueueAsync(ManualBatchWithAttachment("ana@example.test"), Ct);
+        await Store.TryEnqueueAsync(Batch("berto@example.test"), Ct);
+        Factory.Clock.UtcNow = Factory.Clock.UtcNow + EmailQueueOptions.MessageLifetime;
 
-        for (var attempt = 1; attempt <= EmailQueueOptions.MaxAttempts; attempt++)
-        {
-            var now = Factory.Clock.UtcNow;
-            var claimed = await Store.ClaimDueAsync(now, now + Options.Lease, 10, Ct);
+        var removed = await Store.RemoveExpiredAsync(Factory.Clock.UtcNow, Ct);
+        await Store.RemoveOrphanContentAsync(Ct);
 
-            claimed
-                .Should()
-                .ContainSingle("nothing finished the attempt, so the lease is all that held it")
-                .Which.AttemptCount.Should()
-                .Be(attempt);
-            Factory.Clock.UtcNow = now + Options.Lease + TimeSpan.FromSeconds(1);
-        }
-
-        var delivered = await Deliverer().DeliverDueAsync(Ct);
-
-        delivered.Should().Be(0, "a message out of attempts is never claimed again");
+        removed.Should().BeEquivalentTo([EmailKind.Manual, EmailKind.TwoFactorCode]);
         (await PendingAsync()).Should().BeEmpty();
-        Factory.EmailSender.Sent.Should().BeEmpty();
-        var leftovers = await Factory.QueryAsync(db =>
-            Task.FromResult(
-                (
-                    Contents: db.EmailOutboxContents.Count(),
-                    Parts: db.EmailOutboxContentParts.Count()
-                )
-            )
-        );
-        leftovers.Contents.Should().Be(0);
-        leftovers.Parts.Should().Be(0);
+        (await StoredContentAsync()).Should().Be((0, 0));
     }
 
     [Fact]
-    public async Task RemoveExhaustedAsyncSpentMessageReturnsItsKindAndAttempts()
+    public async Task CountOverdueAsyncCountsOnlyTheNoticesThatNeverExpire()
     {
-        await Store.TryEnqueueAsync(NotificationBatch("ana@example.test"), Ct);
-        for (var attempt = 1; attempt <= EmailQueueOptions.MaxAttempts; attempt++)
-        {
-            var now = Factory.Clock.UtcNow;
-            await Store.ClaimDueAsync(now, now + Options.Lease, 10, Ct);
-            Factory.Clock.UtcNow = now + Options.Lease + TimeSpan.FromSeconds(1);
-        }
+        await Store.TryEnqueueAsync(NotificationBatch("aviso@example.test"), Ct);
+        await Store.TryEnqueueAsync(
+            new EmailBatch(
+                EmailKind.BlockedDataConsultationNotice,
+                "Consulta",
+                "<p>Hola</p>",
+                "Hola",
+                [new EmailRecipient("legal@example.test", "Legal")]
+            ),
+            Ct
+        );
 
-        var removed = await Store.RemoveExhaustedAsync(Factory.Clock.UtcNow, Ct);
+        (await Store.CountOverdueAsync(Factory.Clock.UtcNow, Ct)).Should().Be(0);
+        (await Store.CountOverdueAsync(Factory.Clock.UtcNow.AddSeconds(1), Ct)).Should().Be(1);
+    }
 
-        removed
-            .Should()
-            .Equal(
-                new ExhaustedEmail(EmailKind.ActivityNotification, EmailQueueOptions.MaxAttempts)
-            );
-        (await PendingAsync()).Should().BeEmpty();
+    [Fact]
+    public async Task CountSentSinceAsyncAddsTheHoursOfTheWindowAndForgetsOldOnes()
+    {
+        var now = new DateTimeOffset(2026, 7, 4, 12, 30, 0, TimeSpan.Zero);
+        await Store.RecordSentAsync(now.AddHours(-50), 7, Ct);
+        await Store.RecordSentAsync(now.AddHours(-23), 4, Ct);
+        await Store.RecordSentAsync(now.AddMinutes(-10), 2, Ct);
+        await Store.RecordSentAsync(now, 3, Ct);
+
+        var sent = await Store.CountSentSinceAsync(now - EmailQueueOptions.DailyWindow, Ct);
+
+        sent.Should().Be(9);
+        var hours = await Factory.QueryAsync(db => db.EmailDeliveryHours.CountAsync(Ct));
+        hours.Should().Be(2, "counts older than two windows are removed and one hour adds up");
     }
 
     [Fact]
@@ -421,41 +604,9 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
         var delivered = await Deliverer().DeliverDueAsync(Ct);
 
         delivered.Should().Be(0);
-        var contents = await Factory.QueryAsync(db => db.EmailOutboxContents.CountAsync(Ct));
-        contents.Should().Be(0, "content nothing references any more never has to survive a run");
-    }
-
-    [Fact]
-    public async Task TryEnqueueAsyncFullOutboxStillAcceptsTheMailSomebodyIsWaitingFor()
-    {
-        var capacity = Options.Capacity;
-        try
-        {
-            Options.Capacity = 1;
-            (await Store.TryEnqueueAsync(Batch("uno@example.test"), Ct)).Should().BeTrue();
-
-            var notification = await Store.TryEnqueueAsync(
-                NotificationBatch("dos@example.test"),
-                Ct
-            );
-            var manual = await Store.TryEnqueueAsync(
-                ManualBatchWithAttachment("tres@example.test"),
-                Ct
-            );
-            var loginCode = await Store.TryEnqueueAsync(Batch("cuatro@example.test"), Ct);
-
-            notification.Should().BeFalse("automatic mail waits for room");
-            manual.Should().BeFalse("a manual batch waits for room");
-            loginCode.Should().BeTrue("a login code is never held back by a full outbox");
-            (await PendingAsync())
-                .Select(message => message.ToAddress)
-                .Should()
-                .BeEquivalentTo("uno@example.test", "cuatro@example.test");
-        }
-        finally
-        {
-            Options.Capacity = capacity;
-        }
+        (await StoredContentAsync())
+            .Contents.Should()
+            .Be(0, "content nothing references any more never has to survive a run");
     }
 
     [Fact]
@@ -473,8 +624,8 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
         var now = Factory.Clock.UtcNow;
 
         var claims = await Task.WhenAll(
-            Store.ClaimDueAsync(now, now + Options.Lease, 4, Ct),
-            Store.ClaimDueAsync(now, now + Options.Lease, 4, Ct)
+            Store.ClaimDueAsync(now, now + Options.Lease, 4, AnyPriority, Ct),
+            Store.ClaimDueAsync(now, now + Options.Lease, 4, AnyPriority, Ct)
         );
 
         var ids = claims.SelectMany(claim => claim.Select(message => message.Id)).ToList();
@@ -503,15 +654,21 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     {
         await Store.TryEnqueueAsync(Batch("ana@example.test"), Ct);
         var now = Factory.Clock.UtcNow;
-        var leaseUntil = now + Options.Lease;
+        var leaseUntil = now + TimeSpan.FromMinutes(1);
 
-        (await Store.ClaimDueAsync(now, leaseUntil, 10, Ct)).Should().ContainSingle();
-        (await Store.ClaimDueAsync(now, leaseUntil, 10, Ct))
+        (await Store.ClaimDueAsync(now, leaseUntil, 10, AnyPriority, Ct)).Should().ContainSingle();
+        (await Store.ClaimDueAsync(now, leaseUntil, 10, AnyPriority, Ct))
             .Should()
             .BeEmpty("the message is leased to the first claim");
 
         var afterLease = leaseUntil.AddSeconds(1);
-        var reclaimed = await Store.ClaimDueAsync(afterLease, afterLease + Options.Lease, 10, Ct);
+        var reclaimed = await Store.ClaimDueAsync(
+            afterLease,
+            afterLease + TimeSpan.FromMinutes(1),
+            10,
+            AnyPriority,
+            Ct
+        );
 
         reclaimed
             .Should()
@@ -521,44 +678,32 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task DeliverDueAsyncFiveFailuresRemoveTheMessageAndItsSharedContent()
+    public async Task DeliverDueAsyncFailuresAreRetriedUntilTheMessageExpires()
     {
-        Factory.EmailSender.ThrowOnSend = new InvalidOperationException("Connection refused");
+        Factory.EmailSender.ThrowOnSend = new InvalidOperationException("Connection reset");
         await Store.TryEnqueueAsync(Batch("ana@example.test"), Ct);
+        var expiresAt = Factory.Clock.UtcNow.AddMinutes(10);
 
-        for (var attempt = 1; attempt <= EmailQueueOptions.MaxAttempts; attempt++)
+        for (var attempt = 1; attempt <= 2; attempt++)
         {
             await Deliverer().DeliverDueAsync(Ct);
 
-            var pending = await PendingAsync();
-            if (attempt == EmailQueueOptions.MaxAttempts)
-            {
-                pending.Should().BeEmpty("the fifth failure discards the message");
-                break;
-            }
-
-            var message = pending.Should().ContainSingle().Subject;
+            var message = (await PendingAsync()).Should().ContainSingle().Subject;
             message.AttemptCount.Should().Be(attempt);
             message.LockedUntil.Should().BeNull();
-            message.LastError.Should().Contain("Connection refused");
+            message.LastError.Should().Contain("Connection reset");
             message
                 .NextAttemptAt.Should()
                 .Be(Factory.Clock.UtcNow + EmailQueueOptions.RetryDelayAfter(attempt));
-
             Factory.Clock.UtcNow = message.NextAttemptAt;
         }
 
+        Factory.Clock.UtcNow = expiresAt;
+        await Deliverer().DeliverDueAsync(Ct);
+
+        (await PendingAsync()).Should().BeEmpty("a code is not worth delivering once it expired");
         Factory.EmailSender.Sent.Should().BeEmpty();
-        var leftovers = await Factory.QueryAsync(db =>
-            Task.FromResult(
-                (
-                    Contents: db.EmailOutboxContents.Count(),
-                    Parts: db.EmailOutboxContentParts.Count()
-                )
-            )
-        );
-        leftovers.Contents.Should().Be(0, "a discarded message leaves no stored content");
-        leftovers.Parts.Should().Be(0);
+        (await StoredContentAsync()).Should().Be((0, 0));
     }
 
     [Fact]
@@ -570,18 +715,10 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
-        var stored = await Factory.QueryAsync(db =>
-            Task.FromResult(
-                (
-                    Messages: db.EmailOutboxMessages.Count(),
-                    Contents: db.EmailOutboxContents.Count(),
-                    Parts: db.EmailOutboxContentParts.Count()
-                )
-            )
-        );
-        stored.Messages.Should().Be(2);
-        stored.Contents.Should().Be(1, "both recipients share one stored copy");
-        stored.Parts.Should().Be(2, "the attachment and the inline image are stored once each");
+        (await PendingAsync()).Should().HaveCount(2);
+        (await StoredContentAsync())
+            .Should()
+            .Be((1, 2), "both recipients share one stored copy of the attachment and the image");
 
         await Deliverer().DeliverDueAsync(Ct);
 
@@ -590,32 +727,18 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
             .ContainSingle()
             .Which.ToAddress.Should()
             .Be("berto@example.test");
-        var afterFirst = await Factory.QueryAsync(db =>
-            Task.FromResult(
-                (
-                    Contents: db.EmailOutboxContents.Count(),
-                    Parts: db.EmailOutboxContentParts.Count()
-                )
-            )
-        );
-        afterFirst.Contents.Should().Be(1, "the pending recipient still needs the content");
-        afterFirst.Parts.Should().Be(2);
+        (await StoredContentAsync())
+            .Should()
+            .Be((1, 2), "the pending recipient still needs the content");
 
         Factory.EmailSender.Clear();
         Factory.Clock.UtcNow = Factory.Clock.UtcNow.AddHours(1);
         await Deliverer().DeliverDueAsync(Ct);
 
         (await PendingAsync()).Should().BeEmpty();
-        var afterLast = await Factory.QueryAsync(db =>
-            Task.FromResult(
-                (
-                    Contents: db.EmailOutboxContents.Count(),
-                    Parts: db.EmailOutboxContentParts.Count()
-                )
-            )
-        );
-        afterLast.Contents.Should().Be(0);
-        afterLast.Parts.Should().Be(0, "the shared bytes leave with the last message");
+        (await StoredContentAsync())
+            .Should()
+            .Be((0, 0), "the shared bytes leave with the last message");
         Factory
             .EmailSender.Sent.Should()
             .ContainSingle()
@@ -626,7 +749,7 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task DeliverDueAsyncDeliveredMessageLeavesAnEmptyOutbox()
+    public async Task DeliverDueAsyncDeliveredMessageLeavesAnEmptyOutboxAndIsCounted()
     {
         await Store.TryEnqueueAsync(ManualBatchWithAttachment("ana@example.test"), Ct);
 
@@ -637,20 +760,40 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
         message.Subject.Should().Be("Asamblea general");
         message.InlineImages.Should().ContainSingle().Which.ContentId.Should().Be("logo");
         (await PendingAsync()).Should().BeEmpty();
-        var contents = await Factory.QueryAsync(db => db.EmailOutboxContents.CountAsync(Ct));
-        contents.Should().Be(0);
+        (await StoredContentAsync()).Contents.Should().Be(0);
+        (await Store.CountSentSinceAsync(Factory.Clock.UtcNow.AddHours(-1), Ct)).Should().Be(1);
+    }
+
+    [Fact]
+    public async Task AccountErasureDiscardsTheEmailStillWaitingForTheHousehold()
+    {
+        var admin = await LoginAsAdminAsync();
+        await Store.TryEnqueueAsync(NotificationBatch(TestSeedData.MemberEmail), Ct);
+        await Store.TryEnqueueAsync(NotificationBatch("bystander@example.test"), Ct);
+
+        using var deleted = await admin.DeleteWithCsrfAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            Ct
+        );
+
+        deleted.StatusCode.Should().Be(System.Net.HttpStatusCode.NoContent);
+        (await PendingAsync())
+            .Select(message => message.ToAddress)
+            .Should()
+            .Equal("bystander@example.test");
     }
 
     [Fact]
     public async Task LoginTwoFactorCodeIsDeliveredThroughTheOutboxAndRetriedAfterAFailure()
     {
         var client = CreateClient();
-        Factory.EmailSender.ThrowOnSend = new InvalidOperationException("Connection refused");
+        Factory.EmailSender.ThrowOnSend = new InvalidOperationException("Connection reset");
 
         await PassPasswordStepAsync(client, TestSeedData.MemberCredentials);
 
         var queued = (await PendingAsync()).Should().ContainSingle().Subject;
         queued.Kind.Should().Be(EmailKind.TwoFactorCode);
+        queued.Topic.Should().Be(EmailTopics.AccountCode);
         queued.ToAddress.Should().Be(TestSeedData.MemberEmail);
         queued.AttemptCount.Should().Be(1, "the first attempt failed while the code stayed stored");
         Factory.EmailSender.Sent.Should().BeEmpty();

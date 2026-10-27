@@ -242,6 +242,9 @@ public sealed class TermsDecisionChangeRow
     /// <summary>Gets the person who decided.</summary>
     public UserRow DecidedBy { get; init; } = null!;
 
+    /// <summary>Gets the identifier of the account that recorded the change.</summary>
+    public Guid RecordedById { get; init; }
+
     /// <summary>Gets when the change was made.</summary>
     public DateTimeOffset ChangedAt { get; init; }
 

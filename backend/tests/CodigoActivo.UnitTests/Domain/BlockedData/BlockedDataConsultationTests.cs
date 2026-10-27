@@ -20,7 +20,7 @@ public sealed class BlockedDataConsultationTests
     }
 
     [Fact]
-    public void OpenValidRequestLastsFifteenMinutesAndAnnouncesIt()
+    public void OpenValidRequestLastsFifteenMinutesWithItsNoticePending()
     {
         var consultation = Open();
 
@@ -29,10 +29,17 @@ public sealed class BlockedDataConsultationTests
         consultation.Reference.Should().Be("Diligencias 123/2026");
         consultation.OpenedAt.Should().Be(Opened);
         consultation.ExpiresAt.Should().Be(Opened.AddMinutes(15));
-        consultation
-            .PullDomainEvents()
-            .Should()
-            .Equal(new BlockedDataConsultationOpened(consultation.Id));
+        consultation.NoticePending.Should().BeTrue();
+    }
+
+    [Fact]
+    public void RecordNoticeClearsThePendingNotice()
+    {
+        var consultation = Open();
+
+        consultation.RecordNotice();
+
+        consultation.NoticePending.Should().BeFalse();
     }
 
     [Theory]

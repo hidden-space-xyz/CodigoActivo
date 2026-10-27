@@ -54,4 +54,16 @@ public class EventTermsAcceptanceRepository(CodigoActivoDbContext context)
     {
         return Set.AnyAsync(acceptance => acceptance.TermsDocumentId == termsDocumentId, ct);
     }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<EventTermsAcceptance>> ListWithdrawalNoticesPendingAsync(
+        int limit,
+        CancellationToken ct = default
+    )
+    {
+        return await Set.Where(acceptance => acceptance.WithdrawalNoticePending)
+            .OrderBy(acceptance => acceptance.DecidedAt)
+            .Take(limit)
+            .ToListAsync(ct);
+    }
 }

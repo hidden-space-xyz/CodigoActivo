@@ -213,4 +213,10 @@ public enum AuditAction
 
     /// <summary>Took an extract of the blocked data about an account.</summary>
     ExportBlockedData,
+
+    /// <summary>Told the legal contact about the consents withdrawn since the last notice.</summary>
+    SendConsentWithdrawalNotices,
+
+    /// <summary>Told the legal contact about the consultations of the blocked data opened.</summary>
+    SendBlockedDataConsultationNotices,
 }

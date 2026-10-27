@@ -83,7 +83,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     authority = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
                     reference = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     opened_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    notice_pending = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -130,6 +131,18 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_disposable_email_domains", x => x.domain);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "email_delivery_hours",
+                columns: table => new
+                {
+                    hour = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    sent = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_email_delivery_hours", x => x.hour);
                 });
 
             migrationBuilder.CreateTable(
@@ -316,6 +329,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     unsubscribe_url = table.Column<string>(type: "text", nullable: true),
                     one_click_unsubscribe_url = table.Column<string>(type: "text", nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    topic = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     attempt_count = table.Column<int>(type: "integer", nullable: false),
                     next_attempt_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     locked_until = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -785,7 +800,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     terms_document_version = table.Column<int>(type: "integer", nullable: false),
                     accepted = table.Column<bool>(type: "boolean", nullable: false),
                     decided_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    signature = table.Column<byte[]>(type: "bytea", nullable: true)
+                    signature = table.Column<byte[]>(type: "bytea", nullable: true),
+                    withdrawal_notice_pending = table.Column<bool>(type: "boolean", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -1043,6 +1059,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 filter: "trace_id IS NOT NULL");
 
             migrationBuilder.CreateIndex(
+                name: "ix_blocked_data_consultations_notice_pending",
+                table: "blocked_data_consultations",
+                column: "opened_at",
+                filter: "notice_pending");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_blocked_data_consultations_opened_at",
                 table: "blocked_data_consultations",
                 column: "opened_at");
@@ -1092,9 +1114,21 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 column: "content_id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_email_outbox_messages_expires_at",
+                table: "email_outbox_messages",
+                column: "expires_at",
+                filter: "expires_at IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_email_outbox_messages_priority_next_attempt_at",
                 table: "email_outbox_messages",
                 columns: new[] { "priority", "next_attempt_at" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_email_outbox_messages_topic_to_address",
+                table: "email_outbox_messages",
+                columns: new[] { "topic", "to_address" },
+                filter: "topic IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "ix_event_categories_event_category_type_id",
@@ -1132,6 +1166,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "ix_event_terms_acceptances_user_id",
                 table: "event_terms_acceptances",
                 column: "user_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_event_terms_acceptances_withdrawal_notice_pending",
+                table: "event_terms_acceptances",
+                column: "decided_at",
+                filter: "withdrawal_notice_pending");
 
             migrationBuilder.CreateIndex(
                 name: "ix_event_terms_documents_terms_document_id",
@@ -1355,6 +1395,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
             migrationBuilder.DropTable(
                 name: "disposable_email_domains");
+
+            migrationBuilder.DropTable(
+                name: "email_delivery_hours");
 
             migrationBuilder.DropTable(
                 name: "email_outbox_content_parts");

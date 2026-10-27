@@ -8,6 +8,7 @@ namespace CodigoActivo.Infrastructure.BlockedData;
 /// <summary>
 /// Defines the Entity Framework mapping for the consultations of the blocked data. The account
 /// that opened a consultation has no foreign key: the record of the access outlives the account.
+/// The consultations whose notice is pending are indexed in the order they are told.
 /// </summary>
 public sealed class BlockedDataConsultationConfiguration
     : IEntityTypeConfiguration<BlockedDataConsultation>
@@ -30,8 +31,13 @@ public sealed class BlockedDataConsultationConfiguration
             .IsRequired();
         builder.Property(c => c.OpenedAt).IsRequired();
         builder.Property(c => c.ExpiresAt).IsRequired();
+        builder.Property(c => c.NoticePending).IsRequired();
 
         builder.HasIndex(c => c.OpenedAt);
+        builder
+            .HasIndex(c => c.OpenedAt, nameof(BlockedDataConsultation.NoticePending))
+            .HasDatabaseName("ix_blocked_data_consultations_notice_pending")
+            .HasFilter("notice_pending");
     }
 }
 

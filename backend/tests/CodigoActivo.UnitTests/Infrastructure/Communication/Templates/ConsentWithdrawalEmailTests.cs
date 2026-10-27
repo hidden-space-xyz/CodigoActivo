@@ -24,7 +24,7 @@ public sealed class ConsentWithdrawalEmailTests
         var message = ConsentWithdrawalEmail.Create(
             "legal@asociacion.test",
             "Asociación",
-            Withdrawal,
+            [Withdrawal],
             TimeZoneInfo.Utc,
             "https://app.test"
         );
@@ -47,12 +47,54 @@ public sealed class ConsentWithdrawalEmailTests
     }
 
     [Fact]
+    public void CreateSeveralWithdrawalsListsEachOneInThePlural()
+    {
+        var message = ConsentWithdrawalEmail.Create(
+            "legal@asociacion.test",
+            "Asociación",
+            [
+                Withdrawal,
+                Withdrawal with
+                {
+                    PersonName = "Ana Gil",
+                    DocumentName = "Publicación del nombre",
+                },
+            ],
+            TimeZoneInfo.Utc,
+            "https://app.test"
+        );
+
+        message.Subject.Should().Be(AppStrings.EmailsConsentWithdrawnSubjectMany(2));
+        message
+            .TextBody.Should()
+            .Contain("«Autorización de imagen» de Leo Ruiz")
+            .And.Contain("«Publicación del nombre» de Ana Gil")
+            .And.Contain(AppStrings.EmailsConsentWithdrawnActionMany)
+            .And.Contain(AppStrings.EmailsConsentWithdrawnHistoryNoteMany);
+    }
+
+    [Fact]
+    public void CreateWithoutWithdrawalsIsRefused()
+    {
+        var act = () =>
+            ConsentWithdrawalEmail.Create(
+                "legal@asociacion.test",
+                "Asociación",
+                [],
+                TimeZoneInfo.Utc,
+                "https://app.test"
+            );
+
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
     public void CreateDatesTheWithdrawalInTheTimeZoneOfTheSite()
     {
         var message = ConsentWithdrawalEmail.Create(
             "legal@asociacion.test",
             "Asociación",
-            Withdrawal,
+            [Withdrawal],
             TimeZoneInfo.FindSystemTimeZoneById("Europe/Madrid"),
             "https://app.test"
         );
@@ -66,10 +108,7 @@ public sealed class ConsentWithdrawalEmailTests
         var message = ConsentWithdrawalEmail.Create(
             "legal@asociacion.test",
             "Asociación",
-            Withdrawal with
-            {
-                PersonName = "<i>Leo</i>",
-            },
+            [Withdrawal with { PersonName = "<i>Leo</i>" }],
             TimeZoneInfo.Utc,
             "https://app.test"
         );

@@ -10,12 +10,12 @@ namespace CodigoActivo.Domain.TermsDecisions;
 /// their guardian for the conditions and, before the age of 14, the consents of a dependent. A
 /// declined document can be accepted later; an accepted one stays accepted, with the signature it
 /// was accepted with when the document asked for one, until a consent is withdrawn. Every change
-/// is kept in <see cref="Changes"/>.
+/// is kept in <see cref="Changes"/>. A withdrawal waits in <see cref="WithdrawalNoticePending"/>
+/// until the association's legal contact is told.
 /// </summary>
-public class EventTermsAcceptance : IAggregateRoot, IHasDomainEvents
+public class EventTermsAcceptance : IAggregateRoot
 {
     private readonly List<TermsDecisionChange> changes = [];
-    private readonly List<IDomainEvent> domainEvents = [];
 
     private EventTermsAcceptance() { }
 
@@ -58,6 +58,13 @@ public class EventTermsAcceptance : IAggregateRoot, IHasDomainEvents
     /// Gets the signature drawn to accept the document, when it asked for one and is accepted now.
     /// </summary>
     public HandwrittenSignature? Signature { get; private set; }
+
+    /// <summary>
+    /// Gets a value indicating whether the document was withdrawn and the association's legal
+    /// contact has not been told yet. Accepting the document again clears it: a withdrawal undone
+    /// before anyone was told needs no notice.
+    /// </summary>
+    public bool WithdrawalNoticePending { get; private set; }
 
     /// <summary>
     /// Gets every change of the decision, oldest first.
@@ -105,7 +112,8 @@ public class EventTermsAcceptance : IAggregateRoot, IHasDomainEvents
     }
 
     /// <summary>
-    /// Accepts a document declined or withdrawn before.
+    /// Accepts a document declined or withdrawn before; a withdrawal nobody was told about yet no
+    /// longer needs a notice.
     /// </summary>
     /// <param name="decidedById">Identifier of the person who accepts it now.</param>
     /// <param name="termsDocumentVersion">Version of the document accepted.</param>
@@ -125,12 +133,13 @@ public class EventTermsAcceptance : IAggregateRoot, IHasDomainEvents
         Accepted = true;
         Signature = signature;
         DecidedAt = now;
+        WithdrawalNoticePending = false;
         changes.Add(new TermsDecisionChange(this, recordedById, now));
     }
 
     /// <summary>
-    /// Withdraws a consent given before, on the version that was accepted, and raises
-    /// <see cref="TermsConsentWithdrawn"/>. The acceptance it ends, with its signature, stays in
+    /// Withdraws a consent given before, on the version that was accepted, and leaves the notice to
+    /// the association's legal contact pending. The acceptance it ends, with its signature, stays in
     /// <see cref="Changes"/>, since withdrawing never makes unlawful what was done before.
     /// </summary>
     /// <param name="decidedById">Identifier of the person who withdraws it.</param>
@@ -151,16 +160,16 @@ public class EventTermsAcceptance : IAggregateRoot, IHasDomainEvents
         Accepted = false;
         Signature = null;
         DecidedAt = now;
+        WithdrawalNoticePending = true;
         changes.Add(new TermsDecisionChange(this, recordedById, now));
-        domainEvents.Add(new TermsConsentWithdrawn(EventId, UserId, TermsDocumentId, recordedById));
         return Result.Success();
     }
 
-    /// <inheritdoc />
-    public IReadOnlyList<IDomainEvent> PullDomainEvents()
+    /// <summary>
+    /// Records that the association's legal contact was told about the withdrawal.
+    /// </summary>
+    public void RecordWithdrawalNotice()
     {
-        var pulled = domainEvents.ToList();
-        domainEvents.Clear();
-        return pulled;
+        WithdrawalNoticePending = false;
     }
 }

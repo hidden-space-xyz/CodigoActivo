@@ -41,7 +41,7 @@ public sealed class EmailChangeLinkIssuer(
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
     /// A task whose result is success, <see cref="ApplicationErrorCode.OtpResendCooldownActive"/>
-    /// when the message limiter or the full outbox refused the mail, or
+    /// when the email guard refused the mail, or
     /// <see cref="ApplicationErrorCode.EmailSendFailed"/> when it could not be queued.
     /// </returns>
     /// <exception cref="ArgumentException">The change keeps the email.</exception>

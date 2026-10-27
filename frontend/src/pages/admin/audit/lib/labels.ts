@@ -86,6 +86,8 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'OpenBlockedDataConsultation',
   'SearchBlockedData',
   'ExportBlockedData',
+  'SendConsentWithdrawalNotices',
+  'SendBlockedDataConsultationNotices',
 ]
 
 /** Every kind of actor, in the order the actor filter lists them. */

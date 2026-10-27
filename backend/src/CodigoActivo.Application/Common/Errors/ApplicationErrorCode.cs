@@ -287,7 +287,7 @@ public enum ApplicationErrorCode
     OtpInvalidOrExpired,
 
     /// <summary>
-    /// The email limits or the full outbox refused the email that confirms a new email address.
+    /// The email guard refused the email that confirms a new email address.
     /// </summary>
     OtpResendCooldownActive,
 
@@ -309,8 +309,8 @@ public enum ApplicationErrorCode
     TwoFactorChallengeExpired,
 
     /// <summary>
-    /// A new login code was asked for before the resend cooldown ended, or the email limits or the
-    /// full outbox refused it.
+    /// A new login code was asked for before the resend cooldown ended, or the email guard refused
+    /// it.
     /// </summary>
     TwoFactorResendCooldownActive,
 

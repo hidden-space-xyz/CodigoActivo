@@ -14,7 +14,7 @@ namespace CodigoActivo.Application.Accounts.SecondFactor;
 /// <summary>
 /// Generates, emails and stores the six-digit one-time codes of email-based second-factor
 /// challenges. Every issue first applies <see cref="User.MayReceiveLoginCode"/> and stages the hash
-/// only once the email was queued; a message the email limiter or the full outbox refuses answers
+/// only once the email was queued; a code the email guard refuses answers
 /// <see cref="ApplicationErrorCode.TwoFactorResendCooldownActive"/> and any other sending failure
 /// <see cref="ApplicationErrorCode.EmailSendFailed"/>. The resend cooldown is not checked when
 /// issuing: callers check it first, through <see cref="RefusalOf"/> or the age of the stored code.

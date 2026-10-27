@@ -28,8 +28,8 @@ public sealed record WithdrawTermsConsentCommand(
 /// their dependents, and an administrator records the withdrawal someone asked for by email. The
 /// withdrawal is recorded as decided by whoever decides the consent of the person
 /// (<see cref="TermsConsent.DeciderOf"/>) and as recorded by the signed-in user; the acceptance it
-/// ends stays in the history of the decision. Once it is committed,
-/// <see cref="ConsentWithdrawalNotification"/> tells the association's legal contact.
+/// ends stays in the history of the decision. The withdrawal waits in the decision until
+/// <see cref="SendConsentWithdrawalNoticesCommand"/> tells the association's legal contact.
 /// </summary>
 /// <param name="termsAcceptances">Repository of the terms decisions taken.</param>
 /// <param name="termsDocuments">Repository that tells whether the document holds a consent.</param>

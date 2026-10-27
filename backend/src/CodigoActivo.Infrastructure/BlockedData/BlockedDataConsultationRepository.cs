@@ -43,4 +43,16 @@ public sealed class BlockedDataConsultationRepository(CodigoActivoDbContext cont
     {
         return Set.Where(c => c.OpenedAt <= openedUpTo).ExecuteDeleteAsync(ct);
     }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<BlockedDataConsultation>> ListNoticesPendingAsync(
+        int limit,
+        CancellationToken ct = default
+    )
+    {
+        return await Set.Where(c => c.NoticePending)
+            .OrderBy(c => c.OpenedAt)
+            .Take(limit)
+            .ToListAsync(ct);
+    }
 }

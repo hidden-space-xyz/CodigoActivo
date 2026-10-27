@@ -147,6 +147,8 @@ or missing. `.env.example` lists every variable with an empty value.
 | `SMTP_USERNAME`         | SMTP username; set exactly when `secrets/smtp_password` is not empty          | No login                                    |
 | `SMTP_FROM_ADDRESS`     | Single sender address                                                         | Required                                    |
 | `SMTP_FROM_NAME`        | Sender display name                                                           | `Código Activo`                             |
+| `SMTP_MAX_PER_MINUTE`   | Messages the SMTP provider accepts per minute; delivery never goes faster     | `30`                                        |
+| `SMTP_MAX_PER_DAY`      | Messages the SMTP provider accepts in a rolling 24 hours                      | `2000`                                      |
 | `LEGAL_NAME`            | Registered name of the association, shown as data controller                  | Required in Production                      |
 | `LEGAL_TAX_ID`          | NIF of the association                                                        | Required in Production                      |
 | `LEGAL_ADDRESS`         | Registered postal address of the association                                  | Required in Production                      |
@@ -215,30 +217,44 @@ one requires updating the checkbox and publishing new versions of the policies.
 Every email — automatic messages and administrator-written bulk mail alike — is stored in a PostgreSQL
 outbox (`email_outbox_messages`, `email_outbox_contents`, `email_outbox_content_parts`) and delivered in the
 background by the `EmailOutboxDeliveryWorker` hosted service; a request that queues email returns once the row
-is committed, not once SMTP accepts it. Automatic messages pass through a process-local rate limiter, the
-email guard, before reaching the outbox; its limits are in [SECURITY.md](SECURITY.md#email-abuse-controls).
-Administrator bulk email bypasses that budget but is queued the same way, so its response
+is committed, not once SMTP accepts it. Only codes pass the email guard first (limits in
+[SECURITY.md](SECURITY.md#email-abuse-controls)); notices are always stored, and a new message on the same
+topic to the same address (a new code, a new alert of one kind, a new decision on one signup) replaces the one
+still waiting. Administrator bulk email is refused with `EmailSendFailed` when 2000 such messages already wait,
+or with `EmailAttachmentsTooLarge` when it is larger than the `SIZE` the SMTP server announced; its response
 (`{ queued, skipped }`) reports what was accepted, not what was delivered.
 
-Pending mail survives a restart: rows are claimed with `FOR UPDATE SKIP LOCKED` and a lease, in priority
-order (2FA/verification/reset codes first; security alerts, activity decisions and the coming-of-age, consent
-withdrawal and blocked data consultation notices next; administrator-written mail last), by a poll loop every
-5 seconds, also woken immediately by same-process enqueues; each pass claims up to 10 due messages and sends 4
-at a time, each within 60 seconds. A message is
-attempted up to 5 times, retried after 1 minute, 5 minutes, 30 minutes and 2 hours on the first four failures;
-the 5th failure discards the row and logs an error. Delivery is at-least-once: a crash between a successful
-send and removing the row can resend it. The outbox accepts about 1000 pending ordinary automatic and bulk
-messages; login, verification and password-reset codes and the consent withdrawal and blocked data consultation
-notices to the association are always accepted (and still bounded by the email guard). Shutdown only waits
-for sends already in flight, up to 20 seconds, below the API service's 30-second `stop_grace_period`; whatever
-is not delivered by then stays in the outbox for the
-next start. These values live in `EmailQueueOptions` and cannot be configured.
+One API instance delivers at a time: the worker holds a PostgreSQL session lock and another instance takes over
+when it is released. It polls every 5 seconds, is woken at once by same-process enqueues, and claims up to 10
+due messages with `FOR UPDATE SKIP LOCKED` and a lease, in priority order: login and other identified codes,
+then verification, email-in-use and password-reset mail, then notices, then administrator-written mail. A run
+sends them one after another over one SMTP connection, each within 60 seconds, never faster than
+`SMTP_MAX_PER_MINUTE`. Over a rolling 24 hours, counted in `email_delivery_hours` so restarts keep it, notices
+and bulk mail stop at 80 % of `SMTP_MAX_PER_DAY`, anonymous codes at 90 % and identified codes at 100 %.
+Notices and bulk mail are also paced per recipient (20 at once, 10 per hour, 50 per day): a message over its
+recipient's share waits, without spending an attempt.
 
-A full outbox (`EmailOutboxFull`), an exhausted global budget (`GlobalEmailBudgetExhausted`) and exhausted
-attempts (`EmailDeliveryGaveUp`, with the last error) are logged as `Error`, and each delivery failure as the
-`Warning` event `EmailDeliveryAttemptFailed`. That event, a failed outbox run and a
-failed removal of spent messages repeat while their cause lasts, so each is logged at most once every 15
-minutes. Recipient throttling, a low global budget and an incomplete shutdown drain
+A recipient refused for good (5xx), a message too large or content the key ring cannot read is removed and
+logged. A failure that may pass, such as a recipient the server defers (4xx), is retried after 1, 5 and 30
+minutes and then every hour. An unreachable server, a refused login or sender, a `421` or another 4xx reply to
+the message, or three failures in a row whose cause is unknown pause the whole delivery for 1, 2, 5, 10 and then
+30 minutes, handing the claimed messages back untried. Messages expire instead
+of running out of attempts: codes with their own lifetime, other mail after 3 days; the coming-of-age notice
+and the notices to the legal contact never expire. Delivery is at-least-once: a crash between a successful send
+and removing the row can resend it. Shutdown only waits for the send in flight, up to 20 seconds, below the API
+service's 30-second `stop_grace_period`; whatever is not delivered by then stays in the outbox for the next
+start. These values live in `EmailQueueOptions` and cannot be configured; only the provider pace is.
+
+The legal contact (`LEGAL_EMAIL`) is told about withdrawn consents and opened consultations of the blocked data
+by `LegalNoticeWorker`, 30 seconds after startup and then every minute: each kind goes in one email listing up
+to 50 of them, and the next one waits until that email has left the outbox. What it tells stays marked in the
+database until the email is queued, so nothing is lost to a failure or a restart.
+
+A pause (`EmailDeliveryPaused`), expired messages (`EmailsExpired`), notices waiting more than 24 hours
+(`EmailsOverdue`) and an exhausted anonymous budget (`GlobalEmailBudgetExhausted`) are logged as `Error`; a
+refused message (`EmailRejected`), a nearly spent daily limit (`EmailDailyLimitReached`) and each failed attempt
+(`EmailDeliveryAttemptFailed`) as `Warning`. Repeated pauses, attempt failures, daily-limit alerts, failed runs
+and failed removals are logged at most once every 15 minutes. Recipient pacing and an incomplete shutdown drain
 are not logged. See [SECURITY.md](SECURITY.md#logging) for where these events are written.
 
 News email carries the one-click unsubscribe of RFC 8058 (`List-Unsubscribe` pointing at

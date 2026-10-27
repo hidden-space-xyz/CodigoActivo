@@ -13,13 +13,13 @@ public enum EmailGuardAlert
     None,
 
     /// <summary>
-    /// The global budget denied a message.
+    /// The budget of the mail anyone can ask for denied a message.
     /// </summary>
     GlobalBudgetExhausted,
 
     /// <summary>
     /// The guard already holds <see cref="EmailGuardOptions.MaxTrackedRecipients"/> address budgets,
-    /// so a new address was accepted against the global budget only.
+    /// so a new address was accepted without a budget of its own.
     /// </summary>
     TrackingSaturated,
 }

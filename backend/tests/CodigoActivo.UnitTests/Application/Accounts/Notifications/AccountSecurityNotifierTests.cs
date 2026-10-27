@@ -186,21 +186,21 @@ public sealed class AccountSecurityNotifierTests
     }
 
     [Fact]
-    public async Task NotifyAsyncRateLimitedLogsAWarningWithoutThrowing()
+    public async Task NotifyAsyncQueuesTheAlertOnTheTopicOfItsChange()
     {
         var user = NewUser();
-        emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Recipient);
 
-        Func<Task> act = () =>
-            sut.NotifyAsync(user, AccountSecurityChange.CredentialChanged, CancellationToken.None);
+        await sut.NotifyAsync(
+            user,
+            AccountSecurityChange.CredentialChanged,
+            CancellationToken.None
+        );
 
-        await act.Should().NotThrowAsync();
-        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
-        entry.Level.Should().Be(LogLevel.Warning);
-        entry
-            .Message.Should()
-            .Be("A CredentialChanged security notification was dropped by the email limiter")
-            .And.NotContain(user.Id.ToString());
+        emailSender
+            .Sent.Should()
+            .ContainSingle()
+            .Which.Topic.Should()
+            .Be(EmailTopics.SecurityAlert(AccountSecurityChange.CredentialChanged));
     }
 
     [Fact]

@@ -7,7 +7,8 @@ namespace CodigoActivo.UnitTests.TestSupport;
 
 /// <summary>
 /// Minimal in-process SMTP server on a loopback port. It speaks plain ESMTP with AUTH PLAIN, records
-/// delivered messages and can reject a recipient, drop the connection or run a callback on DATA.
+/// delivered messages and the connections opened, and can announce a size limit, answer MAIL FROM with
+/// a refusal, reject a recipient, drop the connection or run a callback on DATA.
 /// </summary>
 public sealed class FakeSmtpServer : IAsyncDisposable
 {
@@ -18,6 +19,7 @@ public sealed class FakeSmtpServer : IAsyncDisposable
     private readonly List<Task> sessions = [];
     private readonly Task acceptLoop;
     private int dataCommands;
+    private int connections;
 
     public FakeSmtpServer()
     {
@@ -27,8 +29,20 @@ public sealed class FakeSmtpServer : IAsyncDisposable
 
     public int Port => ((IPEndPoint)listener.LocalEndpoint).Port;
 
+    /// <summary>Number of connections the server accepted.</summary>
+    public int Connections => Volatile.Read(ref connections);
+
+    /// <summary>Size limit announced with the SIZE extension, if any.</summary>
+    public long? AdvertisedSize { get; init; }
+
+    /// <summary>Reply to MAIL FROM instead of accepting the sender, such as a refusal.</summary>
+    public string? MailReply { get; init; }
+
     /// <summary>Recipient answered with a permanent 550 failure.</summary>
     public string? RejectedRecipient { get; init; }
+
+    /// <summary>Recipient answered with a temporary 450 failure, as greylisting does.</summary>
+    public string? DeferredRecipient { get; init; }
 
     /// <summary>Closes the socket without replying once this many DATA commands were received.</summary>
     public int? DropConnectionOnDataCommand { get; init; }
@@ -72,6 +86,7 @@ public sealed class FakeSmtpServer : IAsyncDisposable
     {
         while (await AcceptUnlessStoppedAsync() is { } client)
         {
+            Interlocked.Increment(ref connections);
             lock (gate)
             {
                 sessions.Add(HandleSessionAsync(client));
@@ -120,14 +135,17 @@ public sealed class FakeSmtpServer : IAsyncDisposable
             switch (verb)
             {
                 case "EHLO":
-                    await writer.WriteAsync("250-localhost\r\n250-AUTH PLAIN\r\n250 8BITMIME\r\n");
+                    var size = AdvertisedSize is { } limit ? $"250-SIZE {limit}\r\n" : string.Empty;
+                    await writer.WriteAsync(
+                        $"250-localhost\r\n{size}250-AUTH PLAIN\r\n250 8BITMIME\r\n"
+                    );
                     break;
                 case "AUTH":
                     await AuthenticateAsync(line, reader, writer, ct);
                     break;
                 case "MAIL":
                     from = ParsePath(line);
-                    await writer.WriteLineAsync("250 2.1.0 Ok");
+                    await writer.WriteLineAsync(MailReply ?? "250 2.1.0 Ok");
                     break;
                 case "RCPT":
                     var recipient = ParsePath(line);
@@ -136,6 +154,10 @@ public sealed class FakeSmtpServer : IAsyncDisposable
                         await writer.WriteLineAsync(
                             $"550 5.1.1 <{recipient}>: Mailbox unavailable"
                         );
+                    }
+                    else if (string.Equals(recipient, DeferredRecipient, StringComparison.Ordinal))
+                    {
+                        await writer.WriteLineAsync($"450 4.2.0 <{recipient}>: Greylisted");
                     }
                     else
                     {

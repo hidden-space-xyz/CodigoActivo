@@ -233,8 +233,9 @@ whether they are that person.
   against the association) and the reference of the request, after the current password and a code of the
   second factor, counted like logins and spent by the opening. An emailed code comes from
   `POST /api/blocked-data/consultations/code`, which checks the password first and shares the stored login code,
-  lifetime and cooldown, like the account deletion code. `BlockedDataConsultationNotification` then emails
-  `LEGAL_EMAIL`, so an access nobody expected is noticed.
+  lifetime and cooldown, like the account deletion code. The consultation is opened with its notice pending,
+  and `SendBlockedDataConsultationNotices` emails `LEGAL_EMAIL` within a minute, so an access nobody expected
+  is noticed.
 - `POST .../{id}/searches` takes an identifier, email, DNI/NIE, phone or part of the name (at least three
   characters) in the body, never in the URL; finds existing accounts and, decrypting only past states of
   accounts, erased ones; adds their minors; and returns each with only its id, name and guardian, whether it
@@ -447,10 +448,11 @@ code cite only these laws.
   and recorded by the caller; the acceptance it ends stays in the history with its signature, since withdrawing
   does not make earlier processing unlawful. «Mi cuenta» lists the household's consents (`GET /api/me/consents`)
   and withdraws a given one with one confirmation, as easily as it was given; the event's decisions tab shows it
-  as withdrawn and lets an administrator record one. Once committed, `ConsentWithdrawalNotification` emails the
-  legal contact (`LEGAL_EMAIL`; nothing without it) so what the consent covered stops being used and is removed
-  from the site and the social profiles; a failed delivery is logged without personal data and never undoes the
-  withdrawal.
+  as withdrawn and lets an administrator record one. The withdrawal is committed with its notice pending, and
+  within a minute `SendConsentWithdrawalNotices` emails the legal contact (`LEGAL_EMAIL`; nothing without it,
+  and the notice keeps waiting) so what the consent covered stops being used and is removed from the site and
+  the social profiles. Several withdrawals go in one email, a withdrawal accepted again before the notice needs
+  none, and a failure only delays the notice: it never undoes the withdrawal nor loses the notice.
 - A terms document is versioned (`terms_documents.version`), so the text each decision was taken on can always be
   shown (article 7.1 GDPR): every rewrite that changes its name, text, kind or signature keeps the replaced version
   in `terms_document_versions` and numbers the new one, even when nobody decided yet, so a decision recorded while
@@ -516,11 +518,10 @@ such as the path of a file under `/app/files`; it is written as is.
   `NormalUseLoggingTests` drives anonymous, member and administrator flows and fails if any entry passes the
   policy. EF Core sensitive-data logging stays disabled; `SmtpEmailSender` strips the recipient and server
   reply out of SMTP exceptions before they are logged.
-- **Security events**: only three events exist, all `Warning` and free of any user id —
+- **Security events**: only two events exist, both `Warning` and free of any user id —
   `PasswordLockoutTriggered` and `TwoFactorLockoutTriggered` (an account or its second factor was locked;
-  written once the lock commits) and `SecurityNotificationRateLimited` (a security-change email was dropped
-  by the limiter). Logins, logouts, password changes and administrator rights changes are not diagnostic
-  events: the audit log records them.
+  written once the lock commits). Security-change emails are never dropped by a limiter. Logins, logouts,
+  password changes and administrator rights changes are not diagnostic events: the audit log records them.
 - **API log output**: every event the level policy lets through is stored in the `diagnostic_log_entries`
   table of the application database by a batching Serilog sink (`DatabaseLoggerProvider`): the UTC instant,
   the level, the category, the event name, the rendered message (up to 4,000 characters), the exception with
@@ -672,28 +673,31 @@ notification to the affected account after commit, from the handler, whoever ask
 names the change and its timestamp and carries no code, secret or link that performs an action; an email
 change is reported to the **previous** address once it applies (for a holder's own change, when the new
 address is confirmed) and only ever quotes the new one masked, and a phone change only states that the phone
-changed, without quoting it. These messages are
-ordinary automatic mail, not credential mail, so they spend the shared budget without touching the credential
-reserve that login codes rely on.
+changed, without quoting it. These messages are notices, not credential mail: they are never refused, a new
+alert about the same kind of change replaces the one still waiting, and they leave at the pace of their
+recipient.
 
-Every automatic email (verification, password reset, second-factor code, security change, activity decision and
-the notices to guardians and the legal contact) passes through `ThrottledEmailSender`: each normalized
-destination has burst/hourly/daily budgets, the process has a global budget with a credential-email reserve
-whose half only second-factor codes may spend, and second-factor codes have per-destination budgets of their
-own, so verification and reset mail, which anyone can request, never stops a login code. Normalization
+Every code (second-factor, verification, email change, email-in-use notice and password reset) passes the email
+guard in `ThrottledEmailSender` before it is stored, and a refused code is answered at once: each normalized
+destination has burst/hourly/daily budgets, second-factor codes have per-destination budgets of their own, and
+the mail anyone can ask for (everything but the second-factor codes) shares one budget that never exceeds half
+of `SMTP_MAX_PER_MINUTE` over an hour, so a flood of it never stops a login code. Every other automatic
+email and administrator-written mail is never refused by the guard: topics keep one waiting message per
+address and subject, and the deliverer paces each recipient with the same burst/hourly/daily budgets, so a
+loop of actions or a stolen administrator account delays a mailbox's mail instead of flooding it. Codes leave
+first, and the daily limit of the provider keeps its last 10 % for second-factor codes. Normalization
 lowercases addresses, strips sub-address tags and folds dots only for Gmail/Googlemail. Quota is spent on
-attempt, before the message reaches the outbox; SMTP failure and a full outbox do not refund it. The limiter
-can be neither disabled nor configured (`EmailGuardOptions`); it is in-memory, resets on restart and is
-multiplied by the number of API replicas.
+attempt, before the message reaches the outbox; SMTP failure does not refund it. The budgets can be neither
+disabled nor configured (`EmailGuardOptions`); they are in-memory and reset on restart, and only the instance
+that holds the delivery lock paces delivery.
 
 | Limit                                                                    | Value  |
 | ------------------------------------------------------------------------ | ------ |
 | Immediate messages allowed per normalized address                        | 20     |
 | Sustained hourly limit per address                                       | 10     |
 | Daily limit per address                                                  | 50     |
-| Immediate process-wide budget                                            | 1000   |
-| Sustained process-wide hourly budget                                     | 1000   |
-| Global capacity reserved for verification, reset and second-factor codes | 200    |
+| Immediate budget of mail anyone can ask for                              | 1000   |
+| Sustained hourly budget of mail anyone can ask for                       | 1000   |
 | Maximum address budgets held in memory                                   | 50000  |
 | Idle-budget cleanup interval                                             | 5 min  |
 | Minimum interval between repeated guard alerts or outbox failures        | 15 min |

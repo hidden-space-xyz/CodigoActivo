@@ -14,7 +14,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CodigoActivo.Infrastructure.Database.Migrations
 {
     [DbContext(typeof(CodigoActivoDbContext))]
-    [Migration("20261025082856_InitialCreate")]
+    [Migration("20261027180239_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -191,6 +191,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
+                    b.Property<bool>("NoticePending")
+                        .HasColumnType("boolean")
+                        .HasColumnName("notice_pending");
+
                     b.Property<Guid>("OfficerId")
                         .HasColumnType("uuid")
                         .HasColumnName("officer_id");
@@ -210,6 +214,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
                     b.HasIndex("OpenedAt")
                         .HasDatabaseName("ix_blocked_data_consultations_opened_at");
+
+                    b.HasIndex(new[] { "OpenedAt" }, "NoticePending")
+                        .HasDatabaseName("ix_blocked_data_consultations_notice_pending")
+                        .HasFilter("notice_pending");
 
                     b.ToTable("blocked_data_consultations", (string)null);
 
@@ -849,6 +857,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("terms_document_version");
 
+                    b.Property<bool>("WithdrawalNoticePending")
+                        .HasColumnType("boolean")
+                        .HasColumnName("withdrawal_notice_pending")
+                        .HasAnnotation("CodigoActivo:DataHistoryExcluded", true);
+
                     b.HasKey("EventId", "UserId", "TermsDocumentId")
                         .HasName("pk_event_terms_acceptances");
 
@@ -860,6 +873,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_event_terms_acceptances_user_id");
+
+                    b.HasIndex(new[] { "DecidedAt" }, "WithdrawalNoticePending")
+                        .HasDatabaseName("ix_event_terms_acceptances_withdrawal_notice_pending")
+                        .HasFilter("withdrawal_notice_pending");
 
                     b.ToTable("event_terms_acceptances", (string)null);
 
@@ -1364,6 +1381,24 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
 
+            modelBuilder.Entity("CodigoActivo.Infrastructure.Communication.EmailDeliveryHour", b =>
+                {
+                    b.Property<DateTimeOffset>("Hour")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("hour");
+
+                    b.Property<int>("Sent")
+                        .HasColumnType("integer")
+                        .HasColumnName("sent");
+
+                    b.HasKey("Hour")
+                        .HasName("pk_email_delivery_hours");
+
+                    b.ToTable("email_delivery_hours", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
+                });
+
             modelBuilder.Entity("CodigoActivo.Infrastructure.Communication.EmailOutboxContent", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1467,6 +1502,10 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
+                    b.Property<DateTimeOffset?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasColumnType("text")
@@ -1503,6 +1542,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("text")
                         .HasColumnName("to_name");
 
+                    b.Property<string>("Topic")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("topic");
+
                     b.Property<string>("UnsubscribeUrl")
                         .HasColumnType("text")
                         .HasColumnName("unsubscribe_url");
@@ -1513,8 +1557,16 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasIndex("ContentId")
                         .HasDatabaseName("ix_email_outbox_messages_content_id");
 
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_email_outbox_messages_expires_at")
+                        .HasFilter("expires_at IS NOT NULL");
+
                     b.HasIndex("Priority", "NextAttemptAt")
                         .HasDatabaseName("ix_email_outbox_messages_priority_next_attempt_at");
+
+                    b.HasIndex("Topic", "ToAddress")
+                        .HasDatabaseName("ix_email_outbox_messages_topic_to_address")
+                        .HasFilter("topic IS NOT NULL");
 
                     b.ToTable("email_outbox_messages", (string)null);
 

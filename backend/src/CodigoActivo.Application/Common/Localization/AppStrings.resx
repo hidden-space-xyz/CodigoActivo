@@ -247,6 +247,15 @@ Equipo de Código Activo</value>
   <data name="emails.blockedDataConsultation.note" xml:space="preserve">
     <value>Los datos bloqueados solo pueden entregarse a jueces y tribunales, al Ministerio Fiscal o a las administraciones públicas competentes, en particular a la autoridad de protección de datos (artículo 32 de la LOPDGDD). Si no reconocéis esta consulta, la cuenta de la persona responsable de protección de datos puede estar en manos de otra persona: avisadla y cambiad su contraseña.</value>
   </data>
+  <data name="emails.blockedDataConsultation.subjectMany" xml:space="preserve">
+    <value>Se han abierto {0} consultas de datos bloqueados</value>
+  </data>
+  <data name="emails.blockedDataConsultation.headingMany" xml:space="preserve">
+    <value>Consultas de datos bloqueados</value>
+  </data>
+  <data name="emails.blockedDataConsultation.noteMany" xml:space="preserve">
+    <value>Los datos bloqueados solo pueden entregarse a jueces y tribunales, al Ministerio Fiscal o a las administraciones públicas competentes, en particular a la autoridad de protección de datos (artículo 32 de la LOPDGDD). Si no reconocéis alguna de estas consultas, la cuenta de la persona responsable de protección de datos puede estar en manos de otra persona: avisadla y cambiad su contraseña.</value>
+  </data>
   <data name="emails.blockedDataConsultation.authority.Court" xml:space="preserve">
     <value>un juzgado o tribunal</value>
   </data>
@@ -282,6 +291,18 @@ Equipo de Código Activo</value>
   </data>
   <data name="emails.consentWithdrawn.historyNote" xml:space="preserve">
     <value>En la ficha del evento, en la administración de la web, la decisión figura como retirada. La aceptación anterior, con su firma si la tenía, se conserva en el historial de la decisión para poder demostrarla.</value>
+  </data>
+  <data name="emails.consentWithdrawn.subjectMany" xml:space="preserve">
+    <value>Se han retirado {0} consentimientos</value>
+  </data>
+  <data name="emails.consentWithdrawn.headingMany" xml:space="preserve">
+    <value>Consentimientos retirados</value>
+  </data>
+  <data name="emails.consentWithdrawn.actionMany" xml:space="preserve">
+    <value>Desde ahora no podéis usar lo que cubrían esos consentimientos: quitad las imágenes o los nombres de esas personas de esta web y de los perfiles de la asociación y no los uséis en nuevas publicaciones.</value>
+  </data>
+  <data name="emails.consentWithdrawn.historyNoteMany" xml:space="preserve">
+    <value>En la ficha de cada evento, en la administración de la web, las decisiones figuran como retiradas. Las aceptaciones anteriores, con su firma si la tenían, se conservan en el historial de cada decisión para poder demostrarlas.</value>
   </data>
   <data name="emails.comingOfAge.subject" xml:space="preserve">
     <value>Un menor a tu cargo va a cumplir 18 años</value>

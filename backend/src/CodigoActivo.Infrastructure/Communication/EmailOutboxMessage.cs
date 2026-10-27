@@ -6,7 +6,7 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// <summary>
 /// Represents the persisted email outbox message domain entity and its relationships. One row exists
 /// per pending delivery: the table holds only email that still has to leave, so a row is deleted
-/// once it is delivered or once its attempts are spent.
+/// once it is delivered, rejected for good, replaced by a newer message on its topic or expired.
 /// </summary>
 public class EmailOutboxMessage
 {
@@ -75,9 +75,25 @@ public class EmailOutboxMessage
     public DateTimeOffset CreatedAt { get; set; }
 
     /// <summary>
+    /// Gets or sets what the message is about, from
+    /// <see cref="CodigoActivo.Application.Abstractions.Email.EmailTopics"/>: storing a message on the
+    /// same topic to the same address replaces this one while it waits. <see langword="null"/> for
+    /// messages nothing replaces.
+    /// </summary>
+    public string? Topic { get; set; }
+
+    /// <summary>
+    /// Gets or sets the UTC timestamp after which the message is no longer worth delivering and is
+    /// removed; <see langword="null"/> for the notices that must arrive however late.
+    /// </summary>
+    public DateTimeOffset? ExpiresAt { get; set; }
+
+    /// <summary>
     /// Gets or sets how many delivery attempts have been started. The claim increments it together
-    /// with the lease, so an attempt counts even when the process delivering it dies, and the
-    /// attempts of a message are always spent after <see cref="EmailQueueOptions.MaxAttempts"/>.
+    /// with the lease, so an attempt counts even when the process delivering it dies, and every
+    /// result is written back only while it still holds the attempt the worker claimed. A message
+    /// the worker hands back untried, because the delivery paused or its recipient must wait, gets
+    /// its attempt back.
     /// </summary>
     public int AttemptCount { get; set; }
 

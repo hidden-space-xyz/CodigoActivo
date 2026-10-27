@@ -520,10 +520,10 @@ internal sealed class DemoLogHistory : IDisposable
                     logger.EmailDeliveryAttemptFailed(
                         1,
                         kind,
-                        new SmtpCommandException(
-                            SmtpErrorCode.UnexpectedStatusCode,
-                            SmtpStatusCode.ErrorInProcessing,
-                            "4.7.0 Temporary server error. Please try again later"
+                        new EmailDeliveryException(
+                            EmailDeliveryFailure.Transient,
+                            "The SMTP server rejected the message: RecipientNotAccepted (450)",
+                            null
                         )
                     )
             );
@@ -533,34 +533,30 @@ internal sealed class DemoLogHistory : IDisposable
         Diagnose<EmailOutboxDeliverer>(
             outage,
             default,
-            logger =>
-                logger.EmailDeliveryAttemptFailed(1, EmailKind.TwoFactorCode, ServiceUnavailable())
+            logger => logger.EmailDeliveryPaused(1, ServiceUnavailable())
         );
         Diagnose<EmailOutboxDeliverer>(
             outage.AddMinutes(17),
             default,
             logger =>
-                logger.EmailDeliveryAttemptFailed(
-                    2,
-                    EmailKind.ActivityNotification,
-                    new SocketException((int)SocketError.ConnectionRefused)
+                logger.EmailDeliveryPaused(
+                    10,
+                    new EmailDeliveryException(
+                        EmailDeliveryFailure.ServerUnavailable,
+                        "Could not open a session with the SMTP server: SocketException",
+                        new SocketException((int)SocketError.ConnectionRefused)
+                    )
                 )
+        );
+        Diagnose<EmailOutboxDeliverer>(
+            outage.AddMinutes(18),
+            default,
+            logger => logger.EmailsExpired(2, EmailKind.TwoFactorCode)
         );
         Diagnose<EmailOutboxDeliverer>(
             outage.AddMinutes(38),
             default,
-            logger =>
-                logger.EmailDeliveryAttemptFailed(3, EmailKind.AccessRecovery, ServiceUnavailable())
-        );
-        Diagnose<EmailOutboxDeliverer>(
-            Local(Today.AddDays(-9), 23, 12),
-            default,
-            logger =>
-                logger.EmailDeliveryGaveUp(
-                    EmailKind.ActivityNotification,
-                    EmailQueueOptions.MaxAttempts,
-                    ServiceUnavailable()
-                )
+            logger => logger.EmailDeliveryPaused(30, ServiceUnavailable())
         );
     }
 
@@ -778,12 +774,12 @@ internal sealed class DemoLogHistory : IDisposable
             : new IPAddress(new byte[] { 198, 51, 100, (byte)(20 + (index * 9 % 230)) });
     }
 
-    private static SmtpCommandException ServiceUnavailable()
+    private static EmailDeliveryException ServiceUnavailable()
     {
-        return new SmtpCommandException(
-            SmtpErrorCode.UnexpectedStatusCode,
-            SmtpStatusCode.ServiceNotAvailable,
-            "4.3.2 Service not available, closing transmission channel"
+        return new EmailDeliveryException(
+            EmailDeliveryFailure.ServerUnavailable,
+            $"The SMTP server rejected the message: {SmtpErrorCode.UnexpectedStatusCode} ({(int)SmtpStatusCode.ServiceNotAvailable})",
+            null
         );
     }
 

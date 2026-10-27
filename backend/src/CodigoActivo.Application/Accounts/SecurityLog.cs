@@ -36,19 +36,4 @@ public static partial class SecurityLog
         this ILogger logger,
         int maxFailedAttempts
     );
-
-    /// <summary>
-    /// Records that the automatic-message limiter refused a security notification, so the owner of
-    /// the account was never told about the change.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="securityChange">Change the dropped notification was reporting.</param>
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "A {SecurityChange} security notification was dropped by the email limiter"
-    )]
-    public static partial void SecurityNotificationRateLimited(
-        this ILogger logger,
-        AccountSecurityChange securityChange
-    );
 }

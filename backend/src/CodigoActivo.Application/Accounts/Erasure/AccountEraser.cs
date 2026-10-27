@@ -5,8 +5,9 @@ namespace CodigoActivo.Application.Accounts.Erasure;
 
 /// <summary>
 /// Erases an account and its dependents in one transaction: it credits the content the household
-/// authored to the <see cref="InitialAdministrator"/> and deletes the accounts with everything that
-/// belongs to them. Every deleted or handed-over row leaves its data history, which the law
+/// authored to the <see cref="InitialAdministrator"/>, deletes the email still waiting for their
+/// addresses and deletes the accounts with everything that belongs to them. Every deleted or
+/// handed-over row leaves its data history, which the law
 /// requires to keep blocked (LOPDGDD article 32). Any other change staged in the unit of work
 /// commits with it.
 /// </summary>
@@ -50,6 +51,7 @@ public sealed class AccountEraser(
                     InitialAdministrator.Id,
                     attempt
                 );
+                await erasureStore.DiscardPendingEmailAsync(account.Id, attempt);
                 account.Erase();
                 users.Remove(account);
                 await uow.SaveChangesAsync(attempt);

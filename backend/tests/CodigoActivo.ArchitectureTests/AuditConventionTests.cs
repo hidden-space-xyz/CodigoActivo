@@ -62,7 +62,7 @@ public sealed class AuditConventionTests
     }
 
     [Fact]
-    public void OnlyTheRatingCommandsAreUnauditedAndOnlyThePurgesAreScheduled()
+    public void OnlyTheRatingCommandsAreUnauditedAndOnlyThePurgesAndNoticesAreScheduled()
     {
         Commands()
             .Where(typeof(IUnaudited).IsAssignableFrom)
@@ -79,7 +79,9 @@ public sealed class AuditConventionTests
                 "PurgeUnverifiedAccountsCommand",
                 "PurgeUnusedFilesCommand",
                 "PurgeAdultDependentsCommand",
-                "SendComingOfAgeNoticesCommand"
+                "SendComingOfAgeNoticesCommand",
+                "SendConsentWithdrawalNoticesCommand",
+                "SendBlockedDataConsultationNoticesCommand"
             );
     }
 

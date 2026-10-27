@@ -1564,7 +1564,9 @@
           "RequestBlockedDataConsultationCode": "Pedir el código para abrir una consulta de datos bloqueados",
           "OpenBlockedDataConsultation": "Abrir una consulta de datos bloqueados",
           "SearchBlockedData": "Buscar cuentas en los datos bloqueados",
-          "ExportBlockedData": "Descargar un extracto de datos bloqueados"
+          "ExportBlockedData": "Descargar un extracto de datos bloqueados",
+          "SendConsentWithdrawalNotices": "Avisar al contacto legal de consentimientos retirados",
+          "SendBlockedDataConsultationNotices": "Avisar al contacto legal de consultas de datos bloqueados"
         },
         "codes": {
           "UniqueConstraintViolation": "Otra petición guardó el mismo dato a la vez.",

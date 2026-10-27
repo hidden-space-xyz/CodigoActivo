@@ -9,8 +9,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace CodigoActivo.Composition.Legal;
 
 /// <summary>
-/// Registers the legal identity of the association, read from the <c>LEGAL_*</c> settings, and the
-/// store of the legal policies.
+/// Registers the legal identity of the association, read from the <c>LEGAL_*</c> settings, the
+/// store of the legal policies and the scheduled notices to its legal contact.
 /// </summary>
 internal static class LegalRegistration
 {
@@ -28,6 +28,8 @@ internal static class LegalRegistration
     )
     {
         services.AddScoped<ILegalPolicyRepository, LegalPolicyRepository>();
+        services.AddFixedOptions<LegalNoticeOptions>();
+        services.AddHostedService<LegalNoticeWorker>();
         var settings = new Settings(configuration);
         services.AddValidatedOptions<LegalEntityOptions>(
             options =>

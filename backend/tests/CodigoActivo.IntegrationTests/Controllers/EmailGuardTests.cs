@@ -2,6 +2,7 @@ using System.Net;
 using AwesomeAssertions;
 using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.API.Activities.Contracts;
+using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Emails.Contracts;
@@ -11,6 +12,7 @@ using CodigoActivo.Domain.Events;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
@@ -32,9 +34,8 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
                 RecipientBurst = RecipientBurst,
                 RecipientPerHour = 1,
                 RecipientPerDay = RecipientBurst,
-                GlobalBurst = 6,
-                GlobalPerHour = 1,
-                GlobalCredentialReserve = 2,
+                AnonymousBurst = 6,
+                AnonymousPerHour = 1,
             }
         );
     }
@@ -124,7 +125,7 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ChangeStatusRepeatedDecisionLoopKeepsSucceedingButStopsMailingTheMember()
+    public async Task ChangeStatusRepeatedDecisionLoopKeepsSucceedingAndKeepsOnlyTheLastDecisionWaiting()
     {
         var host = ArmedGuard();
         var activityId = await SeedActivityAsync();
@@ -133,19 +134,33 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
 
         accepted.Should().Be(6, "delivery must never fail the write");
         Factory
-            .EmailSender.Sent.Count.Should()
-            .Be(
-                RecipientBurst - 1,
-                "the guard holds the mail once the recipient burst is spent, and the member's login code already used one token of it"
-            );
+            .EmailSender.Sent.Count(message => message.Kind is EmailKind.ActivityNotification)
+            .Should()
+            .Be(RecipientBurst, "the member gets their share and the rest waits");
+        var waiting = await Factory.QueryAsync(db =>
+            db.EmailOutboxMessages.AsNoTracking().ToListAsync(Ct)
+        );
+        waiting
+            .Should()
+            .ContainSingle("each new decision replaced the one still waiting")
+            .Which.NextAttemptAt.Should()
+            .BeAfter(Factory.Clock.UtcNow);
+
+        Factory.Clock.UtcNow = waiting[0].NextAttemptAt;
+        await Factory.DrainEmailOutboxAsync();
+
+        Factory
+            .EmailSender.Sent.Count(message => message.Kind is EmailKind.ActivityNotification)
+            .Should()
+            .Be(RecipientBurst + 1, "the last decision arrives once the member has room");
     }
 
     [Fact]
-    public async Task SendToUsersAutomaticQuotaExhaustedStillMailsEveryAdminRecipient()
+    public async Task SendToUsersRecipientOverItsShareGetsTheAdminMailLater()
     {
         var host = ArmedGuard();
         var activityId = await SeedActivityAsync();
-        await DriveDecisionLoopAsync(host, activityId, iterations: 6);
+        await DriveDecisionLoopAsync(host, activityId, iterations: 3);
         Factory.EmailSender.Clear();
 
         var admin = await LoginAsync(host, TestSeedData.AdminCredentials);
@@ -159,13 +174,24 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
         var result = (await response.ReadJsonAsync<SendEmailResultResponse>(Ct))!;
         result.Queued.Should().Be(3);
         Factory
-            .EmailSender.Sent.Select(m => m.ToAddress)
+            .EmailSender.Sent.Where(m => m.Kind is EmailKind.Manual)
+            .Select(m => m.ToAddress)
             .Should()
-            .BeEquivalentTo(
-                TestSeedData.AdminEmail,
-                TestSeedData.MemberEmail,
-                TestSeedData.BlockedEmail
-            );
+            .BeEquivalentTo(TestSeedData.AdminEmail, TestSeedData.BlockedEmail);
+
+        var waiting = await Factory.QueryAsync(db =>
+            db.EmailOutboxMessages.AsNoTracking().SingleAsync(Ct)
+        );
+        waiting.ToAddress.Should().Be(TestSeedData.MemberEmail);
+        waiting.AttemptCount.Should().Be(0, "waiting for room spends no attempt");
+        Factory.Clock.UtcNow = waiting.NextAttemptAt;
+        await Factory.DrainEmailOutboxAsync();
+
+        Factory
+            .EmailSender.Sent.Where(m => m.Kind is EmailKind.Manual)
+            .Select(m => m.ToAddress)
+            .Should()
+            .Contain(TestSeedData.MemberEmail, "admin-written mail is paced, never dropped");
     }
 
     [Fact]

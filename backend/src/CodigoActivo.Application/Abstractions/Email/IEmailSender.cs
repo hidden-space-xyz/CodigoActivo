@@ -1,19 +1,20 @@
 namespace CodigoActivo.Application.Abstractions.Email;
 
 /// <summary>
-/// Accepts email to one addressee for delivery, within the sending limits of the application.
+/// Accepts automatic email to one addressee for delivery.
 /// </summary>
 public interface IEmailSender
 {
     /// <summary>
-    /// Checks the sending limits for the message and stores it in the outbox, from which a
-    /// background worker delivers it; it returns before the email is sent.
+    /// Stores the message in the outbox, from which a background worker delivers it; it returns
+    /// before the email is sent. A code is first checked against the email guard; every other kind
+    /// is always stored and paced when it is delivered.
     /// </summary>
     /// <param name="message">Email message to deliver.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     /// <exception cref="EmailRateLimitedException">
-    /// A sending limit refused the message or the outbox is full; nothing was stored.
+    /// The email guard refused a code; nothing was stored.
     /// </exception>
     public Task SendAsync(EmailMessage message, CancellationToken ct = default);
 }

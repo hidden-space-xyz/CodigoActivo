@@ -48,4 +48,16 @@ public interface IEventTermsAcceptanceRepository : IRepository<EventTermsAccepta
         TermsDocumentId termsDocumentId,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// Loads the withdrawals the association's legal contact has not been told about yet, oldest
+    /// first, to record the notice.
+    /// </summary>
+    /// <param name="limit">Most decisions to load.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the decisions.</returns>
+    public Task<IReadOnlyList<EventTermsAcceptance>> ListWithdrawalNoticesPendingAsync(
+        int limit,
+        CancellationToken ct = default
+    );
 }

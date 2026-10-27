@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Infrastructure.Accounts;
+using CodigoActivo.Infrastructure.Communication;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Infrastructure.Diagnostics;
@@ -33,30 +34,97 @@ public static partial class InfrastructureLog
     );
 
     /// <summary>
-    /// Records that a message ran out of attempts and was dropped from the outbox.
+    /// Records that the server refused a message for good, or that its stored content cannot be read,
+    /// so it was dropped from the outbox.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="kind">Email category of the message.</param>
-    /// <param name="attempts">Attempts spent before giving up.</param>
-    /// <param name="exception">
-    /// Failure of the last attempt, or <see langword="null"/> when the message was abandoned during
-    /// its last attempt and removed once its lease expired.
-    /// </param>
+    /// <param name="failure">Whose fault the refusal was.</param>
+    /// <param name="exception">Refusal reported by the transport or the protector.</param>
     [LoggerMessage(
-        Level = LogLevel.Error,
-        Message = "Gave up on a {Kind} email after {Attempts} failed delivery attempts and removed it from the outbox"
+        Level = LogLevel.Warning,
+        Message = "A {Kind} email was refused for good ({Failure}) and removed from the outbox"
     )]
-    public static partial void EmailDeliveryGaveUp(
+    public static partial void EmailRejected(
         this ILogger logger,
         EmailKind kind,
-        int attempts,
-        Exception? exception
+        EmailDeliveryFailure failure,
+        Exception exception
+    );
+
+    /// <summary>
+    /// Records that messages of a kind expired before they could be delivered and were removed.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="count">Messages removed.</param>
+    /// <param name="kind">Email category of the messages.</param>
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "{Count} {Kind} emails expired before they could be delivered and were removed from the outbox"
+    )]
+    public static partial void EmailsExpired(this ILogger logger, int count, EmailKind kind);
+
+    /// <summary>
+    /// Records that notices which never expire have waited longer than they should. The deliverer
+    /// checks it at most once per alert interval of the email guard.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="count">Overdue messages.</param>
+    /// <param name="hours">Age, in hours, past which a message is overdue.</param>
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "{Count} emails that must be delivered have waited in the outbox for more than {Hours} hours"
+    )]
+    public static partial void EmailsOverdue(this ILogger logger, int count, int hours);
+
+    /// <summary>
+    /// Records that the SMTP server cannot take mail and the delivery paused. The deliverer logs it
+    /// at most once per alert interval of the email guard, since the pause repeats while the cause
+    /// lasts.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="minutes">Length of the pause, in minutes.</param>
+    /// <param name="exception">Failure that made the delivery pause.</param>
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "The SMTP server cannot take mail; email delivery paused for {Minutes} min without spending any attempt"
+    )]
+    public static partial void EmailDeliveryPaused(
+        this ILogger logger,
+        int minutes,
+        Exception exception
+    );
+
+    /// <summary>
+    /// Records that the daily limit of the SMTP provider holds part of the mail back. The deliverer
+    /// logs it at most once per alert interval of the email guard.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="limit">Messages the provider accepts per day.</param>
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "The daily limit of {Limit} messages of the SMTP provider is nearly spent; only codes leave until it refills"
+    )]
+    public static partial void EmailDailyLimitReached(this ILogger logger, int limit);
+
+    /// <summary>
+    /// Records that the messages handed to the SMTP server could not be added to the daily count, so
+    /// the count is lower than it should be until the window passes.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="exception">Failure raised while writing the count.</param>
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Could not add the delivered emails to the daily count of the SMTP provider"
+    )]
+    public static partial void EmailDeliveryCountNotRecorded(
+        this ILogger logger,
+        Exception exception
     );
 
     /// <summary>
     /// Records that the result of a failed attempt could not be written back, so the message waits
-    /// for its lease to expire instead: it is then retried or, when that was its last attempt,
-    /// removed and logged as given up.
+    /// for its lease to expire instead and is then retried.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="attempts">Attempts already spent on the message.</param>
@@ -74,20 +142,20 @@ public static partial class InfrastructureLog
     );
 
     /// <summary>
-    /// Records that the messages whose attempts are spent could not be removed. The deliverer logs
-    /// it at most once per alert interval of the email guard.
+    /// Records that the expired messages could not be removed. The deliverer logs it at most once per
+    /// alert interval of the email guard.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="exception">Failure raised while removing the rows.</param>
     [LoggerMessage(
         Level = LogLevel.Error,
-        Message = "Could not remove the email whose delivery attempts are spent; the next run will retry"
+        Message = "Could not remove the expired email; the next run will retry"
     )]
-    public static partial void ExhaustedEmailNotRemoved(this ILogger logger, Exception exception);
+    public static partial void ExpiredEmailNotRemoved(this ILogger logger, Exception exception);
 
     /// <summary>
-    /// Records that the stored content no pending message references any more, left by delivered
-    /// or given-up email, could not be cleared.
+    /// Records that the stored content no pending message references any more, left by delivered,
+    /// replaced or expired email, could not be cleared.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="exception">Failure raised while clearing the content.</param>
@@ -110,25 +178,14 @@ public static partial class InfrastructureLog
     public static partial void EmailOutboxRunFailed(this ILogger logger, Exception exception);
 
     /// <summary>
-    /// Records that the outbox is full, so an automatic email was held back.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="capacity">Pending messages the outbox accepts.</param>
-    [LoggerMessage(
-        Level = LogLevel.Error,
-        Message = "The outbound email outbox is full at {Capacity} pending messages; an email was held back"
-    )]
-    public static partial void EmailOutboxFull(this ILogger logger, int capacity);
-
-    /// <summary>
-    /// Records that the global outbound budget is spent and automatic mail is being denied. The
-    /// send limiter raises it at most once per alert interval of the email guard.
+    /// Records that the budget of the mail anyone can ask for is spent and such mail is being denied.
+    /// The send limiter raises it at most once per alert interval of the email guard.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     [LoggerMessage(
         Level = LogLevel.Error,
-        Message = "The global outbound email budget is exhausted and an email was denied; automatic mail is held "
-            + "until the budget refills, admin-written email is unaffected"
+        Message = "The outbound budget of verification and password-reset email is exhausted and an email was denied; "
+            + "login codes and notices are unaffected"
     )]
     public static partial void GlobalEmailBudgetExhausted(this ILogger logger);
 
@@ -140,8 +197,7 @@ public static partial class InfrastructureLog
     /// <param name="limit">Recipients the quota tracks at once.</param>
     [LoggerMessage(
         Level = LogLevel.Warning,
-        Message = "The outbound email quota already tracks {Limit} recipients, so new addresses are accounted against the global "
-            + "budget only"
+        Message = "The outbound email quota already tracks {Limit} recipients, so new addresses are not limited on their own"
     )]
     public static partial void EmailRecipientTrackingSaturated(this ILogger logger, int limit);
 
@@ -208,6 +264,18 @@ public static partial class InfrastructureLog
         Message = "The adult dependent purge run failed; the next run will retry"
     )]
     public static partial void AdultDependentPurgeFailed(this ILogger logger, Exception exception);
+
+    /// <summary>
+    /// Records that the periodic notices to the association's legal contact failed; what they tell
+    /// keeps waiting for the next run.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="exception">Failure that ended the run.</param>
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "The legal contact notice run failed; the next run will retry"
+    )]
+    public static partial void LegalNoticeRunFailed(this ILogger logger, Exception exception);
 
     /// <summary>
     /// Records that the periodic deletion of the uploads no content used in time failed.

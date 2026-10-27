@@ -41,4 +41,16 @@ public interface IBlockedDataConsultationRepository : IRepository<BlockedDataCon
         DateTimeOffset openedUpTo,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// Loads the consultations the association's legal contact has not been told about yet, oldest
+    /// first, without what they recorded, to record the notice.
+    /// </summary>
+    /// <param name="limit">Most consultations to load.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the consultations.</returns>
+    public Task<IReadOnlyList<BlockedDataConsultation>> ListNoticesPendingAsync(
+        int limit,
+        CancellationToken ct = default
+    );
 }

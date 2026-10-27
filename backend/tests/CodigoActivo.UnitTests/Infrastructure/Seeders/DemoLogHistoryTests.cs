@@ -255,7 +255,8 @@ public sealed class DemoLogHistoryTests
             .Should()
             .BeEquivalentTo(
                 "EmailDeliveryAttemptFailed",
-                "EmailDeliveryGaveUp",
+                "EmailDeliveryPaused",
+                "EmailsExpired",
                 "ManualEmailQueueFailed",
                 "SlowUseCase",
                 "DisposableEmailDomainDownloadFailed",

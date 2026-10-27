@@ -41,4 +41,14 @@ public interface IAccountErasureStore
         UserId heirId,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// Deletes the email still waiting for the addresses of the account and its dependents, so no
+    /// message about an erased person leaves after the erasure. It runs at once, inside the
+    /// transaction of the erasure.
+    /// </summary>
+    /// <param name="accountId">Identifier of the account.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    public Task DiscardPendingEmailAsync(UserId accountId, CancellationToken ct = default);
 }

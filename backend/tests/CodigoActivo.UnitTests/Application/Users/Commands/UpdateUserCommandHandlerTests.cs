@@ -255,10 +255,10 @@ public sealed class UpdateUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncPhoneNoticeRefusedByTheLimiterIsLoggedWithoutFailingTheUpdate()
+    public async Task HandleAsyncPhoneNoticeNotQueuedIsLoggedWithoutFailingTheUpdate()
     {
         EditOwnAccount();
-        emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Recipient);
+        emailSender.ThrowOnSend = new InvalidOperationException("database down");
 
         var result = await HandleAsync(
             actingUser.Id.Value,
@@ -269,10 +269,10 @@ public sealed class UpdateUserCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
         var entry = notifierLogger.LevelEntries.Should().ContainSingle().Subject;
-        entry.Level.Should().Be(LogLevel.Warning);
+        entry.Level.Should().Be(LogLevel.Error);
         entry
             .Message.Should()
-            .Be("A PhoneChanged security notification was dropped by the email limiter")
+            .StartWith("Sending a SecurityAlert email failed")
             .And.NotContain(actingUser.Id.Value.ToString());
     }
 

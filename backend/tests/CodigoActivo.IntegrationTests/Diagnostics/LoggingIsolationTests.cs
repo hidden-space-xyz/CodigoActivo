@@ -53,7 +53,7 @@ public sealed class LoggingIsolationTests(CodigoActivoWebAppFactory factory)
 
         for (var i = 0; i < 15_000; i++)
         {
-            logger.EmailOutboxFull(i);
+            logger.EmailDailyLimitReached(i);
         }
 
         var client = await LoginAsync(host, TestSeedData.MemberCredentials);

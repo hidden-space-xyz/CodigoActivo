@@ -5417,7 +5417,9 @@
           "RequestBlockedDataConsultationCode",
           "OpenBlockedDataConsultation",
           "SearchBlockedData",
-          "ExportBlockedData"
+          "ExportBlockedData",
+          "SendConsentWithdrawalNotices",
+          "SendBlockedDataConsultationNotices"
         ],
         "type": "string"
       },
