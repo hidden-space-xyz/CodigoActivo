@@ -14,9 +14,9 @@ using Microsoft.Extensions.Options;
 namespace CodigoActivo.Composition;
 
 /// <summary>
-/// Runs the start-up steps from a service scope: the configuration and key ring checks, schema
-/// migrations, log table maintenance, catalog seeding, the initial administrator, the deployment
-/// mode lock and the optional demo data and log history.
+/// Runs the start-up steps from a service scope: the configuration, key ring and deployment mode
+/// checks, schema migrations, log table maintenance, catalog seeding, the initial administrator,
+/// the deployment mode lock and the optional demo data and log history.
 /// </summary>
 public static class StartupInitialization
 {
@@ -43,19 +43,38 @@ public static class StartupInitialization
     }
 
     /// <summary>
-    /// Checks the configured deployment mode against the one this deployment started with and
-    /// keeps it for the next starts.
+    /// Checks the configured deployment mode against the one this deployment started with, writing
+    /// nothing, so a start with the other mode stops before any other step changes state.
+    /// </summary>
+    /// <param name="services">Service provider.</param>
+    public static void CheckDeploymentMode(this IServiceProvider services)
+    {
+        services
+            .GetRequiredService<DeploymentModeLock>()
+            .Check(
+                services.GetRequiredService<DeploymentModeOptions>().Demo,
+                services.GetRequiredService<IConfiguration>(),
+                services.GetRequiredService<IHostEnvironment>()
+            );
+    }
+
+    /// <summary>
+    /// Keeps the configured deployment mode for the next starts, checking it against the one this
+    /// deployment started with.
     /// </summary>
     /// <param name="services">Service provider.</param>
     /// <returns><see langword="true"/> when the deployment runs in demo mode.</returns>
     public static bool LockDeploymentMode(this IServiceProvider services)
     {
-        return services
+        var demoMode = services.GetRequiredService<DeploymentModeOptions>().Demo;
+        services
             .GetRequiredService<DeploymentModeLock>()
             .Lock(
+                demoMode,
                 services.GetRequiredService<IConfiguration>(),
                 services.GetRequiredService<IHostEnvironment>()
             );
+        return demoMode;
     }
 
     /// <summary>

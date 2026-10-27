@@ -5,10 +5,10 @@ using Microsoft.Extensions.Hosting;
 namespace CodigoActivo.Composition.Platform;
 
 /// <summary>
-/// Freezes deployment mode settings after startup validation. The choice is always persisted, in
-/// the <c>api-state</c> volume when the process runs in a container, except for a Development
-/// process outside a container: a developer running the API directly validates the configured value
-/// and keeps no state on their own filesystem.
+/// Freezes the deployment mode validated at start. The choice is always persisted, in the
+/// <c>api-state</c> volume when the process runs in a container, except for a Development process
+/// outside a container: a developer running the API directly keeps no state on their own
+/// filesystem.
 /// </summary>
 internal sealed class DeploymentModeLock
 {
@@ -29,28 +29,45 @@ internal sealed class DeploymentModeLock
     }
 
     /// <summary>
-    /// Reads <c>DEMO_MODE</c>, stores it on the first start and refuses any later start with the
-    /// other mode, unless it is a Development process outside a container.
+    /// Refuses a start with a mode other than the stored one without writing anything, so it can
+    /// run before any other step changes state. A first start has nothing to compare and passes.
     /// </summary>
-    /// <param name="configuration">Configuration holding <c>DEMO_MODE</c> and the container marker.</param>
+    /// <param name="demoMode">Whether the configured mode is demo mode.</param>
+    /// <param name="configuration">Configuration holding the container marker.</param>
     /// <param name="environment">Host environment that decides whether the choice is persisted.</param>
-    /// <returns><see langword="true"/> when the deployment runs in demo mode; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="InvalidOperationException">
-    /// <c>DEMO_MODE</c> is not <c>true</c> or <c>false</c>, the stored mode is unreadable, or it
-    /// differs from the configured one.
+    /// The stored mode is unreadable or differs from the configured one.
     /// </exception>
-    public bool Lock(IConfiguration configuration, IHostEnvironment environment)
+    public void Check(bool demoMode, IConfiguration configuration, IHostEnvironment environment)
     {
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(environment);
 
-        var configuredMode = ReadConfiguredMode(configuration["DEMO_MODE"]);
-        if (environment.IsDevelopment() && !RunsInContainer(configuration))
+        if (IsPersisted(configuration, environment) && File.Exists(filePath))
         {
-            return configuredMode;
+            Verify(demoMode);
         }
+    }
 
-        var configuredValue = configuredMode ? "demo" : "normal";
+    /// <summary>
+    /// Stores the configured mode on the first start and refuses any later start with the other
+    /// mode, unless it is a Development process outside a container.
+    /// </summary>
+    /// <param name="demoMode">Whether the configured mode is demo mode.</param>
+    /// <param name="configuration">Configuration holding the container marker.</param>
+    /// <param name="environment">Host environment that decides whether the choice is persisted.</param>
+    /// <exception cref="InvalidOperationException">
+    /// The stored mode is unreadable or differs from the configured one.
+    /// </exception>
+    public void Lock(bool demoMode, IConfiguration configuration, IHostEnvironment environment)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(environment);
+
+        if (!IsPersisted(configuration, environment))
+        {
+            return;
+        }
 
         var directory = Path.GetDirectoryName(filePath);
         if (string.IsNullOrEmpty(directory))
@@ -61,9 +78,15 @@ internal sealed class DeploymentModeLock
         Directory.CreateDirectory(directory);
         if (!File.Exists(filePath))
         {
-            CreateLockFile(configuredValue);
+            CreateLockFile(ModeName(demoMode));
         }
 
+        Verify(demoMode);
+    }
+
+    private void Verify(bool demoMode)
+    {
+        var configuredValue = ModeName(demoMode);
         var persistedValue = File.ReadAllText(filePath, Encoding.UTF8).Trim();
         if (persistedValue is not ("demo" or "normal"))
         {
@@ -79,8 +102,6 @@ internal sealed class DeploymentModeLock
                     + "Recreate all application containers and volumes to choose a different mode."
             );
         }
-
-        return configuredMode;
     }
 
     private void CreateLockFile(string configuredValue)
@@ -110,6 +131,11 @@ internal sealed class DeploymentModeLock
         }
     }
 
+    private static bool IsPersisted(IConfiguration configuration, IHostEnvironment environment)
+    {
+        return !environment.IsDevelopment() || RunsInContainer(configuration);
+    }
+
     private static bool RunsInContainer(IConfiguration configuration)
     {
         var value = configuration[ContainerKey]?.Trim();
@@ -117,13 +143,8 @@ internal sealed class DeploymentModeLock
             || string.Equals(value, "1", StringComparison.Ordinal);
     }
 
-    private static bool ReadConfiguredMode(string? value)
+    private static string ModeName(bool demoMode)
     {
-        if (bool.TryParse(value, out var mode))
-        {
-            return mode;
-        }
-
-        throw new InvalidOperationException("DEMO_MODE must be either true or false.");
+        return demoMode ? "demo" : "normal";
     }
 }

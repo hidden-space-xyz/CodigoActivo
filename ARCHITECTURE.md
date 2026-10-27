@@ -184,7 +184,8 @@ no check enforces.
   that consumes them. Domain declares only the repositories of its aggregates.
 - EF Core uses Npgsql and snake-case names. IDs are client-generated `Guid` values wrapped in typed
   identifiers. Closed value sets are domain enums stored as strings or as the `Guid` of their catalog row.
-- Startup validates the configuration, applies migrations, seeds catalogs, creates the initial administrator
+- Startup validates the configuration and refuses a demo mode other than the locked one before it writes
+  anything, then applies migrations, seeds catalogs, creates the initial administrator
   (`InitialAdministrator.Id`) when the user table is empty, locks the selected demo mode only once that
   succeeded, refuses a database that has users but not that
   account, and adds demo data, a replayed data history and an invented log history when enabled.
