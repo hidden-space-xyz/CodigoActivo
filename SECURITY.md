@@ -75,13 +75,12 @@ authentication are not supported.
   session cookie alone cannot promote another account); a wrong password returns
   `UserCurrentPasswordIncorrect` and changes nothing. Revoking needs no password (the SPA asks for
   confirmation), but the body must state `isAdmin`: one without it is refused instead of being read as a
-  revocation. Public registration never grants administrator access; on an empty database, startup creates
-  the initial administrator from `BOOTSTRAP_ADMIN_EMAIL`, ignored once a user exists, under the fixed id
-  `InitialAdministrator.Id` and with a random, discarded password, so its first password is set through a
-  password reset to that address. That generic account can be neither demoted (`UserCannotRemoveInitialAdmin`)
-  nor deleted, so the application always keeps an administrator; the SPA disables both actions for it. A
-  dependent, who never signs in, is never granted the flag (`UserDependentCannotBeAdmin`); the SPA offers the
-  action only for independent accounts.
+  revocation. Public registration never grants administrator access; the only account created as one is the
+  [initial administrator](DEPLOYMENT.md#demo-mode-and-initial-administrator), whose random password is
+  discarded, so there is no bootstrap password. That generic account can be neither demoted
+  (`UserCannotRemoveInitialAdmin`) nor deleted, so the application always keeps an administrator; the SPA
+  disables both actions for it. A dependent, who never signs in, is never granted the flag
+  (`UserDependentCannotBeAdmin`); the SPA offers the action only for independent accounts.
 - Nobody changes their own role, administrators included: on the caller's own id, `PATCH
   /api/users/{id}/admin` returns `UserSelfAdminChangeForbidden` before any password is checked, and `PATCH
   /api/users/{id}/change-type` returns `UserSelfTypeChangeForbidden`. Another administrator must make the
@@ -164,40 +163,39 @@ authenticator enrollment is not counted: it needs the session and the secret jus
 its password. Enrollment URIs and shared keys are only returned to the authenticated
 owner over HTTPS and never logged.
 
-**Account deletion**: erasing one's own account requires the current password **and** the second factor on `POST
-/api/me/deletion` (email code via `POST /api/me/deletion/code`, or the authenticator code). The emailed deletion
-code is the login code: same stored code, lifetime and cooldown, so a code sent for either flow is accepted by
-the other, and each still needs the password. Deletion signs the caller out, cascades to remove the user, their dependents
-and their signups, terms decisions and [event ratings](#event-ratings), and is refused only to the initial administrator
-(`UserDeleteInitialAdminForbidden`), before the password is checked. `GET /api/me/deletion` tells the caller
-whether they may delete their account, so the SPA hides the action from the initial administrator. `DELETE
-/api/users/{id}` refuses the initial administrator and the caller's own id
-(`UserSelfDeleteRequiresVerification`); the SPA disables that action on both rows. An administrator can delete
-any other administrator without re-entering a password, as with any other user. Every deletion credits the
-initial administrator instead of the household as author, last editor or uploader of events, activities, news,
-partners, resources and files, and as the account that recorded a terms decision about someone else, in the same
-transaction; the [data history](#data-history) keeps the original credit. Users are deleted only through
-`AccountEraser`, which locks (`FOR UPDATE`) the user, their dependents and the household's signups, terms
-decisions and ratings, loads them and deletes them in one transaction, so a concurrent signup, status change or
-cancellation cannot slip in between; an erasure that PostgreSQL aborts to resolve a deadlock is attempted up to
-three times in total. `AccountEraser` and `InitialAdministratorGuard` refuse to delete the initial administrator.
-Deleting an event (`DeleteEvent`), an activity (`DeleteActivity`) or one's own rating (`DeleteEventRating`), or
-cancelling a signup (`UnassignActivity`), commits through `ParticipationEraser`, which locks and loads what the
-removal takes away the same way. The SPA only tells users that they and their dependents lose access and cannot
-recover the account.
-
 **Recovery**: an administrator can reset a user's second factor to email
 (`POST /api/users/{id}/two-factor/reset`) after re-entering their own password, which also lifts a
 second-factor lockout; the user is only notified when the reset removed an authenticator. Losing the Data
 Protection keys makes stored authenticator secrets unreadable; affected users then need the same administrator
 reset.
 
+### Account deletion
+
+Erasing one's own account requires the current password **and** the second factor on `POST /api/me/deletion`
+(email code via `POST /api/me/deletion/code`, or the authenticator code). The emailed deletion code is the login
+code: same stored code, lifetime and cooldown, so a code sent for either flow is accepted by the other, and each
+still needs the password. Deletion signs the caller out, cascades to remove the user, their dependents and their
+signups, terms decisions and [event ratings](#event-ratings), and is refused only to the initial administrator
+(`UserDeleteInitialAdminForbidden`), before the password is checked. `GET /api/me/deletion` tells the caller
+whether they may delete their account, so the SPA hides the action from the initial administrator.
+`DELETE /api/users/{id}` refuses the initial administrator and the caller's own id
+(`UserSelfDeleteRequiresVerification`); the SPA disables that action on both rows. An administrator can delete
+any other administrator without re-entering a password, as with any other user. Every deletion credits the
+initial administrator instead of the household as author, last editor or uploader of events, activities, news,
+partners, resources and files, and as the account that recorded a terms decision about someone else, in the same
+transaction; the [data history](#data-history) keeps the original credit. Each erasure of an account or of a
+participation locks and loads everything it removes in one transaction, so a concurrent signup, status change
+or cancellation cannot slip in between, and nothing deletes the initial administrator:
+[ARCHITECTURE.md](ARCHITECTURE.md#domain-and-persistence) describes `AccountEraser`, `ParticipationEraser` and
+`InitialAdministratorGuard`. The SPA only tells users that they and their dependents lose access and cannot
+recover the account.
+
 ### Data history
 
-The blocked data (LOPDGDD article 32) is the data history: `DataHistoryRecorder`, a `SaveChangesInterceptor` that
-`CodigoActivoDbContext` adds to itself, adds to every save one `data_history` entry per row of a historized
-entity the save changes or deletes, with the row as it was before, in the same transaction. A change never
-commits without its history and the history never keeps a change that did not commit. Additions record nothing,
+The blocked data (LOPDGDD article 32) is the data history: every save adds one `data_history` entry per row of a
+historized entity it changes or deletes, with the row as it was before, in the same transaction
+([ARCHITECTURE.md](ARCHITECTURE.md#domain-and-persistence) describes the recorder). A change never commits
+without its history and the history never keeps a change that did not commit. Additions record nothing,
 since the row itself is the record, and neither does a change of excluded properties alone.
 
 - **What**: each configuration declares `HasHistory()` or `HasNoHistory()` (`DataHistoryModelTests`).
@@ -205,11 +203,9 @@ since the row itself is the record, and neither does a change of excluded proper
   activities, terms documents and their versions, news, partners, resources and file metadata (never the file).
   `ExcludedFromHistory()` keeps out the password hash, every code, the unconfirmed email change, authenticator
   secrets, the login challenge, lockouts, the last login and the row version.
-- **Coverage**: the interceptor only sees the change tracker, so the foreign keys of historized dependents use
-  `ClientCascade` (the database refuses to delete a row whose historized dependents were not loaded) and
-  `DataHistoryConventionTests` forbids `ExecuteUpdate`/`ExecuteDelete` on historized types, except the password
-  state `UserRepository` writes, which is excluded, and limits raw SQL to a reviewed list of types that only lock,
-  read or write tables without history.
+- **Coverage**: historized rows change only through the change tracker, the only writes the recorder sees, so
+  none escapes the history; the model and `DataHistoryConventionTests` enforce it, as
+  [ARCHITECTURE.md](ARCHITECTURE.md#domain-and-persistence) describes.
 - **Entry**: `id` (UUID v7), `entity`, `occurred_at`, `subject_ids` (every `UserId` the row holds, as GUIDs:
   the account it is, its guardian, the person a signup or decision is for, whoever decided, recorded, authored
   or last updated it; never the signed-in account that changed it, so an extract about an administrator does
@@ -371,7 +367,7 @@ code cite only these laws.
   origin; the CSP allows scripts, styles, fonts, images and connections only from `'self'` (plus inline styles
   and `data:`/`blob:` images), sets `base-uri 'none'` and adds `upgrade-insecure-requests` only when nginx's
   normalized scheme is HTTPS. Do not add CDNs, analytics or embeds without a legal basis and consent review.
-- The API downloads the public disposable email domain list once a day (see
+- The API downloads the public disposable email domain list (see
   [Email abuse controls](#email-abuse-controls)); the request carries no user data, and addresses are only
   checked against the local copy.
 - The only cookies are the session, two-factor challenge and CSRF cookies above; the theme choice stays in
@@ -416,6 +412,13 @@ code cite only these laws.
   data history. The SPA sends the first once the visitor confirms being of age at its age gate and the second
   with every minor, since each form that adds one states that adding it is that declaration. Accounts and
   minors added before they were recorded have none.
+- Verification, email-change and password-reset links put the user id and a 256-bit code from a
+  cryptographic random generator in the URL fragment (`/reset-password#userId=…&code=…`), which browsers
+  never send to the server; the page reads and removes it from the address bar, so a reload needs the
+  emailed link again.
+
+### Terms documents and decisions
+
 - A terms document holds either conditions or a consent (`terms_documents.kind`). Decisions are recorded per
   person signed up, keyed by event, person and document, with who took them (`event_terms_acceptances.user_id`
   and `decided_by_id`): an adult decides for themselves; for a dependent, the guardian decides the conditions
@@ -463,10 +466,6 @@ code cite only these laws.
   in `event_terms_acceptances.signature`, never in the public file storage. Only administrators read it
   (`GET /api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/signature`, answered
   `no-store`).
-- Verification, email-change and password-reset links put the user id and a 256-bit code from a
-  cryptographic random generator in the URL fragment (`/reset-password#userId=…&code=…`), which browsers
-  never send to the server; the page reads and removes it from the address bar, so a reload needs the
-  emailed link again.
 
 ### Event ratings
 
@@ -510,12 +509,11 @@ such as the path of a file under `/app/files`; it is written as is.
   exceptions are recorded only by `GlobalExceptionHandler`, with the HTTP method and the route template, never
   the requested path. Expected outcomes are not logged: a refused concurrent update (409 `ConcurrentUpdate`), a
   signup that lost a unique-key race (409), a deadlock that a retry resolved, or a rejected CSRF token, which
-  the client refreshes and sends again. A use case is logged as slow only above 5 seconds. A failure that
-  repeats on every outbox run (`EmailOutboxRunFailed`, `ExhaustedEmailNotRemoved`, `EmailDeliveryAttemptFailed`)
-  is logged at most once every 15 minutes. `NormalUseLoggingTests` drives anonymous,
-  member and administrator flows and fails if any entry passes the policy. EF Core sensitive-data logging
-  stays disabled; `SmtpEmailSender` strips the recipient and server reply out of SMTP exceptions before they
-  are logged.
+  the client refreshes and sends again. A use case is logged as slow only above 5 seconds; repeated email
+  delivery failures are throttled as [DEPLOYMENT.md](DEPLOYMENT.md#email-delivery) describes.
+  `NormalUseLoggingTests` drives anonymous, member and administrator flows and fails if any entry passes the
+  policy. EF Core sensitive-data logging stays disabled; `SmtpEmailSender` strips the recipient and server
+  reply out of SMTP exceptions before they are logged.
 - **Security events**: only three events exist, all `Warning` and free of any user id —
   `PasswordLockoutTriggered` and `TwoFactorLockoutTriggered` (an account or its second factor was locked;
   written once the lock commits) and `SecurityNotificationRateLimited` (a security-change email was dropped
@@ -585,16 +583,15 @@ Only administrators read either log: `GET /api/logs/diagnostics`, `/api/logs/dia
 
 ### Production configuration and secrets
 
-Production refuses to start with weak secrets, a non-public or non-HTTPS `APP_BASE_URL` or unencrypted SMTP;
-the full list of startup checks is in [DEPLOYMENT.md](DEPLOYMENT.md#first-production-start) and the secret
-file rules in [DEPLOYMENT.md](DEPLOYMENT.md#secrets). Secrets are Compose file secrets, never environment
-variables, so they stay out of `docker inspect`, `docker compose config` and every process environment; code
-running inside a container can still read the files mounted into it. The root `.env` and `appsettings.json`
-hold no credentials, and there is no bootstrap password. The API's database connection never leaves the
-internal `backend` network. Rotating the database password must update both the PostgreSQL role and
-`secrets/postgres_password`.
+Production refuses to start with weak secrets, a non-public or non-HTTPS `APP_BASE_URL` or unencrypted SMTP
+([startup checks](DEPLOYMENT.md#first-production-start)). Credentials are Compose file
+[secrets](DEPLOYMENT.md#secrets), never environment variables, the root `.env` or `appsettings.json`; code
+running inside a container can still read the files mounted into it. The containers run with the isolation
+that [Production topology](DEPLOYMENT.md#production-topology) lists; the development override removes part of
+it and must not be deployed. Every security, abuse and retention value is
+[fixed in code](DEPLOYMENT.md#fixed-settings), so no deployment setting can weaken it.
 
-### Data Protection and containers
+### Data Protection
 
 The API persists ASP.NET Data Protection keys in `api-dataprotection` and protects them the same way in every
 environment. Every key ring element is stored as an `urn:codigoactivo:data-protection:aes-gcm:v1` XML element
@@ -609,10 +606,7 @@ procedure: changing `DATA_PROTECTION_KEY` means recreating the volume, which inv
 stored authenticator secret and every pending one-time code or link, and leaves the data history unreadable.
 Data Protection payloads themselves — session and two-factor cookies, antiforgery tokens, authenticator
 secrets, unsubscribe tokens, the email outbox content described below and the data history — are encrypted
-with AES-256-GCM. Application containers run as non-root, drop all capabilities, enable `no-new-privileges`
-and use read-only root filesystems; PostgreSQL drops every capability its entrypoint does not need and is
-reachable only on the internal backend network. The development override removes parts of this boundary and
-must not be deployed.
+with AES-256-GCM.
 
 ### Files and multipart requests
 
@@ -642,15 +636,10 @@ failed run logs `UnusedFilePurgeFailed`, and content that cannot be removed from
 `StoredFileContentDeleteFailed`. Administrator email
 attachments never reach the `api-files` volume: they are read once
 per batch into the Data Protection-protected outbox content described below and removed once every message
-referencing them is delivered or discarded, with count, combined bytes and recipient count bounded by
-`ManualEmailOptions`.
+referencing them is delivered or discarded. `ManualEmailOptions` caps each send at 500 recipients and 10
+attachments of 8 MiB in all.
 
-Every security, abuse and retention value (Argon2id cost, password policy, code and session lifetimes,
-lockouts, rate, concurrency and email limits, request sizes, retentions, nginx hardening) is fixed in code;
-the deployment configuration holds only addresses, credentials, identity and the demo choice
-([DEPLOYMENT.md](DEPLOYMENT.md#environment-variables)), so it cannot weaken any of them.
-
-## Email abuse controls
+### Email abuse controls
 
 New accounts must always confirm an emailed OTP before their first login, and holders confirm their own new
 email the same way; there is no switch. Mail to an address nobody has verified yet greets nobody, so neither
@@ -667,14 +656,13 @@ Registration and email changes (`PUT /api/users/{id}`) refuse addresses of dispo
 providers with `DisposableEmailNotAllowed` (400), which the SPA presents as a security measure. An address
 is refused when its domain (lowercase, punycode, no trailing dot) or any parent domain other than the
 top-level one is in `disposable_email_domains`; an unchanged email is not re-checked, so existing accounts
-keep working. `DisposableEmailDomainRefreshWorker` downloads the list of the
-[disposable-email-domains](https://github.com/disposable-email-domains/disposable-email-domains) project
-30 seconds after startup and then every 24 hours, or every hour after a failure. A download replaces the
-stored list only when it is at most 2 MiB of UTF-8 text with one valid domain name per line (blank and `#`
-lines ignored), holds at least 1,000 domains and would not refuse any domain in
-`DisposableEmailDomainList.ProtectedDomains` (Gmail, Outlook/Hotmail, Yahoo, iCloud and Proton, plus
-`Organization.WebDomain`). An unreachable or slow source, an error status or a rejected body keeps the last valid
-list; until a first list is stored, every domain is accepted.
+keep working. The list comes from the
+[disposable-email-domains](https://github.com/disposable-email-domains/disposable-email-domains) project on
+the schedule in [DEPLOYMENT.md](DEPLOYMENT.md#disposable-email-domains), which also says what is accepted
+while no download succeeds. A download replaces the stored list only when it is at most 2 MiB of
+UTF-8 text with one valid domain name per line (blank and `#` lines ignored), holds at least 1,000 domains and
+would not refuse any domain in `DisposableEmailDomainList.ProtectedDomains` (Gmail, Outlook/Hotmail, Yahoo,
+iCloud and Proton, plus `Organization.WebDomain`).
 
 Changing an account's password (by the user or through recovery), its second factor (authenticator confirmed,
 returned to email, or reset by an administrator), its administrator flag or its email or phones queues a
@@ -693,12 +681,23 @@ whose half only second-factor codes may spend, and second-factor codes have per-
 own, so verification and reset mail, which anyone can request, never stops a login code. Normalization
 lowercases addresses, strips sub-address tags and folds dots only for Gmail/Googlemail. Quota is spent on
 attempt, before the message reaches the outbox; SMTP failure and a full outbox do not refund it. The limiter
-is always enabled, in-memory, resets on restart and is multiplied by the number of API replicas.
+can be neither disabled nor configured (`EmailGuardOptions`); it is in-memory, resets on restart and is
+multiplied by the number of API replicas.
 
-Both automatic and administrator-written mail are stored in a PostgreSQL outbox (`email_outbox_messages`)
-and delivered in the background by `EmailOutboxDeliveryWorker`, so a request that queues email returns once the
-row is committed, not once SMTP accepts it: see [DEPLOYMENT.md](DEPLOYMENT.md#email-delivery) for the
-delivery schedule, capacity and logged failures. The stored subject, bodies and attachments are protected with
+| Limit                                                                    | Value  |
+| ------------------------------------------------------------------------ | ------ |
+| Immediate messages allowed per normalized address                        | 20     |
+| Sustained hourly limit per address                                       | 10     |
+| Daily limit per address                                                  | 50     |
+| Immediate process-wide budget                                            | 1000   |
+| Sustained process-wide hourly budget                                     | 1000   |
+| Global capacity reserved for verification, reset and second-factor codes | 200    |
+| Maximum address budgets held in memory                                   | 50000  |
+| Idle-budget cleanup interval                                             | 5 min  |
+| Minimum interval between repeated guard alerts or outbox failures        | 15 min |
+
+Both automatic and administrator-written mail wait in a PostgreSQL outbox until they are
+[delivered](DEPLOYMENT.md#email-delivery). The stored subject, bodies and attachments are protected with
 Data Protection (purpose `CodigoActivo.EmailOutbox.v1`); recipient address/name, unsubscribe link and one-click
 unsubscribe address, kind and attachment names are stored in clear. Recreating the Data Protection key ring
 makes pending rows unreadable: each attempt fails like any other delivery failure, and a row is discarded after
@@ -742,12 +741,11 @@ send would reach — distinct addressable recipients deduplicated case-insensiti
 reaches, and how many of them a news send leaves out for lack of consent. These preview endpoints carry none of the send limits above, only
 the general API limits of nginx and the API.
 
-## Demo mode
+### Demo mode
 
-`DEMO_MODE=true` seeds invented accounts with a random, hashed and discarded 32-byte password, fictitious
-addresses, and the second factor still required, so only the bootstrap administrator can sign in. Such
-deployments are disposable and must never contain private data. Seeding downloads its sample images from
-`picsum.photos`, at most 10 MiB each, in requests that carry no user data. Its log pages mix the real entries
-with an invented history, including a password attack, whose callers use the IP ranges reserved for
-documentation (`192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24`, `2001:db8::/32`). The mode is locked
-on first start; see [DEPLOYMENT.md](DEPLOYMENT.md#demo-mode-and-initial-administrator).
+[Demo deployments](DEPLOYMENT.md#demo-mode-and-initial-administrator) are disposable and must never contain
+private data. Their invented accounts have a random, hashed and discarded 32-byte password, fictitious
+addresses and the second factor still required, so only the bootstrap administrator can sign in. Seeding
+downloads its sample images from `picsum.photos`, at most 10 MiB each, in requests that carry no user data, and
+the callers of the invented log history use the IP ranges reserved for documentation (`192.0.2.0/24`,
+`198.51.100.0/24`, `203.0.113.0/24`, `2001:db8::/32`).
