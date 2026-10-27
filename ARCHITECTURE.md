@@ -157,25 +157,27 @@ no check enforces.
   (`FOR NO KEY UPDATE`, which leaves signups, ratings and activities referencing the event free), so no event loses
   its last category.
 - Users are deleted only through `AccountEraser`, used by `DeleteUser`, `DeleteOwnAccount` and `EmailClaims`,
-  which replaces an unverified account whose email a registration or a confirmed email change takes. In one
-  such transaction it locks and loads the household and what belongs to it (`IAccountErasureStore`), hands the
-  content credited to the household over to the initial administrator and removes the account; any other change
-  staged in the unit of work commits with it. `InitialAdministratorGuard`, a `SaveChangesInterceptor` that
-  `CodigoActivoDbContext` adds to itself, refuses any deletion of the initial administrator. Deleting an event,
-  an activity or a rating, or cancelling a signup, commits through `ParticipationEraser`, which locks and loads
-  what the removal takes away (`IParticipationErasureStore`) in the same transaction.
+  which replaces an unverified account whose email a registration or a confirmed email change takes. It refuses
+  the initial administrator and, in one `ExecuteInTransactionAsync` transaction, locks (`FOR UPDATE`) and loads
+  the household and what belongs to it, signups, terms decisions and ratings included (`IAccountErasureStore`),
+  hands the content credited to the household over to the initial administrator and removes the account; any
+  other change staged in the unit of work commits with it. `InitialAdministratorGuard`, a
+  `SaveChangesInterceptor` that `CodigoActivoDbContext` adds to itself, refuses any deletion of the initial
+  administrator. Deleting an event, an activity or a rating, or cancelling a signup, commits through
+  `ParticipationEraser`, which locks and loads what the removal takes away (`IParticipationErasureStore`) in the
+  same transaction.
 - Historized entities change only through the change tracker: `DataHistoryRecorder`, the other interceptor
   `CodigoActivoDbContext` adds to itself, keeps the previous state of every historized row a save changes or
-  deletes, encrypted, in `data_history`, so their dependents use `ClientCascade` and are loaded before their
-  principal is deleted, and no bulk write or raw SQL touches them (`DataHistoryConventionTests`). The
-  `PurgeDataHistory`, `PurgeUnverifiedAccounts`, `PurgeAdultDependents`,
-  `PurgeUnusedFiles` and `RemoveExpiredSessions` commands delete the history and consultations past their
-  retention, accounts nobody verified within
-  24 hours and dependents who came of age (both through `AccountEraser`), uploads no content used within 7 days
-  (through `IOrphanFileCleaner`), stored content no file row owns an hour after it was written and expired
-  sessions, and `SendComingOfAgeNotices` warns guardians 30 days
-  before; hosted services in Infrastructure only run them on a schedule. What the history holds, how
-  long it is kept and who reads it is in [SECURITY.md](SECURITY.md#data-history).
+  deletes, encrypted, in `data_history`, so their dependents use `ClientCascade` (the database refuses to delete
+  a row whose historized dependents were not loaded) and are loaded before their principal is deleted.
+  `DataHistoryConventionTests` forbids `ExecuteUpdate`/`ExecuteDelete` on historized types, except the password
+  state `UserRepository` writes, which the history excludes, and limits raw SQL to a reviewed list of types that
+  only lock, read or write tables without history. The scheduled commands (`PurgeDataHistory`,
+  `PurgeUnverifiedAccounts`, `PurgeAdultDependents`, `PurgeUnusedFiles`, `RemoveExpiredSessions` and
+  `SendComingOfAgeNotices`) apply the retentions [SECURITY.md](SECURITY.md) states, erasing accounts through
+  `AccountEraser` and uploads through `IOrphanFileCleaner`; hosted services in Infrastructure only run them on a
+  schedule. What the history holds, how long it is kept and who reads it is in
+  [SECURITY.md](SECURITY.md#data-history).
 - Technical ports (`IClock`, `IPasswordHasher`, `IOneTimeCodeHasher`, `ITotpService`, `ISecretProtector`,
   `IFileStorage`, `IAuditTrail`, `IRequestOrigin`, the email, persistence and read ports) live in
   `Application/Abstractions` or in the feature
@@ -253,11 +255,10 @@ checks, and the accounts a blocked data consultation searches or exports, with t
 (`IRequestOrigin`, implemented by `HttpRequestOrigin` in the API), the `AuditAction` named after the command,
 the main entity (the one the handler named through `IAuditSubject`, as login does with the account it found by
 email, else the typed ID a `Result<TId>` created, else the first typed ID of the command), the other typed IDs
-as related entities and the outcome. `CommandAudit` reads only the typed IDs, never another value. `IUnaudited`
-keeps a command out (only `SaveEventRating` and `DeleteEventRating`) and `[Unaudited]` a property (only the
-account of `ExportBlockedData`), a scheduled command is recorded only when it changed something, and a failure
-to record never changes the command's result.
-`SerilogAuditTrail` (Infrastructure) queues the record to `audit_log_entries`.
+as related entities and the outcome. `CommandAudit` reads only the typed IDs, never another value; `IUnaudited`
+keeps a command out and `[Unaudited]` a property. `SerilogAuditTrail` (Infrastructure) queues the record to
+`audit_log_entries`. What an entry holds, which commands and properties stay out and why is in
+[SECURITY.md](SECURITY.md#audit-log).
 
 Use cases decide who may run them on whose behalf. `ICurrentUser` (implemented by `HttpCurrentUser` in the API)
 tells who is signed in; commands and queries take the author, the acting user and the administrator flag from
@@ -274,21 +275,18 @@ included, and answers anyone else with `ActivityHouseholdMemberNotAllowed`. The 
 `[AllowOnlyAdmin]` attributes refuse early at the HTTP edge; `[AllowOnlySelf]` asks the same policy.
 
 An event can link several terms documents (`event_terms_documents`, each `is_required`/`display_order`); a
-document holds conditions or a consent (`kind`, which cannot change once an event links it or anyone decided on
-it, and a consent is never required) and may ask for a handwritten signature (`requires_signature`). The signup
-wire contract carries `TermsDecisions` lists of `{TermsDocumentId, Accepted, Signature, Version}`, the
-signature a base64 PNG drawn in the SPA with `signature_pad`: one for the person in `AssignRequest`, one per
-member in each `AssignHouseholdRequest` assignment. `TermsGate` applies `TermsConsent` person by person and
-records each decision as an `EventTermsAcceptance` about that person with who decided and the document version
-it was taken on (a rewrite keeps the replaced version as a `TermsDocumentVersion`), which keeps every change of
-it as a `TermsDecisionChange` with the account that recorded it;
+document holds conditions or a consent (`kind`) and may ask for a handwritten signature (`requires_signature`).
+The signup wire contract carries `TermsDecisions` lists of `{TermsDocumentId, Accepted, Signature, Version}`,
+the signature a base64 PNG drawn in the SPA with `signature_pad`: one for the person in `AssignRequest`, one
+per member in each `AssignHouseholdRequest` assignment. `TermsGate` applies `TermsConsent` person by person and
+records each decision as an `EventTermsAcceptance` about that person, which keeps every change of it as a
+`TermsDecisionChange`; a rewritten document keeps the replaced version as a `TermsDocumentVersion`.
 `GET /api/events/{eventId}/terms` returns every linked document and, for the caller and each dependent, the
 decisions taken and whether they decide their own consents, and administrators list the decisions of an event
-under `/api/events/{eventId}/terms/decisions`. A given consent is withdrawn with
-`POST /api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/withdraw` (`WithdrawTermsConsent`), whose
-`TermsConsentWithdrawn` domain event `ConsentWithdrawalNotification` turns into an email to the legal contact;
-«Mi cuenta» lists the household's consents from `GET /api/me/consents`. Consent rules are in
-[SECURITY.md](SECURITY.md#privacy-and-third-parties).
+under `/api/events/{eventId}/terms/decisions`. A withdrawal (`WithdrawTermsConsent`) records
+`TermsConsentWithdrawn`, which `ConsentWithdrawalNotification` turns into an email to the legal contact. Who
+decides, what each kind requires, withdrawals, versions and signatures are in
+[SECURITY.md](SECURITY.md#terms-documents-and-decisions).
 
 The privacy and cookie policies are `LegalPolicy` aggregates, at most one per `LegalPolicyKind` (unique `kind`),
 whose text-only rich text administrators write in «Políticas» (`/admin/legal`). The repository holds no

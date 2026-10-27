@@ -30,13 +30,15 @@ clients only: see [TLS and proxy boundary](#tls-and-proxy-boundary).
 | `api-state`          | The immutable demo/normal deployment-mode choice                   |
 | `logs-db`            | PostgreSQL log files, one per weekday                              |
 
+Neither the template nor Compose defines `PGDATA`; PostgreSQL uses the default data directory inside the
+volume mounted at `/var/lib/postgresql`. The container clock runs in UTC, as do the PostgreSQL log files
+and the daily partitions of the API's log tables; only the application clock follows `APP_TIMEZONE`, which
+the log pages also use for their day filters.
+
 The API stores its log in two PostgreSQL tables, which administrators read on the «Diagnóstico» and
-«Auditoría» pages and the API purges itself; PostgreSQL writes its own log files into `logs-db` and overwrites
-each one a week later. See [SECURITY.md](SECURITY.md#logging) for what is logged and how retention works.
-`db` and `web` disable
-container logging (`logging: driver: none`); `api` keeps a capped `json-file` log (2 files of 1 MB) for what
-cannot reach the database: a failed start and failures of the logging pipeline itself. Queued email is
-persisted in `db-data`, not held in memory; see [Email delivery](#email-delivery).
+«Auditoría» pages, and PostgreSQL writes its own log files into `logs-db`; container logging keeps only what
+cannot reach the database. [SECURITY.md](SECURITY.md#logging) describes what each log holds and every
+retention. Queued email is persisted in `db-data`, not held in memory; see [Email delivery](#email-delivery).
 
 Both application containers run as non-root, drop Linux capabilities, use `no-new-privileges` and have
 read-only root filesystems with explicit writable mounts. `db` also uses `no-new-privileges` and keeps only
@@ -53,6 +55,12 @@ serves directly (`gzip_static`). A reverse proxy in front must not strip `Accept
 nginx allows 8,192 connections per worker, 4,000 active client connections and 2,000 per IP (`web`'s open-file
 limit is raised to 65,536). Application request and credential-work rate limits are documented once, in
 [SECURITY.md](SECURITY.md#passwords-and-credential-endpoints).
+
+### Backups
+
+Back up the `api-dataprotection` volume with every `db-data` backup and keep `secrets/data_protection_key`:
+without both the data history cannot be read. Data Protection adds a key every 90 days, so a copy of the volume
+older than the database copy cannot read the entries protected with the keys created since.
 
 ## First production start
 
@@ -98,23 +106,25 @@ only after that check, when the deployment mode is locked, so a start either one
 but written no mode lock. Demo seeding runs after the lock; a start it stops keeps the lock and seeds again on
 the next start.
 
+The privacy and cookie policies are not in the repository: administrators write and publish them in
+«Políticas» of the administration panel, and the database keeps every version. A new installation without demo
+data starts without them, and `/privacy` and `/cookies` say they are not published yet, so publish both before
+opening the site. They state the log retentions, the cookies and the hosting, email and file storage
+providers; publish new versions in the same release as any change to them.
+
 ### TLS and proxy boundary
 
-The external proxy must terminate HTTPS, overwrite client-supplied forwarding headers and send the effective
-scheme as `X-Forwarded-Proto`. nginx normalizes that header itself before forwarding it to the API: only an
-exact `https` value (case-insensitive) counts, so any other value — including a comma-separated list such as
-`https, http` — or a missing header becomes `http`. Because nginx only reads the header value, not the peer,
-the external proxy must overwrite `X-Forwarded-Proto` rather than append to it; appending makes nginx see
-`http`, so it skips HSTS and forwards `http` to the API. Neither nginx nor the API redirects HTTP to HTTPS (the
-container has no HTTPS port), so the external proxy must redirect or refuse plain HTTP itself. nginx emits HSTS
-only when its normalized scheme is HTTPS. The API accepts one forwarded hop and honours
-`X-Forwarded-For`/`X-Forwarded-Proto` only from IPv4 loopback and private peers (`127.0.0.0/8` and RFC 1918),
-so a proxy or container network outside those ranges makes it ignore both headers and put every client in a
-single shared rate-limit partition. The proxy must also pass the public host name in `Host`: in Production the
-API only accepts the host of `APP_BASE_URL` (plus `localhost`, `127.0.0.1` and `api`) and answers any other
-with 400. IPv6 is not supported: nginx answers 403 to every request whose client address, read from
-`X-Forwarded-For`, is IPv6. `APP_BASE_URL` controls links in email and the URLs generated in `/sitemap.xml`
-and `/robots.txt`; it must match the public origin.
+The external proxy must terminate HTTPS and redirect or refuse plain HTTP itself: neither nginx nor the API
+redirects (the container has no HTTPS port). It must overwrite client-supplied forwarding headers and send the
+effective scheme as `X-Forwarded-Proto`, replacing any value rather than appending to it: nginx counts only an
+exact `https` (case-insensitive), so an appended list such as `https, http` or a missing header reads as `http`,
+and nginx then skips HSTS and forwards `http` to the API. The proxy and the Compose networks must use IPv4
+loopback or private addresses (`127.0.0.0/8` and RFC 1918): the forwarded client address is only trusted from
+those, so any other puts every client in a single shared rate-limit partition, and IPv6 clients get 403.
+[SECURITY.md](SECURITY.md#transport-and-proxy-trust) explains which header each hop trusts and why. The proxy
+must also pass the public host name in `Host`: in Production the API only accepts the host of `APP_BASE_URL`
+(plus `localhost`, `127.0.0.1` and `api`) and answers any other with 400. `APP_BASE_URL` controls links in
+email and the URLs generated in `/sitemap.xml` and `/robots.txt`; it must match the public origin.
 
 ## Environment variables
 
@@ -158,21 +168,6 @@ such as `LEGAL_EMAIL`, since whoever reads the mailbox can reset the password an
 emailed codes, also receives its second factor. A value that is not a single address stops the start; to change
 the person, change it and restart the API. The development overlay defaults it to `BOOTSTRAP_ADMIN_EMAIL`.
 
-Back up the `api-dataprotection` volume with every `db-data` backup and keep `secrets/data_protection_key`:
-without both the data history cannot be read. Data Protection adds a key every 90 days, so a copy of the volume
-older than the database copy cannot read the entries protected with the keys created since.
-
-The privacy and cookie policies are not in the repository: administrators write and publish them in
-«Políticas» of the administration panel, and the database keeps every version. A new installation without demo
-data starts without them, and `/privacy` and `/cookies` say they are not published yet, so publish both before
-opening the site. They state the log retentions, the cookies and the hosting, email and file storage
-providers; publish new versions in the same release as any change to them.
-
-Neither the template nor Compose defines `PGDATA`; PostgreSQL uses the default data directory inside the
-volume mounted at `/var/lib/postgresql`. The container clock runs in UTC, as do the PostgreSQL log files
-and the daily partitions of the API's log tables; only the application clock follows `APP_TIMEZONE`, which
-the log pages also use for their day filters.
-
 ### Secrets
 
 Secrets are Compose file secrets, never environment variables, so they stay out of `docker inspect`,
@@ -190,7 +185,9 @@ name.
 All three files must exist. A single trailing newline is ignored, but a carriage return is not: PostgreSQL
 strips it from its password and the API keeps it, so a CRLF file (as Windows tools write) fails the database
 login. Keep the directory private to the deployment account (`0700`) and the files readable (`0644`): Compose
-without Swarm bind-mounts them unchanged, and the containers read them as unprivileged users.
+without Swarm bind-mounts them unchanged, and the containers read them as unprivileged users. PostgreSQL reads
+its password only when it initializes an empty volume, so rotating it means changing both the `codigoactivo`
+role and `secrets/postgres_password`.
 
 For a direct `dotnet run`, secrets are plain environment variables with those uppercase names. Missing
 `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB` and `POSTGRES_USER` fall back to `localhost:5432` and
@@ -202,25 +199,12 @@ where login codes can also be read.
 ### Fixed settings
 
 Security, abuse and retention values are fixed in code, so no deployment can weaken them through
-configuration: lifetimes, lockouts and resend waits of passwords, sessions and one-time codes, upload and
-email limits, the email guard and queue, and the retention of logs and accounts. `appsettings.json` holds only
-the framework's log levels and host filter. Changing a fixed value is a code change, released like any other.
-
-| Value                                                            | Fixed at                                    |
-| ---------------------------------------------------------------- | ------------------------------------------- |
-| Session lifetime                                                 | 30 days                                     |
-| Second-factor challenge, the emailed login code included         | 10 minutes                                  |
-| Verification code, password reset link and authenticator setup   | 15 minutes                                  |
-| Wait before another emailed code to the same account             | 60 seconds                                  |
-| Wrong passwords before the account locks until a password reset  | 5                                           |
-| Wrong second-factor codes before verification locks              | 5, for 15 minutes                           |
-| Uploaded image                                                   | 10 MiB                                      |
-| Administrator email                                              | 500 recipients, 10 attachments, 8 MiB total |
-| Diagnostic and audit log entries                                 | 30 and 60 days                              |
-
-Kestrel refuses request bodies above 2 MiB except on the upload and manual-email endpoints, which accept the
-upload limit plus 64 KiB of multipart overhead; nginx separately limits request bodies to `12m`. Manual-email
-attachments are never stored in `api-files`.
+configuration: lifetimes, lockouts and resend waits of passwords, sessions and one-time codes, rate and
+concurrency limits, request, upload and email limits, the email guard and queue, and the retention of logs,
+accounts and the data history. Their values are documented with the control they belong to, in
+[SECURITY.md](SECURITY.md) and, for the email queue, in [Email delivery](#email-delivery). `appsettings.json`
+holds only the framework's log levels and host filter. Changing a fixed value is a code change, released like
+any other.
 
 The login checkbox (`pages.login.keepSignedIn` in `frontend/src/shared/i18n/locales/es.json`) and the
 published cookie and privacy policies state the session and challenge lifetimes and the retentions; changing
@@ -231,27 +215,10 @@ one requires updating the checkbox and publishing new versions of the policies.
 Every email — automatic messages and administrator-written bulk mail alike — is stored in a PostgreSQL
 outbox (`email_outbox_messages`, `email_outbox_contents`, `email_outbox_content_parts`) and delivered in the
 background by the `EmailOutboxDeliveryWorker` hosted service; a request that queues email returns once the row
-is committed, not once SMTP accepts it. Automatic messages pass through a process-local rate limiter
-before reaching the outbox; administrator bulk email bypasses that budget but is queued the same way, so its
-response (`{ queued, skipped }`) reports what was accepted, not what was delivered.
-
-The guard can be neither disabled nor configured (`EmailGuardOptions`). Limits are per API process:
-restarts refill them, replicas multiply them.
-
-| Limit                                                                    | Value  |
-| ------------------------------------------------------------------------ | ------ |
-| Immediate messages allowed per normalized address                        | 20     |
-| Sustained hourly limit per address                                       | 10     |
-| Daily limit per address                                                  | 50     |
-| Immediate process-wide budget                                            | 1000   |
-| Sustained process-wide hourly budget                                     | 1000   |
-| Global capacity reserved for verification, reset and second-factor codes | 200    |
-| Maximum address budgets held in memory                                   | 50000  |
-| Idle-budget cleanup interval                                             | 5 min  |
-| Minimum interval between repeated guard alerts or outbox failures        | 15 min |
-
-Verification and reset mail cannot spend the last half of the reserved capacity, which stays for
-second-factor codes, and second-factor codes have per-address budgets of their own.
+is committed, not once SMTP accepts it. Automatic messages pass through a process-local rate limiter, the
+email guard, before reaching the outbox; its limits are in [SECURITY.md](SECURITY.md#email-abuse-controls).
+Administrator bulk email bypasses that budget but is queued the same way, so its response
+(`{ queued, skipped }`) reports what was accepted, not what was delivered.
 
 Pending mail survives a restart: rows are claimed with `FOR UPDATE SKIP LOCKED` and a lease, in priority
 order (2FA/verification/reset codes first, security alerts and activity decisions next, other notices and
@@ -260,8 +227,8 @@ enqueues; each pass claims up to 10 due messages and sends 4 at a time, each wit
 attempted up to 5 times, retried after 1 minute, 5 minutes, 30 minutes and 2 hours on the first four failures;
 the 5th failure discards the row and logs an error. Delivery is at-least-once: a crash between a successful
 send and removing the row can resend it. The outbox accepts about 1000 pending ordinary automatic and bulk
-messages; login, verification and password-reset codes are always accepted (and still bounded by the
-`ThrottledEmailSender` budgets above). Shutdown only waits for sends already in flight, up to 20 seconds, below
+messages; login, verification and password-reset codes are always accepted (and still bounded by the email
+guard). Shutdown only waits for sends already in flight, up to 20 seconds, below
 the API service's 30-second `stop_grace_period`; whatever is not delivered by then stays in the outbox for the
 next start. These values live in `EmailQueueOptions` and cannot be configured.
 
@@ -293,10 +260,10 @@ The source is fixed in code: the project's `disposable_email_blocklist.conf` on 
 
 ## Locked accounts
 
-Five wrong passwords lock an account for good: the lock has no expiry and is lifted only by a completed
-password reset, which needs working SMTP. Anyone who knows an account's email can lock accounts in bulk; each
-lock logs `PasswordLockoutTriggered`. If every administrator is locked while email is
-unavailable, unlock against the `db` container:
+An account locked by wrong passwords stays locked until a completed password reset
+([SECURITY.md](SECURITY.md#passwords-and-credential-endpoints)), which needs working SMTP; each lock logs
+`PasswordLockoutTriggered`. If every administrator is locked while email is unavailable, unlock against the
+`db` container:
 
 ```bash
 docker compose exec db psql -U codigoactivo -d codigoactivo -c \
@@ -310,11 +277,11 @@ later starts must use the same value. The file is always written except when the
 outside a container (the API image declares `DOTNET_RUNNING_IN_CONTAINER=true`, and `1` is accepted too), so
 a local `dotnet run` still validates `DEMO_MODE` and writes nothing to the developer's filesystem, while the
 Compose development overlay still locks the mode in `api-state`.
-Demo mode seeds realistic content and invented accounts under `demo.codigoactivo.es` with random, discarded
-passwords, so they cannot log in, and gives the bootstrap administrator invented dependents, recorded like any
-minor as declared by their guardian, here that administrator. The demonstrator
-signs in with the bootstrap administrator, the only administrator, whose password reset and login codes arrive
-at `BOOTSTRAP_ADMIN_EMAIL` through the configured SMTP server. Seeding downloads its sample images from
+Demo mode seeds realistic content and invented accounts under `demo.codigoactivo.es`, which
+[cannot sign in](SECURITY.md#demo-mode), and gives the bootstrap administrator invented dependents, recorded
+like any minor as declared by their guardian, here that administrator. The demonstrator signs in with the
+bootstrap administrator, the only administrator, whose password reset and login codes arrive at
+`BOOTSTRAP_ADMIN_EMAIL` through the configured SMTP server. Seeding downloads its sample images from
 `picsum.photos` (three attempts each, at most five minutes in total), so `api` needs outbound HTTPS there on
 the start that seeds; a failed download stops that start.
 Demo mode also fills the diagnostic and audit logs with an invented three-week history that follows the demo
