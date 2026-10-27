@@ -46,7 +46,8 @@ authentication are not supported.
   request from the session user's own signups: `GET /api/events/{eventId}/leader-roster` returns only
   the event's activities that have not ended and in which the caller holds a confirmed leader signup,
   each with its confirmed attendees by role. Anyone else, administrators and guardians of a leading dependent
-  included, gets an empty list; the client sends no activity id. Each attendee carries only names and
+  included, gets an empty list; the client sends no activity id. Only members may hold a leader signup,
+  checked on signup and on an administrator's role change. Each attendee carries only names and
   signup time, plus their own email and primary phone (independent accounts) or their age on the
   activity's day, computed on the server, and the guardian's names, email and primary phone (dependents):
   never ids, DNI/NIE, birth dates or secondary phones. The SPA keys the cached list by user id. A person
