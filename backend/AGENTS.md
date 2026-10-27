@@ -79,6 +79,6 @@ pinned in `dotnet-tools.json`; no build or CI step checks it.
   (tests that queue mail indirectly or advance the clock to a scheduled retry call
   `Factory.DrainEmailOutboxAsync()`), and never downloads the disposable email domain list, so every domain is
   accepted unless a test seeds `disposable_email_domains`.
-- The k6 performance suite in `tests/performance/` calls every endpoint. A new or renamed endpoint gets a latency
-  budget in `k6/lib/catalog.js` and a request in the scenario of its audience, named `METHOD /api/route/{param}`;
-  the `smoke` profile must report every catalogued endpoint as exercised.
+- The k6 performance suite in the repository's root `tests/performance/` calls every endpoint. A new or renamed
+  endpoint gets a latency budget in `k6/lib/catalog.js` and a request in the scenario of its audience, named
+  `METHOD /api/route/{param}`; the `smoke` profile must report every catalogued endpoint as exercised.

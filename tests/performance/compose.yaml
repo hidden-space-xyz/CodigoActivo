@@ -55,7 +55,7 @@ services:
     image: codigoactivo-api-performance
     mem_limit: ${PERF_API_MEMORY:-4g}
     build:
-      context: ../..
+      context: ../../backend
       dockerfile: src/CodigoActivo.API/Dockerfile
     depends_on:
       db:

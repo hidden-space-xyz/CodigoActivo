@@ -30,7 +30,9 @@ updates:
     multi-ecosystem-group: "all-dependencies"
 
   - package-ecosystem: "docker-compose"
-    directory: "/"
+    directories:
+      - "/"
+      - "/tests/performance"
     patterns: ["*"]
     multi-ecosystem-group: "all-dependencies"
 

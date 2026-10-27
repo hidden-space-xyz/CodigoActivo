@@ -335,9 +335,9 @@ run none of it. The backend build, its architecture, unit and integration tests 
 frontend checks must pass before publishing. The Docker workflow is a reusable CI stage; it does not run
 independently or on a schedule.
 
-Pushes to `develop` or `master` that change `backend/`, `frontend/` or the workflow itself start the CodeQL
-workflow, which is independent of CI and does not gate publishing. A newer push to the same branch cancels
-the scan in progress.
+Pushes to `develop` or `master` that change `backend/`, `frontend/`, `tests/` or the workflow itself start the
+CodeQL workflow, which is independent of CI and does not gate publishing. A newer push to the same branch
+cancels the scan in progress.
 Findings never fail the run; review them in the repository's code scanning alerts or in the
 `codeql-sarif-<language>` workflow artifacts, retained for 7 days. Only a broken build, analysis or upload fails it.
 C# analysis uses a full .NET 10 build under CodeQL tracing, including source generators and test projects;

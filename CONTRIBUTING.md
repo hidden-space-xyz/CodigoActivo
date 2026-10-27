@@ -130,14 +130,14 @@ The remaining scripts are in `package.json`.
 
 ### Performance tests
 
-`backend/tests/performance/` is a [Grafana k6](https://grafana.com/docs/k6/) suite that calls every API endpoint
+`tests/performance/` is a [Grafana k6](https://grafana.com/docs/k6/) suite that calls every API endpoint
 under concurrent load to find what needs optimizing. It runs only in Docker, as its own Compose project with its
 own volumes: PostgreSQL, Mailpit, the API image built from the working tree (in `Staging`, with demo data) and
 k6. From the repository root:
 
 ```bash
-docker compose -f backend/tests/performance/compose.yaml run --rm --build -e PROFILE=load k6
-docker compose -f backend/tests/performance/compose.yaml down -v
+docker compose -f tests/performance/compose.yaml run --rm --build -e PROFILE=load k6
+docker compose -f tests/performance/compose.yaml down -v
 ```
 
 `PROFILE` is `smoke` (every endpoint at least once, about four minutes, to check the suite; no latency budgets),
@@ -155,7 +155,7 @@ k6 calls the API directly as its trusted proxy, sending a private `X-Forwarded-F
 `X-Forwarded-Proto: https`, so nginx is not measured and the rate limits apply per client and account as in
 production. Scenarios stay within those limits; a `429` therefore points at a capacity limit.
 
-`backend/tests/performance/results/` receives `summary.md` (every endpoint with its p50, p95, p99, errors and
+`tests/performance/results/` receives `summary.md` (every endpoint with its p50, p95, p99, errors and
 the p95 budget of `k6/lib/catalog.js`, worst first, plus each step of `capacity`), `summary.json` and the k6
 dashboard in `report.html`. k6 exits with code 99 when an endpoint misses its budget or fails more than 1% of
 its requests, which `capacity` does once it goes past the capacity. Run `down -v` between runs: the API's

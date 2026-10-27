@@ -46,7 +46,8 @@ audit and diagnostic logs. The interface is Spanish, managed through Vue I18n.
 ```text
 CodigoActivo/
 ├── backend/    ASP.NET Core API organized in five projects
-└── frontend/   Vue single-page application organized with Feature-Sliced Design
+├── frontend/   Vue single-page application organized with Feature-Sliced Design
+└── tests/      Tests of the whole running stack, such as the k6 performance suite
 ```
 
 The browser always uses one origin. In development Vite proxies `/api`; in the container stack nginx serves
