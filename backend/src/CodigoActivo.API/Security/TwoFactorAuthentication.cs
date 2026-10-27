@@ -29,7 +29,7 @@ public static class TwoFactorAuthentication
 /// <see cref="GetLoginChallengeTicketQuery"/> answers only for an open challenge and
 /// <see cref="LoginChallengeTicket.Accepts"/> compares the password stamp, so a copied cookie stops
 /// working as soon as a newer password step, an accepted second factor, a lockout, a password
-/// change or a sign out replaces or clears the challenge.
+/// change, a change or reset of the second factor or a sign out replaces or clears the challenge.
 /// </summary>
 /// <param name="challengeTicket">Handler that reads the ticket of an open challenge.</param>
 /// <param name="endChallenge">Handler that closes a pending challenge.</param>

@@ -336,6 +336,7 @@ public sealed class UserTests
         var user = NewPendingUser();
         user.BeginAuthenticatorSetup("PENDING", Now, TimeSpan.FromMinutes(15));
         user.IssueLoginCode("HASH", Now, TimeSpan.FromMinutes(10));
+        user.StartLoginChallenge(LoginChallengeId.New(), Now);
 
         user.EnableAuthenticator(42, Now);
 
@@ -345,6 +346,7 @@ public sealed class UserTests
         user.Authenticator.PendingKey.Should().BeNull();
         user.Authenticator.PendingExpiresAt.Should().BeNull();
         user.LoginCode.Hash.Should().BeNull();
+        user.LoginChallenge.Id.Should().BeNull();
         user.UpdatedAt.Should().Be(Now);
     }
 
@@ -422,6 +424,7 @@ public sealed class UserTests
                 },
             }
         );
+        user.StartLoginChallenge(LoginChallengeId.New(), Now);
 
         user.DisableAuthenticator(Now.AddHours(1));
 
@@ -430,6 +433,7 @@ public sealed class UserTests
         user.Authenticator.LastUsedStep.Should().BeNull();
         user.Authenticator.PendingKey.Should().BeNull();
         user.Authenticator.PendingExpiresAt.Should().BeNull();
+        user.LoginChallenge.Id.Should().BeNull();
         user.UpdatedAt.Should().Be(Now.AddHours(1));
     }
 
@@ -497,6 +501,7 @@ public sealed class UserTests
                 TwoFactorLockout = new { FailedAttempts = 4, LockedUntil = Now.AddMinutes(10) },
             }
         );
+        user.StartLoginChallenge(LoginChallengeId.New(), Now);
 
         var leftAuthenticator = user.ResetTwoFactor(Now);
 
@@ -504,6 +509,7 @@ public sealed class UserTests
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Email);
         user.Authenticator.Key.Should().BeNull();
         user.LoginCode.Hash.Should().BeNull();
+        user.LoginChallenge.Id.Should().BeNull();
         user.TwoFactorLockout.FailedAttempts.Should().Be(0);
         user.TwoFactorLockout.LockedUntil.Should().BeNull();
         user.TwoFactorLockout.IsLocked(Now).Should().BeFalse();

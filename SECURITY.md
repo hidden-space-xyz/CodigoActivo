@@ -128,12 +128,13 @@ non-sliding) instead of a session; it is bound to the password fingerprint and a
 change or block invalidates it. The ticket is not self-sufficient either: the password step stores a random
 challenge id and the time it opened on the account and puts the id in the ticket, so a copied challenge
 cookie is refused as soon as that id changes or is cleared — a newer password step rotates it, and an
-accepted second factor, a second-factor lockout, a password lockout, a password change or reset and signing
-out all clear it, making each challenge single-use — and the account itself refuses the challenge once its
-lifetime has passed, whatever the cookie says. Answering, reading or resending a challenge needs the open
-challenge the cookie names on an account that may still sign in; the use cases check that themselves, while
-the password fingerprint is only checked through the cookie. A challenge obtained just before the account
-was locked by wrong passwords is refused at both the ticket and the handler. The account flows serialize on
+accepted second factor, a second-factor lockout, a password lockout, a password change or reset, a change of
+second factor or its reset by an administrator and signing out all clear it, making each challenge single-use —
+and the account itself refuses the challenge once its lifetime has passed, whatever the cookie says.
+Answering, reading or resending a challenge needs the open challenge the cookie names on an account that
+may still sign in; the use cases check that themselves, while the password fingerprint is only checked
+through the cookie. A challenge obtained just before the account was locked by wrong passwords is refused at
+both the ticket and the handler. The account flows serialize on
 the account row only when they will act (`AccountLock`, see
 [ARCHITECTURE.md](ARCHITECTURE.md#domain-and-persistence)), so parallel requests each answer as they would
 alone: a repeated request finds the cooldown and emails nothing, and a correct password whose account was reset
