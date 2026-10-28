@@ -49,11 +49,11 @@ public interface IEmailOutbox
 public interface IPendingEmails
 {
     /// <summary>
-    /// Tells whether a message on a topic is still waiting to be delivered, including one being
+    /// Tells whether a message of a kind is still waiting to be delivered, including one being
     /// delivered right now.
     /// </summary>
-    /// <param name="topic">Topic of <see cref="EmailTopics"/>.</param>
+    /// <param name="kind">Email category of the message.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is <see langword="true"/> when one is waiting.</returns>
-    public Task<bool> AnyAsync(string topic, CancellationToken ct = default);
+    public Task<bool> AnyAsync(EmailKind kind, CancellationToken ct = default);
 }

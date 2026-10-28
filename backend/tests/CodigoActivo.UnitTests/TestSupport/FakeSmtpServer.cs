@@ -41,8 +41,20 @@ public sealed class FakeSmtpServer : IAsyncDisposable
     /// <summary>Recipient answered with a permanent 550 failure.</summary>
     public string? RejectedRecipient { get; init; }
 
+    /// <summary>Reply to the RCPT TO of <see cref="RejectedRecipient"/>, a 5.1.1 refusal by default.</summary>
+    public string? RejectedRecipientReply { get; init; }
+
     /// <summary>Recipient answered with a temporary 450 failure, as greylisting does.</summary>
     public string? DeferredRecipient { get; init; }
+
+    /// <summary>Reply to the DATA command instead of inviting the content.</summary>
+    public string? DataCommandReply { get; init; }
+
+    /// <summary>Reply to the message content instead of queueing it, such as a refusal.</summary>
+    public string? MessageReply { get; init; }
+
+    /// <summary>Closes the socket without a word once this many messages were queued.</summary>
+    public int? CloseAfterQueuedMessages { get; init; }
 
     /// <summary>Closes the socket without replying once this many DATA commands were received.</summary>
     public int? DropConnectionOnDataCommand { get; init; }
@@ -152,7 +164,8 @@ public sealed class FakeSmtpServer : IAsyncDisposable
                     if (string.Equals(recipient, RejectedRecipient, StringComparison.Ordinal))
                     {
                         await writer.WriteLineAsync(
-                            $"550 5.1.1 <{recipient}>: Mailbox unavailable"
+                            RejectedRecipientReply
+                                ?? $"550 5.1.1 <{recipient}>: Mailbox unavailable"
                         );
                     }
                     else if (string.Equals(recipient, DeferredRecipient, StringComparison.Ordinal))
@@ -167,6 +180,13 @@ public sealed class FakeSmtpServer : IAsyncDisposable
 
                     break;
                 case "DATA":
+                    if (DataCommandReply is { } dataRefusal)
+                    {
+                        recipients = [];
+                        await writer.WriteLineAsync(dataRefusal);
+                        break;
+                    }
+
                     await writer.WriteLineAsync("354 End data with <CR><LF>.<CR><LF>");
                     var data = await ReadDataAsync(reader, ct);
                     var count = Interlocked.Increment(ref dataCommands);
@@ -176,9 +196,18 @@ public sealed class FakeSmtpServer : IAsyncDisposable
                         return;
                     }
 
-                    Record(from, recipients, data);
+                    if (MessageReply is null)
+                    {
+                        Record(from, recipients, data);
+                    }
+
                     recipients = [];
-                    await writer.WriteLineAsync("250 2.0.0 Queued");
+                    await writer.WriteLineAsync(MessageReply ?? "250 2.0.0 Queued");
+                    if (count == CloseAfterQueuedMessages)
+                    {
+                        return;
+                    }
+
                     break;
                 case "RSET":
                     recipients = [];

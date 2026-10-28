@@ -246,12 +246,12 @@ public sealed class EmailOutboxStore(
     }
 
     /// <inheritdoc />
-    public async Task<bool> AnyAsync(string topic, CancellationToken ct = default)
+    public async Task<bool> AnyAsync(EmailKind kind, CancellationToken ct = default)
     {
         await using var scope = scopes.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
 
-        return await db.EmailOutboxMessages.AnyAsync(message => message.Topic == topic, ct);
+        return await db.EmailOutboxMessages.AnyAsync(message => message.Kind == kind, ct);
     }
 
     /// <inheritdoc />

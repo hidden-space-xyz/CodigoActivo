@@ -77,7 +77,7 @@ public sealed class AccountEmails(
         return emailSender.SendAsync(
             message with
             {
-                Topic = EmailTopics.EmailChange,
+                Topic = EmailTopics.EmailChange(user.Id.Value),
                 ValidFor = verification.OtpLifetime,
             },
             ct

@@ -1,4 +1,5 @@
 using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.TermsDecisions;
 
 namespace CodigoActivo.Application.Activities.Erasure;
 
@@ -27,4 +28,16 @@ public interface IParticipationErasureStore
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task LoadAsync(ParticipationDeletion deletion, CancellationToken ct = default);
+
+    /// <summary>
+    /// Loads, once they are locked, the terms decisions the removal takes away whose withdrawal the
+    /// association's legal contact has not been told about yet; only an event takes decisions away.
+    /// </summary>
+    /// <param name="deletion">What is removed.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the decisions.</returns>
+    public Task<IReadOnlyList<EventTermsAcceptance>> ListWithdrawalNoticesPendingAsync(
+        ParticipationDeletion deletion,
+        CancellationToken ct = default
+    );
 }

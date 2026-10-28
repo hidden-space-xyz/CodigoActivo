@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Activities.Erasure;
 using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Infrastructure.Database.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -99,5 +100,24 @@ public sealed class ParticipationErasureStore(CodigoActivoDbContext context)
             .Where(t => t.EventId == eventId)
             .LoadAsync(ct);
         await context.EventRatings.Where(r => r.EventId == eventId).LoadAsync(ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<EventTermsAcceptance>> ListWithdrawalNoticesPendingAsync(
+        ParticipationDeletion deletion,
+        CancellationToken ct = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(deletion);
+
+        if (deletion.Origin is not ParticipationDeletionOrigin.EventDeleted)
+        {
+            return [];
+        }
+
+        var eventId = deletion.EventId;
+        return await context
+            .EventTermsAcceptances.Where(t => t.EventId == eventId && t.WithdrawalNoticePending)
+            .ToListAsync(ct);
     }
 }

@@ -1,9 +1,11 @@
 using System.Data.Common;
 using System.Text.Json;
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Application.Common.Catalogs;
+using CodigoActivo.Application.TermsDecisions;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -15,6 +17,7 @@ using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Accounts;
+using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories;
 using CodigoActivo.Infrastructure.DataHistory;
@@ -410,6 +413,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         var eraser = new AccountEraser(
             new UserRepository(db, uow),
             new AccountErasureStore(db),
+            scope.ServiceProvider.GetRequiredService<ConsentWithdrawalNotifier>(),
             uow
         );
         return await eraser.EraseAsync(user, Ct);
@@ -449,6 +453,38 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
     private static Guid? GuidValue(DataHistoryRecord record, string property)
     {
         return Guid.TryParse(Value(record, property), out var id) ? id : null;
+    }
+
+    [Fact]
+    public async Task EraseAsyncDiscardsTheWaitingEmailButNotTheNoticesToTheLegalContact()
+    {
+        var outbox = Factory.Services.GetRequiredService<IEmailOutboxStore>();
+        EmailRecipient[] member = [new(TestSeedData.MemberEmail, "Miembro")];
+        EmailKind[] kinds =
+        [
+            EmailKind.ActivityNotification,
+            EmailKind.ConsentWithdrawalNotice,
+            EmailKind.BlockedDataConsultationNotice,
+        ];
+        foreach (var kind in kinds)
+        {
+            await outbox.TryEnqueueAsync(
+                new EmailBatch(kind, "Asunto", "<p>Hola</p>", "Hola", member),
+                Ct
+            );
+        }
+
+        (await EraseAsync(TestSeedData.Users.MemberId)).Should().BeTrue();
+
+        var waiting = await Factory.QueryAsync(db =>
+            db.EmailOutboxMessages.AsNoTracking().Select(message => message.Kind).ToListAsync(Ct)
+        );
+        waiting
+            .Should()
+            .BeEquivalentTo(
+                [EmailKind.ConsentWithdrawalNotice, EmailKind.BlockedDataConsultationNotice],
+                "the notices to the legal contact are about other people"
+            );
     }
 
     [Fact]

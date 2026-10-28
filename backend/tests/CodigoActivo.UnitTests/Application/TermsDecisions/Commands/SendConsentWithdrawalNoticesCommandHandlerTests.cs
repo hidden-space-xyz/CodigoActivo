@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Legal;
+using CodigoActivo.Application.TermsDecisions;
 using CodigoActivo.Application.TermsDecisions.Commands;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.TermsDecisions;
@@ -95,7 +96,7 @@ public sealed class SendConsentWithdrawalNoticesCommandHandlerTests
     {
         acceptances
             .ListWithdrawalNoticesPendingAsync(
-                SendConsentWithdrawalNoticesCommandHandler.MaxPerNotice,
+                ConsentWithdrawalNotifier.MaxPerNotice,
                 Arg.Any<CancellationToken>()
             )
             .Returns(pending);
@@ -105,14 +106,17 @@ public sealed class SendConsentWithdrawalNoticesCommandHandlerTests
     {
         var handler = new SendConsentWithdrawalNoticesCommandHandler(
             acceptances,
-            store,
-            new FakeQueryExecutor(),
             legalEntity,
             pendingEmails,
-            emailSender,
-            new ConsentWithdrawalEmailComposer(
-                new ApplicationOptions { BaseUrl = "https://app.test/" },
-                new TestClock()
+            new ConsentWithdrawalNotifier(
+                store,
+                new FakeQueryExecutor(),
+                legalEntity,
+                emailSender,
+                new ConsentWithdrawalEmailComposer(
+                    new ApplicationOptions { BaseUrl = "https://app.test/" },
+                    new TestClock()
+                )
             )
         );
         var result = await handler.HandleAsync(
@@ -134,7 +138,7 @@ public sealed class SendConsentWithdrawalNoticesCommandHandlerTests
         var message = emailSender.Sent.Should().ContainSingle().Subject;
         message.ToAddress.Should().Be("legal@asociacion.test");
         message.ToName.Should().Be("Asociación");
-        message.Topic.Should().Be(EmailTopics.ConsentWithdrawals);
+        message.Topic.Should().BeNull("a new summary never replaces the one still waiting");
         message.Subject.Should().Be("Se ha retirado un consentimiento");
         message
             .TextBody.Should()
@@ -169,7 +173,7 @@ public sealed class SendConsentWithdrawalNoticesCommandHandlerTests
         var withdrawal = Withdrawn(image);
         Pending(withdrawal);
         pendingEmails
-            .AnyAsync(EmailTopics.ConsentWithdrawals, Arg.Any<CancellationToken>())
+            .AnyAsync(EmailKind.ConsentWithdrawalNotice, Arg.Any<CancellationToken>())
             .Returns(true);
 
         var told = await HandleAsync();

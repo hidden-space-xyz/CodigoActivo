@@ -54,7 +54,7 @@ public sealed class EmailDeliveryLock(IServiceScopeFactory scopes) : IEmailDeliv
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                await CloseAsync();
+                await DisposeAsync();
             }
         }
 
