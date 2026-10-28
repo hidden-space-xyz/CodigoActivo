@@ -19,7 +19,6 @@ using CodigoActivo.Application.Events;
 using CodigoActivo.Application.Logs;
 using CodigoActivo.Application.Reports;
 using CodigoActivo.Application.TermsDecisions;
-using CodigoActivo.Application.TermsDecisions.Commands;
 using CodigoActivo.Application.TermsDecisions.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -394,7 +393,7 @@ public sealed partial class HandlerConventionTests
                 typeof(SendEmailToUsersCommandHandler),
                 typeof(ActingUserPolicy),
                 typeof(ActivitySignupNotifier),
-                typeof(SendConsentWithdrawalNoticesCommandHandler),
+                typeof(ConsentWithdrawalNotifier),
                 typeof(PersonalDataReader),
                 typeof(SearchBlockedDataCommandHandler),
                 typeof(ExportBlockedDataCommandHandler),

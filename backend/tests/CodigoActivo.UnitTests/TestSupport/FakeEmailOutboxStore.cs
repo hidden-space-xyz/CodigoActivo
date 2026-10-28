@@ -137,11 +137,11 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
         }
     }
 
-    public Task<bool> AnyAsync(string topic, CancellationToken ct = default)
+    public Task<bool> AnyAsync(EmailKind kind, CancellationToken ct = default)
     {
         lock (messages)
         {
-            return Task.FromResult(messages.Exists(message => message.Topic == topic));
+            return Task.FromResult(messages.Exists(message => message.Kind == kind));
         }
     }
 

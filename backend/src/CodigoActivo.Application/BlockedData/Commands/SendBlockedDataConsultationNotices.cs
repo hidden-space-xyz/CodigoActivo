@@ -58,7 +58,7 @@ public sealed class SendBlockedDataConsultationNoticesCommandHandler(
     {
         if (
             string.IsNullOrWhiteSpace(legalEntity.Email)
-            || await pendingEmails.AnyAsync(EmailTopics.BlockedDataConsultations, ct)
+            || await pendingEmails.AnyAsync(EmailKind.BlockedDataConsultationNotice, ct)
         )
         {
             return 0;
@@ -95,13 +95,7 @@ public sealed class SendBlockedDataConsultationNoticesCommandHandler(
             new EmailRecipient(legalEntity.Email, legalEntity.Name),
             [.. pending.Select(c => byId[c.Id.Value])]
         );
-        await emailSender.SendAsync(
-            notice with
-            {
-                Topic = EmailTopics.BlockedDataConsultations,
-            },
-            ct
-        );
+        await emailSender.SendAsync(notice, ct);
 
         foreach (var consultation in pending)
         {

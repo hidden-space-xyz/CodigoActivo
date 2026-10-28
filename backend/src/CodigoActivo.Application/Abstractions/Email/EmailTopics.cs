@@ -4,8 +4,8 @@ namespace CodigoActivo.Application.Abstractions.Email;
 /// Names the topics of <see cref="EmailMessage.Topic"/>. A topic says which pending message a new one
 /// makes useless: the codes of an account share one, since a new code invalidates the one before;
 /// an alert, a signup decision or a coming-of-age notice replaces the pending one about the same
-/// thing; the notices to the legal contact use theirs to send one summary at a time. Topics carry
-/// identifiers and enum names only, never personal data.
+/// thing. The summaries to the legal contact have none, since a new one never makes the waiting one
+/// useless. Topics carry identifiers and enum names only, never personal data.
 /// </summary>
 public static class EmailTopics
 {
@@ -26,11 +26,6 @@ public static class EmailTopics
     public const string AccountVerification = "account-verification";
 
     /// <summary>
-    /// Topic of the link that confirms a new email address.
-    /// </summary>
-    public const string EmailChange = "email-change";
-
-    /// <summary>
     /// Topic of the notice that someone tried to use an address that already has an account.
     /// </summary>
     public const string EmailInUse = "email-in-use";
@@ -41,14 +36,16 @@ public static class EmailTopics
     public const string PasswordReset = "password-reset";
 
     /// <summary>
-    /// Topic of the summary of withdrawn consents for the legal contact.
+    /// Gets the topic of the link that confirms a new email address for one account, so a new
+    /// request of the account replaces its own waiting link and never that of another account
+    /// asking for the same address.
     /// </summary>
-    public const string ConsentWithdrawals = "consent-withdrawals";
-
-    /// <summary>
-    /// Topic of the summary of opened consultations of the blocked data for the legal contact.
-    /// </summary>
-    public const string BlockedDataConsultations = "blocked-data-consultations";
+    /// <param name="userId">Identifier of the account that asked for the change.</param>
+    /// <returns>The topic.</returns>
+    public static string EmailChange(Guid userId)
+    {
+        return $"email-change:{userId:N}";
+    }
 
     /// <summary>
     /// Gets the topic of a security alert about one kind of change.

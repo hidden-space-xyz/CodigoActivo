@@ -44,8 +44,9 @@ public sealed class EmailQueueOptions
     public const int DefaultBatchSize = 10;
 
     /// <summary>
-    /// Identifies how many messages in a row may fail for a reason of their own before the worker
-    /// blames the server and pauses: one rejection is the message's, three in a row are the server's.
+    /// Identifies how many different messages in a row may fail for a reason of their own before the
+    /// worker blames the server and pauses: one rejection is the message's, three in a row are the
+    /// server's. Copies of one content, such as an administrator's mailing, count once.
     /// </summary>
     public const int FailuresBeforePause = 3;
 

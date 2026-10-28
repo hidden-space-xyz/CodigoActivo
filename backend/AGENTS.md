@@ -21,7 +21,9 @@ pinned in `dotnet-tools.json`; no build or CI step checks it.
 - Aggregates keep foreign keys and cascades to each other with `HasOne<T>().WithMany().HasForeignKey(...)`.
   Repository methods name their intention; there is no generic repository.
 - Aggregates raise domain events for what other parts react to; effects (emails, alerts, cache eviction,
-  file cleanup, sign-out) run in `IDomainEventListener<T>` or `ICommittedEventsHandler` after the commit.
+  file cleanup, sign-out) run in `IDomainEventListener<T>` or `ICommittedEventsHandler` after the commit. A
+  notice that must never be lost is pending state of the aggregate instead, sent and cleared by a scheduled
+  command, and by any removal that would delete it first.
 - Put each command or query record and its handler in one use-case file. Handlers, listeners and decorators are
   registered by contract in `UseCaseRegistration`; controllers inject `ICommandHandler<,>`/`IQueryHandler<,>`
   with `[FromServices]` and contain no business logic.

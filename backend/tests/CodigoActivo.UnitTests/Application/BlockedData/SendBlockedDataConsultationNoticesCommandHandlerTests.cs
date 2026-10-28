@@ -100,7 +100,7 @@ public sealed class SendBlockedDataConsultationNoticesCommandHandlerTests
         told.Should().Be(1);
         var message = emailSender.Sent.Should().ContainSingle().Subject;
         message.ToAddress.Should().Be("legal@asociacion.test");
-        message.Topic.Should().Be(EmailTopics.BlockedDataConsultations);
+        message.Topic.Should().BeNull("a new summary never replaces the one still waiting");
         message.Subject.Should().Be("Se ha abierto una consulta de datos bloqueados");
         message.TextBody.Should().Contain("Olga Martín").And.Contain("DP 12/2026");
         consultation.NoticePending.Should().BeFalse();
@@ -129,7 +129,7 @@ public sealed class SendBlockedDataConsultationNoticesCommandHandlerTests
         var consultation = Opened("DP 12/2026");
         Pending(consultation);
         pendingEmails
-            .AnyAsync(EmailTopics.BlockedDataConsultations, Arg.Any<CancellationToken>())
+            .AnyAsync(EmailKind.BlockedDataConsultationNotice, Arg.Any<CancellationToken>())
             .Returns(true);
 
         var told = await HandleAsync();

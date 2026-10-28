@@ -215,8 +215,8 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
         );
 
         (await PendingAsync()).Should().HaveCount(2, "a leased message may already be on its way");
-        (await Store.AnyAsync(topic, Ct)).Should().BeTrue();
-        (await Store.AnyAsync(EmailTopics.ConsentWithdrawals, Ct)).Should().BeFalse();
+        (await Store.AnyAsync(EmailKind.ActivityNotification, Ct)).Should().BeTrue();
+        (await Store.AnyAsync(EmailKind.ConsentWithdrawalNotice, Ct)).Should().BeFalse();
     }
 
     [Fact]

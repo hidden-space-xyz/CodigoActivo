@@ -1,4 +1,5 @@
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.TermsDecisions;
 using CodigoActivo.Domain.Activities;
 
 namespace CodigoActivo.Application.Activities.Erasure;
@@ -7,11 +8,17 @@ namespace CodigoActivo.Application.Activities.Erasure;
 /// Commits the removal of participation data staged in the unit of work (an event, an activity or
 /// a rating removed, or a signup cancelled) in one transaction that first locks what it takes away
 /// and tracks it, so every deleted signup, rating and terms decision leaves its data history,
-/// which the law requires to keep blocked (LOPDGDD article 32).
+/// which the law requires to keep blocked (LOPDGDD article 32). A withdrawn consent it deletes
+/// before the association's legal contact was told about it is told first.
 /// </summary>
 /// <param name="store">Storage steps of the removal.</param>
+/// <param name="withdrawalNotices">Notifier that tells the legal contact about withdrawals.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
-public sealed class ParticipationEraser(IParticipationErasureStore store, IUnitOfWork uow)
+public sealed class ParticipationEraser(
+    IParticipationErasureStore store,
+    ConsentWithdrawalNotifier withdrawalNotices,
+    IUnitOfWork uow
+)
 {
     /// <summary>
     /// Commits the removal staged in the unit of work.
@@ -28,6 +35,10 @@ public sealed class ParticipationEraser(IParticipationErasureStore store, IUnitO
             {
                 await store.LockAsync(deletion, attempt);
                 await store.LoadAsync(deletion, attempt);
+                await withdrawalNotices.NotifyAsync(
+                    await store.ListWithdrawalNoticesPendingAsync(deletion, attempt),
+                    attempt
+                );
                 await uow.SaveChangesAsync(attempt);
                 return true;
             },

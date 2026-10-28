@@ -245,15 +245,18 @@ public sealed class EmailOutboxDelivererTests
     public async Task DeliverDueAsyncThreeFailuresInARowAreBlamedOnTheServer()
     {
         var store = Store();
-        await store.TryEnqueueAsync(
-            Batch(
-                "uno@example.test",
-                "dos@example.test",
-                "tres@example.test",
-                "cuatro@example.test"
-            ),
-            Ct()
-        );
+        string[] addresses =
+        [
+            "uno@example.test",
+            "dos@example.test",
+            "tres@example.test",
+            "cuatro@example.test",
+        ];
+        foreach (var address in addresses)
+        {
+            await store.TryEnqueueAsync(Batch(address), Ct());
+        }
+
         transport.ThrowOnSend = new InvalidOperationException("Connection reset");
         var deliverer = Create(store);
 
@@ -263,6 +266,31 @@ public sealed class EmailOutboxDelivererTests
         store.Released.Should().ContainSingle("the fourth message was never tried");
         deliverer.PausedUntil.Should().Be(Now.AddMinutes(1));
         store.SentRecorded.Should().Be(3);
+    }
+
+    [Fact]
+    public async Task DeliverDueAsyncCopiesOfOneContentFailingInARowAreNotBlamedOnTheServer()
+    {
+        var store = Store();
+        await store.TryEnqueueAsync(
+            Batch(
+                "uno@example.test",
+                "dos@example.test",
+                "tres@example.test",
+                "cuatro@example.test"
+            ),
+            Ct()
+        );
+        transport.ThrowOnSend = new InvalidOperationException("Content rejected");
+        var deliverer = Create(store);
+
+        await deliverer.DeliverDueAsync(Ct());
+
+        store.Rescheduled.Should().HaveCount(4);
+        store.Released.Should().BeEmpty();
+        deliverer
+            .PausedUntil.Should()
+            .BeBefore(Now, "copies of one mailing refused together are that mailing's fault");
     }
 
     [Fact]
@@ -485,6 +513,42 @@ public sealed class EmailOutboxDelivererTests
     }
 
     [Fact]
+    public async Task DeliverDueAsyncServerUnavailableGivesTheRecipientTheirShareBack()
+    {
+        var store = Store();
+        guard.RecipientBurst = 1;
+        guard.RecipientPerHour = 1;
+        await store.TryEnqueueAsync(Batch(EmailKind.SecurityAlert, "socio@example.test"), Ct());
+        transport.ThrowOnOpen = ServerDown();
+        var deliverer = Create(store);
+        await deliverer.DeliverDueAsync(Ct());
+        transport.ThrowOnOpen = null;
+
+        clock.UtcNow = deliverer.PausedUntil;
+        await deliverer.DeliverDueAsync(Ct());
+
+        transport.Sent.Should().ContainSingle("the paused attempt never reached the recipient");
+    }
+
+    [Fact]
+    public async Task DeliverDueAsyncDeferredRecipientGetsTheirShareBack()
+    {
+        var store = Store();
+        guard.RecipientBurst = 1;
+        guard.RecipientPerHour = 1;
+        await store.TryEnqueueAsync(Batch(EmailKind.SecurityAlert, "socio@example.test"), Ct());
+        transport.FailingRecipients.Add("socio@example.test");
+        var deliverer = Create(store);
+        await deliverer.DeliverDueAsync(Ct());
+        transport.FailingRecipients.Clear();
+
+        clock.UtcNow = Now + EmailQueueOptions.RetryDelayAfter(1);
+        await deliverer.DeliverDueAsync(Ct());
+
+        transport.Sent.Should().ContainSingle("the deferred attempt never reached the recipient");
+    }
+
+    [Fact]
     public async Task DeliverDueAsyncCodesAreNeverPacedPerRecipient()
     {
         var store = Store();
@@ -500,7 +564,7 @@ public sealed class EmailOutboxDelivererTests
     }
 
     [Fact]
-    public async Task DeliverDueAsyncShutdownDuringTheClaimStillDeliversTheClaimedBatch()
+    public async Task DeliverDueAsyncShutdownDuringTheClaimHandsTheBatchBackWithoutSpendingAttempts()
     {
         var store = Store();
         await store.TryEnqueueAsync(Batch("ana@example.test", "berto@example.test"), Ct());
@@ -510,11 +574,35 @@ public sealed class EmailOutboxDelivererTests
         var delivered = await Create(store).DeliverDueAsync(shutdown.Token);
 
         delivered.Should().Be(2);
-        transport
-            .Sent.Select(message => message.ToAddress)
-            .Should()
-            .BeEquivalentTo("ana@example.test", "berto@example.test");
-        store.Messages.Should().BeEmpty("a claimed attempt is never dropped by a shutdown");
+        transport.Sent.Should().BeEmpty();
+        store
+            .Messages.Should()
+            .HaveCount(2)
+            .And.AllSatisfy(message =>
+            {
+                message.AttemptCount.Should().Be(0, "a shutdown spends no attempt");
+                message.NextAttemptAt.Should().Be(Now);
+                message.LockedUntil.Should().BeNull("the next instance takes it at once");
+            });
+        store.Rescheduled.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task DeliverDueAsyncShutdownDuringASendFinishesItAndHandsTheRestBack()
+    {
+        var store = Store();
+        await store.TryEnqueueAsync(Batch("ana@example.test", "berto@example.test"), Ct());
+        using var shutdown = new CancellationTokenSource();
+        transport.OnSend = shutdown.Cancel;
+
+        await Create(store).DeliverDueAsync(shutdown.Token);
+
+        transport.Sent.Should().ContainSingle();
+        var waiting = store.Messages.Should().ContainSingle().Subject;
+        waiting.ToAddress.Should().NotBe(transport.Sent[0].ToAddress);
+        waiting.AttemptCount.Should().Be(0);
+        waiting.LockedUntil.Should().BeNull();
+        store.SentRecorded.Should().Be(1);
     }
 
     [Fact]
@@ -550,6 +638,24 @@ public sealed class EmailOutboxDelivererTests
             .LevelEntries.Should()
             .Contain(entry =>
                 entry.Level == LogLevel.Error && entry.Message.Contains("stored content")
+            );
+    }
+
+    [Fact]
+    public async Task DeliverDueAsyncCountingTheOverdueEmailFailsIsLoggedWithoutFailingTheRun()
+    {
+        var store = new ThrowingOnOverdueCountStore(protector) { EnqueuedAt = Now };
+        await store.TryEnqueueAsync(Batch("ana@example.test"), Ct());
+        var logger = new RecordingLogger<EmailOutboxDeliverer>();
+
+        var delivered = await Create(store, logger).DeliverDueAsync(Ct());
+
+        delivered.Should().Be(1);
+        transport.Sent.Should().ContainSingle();
+        logger
+            .LevelEntries.Should()
+            .Contain(entry =>
+                entry.Level == LogLevel.Error && entry.Message.Contains("waited too long")
             );
     }
 
@@ -760,6 +866,18 @@ public sealed class EmailOutboxDelivererTests
         public override Task<int> RemoveOrphanContentAsync(CancellationToken ct = default)
         {
             throw new InvalidOperationException("The content sweep failed.");
+        }
+    }
+
+    private sealed class ThrowingOnOverdueCountStore(EmailOutboxProtector protector)
+        : FakeEmailOutboxStore(protector)
+    {
+        public override Task<int> CountOverdueAsync(
+            DateTimeOffset acceptedBefore,
+            CancellationToken ct = default
+        )
+        {
+            throw new InvalidOperationException("The overdue count timed out.");
         }
     }
 }

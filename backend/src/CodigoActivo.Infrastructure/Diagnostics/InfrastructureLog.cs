@@ -78,6 +78,18 @@ public static partial class InfrastructureLog
     public static partial void EmailsOverdue(this ILogger logger, int count, int hours);
 
     /// <summary>
+    /// Records that the notices which waited too long could not be counted. The deliverer checks at
+    /// most once per alert interval of the email guard.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="exception">Failure raised while counting the rows.</param>
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "Could not count the emails that waited too long; the next check will retry"
+    )]
+    public static partial void OverdueEmailNotCounted(this ILogger logger, Exception exception);
+
+    /// <summary>
     /// Records that the SMTP server cannot take mail and the delivery paused. The deliverer logs it
     /// at most once per alert interval of the email guard, since the pause repeats while the cause
     /// lasts.

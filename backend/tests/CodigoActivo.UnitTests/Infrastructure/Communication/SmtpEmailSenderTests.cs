@@ -249,6 +249,70 @@ public sealed class SmtpEmailSenderTests
         thrown.ToString().Should().NotContain("bounce@example.test");
     }
 
+    [Theory]
+    [InlineData("550 5.1.1 User unknown", EmailDeliveryFailure.RecipientRejected)]
+    [InlineData("550 5.2.1 Mailbox disabled", EmailDeliveryFailure.RecipientRejected)]
+    [InlineData("554 5.7.1 Relay access denied", EmailDeliveryFailure.Transient)]
+    [InlineData("550 5.4.5 Daily sending quota exceeded", EmailDeliveryFailure.Transient)]
+    [InlineData("550 Requested action not taken", EmailDeliveryFailure.Transient)]
+    public async Task SendAsyncRecipientRefusedForGoodIsTheRecipientsFaultOnlyForABadAddress(
+        string reply,
+        EmailDeliveryFailure expected
+    )
+    {
+        await using var server = new FakeSmtpServer
+        {
+            RejectedRecipient = "bounce@example.test",
+            RejectedRecipientReply = reply,
+        };
+
+        var act = () => SendOneAsync(Options(server), Message("bounce@example.test"), Timeout());
+
+        (await act.Should().ThrowAsync<EmailDeliveryException>())
+            .Which.Failure.Should()
+            .Be(expected);
+    }
+
+    [Theory]
+    [InlineData(null, "451 4.7.1 Try again later", EmailDeliveryFailure.Transient)]
+    [InlineData(null, "554 5.7.1 Content rejected", EmailDeliveryFailure.Transient)]
+    [InlineData(null, "552 5.3.4 Message too big", EmailDeliveryFailure.MessageRejected)]
+    [InlineData("451 4.3.0 Busy", null, EmailDeliveryFailure.Transient)]
+    public async Task SendAsyncMessageDeferredOrRefusedMayPassUnlessTooLarge(
+        string? dataCommandReply,
+        string? messageReply,
+        EmailDeliveryFailure expected
+    )
+    {
+        await using var server = new FakeSmtpServer
+        {
+            DataCommandReply = dataCommandReply,
+            MessageReply = messageReply,
+        };
+
+        var act = () => SendOneAsync(Options(server), Message(), Timeout());
+
+        (await act.Should().ThrowAsync<EmailDeliveryException>())
+            .Which.Failure.Should()
+            .Be(expected);
+    }
+
+    [Fact]
+    public async Task SendAsyncConnectionTheServerClosedSilentlyIsOpenedAgain()
+    {
+        await using var server = new FakeSmtpServer { CloseAfterQueuedMessages = 1 };
+        await using var session = await Create(Options(server)).OpenAsync(Timeout());
+
+        await session.SendAsync(Message("one@example.test"), Timeout());
+        await session.SendAsync(Message("two@example.test"), Timeout());
+
+        server
+            .Messages.SelectMany(m => m.Recipients)
+            .Should()
+            .Equal("one@example.test", "two@example.test");
+        server.Connections.Should().Be(2);
+    }
+
     [Fact]
     public async Task SendAsyncGreylistedRecipientIsDeferredWithoutTheAddress()
     {

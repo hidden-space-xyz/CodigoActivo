@@ -34,9 +34,10 @@ public sealed class EmailOutboxDeliveryWorker(
     private readonly LogThrottle runFailures = new(guard.AlertInterval);
 
     /// <summary>
-    /// Stops claiming new messages and waits for the delivery in flight, up to
-    /// <see cref="EmailQueueOptions.ShutdownDrain"/>, then releases the lock. A message not delivered
-    /// by then stays in the outbox and is claimed again once its lease expires.
+    /// Stops claiming new messages and waits for the send in flight, up to
+    /// <see cref="EmailQueueOptions.ShutdownDrain"/>, then releases the lock; the rest of the claimed
+    /// batch goes back to the outbox untried. A message whose send is still running by then stays in
+    /// the outbox and is claimed again once its lease expires.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>

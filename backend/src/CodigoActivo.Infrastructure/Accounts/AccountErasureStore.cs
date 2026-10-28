@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
@@ -5,6 +6,7 @@ using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.News;
 using CodigoActivo.Domain.Partners;
 using CodigoActivo.Domain.Resources;
+using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Context;
 using Microsoft.EntityFrameworkCore;
@@ -65,6 +67,10 @@ public sealed class AccountErasureStore(CodigoActivoDbContext context) : IAccoun
                 WHERE (id = {accountId.Value} OR parent_id = {accountId.Value})
                   AND email IS NOT NULL
             )
+              AND kind NOT IN (
+                {nameof(EmailKind.ConsentWithdrawalNotice)},
+                {nameof(EmailKind.BlockedDataConsultationNotice)}
+              )
             """,
             ct
         );
@@ -121,6 +127,22 @@ public sealed class AccountErasureStore(CodigoActivoDbContext context) : IAccoun
         {
             context.Entry(change).Property(c => c.RecordedById).CurrentValue = heirId;
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<EventTermsAcceptance>> ListWithdrawalNoticesPendingAsync(
+        UserId accountId,
+        CancellationToken ct = default
+    )
+    {
+        var household = await HouseholdAsync(accountId, ct);
+
+        return await context
+            .EventTermsAcceptances.Where(t =>
+                t.WithdrawalNoticePending
+                && (household.Contains(t.UserId) || household.Contains(t.DecidedById))
+            )
+            .ToListAsync(ct);
     }
 
     private Task<List<UserId>> HouseholdAsync(UserId accountId, CancellationToken ct)

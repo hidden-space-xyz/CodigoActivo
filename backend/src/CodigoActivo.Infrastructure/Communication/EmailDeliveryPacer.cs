@@ -59,4 +59,14 @@ public sealed class EmailDeliveryPacer(SmtpOptions smtp, EmailGuardOptions guard
     {
         return recipients.TrySpend(EmailSendLimiter.NormalizeKey(address), now);
     }
+
+    /// <summary>
+    /// Gives back to the budgets of a recipient the message the server did not take.
+    /// </summary>
+    /// <param name="address">Recipient address.</param>
+    /// <param name="now">Current time.</param>
+    public void RefundRecipient(string address, DateTimeOffset now)
+    {
+        recipients.Refund(EmailSendLimiter.NormalizeKey(address), now);
+    }
 }

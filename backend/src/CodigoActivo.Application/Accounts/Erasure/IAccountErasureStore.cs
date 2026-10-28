@@ -1,3 +1,4 @@
+using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Accounts.Erasure;
@@ -44,11 +45,24 @@ public interface IAccountErasureStore
 
     /// <summary>
     /// Deletes the email still waiting for the addresses of the account and its dependents, so no
-    /// message about an erased person leaves after the erasure. It runs at once, inside the
-    /// transaction of the erasure.
+    /// message about an erased person leaves after the erasure. The notices to the association's
+    /// legal contact, which are about other people, stay even when its address is one of them. It
+    /// runs at once, inside the transaction of the erasure.
     /// </summary>
     /// <param name="accountId">Identifier of the account.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task DiscardPendingEmailAsync(UserId accountId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Loads, once they are locked, the terms decisions the erasure deletes whose withdrawal the
+    /// association's legal contact has not been told about yet.
+    /// </summary>
+    /// <param name="accountId">Identifier of the account.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the decisions.</returns>
+    public Task<IReadOnlyList<EventTermsAcceptance>> ListWithdrawalNoticesPendingAsync(
+        UserId accountId,
+        CancellationToken ct = default
+    );
 }

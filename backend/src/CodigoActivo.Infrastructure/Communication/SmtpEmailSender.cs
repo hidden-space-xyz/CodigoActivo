@@ -140,9 +140,10 @@ public sealed class SmtpEmailSender(SmtpOptions options, SmtpServerLimits server
 
     /// <summary>
     /// Tells whose fault a command the server rejected was, from the command and its status: a
-    /// recipient refused for good or for now is the recipient's, a message too large is the
-    /// message's, a refused sender or any other request to come back later is the server's, and
-    /// anything else may pass.
+    /// recipient whose address or mailbox is refused for good (enhanced status 5.1 or 5.2) or that
+    /// is refused for now is the recipient's, a message too large is the message's, a refused sender
+    /// or a closed service (421) is the server's, and anything else, such as a recipient refused by
+    /// the relay's policy or quota or a message deferred or refused after its content, may pass.
     /// </summary>
     /// <param name="exception">Rejection reported by MailKit.</param>
     /// <returns>The failure, whose message keeps the codes but not the reply of the server.</returns>
@@ -153,12 +154,12 @@ public sealed class SmtpEmailSender(SmtpOptions options, SmtpServerLimits server
         {
             (_, ServiceNotAvailable) => EmailDeliveryFailure.ServerUnavailable,
             (SmtpErrorCode.SenderNotAccepted, _) => EmailDeliveryFailure.ServerUnavailable,
-            (SmtpErrorCode.UnexpectedStatusCode, _) => EmailDeliveryFailure.ServerUnavailable,
-            (SmtpErrorCode.RecipientNotAccepted, >= 500) => EmailDeliveryFailure.RecipientRejected,
+            (SmtpErrorCode.RecipientNotAccepted, >= 500)
+                when RefusesTheAddress(exception.Message) => EmailDeliveryFailure.RecipientRejected,
+            (SmtpErrorCode.RecipientNotAccepted, >= 500) => EmailDeliveryFailure.Transient,
             (SmtpErrorCode.RecipientNotAccepted, _) => EmailDeliveryFailure.RecipientDeferred,
             (SmtpErrorCode.MessageNotAccepted, MessageTooLarge) =>
                 EmailDeliveryFailure.MessageRejected,
-            (SmtpErrorCode.MessageNotAccepted, < 500) => EmailDeliveryFailure.ServerUnavailable,
             _ => EmailDeliveryFailure.Transient,
         };
 
@@ -167,6 +168,13 @@ public sealed class SmtpEmailSender(SmtpOptions options, SmtpServerLimits server
             $"The SMTP server rejected the message: {exception.ErrorCode} ({status})",
             null
         );
+    }
+
+    private static bool RefusesTheAddress(string reply)
+    {
+        var enhanced = reply.TrimStart();
+        return enhanced.StartsWith("5.1.", StringComparison.Ordinal)
+            || enhanced.StartsWith("5.2.", StringComparison.Ordinal);
     }
 
     private static bool IsConnectionFailure(Exception exception)
@@ -182,23 +190,33 @@ public sealed class SmtpEmailSender(SmtpOptions options, SmtpServerLimits server
     }
 
     /// <summary>
-    /// Keeps one SMTP connection for a run of the deliverer.
+    /// Keeps one SMTP connection for a run of the deliverer. A connection that already carried a
+    /// message is checked with <c>NOOP</c> before the next one and opened again when the server
+    /// closed it without a word, before anything of the message is sent.
     /// </summary>
     /// <param name="sender">Sender whose configuration the session uses.</param>
     private sealed class Session(SmtpEmailSender sender) : IEmailTransportSession
     {
         private readonly SmtpClient client = new();
 
+        private bool used;
+
         /// <inheritdoc />
         public async Task SendAsync(EmailMessage message, CancellationToken ct = default)
         {
             ArgumentNullException.ThrowIfNull(message);
+
+            if (used && client.IsConnected && !await RespondsAsync(ct))
+            {
+                await DisconnectQuietlyAsync();
+            }
 
             if (!client.IsConnected)
             {
                 await ConnectAsync(ct);
             }
 
+            used = true;
             using var mime = sender.BuildMime(message);
             try
             {
@@ -256,6 +274,7 @@ public sealed class SmtpEmailSender(SmtpOptions options, SmtpServerLimits server
                 }
 
                 sender.serverLimits.Record(client.MaxSize);
+                used = false;
             }
             catch (Exception ex) when (ex is not EmailDeliveryException)
             {
@@ -273,6 +292,19 @@ public sealed class SmtpEmailSender(SmtpOptions options, SmtpServerLimits server
         {
             await DisconnectQuietlyAsync();
             client.Dispose();
+        }
+
+        private async Task<bool> RespondsAsync(CancellationToken ct)
+        {
+            try
+            {
+                await client.NoOpAsync(ct);
+                return true;
+            }
+            catch (Exception ex) when (ex is SmtpCommandException || IsConnectionFailure(ex))
+            {
+                return false;
+            }
         }
 
         private async Task DisconnectQuietlyAsync()

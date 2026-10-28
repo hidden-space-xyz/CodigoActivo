@@ -234,16 +234,17 @@ and bulk mail stop at 80 % of `SMTP_MAX_PER_DAY`, anonymous codes at 90 % and id
 Notices and bulk mail are also paced per recipient (20 at once, 10 per hour, 50 per day): a message over its
 recipient's share waits, without spending an attempt.
 
-A recipient refused for good (5xx), a message too large or content the key ring cannot read is removed and
-logged. A failure that may pass, such as a recipient the server defers (4xx), is retried after 1, 5 and 30
-minutes and then every hour. An unreachable server, a refused login or sender, a `421` or another 4xx reply to
-the message, or three failures in a row whose cause is unknown pause the whole delivery for 1, 2, 5, 10 and then
-30 minutes, handing the claimed messages back untried. Messages expire instead
+A recipient whose address or mailbox is refused for good (5xx with enhanced status 5.1 or 5.2), a message too
+large or content the key ring cannot read is removed and logged. A failure that may pass, such as a recipient
+the server defers (4xx) or refuses for another reason (a relay's policy or quota) or any other reply to the
+message, is retried after 1, 5 and 30 minutes and then every hour. An unreachable server, a refused login or
+sender, a `421`, or three different messages in a row failing for an unknown cause (copies of one mailing count
+once) pause the whole delivery for 1, 2, 5, 10 and then 30 minutes, handing the claimed messages back untried. Messages expire instead
 of running out of attempts: codes with their own lifetime, other mail after 3 days; the coming-of-age notice
 and the notices to the legal contact never expire. Delivery is at-least-once: a crash between a successful send
 and removing the row can resend it. Shutdown only waits for the send in flight, up to 20 seconds, below the API
-service's 30-second `stop_grace_period`; whatever is not delivered by then stays in the outbox for the next
-start. These values live in `EmailQueueOptions` and cannot be configured; only the provider pace is.
+service's 30-second `stop_grace_period`, and hands the rest of the claimed messages back untried, due at once; a
+send still running by then is claimed again once its lease expires. These values live in `EmailQueueOptions` and cannot be configured; only the provider pace is.
 
 The legal contact (`LEGAL_EMAIL`) is told about withdrawn consents and opened consultations of the blocked data
 by `LegalNoticeWorker`, 30 seconds after startup and then every minute: each kind goes in one email listing up

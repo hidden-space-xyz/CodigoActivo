@@ -166,6 +166,50 @@ public sealed class EventTermsWithdrawalTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task DeleteTheEventBeforeTheNoticeStillTellsTheLegalContact()
+    {
+        await SeedAsync();
+        var member = await LoginAsMemberAsync();
+        using var withdrawn = await WithdrawAsync(
+            member,
+            TestSeedData.Users.MemberChildId,
+            imageId
+        );
+        var admin = await LoginAsAdminAsync();
+
+        using var response = await admin.DeleteWithCsrfAsync($"/api/events/{eventId}", Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var notice = Factory.EmailSender.Sent.Should().ContainSingle().Subject;
+        notice.ToAddress.Should().Be("contacto@codigoactivo.test");
+        notice.TextBody.Should().Contain("de Mateo Miembro para el evento «Feria»");
+        (await Factory.SendLegalNoticesAsync()).Withdrawals.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task DeleteThePersonBeforeTheNoticeStillTellsTheLegalContact()
+    {
+        await SeedAsync();
+        var member = await LoginAsMemberAsync();
+        using var withdrawn = await WithdrawAsync(
+            member,
+            TestSeedData.Users.MemberChildId,
+            imageId
+        );
+
+        using var response = await member.DeleteWithCsrfAsync(
+            $"/api/users/{TestSeedData.Users.MemberChildId}",
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var notice = Factory.EmailSender.Sent.Should().ContainSingle().Subject;
+        notice.ToAddress.Should().Be("contacto@codigoactivo.test");
+        notice.TextBody.Should().Contain("de Mateo Miembro para el evento «Feria»");
+        (await Factory.SendLegalNoticesAsync()).Withdrawals.Should().Be(0);
+    }
+
+    [Fact]
     public async Task WithdrawAsAdministratorRecordsItForTheGuardian()
     {
         await SeedAsync();

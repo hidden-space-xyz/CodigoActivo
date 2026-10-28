@@ -23,27 +23,30 @@ public sealed class LegalNoticeWorker(
 ) : BackgroundService
 {
     /// <summary>
-    /// Sends the notice of the withdrawn consents and then that of the opened consultations.
+    /// Sends the notice of the withdrawn consents and that of the opened consultations at once, so
+    /// a failure of one never keeps the other from being sent.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
-    /// A task whose result contains the number of withdrawals and of consultations told.
+    /// A task whose result contains the number of withdrawals and of consultations told; it fails
+    /// once both finished when either failed.
     /// </returns>
     public async Task<(int Withdrawals, int Consultations)> NotifyAsync(
         CancellationToken ct = default
     )
     {
-        var withdrawals = await ScheduledCommandRunner.RunAsync(
+        var withdrawals = ScheduledCommandRunner.RunAsync(
             scopes,
             new SendConsentWithdrawalNoticesCommand(),
             ct
         );
-        var consultations = await ScheduledCommandRunner.RunAsync(
+        var consultations = ScheduledCommandRunner.RunAsync(
             scopes,
             new SendBlockedDataConsultationNoticesCommand(),
             ct
         );
-        return (withdrawals, consultations);
+        await Task.WhenAll(withdrawals, consultations);
+        return (await withdrawals, await consultations);
     }
 
     /// <summary>

@@ -95,6 +95,31 @@ public sealed class RecipientBudgets(EmailGuardOptions options, DateTimeOffset s
         }
     }
 
+    /// <summary>
+    /// Gives back to the hourly and the daily budget of an address the message
+    /// <see cref="TrySpend"/> took, up to their capacity, when the server did not take it; an
+    /// address that is not tracked is left alone.
+    /// </summary>
+    /// <param name="key">Key of the address, already normalized.</param>
+    /// <param name="now">Current time.</param>
+    public void Refund(string key, DateTimeOffset now)
+    {
+        lock (gate)
+        {
+            if (!budgets.TryGetValue(key, out var state))
+            {
+                return;
+            }
+
+            state.Hourly = state
+                .Hourly.Refill(now, options.RecipientBurst, options.RecipientPerHour)
+                .GiveBack(options.RecipientBurst);
+            state.Daily = state
+                .Daily.Refill(now, options.RecipientPerDay, DailyRefill)
+                .GiveBack(options.RecipientPerDay);
+        }
+    }
+
     private double DailyRefill => options.RecipientPerDay / HoursPerDay;
 
     private void SweepIfDue(DateTimeOffset now)
@@ -189,6 +214,16 @@ public readonly record struct TokenBucket(double Tokens, DateTimeOffset UpdatedA
     public TokenBucket Consume()
     {
         return this with { Tokens = Tokens - 1 };
+    }
+
+    /// <summary>
+    /// Gives one permit back to the bucket, up to its capacity.
+    /// </summary>
+    /// <param name="capacity">Maximum number of permits held by the bucket.</param>
+    /// <returns>The bucket with one permit more.</returns>
+    public TokenBucket GiveBack(double capacity)
+    {
+        return this with { Tokens = Math.Min(capacity, Tokens + 1) };
     }
 
     /// <summary>

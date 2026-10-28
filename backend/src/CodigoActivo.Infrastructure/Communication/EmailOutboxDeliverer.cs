@@ -12,8 +12,10 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// message by message: a delivered or refused-for-good message is removed, a message whose recipient
 /// already got their share waits without spending an attempt, a failure that may pass is retried
 /// with a growing delay, and a server that cannot take mail pauses the whole delivery, handing the
-/// rest of the batch back untried. Three failures in a row whose cause is unknown are blamed on the
-/// server too; a recipient the server defers never is. Repeated
+/// rest of the batch back untried. A recipient gets their share back when the server was unavailable
+/// or deferred them, since the message never reached them. Three different messages in a row that
+/// fail for an unknown cause are blamed on the server too, while copies of one content that fail
+/// together are that content's; a recipient the server defers never is. Repeated
 /// failures are logged at most once per <see cref="EmailGuardOptions.AlertInterval"/>. Delivery is
 /// at least once: a sent message whose row cannot be removed is attempted again.
 /// </summary>
@@ -43,11 +45,11 @@ public sealed class EmailOutboxDeliverer(
     private readonly LogThrottle expiredRemovalFailures = new(guard.AlertInterval);
     private readonly LogThrottle pauses = new(guard.AlertInterval);
     private readonly LogThrottle dailyLimitAlerts = new(guard.AlertInterval);
+    private readonly HashSet<Guid> contentsFailedInARow = [];
 
     private DateTimeOffset pausedUntil = DateTimeOffset.MinValue;
     private DateTimeOffset nextOverdueCheckAt = DateTimeOffset.MinValue;
     private int serverFailures;
-    private int failuresInARow;
 
     /// <summary>
     /// Gets the time until which the delivery is paused because the SMTP server could not take mail;
@@ -67,12 +69,14 @@ public sealed class EmailOutboxDeliverer(
     /// <summary>
     /// Removes the expired messages, claims and delivers the messages that are due and allowed, and
     /// clears the stored content that no message references any more. Nothing is claimed while the
-    /// delivery is paused. Only a failed claim or a cancellation reaches the caller: the failures of
-    /// single messages, of the removal, of the count and of the sweep are logged here.
+    /// delivery is paused. Only a failed claim, counting what was sent within the daily window
+    /// included, or a cancellation reaches the caller: the failures of single messages, of the
+    /// removal, of the overdue count and of the sweep are logged here.
     /// </summary>
     /// <param name="ct">
-    /// Cancellation token that stops the removal and the claim; a claimed batch is still delivered
-    /// to the end, each send bounded by <see cref="EmailQueueOptions.SendTimeout"/>.
+    /// Cancellation token that stops the removal and the claim; in a claimed batch it lets the send
+    /// in flight finish, bounded by <see cref="EmailQueueOptions.SendTimeout"/>, and hands the rest
+    /// back untried, due at once, so the next instance delivers it before its codes expire.
     /// </param>
     /// <returns>A task whose result contains the number of claimed messages.</returns>
     public async Task<int> DeliverDueAsync(CancellationToken ct = default)
@@ -84,7 +88,7 @@ public sealed class EmailOutboxDeliverer(
         var claimed = now < PausedUntil ? [] : await ClaimAsync(now, ct);
         if (claimed.Count > 0)
         {
-            await DeliverAllAsync(claimed);
+            await DeliverAllAsync(claimed, ct);
         }
 
         await SweepContentAsync();
@@ -114,7 +118,10 @@ public sealed class EmailOutboxDeliverer(
             : [];
     }
 
-    private async Task DeliverAllAsync(IReadOnlyList<EmailOutboxMessage> claimed)
+    private async Task DeliverAllAsync(
+        IReadOnlyList<EmailOutboxMessage> claimed,
+        CancellationToken ct
+    )
     {
         var payloads = claimed
             .DistinctBy(message => message.ContentId)
@@ -128,12 +135,18 @@ public sealed class EmailOutboxDeliverer(
         {
             for (var index = 0; index < claimed.Count; index++)
             {
+                if (ct.IsCancellationRequested)
+                {
+                    await HandBackAsync(claimed.Skip(index), clock.UtcNow);
+                    return;
+                }
+
                 var message = claimed[index];
                 var outcome = await DeliverAsync(message, payloads[message.ContentId], run);
                 if (outcome is not Outcome.Continue)
                 {
                     var untried = outcome is Outcome.PauseBeforeThis ? index : index + 1;
-                    await HandBackAsync(claimed.Skip(untried));
+                    await HandBackAsync(claimed.Skip(untried), PausedUntil);
                     return;
                 }
             }
@@ -157,7 +170,8 @@ public sealed class EmailOutboxDeliverer(
     )
     {
         var now = clock.UtcNow;
-        if (EmailQueueOptions.IsPacedPerRecipient(message.Priority))
+        var paced = EmailQueueOptions.IsPacedPerRecipient(message.Priority);
+        if (paced)
         {
             var spend = pacer.TrySpendRecipient(message.ToAddress, now);
             if (!spend.Allowed)
@@ -192,6 +206,11 @@ public sealed class EmailOutboxDeliverer(
         catch (EmailDeliveryException ex)
             when (ex.Failure is EmailDeliveryFailure.ServerUnavailable)
         {
+            if (paced)
+            {
+                pacer.RefundRecipient(message.ToAddress, clock.UtcNow);
+            }
+
             Pause(ex);
             return Outcome.PauseBeforeThis;
         }
@@ -207,13 +226,18 @@ public sealed class EmailOutboxDeliverer(
         catch (EmailDeliveryException ex)
             when (ex.Failure is EmailDeliveryFailure.RecipientDeferred)
         {
+            if (paced)
+            {
+                pacer.RefundRecipient(message.ToAddress, clock.UtcNow);
+            }
+
             await RetryLaterAsync(message, ex);
             return Outcome.Continue;
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
             await RetryLaterAsync(message, ex);
-            if (FailedInARow() < EmailQueueOptions.FailuresBeforePause)
+            if (FailedInARow(message.ContentId) < EmailQueueOptions.FailuresBeforePause)
             {
                 return Outcome.Continue;
             }
@@ -228,15 +252,16 @@ public sealed class EmailOutboxDeliverer(
         lock (gate)
         {
             serverFailures = 0;
-            failuresInARow = 0;
+            contentsFailedInARow.Clear();
         }
     }
 
-    private int FailedInARow()
+    private int FailedInARow(Guid contentId)
     {
         lock (gate)
         {
-            return ++failuresInARow;
+            contentsFailedInARow.Add(contentId);
+            return contentsFailedInARow.Count;
         }
     }
 
@@ -247,7 +272,7 @@ public sealed class EmailOutboxDeliverer(
         lock (gate)
         {
             serverFailures++;
-            failuresInARow = 0;
+            contentsFailedInARow.Clear();
             delay = EmailQueueOptions.PauseDelayAfter(serverFailures);
             now = clock.UtcNow;
             pausedUntil = now + delay;
@@ -259,9 +284,11 @@ public sealed class EmailOutboxDeliverer(
         }
     }
 
-    private async Task HandBackAsync(IEnumerable<EmailOutboxMessage> untried)
+    private async Task HandBackAsync(
+        IEnumerable<EmailOutboxMessage> untried,
+        DateTimeOffset resumeAt
+    )
     {
-        var resumeAt = PausedUntil;
         foreach (var message in untried)
         {
             await ReleaseAsync(message, resumeAt);
@@ -362,10 +389,17 @@ public sealed class EmailOutboxDeliverer(
             nextOverdueCheckAt = now + guard.AlertInterval;
         }
 
-        var overdue = await store.CountOverdueAsync(now - EmailQueueOptions.OverdueAge, ct);
-        if (overdue > 0)
+        try
         {
-            logger.EmailsOverdue(overdue, (int)EmailQueueOptions.OverdueAge.TotalHours);
+            var overdue = await store.CountOverdueAsync(now - EmailQueueOptions.OverdueAge, ct);
+            if (overdue > 0)
+            {
+                logger.EmailsOverdue(overdue, (int)EmailQueueOptions.OverdueAge.TotalHours);
+            }
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.OverdueEmailNotCounted(ex);
         }
     }
 

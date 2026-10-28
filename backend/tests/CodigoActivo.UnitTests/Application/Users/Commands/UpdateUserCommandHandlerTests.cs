@@ -533,7 +533,13 @@ public sealed class UpdateUserCommandHandlerTests
         link.Recipient.Should().Be(new EmailRecipient("new@test.com", string.Empty));
         link.UserId.Should().Be(actingUser.Id);
         link.Lifetime.Should().Be(verification.OtpLifetime);
-        emailSender.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("new@test.com");
+        var sent = emailSender.Sent.Should().ContainSingle().Subject;
+        sent.ToAddress.Should().Be("new@test.com");
+        sent.Topic.Should()
+            .Be(
+                EmailTopics.EmailChange(actingUser.Id.Value),
+                "another account asking for the same address never replaces this link"
+            );
         actingUser.EmailChange.CodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + link.Code);
     }
 
