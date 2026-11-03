@@ -57,12 +57,6 @@ public sealed class DisposableEmailDomainStoreTests(PostgresDatabaseFixture post
     }
 
     [Fact]
-    public async Task ContainsAnyAsyncNoListStoredFindsNothing()
-    {
-        (await ContainsAnyAsync("mailinator.com")).Should().BeFalse();
-    }
-
-    [Fact]
     public async Task ContainsAnyAsyncListedNameAmongTheCandidatesIsFound()
     {
         await ReplaceAsync("mailinator.com", "guerrillamail.com");

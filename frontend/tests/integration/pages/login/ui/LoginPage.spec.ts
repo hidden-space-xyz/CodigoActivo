@@ -76,7 +76,7 @@ describe('login page', () => {
   })
 
   it('shows an error when the credentials are rejected', async () => {
-    server.use(http.post('/api/auth/login', () => apiError(401)))
+    server.use(http.post('/api/auth/login', () => apiError(401, 'InvalidCredentials')))
 
     const { wrapper, router } = await renderApp('/login')
     await wrapper.find('#login-identifier').setValue('nobody')

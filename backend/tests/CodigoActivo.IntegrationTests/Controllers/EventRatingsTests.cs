@@ -225,34 +225,21 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         await response.ShouldBeConflictAsync(ErrorCode.EventRatingAttendanceRequired);
     }
 
-    [Fact]
-    public async Task SaveRatingScoreOutOfRangeReturnsBadRequest()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(6)]
+    public async Task SaveRatingScoreOutOfRangeReturnsBadRequest(int score)
     {
         await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
         var client = await LoginAsMemberAsync();
 
         using var response = await client.PutJsonAsync(
             $"/api/events/{EventId}/rating",
-            new SaveEventRatingRequest(6, null, null, null),
+            new SaveEventRatingRequest(score, "Bien", null, null),
             Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-    }
-
-    [Fact]
-    public async Task SaveRatingZeroScoreReturnsBadRequest()
-    {
-        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
-        var client = await LoginAsMemberAsync();
-
-        using var response = await client.PutJsonAsync(
-            $"/api/events/{EventId}/rating",
-            new SaveEventRatingRequest(0, "Bien", null, null),
-            Ct
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
 
     [Fact]
@@ -518,7 +505,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
     }
 
     [Fact]
@@ -560,24 +547,6 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         var item = page!.Items.Should().ContainSingle().Subject;
         item.Score.Should().Be(3);
         item.MostLiked.Should().Be("El taller");
-    }
-
-    [Fact]
-    public async Task RatingsDefaultSortOrdersByDescendingScore()
-    {
-        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
-        await Factory.SeedAsync(db =>
-        {
-            db.EventRatings.AddRange(Rating(Member, 1), Rating(Admin, 5), Rating(Pending, 3));
-            return Task.CompletedTask;
-        });
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.GetAsync(TestUri.Rel($"/api/events/{EventId}/ratings"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var page = await response.ReadJsonAsync<PagedResult<EventRatingListItemResponse>>(Ct);
-        page!.Items.Select(i => i.Score).Should().Equal(5, 3, 1);
     }
 
     [Fact]

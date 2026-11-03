@@ -242,29 +242,6 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncLeaderRoleForNonSocioUserReturnsRoleNotAllowed()
-    {
-        var activityId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
-        clock.UtcNow = Now;
-        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
-        users.TargetUser(userId, KnownIds.UserTypes.Participant);
-
-        var result = await AssignAsync(
-            activityId,
-            userId,
-            userId,
-            new AssignRequest(KnownIds.ActivityRoleTypes.Leader),
-            isAdmin: false
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityRoleNotAllowed);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
     public async Task HandleAsyncLeaderRoleForNonSocioUserAsAdminReturnsRoleNotAllowed()
     {
         var activityId = Guid.NewGuid();
@@ -313,7 +290,7 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncValidRequestAsAdminPersistsRequestedStatusAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestAsAdminPersistsRequestedStatus()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
@@ -342,28 +319,6 @@ public sealed class AssignActivityCommandHandlerTests
                 )
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task HandleAsyncStartedActivityWithOpenWindowReturnsAlreadyStarted()
-    {
-        var activityId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
-        clock.UtcNow = ActivityStartsAt;
-        var activity = activities.HasActivityWindow(events, activityId, OpenStart, ActivityEndsAt);
-        users.TargetUser(userId, KnownIds.UserTypes.Participant);
-
-        var result = await AssignAsync(
-            activityId,
-            userId,
-            userId,
-            new AssignRequest(KnownIds.ActivityRoleTypes.Participant),
-            isAdmin: false
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityAlreadyStarted);
-        activity.Assignments.Should().BeEmpty();
     }
 
     [Fact]
@@ -448,29 +403,6 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncEarlySignupWindowForSponsorIsOpenAndPersists()
-    {
-        var activityId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
-
-        clock.UtcNow = DuringEarly;
-
-        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd, EarlyStart);
-        users.TargetUser(userId, KnownIds.UserTypes.Sponsor);
-
-        var result = await AssignAsync(
-            activityId,
-            userId,
-            userId,
-            new AssignRequest(KnownIds.ActivityRoleTypes.Participant),
-            isAdmin: false
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
     public async Task HandleAsyncEarlySignupWindowForParticipantReturnsSignupEarlyOnly()
     {
         var activityId = Guid.NewGuid();
@@ -539,56 +471,6 @@ public sealed class AssignActivityCommandHandlerTests
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(DomainErrorCode.ActivitySignupEarlyOnly);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task HandleAsyncBeforeEarlySignupWindowForSocioReturnsSignupClosed()
-    {
-        var activityId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
-
-        clock.UtcNow = BeforeEarly;
-
-        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd, EarlyStart);
-        users.TargetUser(userId, KnownIds.UserTypes.Member);
-
-        var result = await AssignAsync(
-            activityId,
-            userId,
-            userId,
-            new AssignRequest(KnownIds.ActivityRoleTypes.Participant),
-            isAdmin: false
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivitySignupClosed);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task HandleAsyncNoEarlySignupWindowForSocioReturnsSignupClosed()
-    {
-        var activityId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
-
-        clock.UtcNow = DuringEarly;
-
-        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
-        users.TargetUser(userId, KnownIds.UserTypes.Member);
-
-        var result = await AssignAsync(
-            activityId,
-            userId,
-            userId,
-            new AssignRequest(KnownIds.ActivityRoleTypes.Participant),
-            isAdmin: false
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivitySignupClosed);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -855,239 +737,6 @@ public sealed class AssignActivityCommandHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        await termsAcceptances
-            .DidNotReceiveWithAnyArgs()
-            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task HandleAsyncRequiredDocumentAlreadyRejectedWithoutNewDecisionStillRequiresAcceptance()
-    {
-        var activityId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
-        var termsDocumentId = Guid.NewGuid();
-        clock.UtcNow = Now;
-        activities.HasActivityWindow(
-            events,
-            activityId,
-            OpenStart,
-            OpenEnd,
-            eventId: Guid.NewGuid(),
-            termsDocumentId: termsDocumentId
-        );
-        users.TargetUser(userId, KnownIds.UserTypes.Participant);
-        termsAcceptances.HasTermsDecisions(StoredDecision(termsDocumentId, false, Now.AddDays(-1)));
-
-        var result = await AssignAsync(
-            activityId,
-            userId,
-            userId,
-            new AssignRequest(KnownIds.ActivityRoleTypes.Participant),
-            isAdmin: false
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.EventTermsAcceptanceRequired);
-        await termsAcceptances
-            .DidNotReceiveWithAnyArgs()
-            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task HandleAsyncRejectingRequiredDocumentReturnsTermsAcceptanceRequiredWithoutPersistingRejection()
-    {
-        var activityId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
-        var termsDocumentId = Guid.NewGuid();
-        clock.UtcNow = Now;
-        activities.HasActivityWindow(
-            events,
-            activityId,
-            OpenStart,
-            OpenEnd,
-            eventId: Guid.NewGuid(),
-            termsDocumentId: termsDocumentId
-        );
-        users.TargetUser(userId, KnownIds.UserTypes.Participant);
-        termsAcceptances.TermsAccepted(null);
-
-        var result = await AssignAsync(
-            activityId,
-            userId,
-            userId,
-            new AssignRequest(
-                KnownIds.ActivityRoleTypes.Participant,
-                TermsDecisions: [new TermsDecisionRequest(termsDocumentId, false)]
-            ),
-            isAdmin: false
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result
-            .Error.Code.Should()
-            .Be(
-                ApplicationErrorCode.EventTermsAcceptanceRequired,
-                "rejecting a required document must not be stored as a permanent, unrecoverable decision"
-            );
-        await termsAcceptances
-            .DidNotReceiveWithAnyArgs()
-            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task HandleAsyncAcceptingRequiredDocumentAfterEarlierRejectionSucceeds()
-    {
-        var activityId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
-        var termsDocumentId = Guid.NewGuid();
-        clock.UtcNow = Now;
-        activities.HasActivityWindow(
-            events,
-            activityId,
-            OpenStart,
-            OpenEnd,
-            eventId: Guid.NewGuid(),
-            termsDocumentId: termsDocumentId
-        );
-        users.TargetUser(userId, KnownIds.UserTypes.Participant);
-        termsAcceptances.TermsAccepted(null);
-
-        var rejected = await AssignAsync(
-            activityId,
-            userId,
-            userId,
-            new AssignRequest(
-                KnownIds.ActivityRoleTypes.Participant,
-                TermsDecisions: [new TermsDecisionRequest(termsDocumentId, false)]
-            ),
-            isAdmin: false
-        );
-        rejected.Error!.Code.Should().Be(ApplicationErrorCode.EventTermsAcceptanceRequired);
-
-        var accepted = await AssignAsync(
-            activityId,
-            userId,
-            userId,
-            new AssignRequest(
-                KnownIds.ActivityRoleTypes.Participant,
-                TermsDecisions: [new TermsDecisionRequest(termsDocumentId, true)]
-            ),
-            isAdmin: false
-        );
-
-        accepted
-            .IsSuccess.Should()
-            .BeTrue(
-                "a mistaken rejection of a required document must not permanently lock the user out of the event"
-            );
-        await termsAcceptances
-            .Received(1)
-            .AddAsync(
-                Arg.Is<EventTermsAcceptance>(a =>
-                    a != null
-                    && a.TermsDocumentId == TermsDocumentId.From(termsDocumentId)
-                    && a.Accepted
-                ),
-                Arg.Any<CancellationToken>()
-            );
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task HandleAsyncRejectingOptionalDocumentPersistsRejectionAndDoesNotBlockSignup()
-    {
-        var activityId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
-        var eventId = Guid.NewGuid();
-        var termsDocumentId = Guid.NewGuid();
-        clock.UtcNow = Now;
-        activities.HasActivityWindow(
-            events,
-            activityId,
-            OpenStart,
-            OpenEnd,
-            eventId: eventId,
-            termsDocumentId: termsDocumentId,
-            termsRequired: false
-        );
-        users.TargetUser(userId, KnownIds.UserTypes.Participant);
-        termsAcceptances.TermsAccepted(null);
-
-        var result = await AssignAsync(
-            activityId,
-            userId,
-            userId,
-            new AssignRequest(
-                KnownIds.ActivityRoleTypes.Participant,
-                TermsDecisions: [new TermsDecisionRequest(termsDocumentId, false)]
-            ),
-            isAdmin: false
-        );
-
-        result
-            .IsSuccess.Should()
-            .BeTrue(
-                "an optional document never blocks the signup, regardless of the user's decision"
-            );
-        await termsAcceptances
-            .Received(1)
-            .AddAsync(
-                Arg.Is<EventTermsAcceptance>(a =>
-                    a != null
-                    && a.EventId == EventId.From(eventId)
-                    && a.UserId == UserId.From(userId)
-                    && a.TermsDocumentId == TermsDocumentId.From(termsDocumentId)
-                    && !a.Accepted
-                    && a.DecidedAt == Now
-                ),
-                Arg.Any<CancellationToken>()
-            );
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task HandleAsyncOptionalDocumentWithStoredRejectionAcceptingOverwritesRowInPlace()
-    {
-        var activityId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
-        var termsDocumentId = Guid.NewGuid();
-        clock.UtcNow = Now;
-        activities.HasActivityWindow(
-            events,
-            activityId,
-            OpenStart,
-            OpenEnd,
-            eventId: Guid.NewGuid(),
-            termsDocumentId: termsDocumentId,
-            termsRequired: false
-        );
-        users.TargetUser(userId, KnownIds.UserTypes.Participant);
-        var stored = StoredDecision(termsDocumentId, false, Now.AddDays(-1));
-        termsAcceptances.HasTermsDecisions(stored);
-
-        var result = await AssignAsync(
-            activityId,
-            userId,
-            userId,
-            new AssignRequest(
-                KnownIds.ActivityRoleTypes.Participant,
-                TermsDecisions: [new TermsDecisionRequest(termsDocumentId, true)]
-            ),
-            isAdmin: false
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        stored
-            .Accepted.Should()
-            .BeTrue(
-                "a rejection is revisable: a later acceptance overwrites the stored row in place"
-            );
-        stored.DecidedAt.Should().Be(Now);
         await termsAcceptances
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);

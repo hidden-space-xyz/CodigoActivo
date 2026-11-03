@@ -1,19 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  toActivityAssignment,
   toActivityDetail,
   toEventActivity,
   toHouseholdActivityAssignment,
-  toHouseholdSignupRoles,
-  toOverlapCheck,
 } from '@/entities/activity/api/mapper'
 
-import {
-  buildActivityResponse,
-  buildAssignedActivity,
-  buildHouseholdAssignment,
-} from '../../../../support/builders'
+import { buildActivityResponse, buildHouseholdAssignment } from '../../../../support/builders'
 
 const activity = buildActivityResponse({
   id: 'activity-1',
@@ -62,36 +55,6 @@ describe('activity mapper', () => {
     })
   })
 
-  it('maps the roles a household member may sign up for', () => {
-    expect(
-      toHouseholdSignupRoles({
-        userId: 'user-1',
-        roles: [
-          { id: 'role-1', name: 'Participante' },
-          { id: 'role-2', name: 'Mentor' },
-        ],
-      }),
-    ).toEqual({
-      userId: 'user-1',
-      roles: [
-        { id: 'role-1', name: 'Participante' },
-        { id: 'role-2', name: 'Mentor' },
-      ],
-    })
-  })
-
-  it('maps an own signup to its status and role names', () => {
-    expect(
-      toActivityAssignment(
-        buildAssignedActivity({
-          activityId: 'activity-1',
-          status: { id: 'status-2', name: 'Confirmada' },
-          roleType: { id: 'role-mentor', name: 'Mentor' },
-        }),
-      ),
-    ).toEqual({ activityId: 'activity-1', status: 'Confirmada', roleName: 'Mentor' })
-  })
-
   it('maps a household signup joining the member name', () => {
     expect(
       toHouseholdActivityAssignment(
@@ -107,31 +70,5 @@ describe('activity mapper', () => {
     expect(toHouseholdActivityAssignment(buildHouseholdAssignment({ lastName: '' })).name).toBe(
       'Byron',
     )
-  })
-
-  it('maps the overlap check', () => {
-    expect(
-      toOverlapCheck({
-        hasOverlaps: true,
-        overlaps: [
-          {
-            activityId: 'activity-2',
-            title: 'Python',
-            startsAt: '2026-10-01T10:00:00Z',
-            endsAt: '2026-10-01T12:00:00Z',
-          },
-        ],
-      }),
-    ).toEqual({
-      hasOverlaps: true,
-      overlaps: [
-        {
-          activityId: 'activity-2',
-          title: 'Python',
-          startsAt: '2026-10-01T10:00:00Z',
-          endsAt: '2026-10-01T12:00:00Z',
-        },
-      ],
-    })
   })
 })

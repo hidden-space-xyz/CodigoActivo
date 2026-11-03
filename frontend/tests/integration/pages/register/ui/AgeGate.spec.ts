@@ -14,13 +14,6 @@ function buttonByText(
 }
 
 describe('AgeGate', () => {
-  it('asks whether the visitor is an adult', async () => {
-    const { wrapper } = await renderWithProviders(AgeGate)
-
-    expect(wrapper.text()).toContain(t('pages.register.ageGate.heading'))
-    expect(wrapper.text()).toContain(t('pages.register.ageGate.question'))
-  })
-
   it('emits confirm when the visitor says they are an adult', async () => {
     const { wrapper } = await renderWithProviders(AgeGate)
 

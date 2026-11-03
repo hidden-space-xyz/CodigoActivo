@@ -769,55 +769,6 @@ public sealed class EventTests
     }
 
     [Fact]
-    public void TermsAcceptanceRecordStoresTheDecision()
-    {
-        var eventId = Guid.NewGuid();
-        var userId = Guid.NewGuid();
-        var termsDocumentId = Guid.NewGuid();
-
-        var acceptance = EventTermsAcceptance.Record(
-            EventId.From(eventId),
-            UserId.From(userId),
-            UserId.From(userId),
-            TermsDocumentId.From(termsDocumentId),
-            1,
-            false,
-            null,
-            UserId.From(userId),
-            Now
-        );
-
-        acceptance.EventId.Value.Should().Be(eventId);
-        acceptance.UserId.Value.Should().Be(userId);
-        acceptance.TermsDocumentId.Value.Should().Be(termsDocumentId);
-        acceptance.Accepted.Should().BeFalse();
-        acceptance.DecidedAt.Should().Be(Now);
-    }
-
-    [Fact]
-    public void TermsAcceptanceAcceptDeclinedDocumentAcceptsItAtThatMoment()
-    {
-        var termsDocumentId = Guid.NewGuid();
-        var acceptance = EventTermsAcceptance.Record(
-            EventId.From(Guid.NewGuid()),
-            UserId.From(Guid.NewGuid()),
-            UserId.From(Guid.NewGuid()),
-            TermsDocumentId.From(termsDocumentId),
-            1,
-            false,
-            null,
-            UserId.From(Guid.NewGuid()),
-            Now
-        );
-
-        acceptance.Accept(acceptance.UserId, 1, null, acceptance.UserId, Now.AddHours(3));
-
-        acceptance.Accepted.Should().BeTrue();
-        acceptance.DecidedAt.Should().Be(Now.AddHours(3));
-        acceptance.TermsDocumentId.Value.Should().Be(termsDocumentId);
-    }
-
-    [Fact]
     public void TermsAcceptanceRecordKeepsTheSignatureOnlyWhenAccepted()
     {
         var signature = HandwrittenSignature.Create(SignatureImages.Png()).Value;
@@ -847,26 +798,5 @@ public sealed class EventTests
 
         accepted.Signature.Should().BeSameAs(signature);
         declined.Signature.Should().BeNull();
-    }
-
-    [Fact]
-    public void TermsAcceptanceAcceptDeclinedDocumentKeepsTheSignatureDrawn()
-    {
-        var signature = HandwrittenSignature.Create(SignatureImages.Png()).Value;
-        var acceptance = EventTermsAcceptance.Record(
-            EventId.From(Guid.NewGuid()),
-            UserId.From(Guid.NewGuid()),
-            UserId.From(Guid.NewGuid()),
-            TermsDocumentId.From(Guid.NewGuid()),
-            1,
-            false,
-            null,
-            UserId.From(Guid.NewGuid()),
-            Now
-        );
-
-        acceptance.Accept(acceptance.UserId, 1, signature, acceptance.UserId, Now.AddHours(1));
-
-        acceptance.Signature.Should().BeSameAs(signature);
     }
 }

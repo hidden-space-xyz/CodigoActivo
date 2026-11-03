@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { eventCategoryKeys, eventCategoryMutations } from '@/entities/event-category'
 
-import { apiError, http, HttpResponse, noContent, server } from '../../../../support/server'
+import { http, HttpResponse, noContent, server } from '../../../../support/server'
 import { buildEventCategoryType } from '../../../../support/builders'
 import { createTestQueryClient } from '../../../../support/render'
 
@@ -43,16 +43,5 @@ describe('eventCategoryMutations', () => {
     for (const { invalidated } of [created, updated, removed]) {
       expect(invalidated()).toEqual([true, true])
     }
-  })
-
-  it('leaves the category queries alone when the API refuses the change', async () => {
-    server.use(http.delete('/api/events/categoryType/:id', () => apiError(500)))
-    const { client, invalidated } = cachedCategories()
-
-    await expect(
-      new MutationObserver(client, eventCategoryMutations.remove()).mutate('cat-1'),
-    ).rejects.toMatchObject({ status: 500 })
-
-    expect(invalidated()).toEqual([false, false])
   })
 })

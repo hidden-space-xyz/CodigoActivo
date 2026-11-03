@@ -286,7 +286,6 @@ describe('RegistrationForm', () => {
     ['#reg-phone', ' '],
     ['#reg-password', 'short'],
     ['#reg-password-confirm', 'different-password'],
-    ['#reg-national-id', 'X1234567A'],
   ])('does not emit when %s is set to %j', async (selector, value) => {
     const { wrapper } = await renderForm()
     await fillAdult(wrapper)

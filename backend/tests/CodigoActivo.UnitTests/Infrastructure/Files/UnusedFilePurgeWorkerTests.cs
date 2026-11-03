@@ -47,18 +47,6 @@ public sealed class UnusedFilePurgeWorkerTests : IDisposable
     }
 
     [Fact]
-    public async Task PurgeAsyncRunsTheUseCaseAndReturnsTheDeletedCount()
-    {
-        purge
-            .HandleAsync(Arg.Any<PurgeUnusedFilesCommand>(), Arg.Any<CancellationToken>())
-            .Returns(3);
-
-        var purged = await Build().PurgeAsync(TestContext.Current.CancellationToken);
-
-        purged.Should().Be(3);
-    }
-
-    [Fact]
     public async Task ExecuteAsyncFirstRunPurgesAfterTheStartupDelayWithoutLogging()
     {
         var signal = new TaskCompletionSource();

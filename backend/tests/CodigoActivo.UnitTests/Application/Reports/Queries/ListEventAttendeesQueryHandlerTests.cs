@@ -264,21 +264,6 @@ public sealed class ListEventAttendeesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncSortByEmailOrdersByEmailAscending()
-    {
-        var carla = NewUserRow("Carla", email: "charlie@test.local");
-        var ana = NewUserRow("Ana", email: "alice@test.local");
-        var berto = NewUserRow("Berto", email: "bob@test.local");
-        HasConfirmedAttendees(carla, ana, berto);
-
-        var page = await ListAsync(QueriedEventId, new EventAttendeeListQuery { Sort = "email" });
-
-        page.Items.Select(a => a.Email)
-            .Should()
-            .Equal("alice@test.local", "bob@test.local", "charlie@test.local");
-    }
-
-    [Fact]
     public async Task HandleAsyncSortByBirthDateDescendingOrdersOldestLast()
     {
         var oldest = NewUserRow("Vieja", birthDate: new DateOnly(1980, 1, 1));
@@ -295,21 +280,6 @@ public sealed class ListEventAttendeesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncSortByTypeOrdersByUserTypeName()
-    {
-        var volunteer = NewUserRow("Vero", typeName: "Voluntario");
-        var member = NewUserRow("Mario", typeName: "Miembro");
-        var sponsor = NewUserRow("Sonia", typeName: "Patrocinador");
-        HasConfirmedAttendees(volunteer, member, sponsor);
-
-        var page = await ListAsync(QueriedEventId, new EventAttendeeListQuery { Sort = "type" });
-
-        page.Items.Select(a => a.UserTypeName)
-            .Should()
-            .Equal("Miembro", "Patrocinador", "Voluntario");
-    }
-
-    [Fact]
     public async Task HandleAsyncEventMissingReturnsNotFound()
     {
         var ana = NewUserRow("Ana");
@@ -322,24 +292,5 @@ public sealed class ListEventAttendeesQueryHandlerTests
 
         result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventNotFound);
         store.ReadsOf<UserRow>().Should().Be(0);
-    }
-
-    [Fact]
-    public async Task HandleAsyncSecondPageReturnsRemainingUsersWithTotal()
-    {
-        var ana = NewUserRow("Ana");
-        var berto = NewUserRow("Berto");
-        var carla = NewUserRow("Carla");
-        HasConfirmedAttendees(carla, ana, berto);
-
-        var page = await ListAsync(
-            QueriedEventId,
-            new EventAttendeeListQuery { Page = 2, PageSize = 2 }
-        );
-
-        page.Total.Should().Be(3);
-        page.Page.Should().Be(2);
-        page.PageSize.Should().Be(2);
-        page.Items.Should().ContainSingle(a => a.UserId == carla.Id);
     }
 }

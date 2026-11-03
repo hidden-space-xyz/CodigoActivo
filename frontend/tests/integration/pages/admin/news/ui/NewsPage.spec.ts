@@ -323,20 +323,7 @@ describe('admin news page', () => {
     await vi.waitFor(() => expect(isDialogOpen(editTitle())).toBe(false))
   })
 
-  it('does not open the editor when the news item no longer exists', async () => {
-    serveNews()
-    server.use(http.get('/api/news/:id', () => apiError(404)))
-    await renderPage()
-
-    await click(findButton(t('common.edit')))
-
-    await vi.waitFor(() =>
-      expect(document.body.querySelector('.el-notification--error')).not.toBeNull(),
-    )
-    expect(isDialogOpen(editTitle())).toBe(false)
-  })
-
-  it('reports a missing news item with the not-found message', async () => {
+  it('reports a missing news item with the not-found message without opening the editor', async () => {
     serveNews()
     server.use(http.get('/api/news/:id', () => apiError(404)))
     await renderPage()
@@ -344,6 +331,7 @@ describe('admin news page', () => {
     await click(findButton(t('common.edit')))
 
     await expectNotification(t('pages.admin.news.toasts.notFound'))
+    expect(isDialogOpen(editTitle())).toBe(false)
   })
 
   it('reports a failure loading the news item detail', async () => {

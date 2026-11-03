@@ -108,7 +108,7 @@ public sealed partial class LoggingConventionTests
     }
 
     [Fact]
-    public void ProductionAssembliesDeclareEveryLogEventWithLoggerMessage()
+    public void LoggerMessageScanFindsTheProductionLogEvents()
     {
         Events().Should().HaveCountGreaterThan(20);
     }

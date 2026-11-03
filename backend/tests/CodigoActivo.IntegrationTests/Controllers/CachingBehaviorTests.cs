@@ -181,7 +181,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task CreateTermsDocumentAfterAdminListCachedListShowsNewDocument()
+    public async Task CreateTermsDocumentAfterAdminListLoadedListShowsNewDocument()
     {
         var admin = await LoginAsAdminAsync();
 

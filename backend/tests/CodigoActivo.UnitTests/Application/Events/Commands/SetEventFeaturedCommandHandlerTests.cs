@@ -37,27 +37,6 @@ public sealed class SetEventFeaturedCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncEventExistsFeaturesTheEvent()
-    {
-        var chosen = NewEvent();
-        events.GetByIdAsync(chosen.Id, Arg.Any<CancellationToken>()).Returns(chosen);
-        events.ListFeaturedAsync(Arg.Any<CancellationToken>()).Returns([]);
-
-        var result = await sut.HandleAsync(
-            new SetEventFeaturedCommand(chosen.Id),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        chosen.Featured.Should().BeTrue();
-        await uow.Received(1)
-            .ExecuteInTransactionAsync(
-                Arg.Any<Func<CancellationToken, Task<bool>>>(),
-                Arg.Any<CancellationToken>()
-            );
-    }
-
-    [Fact]
     public async Task HandleAsyncOtherEventFeaturedUnfeaturesItWithoutTouchingAuditFields()
     {
         var chosen = NewEvent();

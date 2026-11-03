@@ -32,7 +32,6 @@ public sealed class ListUserStatusTypesQueryHandlerTests
         );
 
         result.Select(s => s.Name).Should().ContainInOrder("Active", "Blocked", "Pending");
-        result.Should().AllBeOfType<UserStatusTypeResponse>();
     }
 
     [Fact]

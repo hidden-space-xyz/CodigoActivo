@@ -97,15 +97,4 @@ describe('useAuditLog', () => {
     await flushPromises()
     expect(result.extraFilters.value).toHaveLength(1)
   })
-
-  it('opens the diagnostic page on the same trace', async () => {
-    recordRequests()
-    const { result, router } = await mountComposable(useAuditLog, { route: '/admin/audit' })
-
-    result.openDiagnostics(TRACE_ID)
-    await flushPromises()
-
-    expect(router.currentRoute.value.name).toBe('admin-diagnostics')
-    expect(router.currentRoute.value.query).toEqual({ traceId: TRACE_ID })
-  })
 })

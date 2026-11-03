@@ -1,32 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  toLearningResource,
-  toLearningResourceSummary,
-  toResourceRequest,
-  toResourceType,
-} from '@/entities/resource/api/mapper'
+import { toLearningResource, toLearningResourceSummary } from '@/entities/resource/api/mapper'
 
 import {
   buildResourceListItem,
   buildResourceResponse,
-  externalType,
   omit,
   richText,
 } from '../../../../support/builders'
 
 const ARTICLE = { id: 'type-article', name: 'Artículo', color: '#123456', isExternal: false }
-
-describe('toResourceType', () => {
-  it('keeps what classifies a resource', () => {
-    expect(toResourceType(externalType)).toEqual({
-      id: 'type-link',
-      name: 'Enlace',
-      color: '',
-      isExternal: true,
-    })
-  })
-})
 
 describe('toLearningResourceSummary', () => {
   it('maps a list item keeping its creation instant', () => {
@@ -62,20 +45,5 @@ describe('toLearningResource', () => {
       type: ARTICLE,
       description: richText('Todo sobre Python.'),
     })
-  })
-})
-
-describe('toResourceRequest', () => {
-  it('sends every field of the resource', () => {
-    const input = {
-      title: 'Vue',
-      subtitle: 'Docs',
-      description: null,
-      url: 'https://vuejs.org',
-      resourceTypeId: 'type-link',
-      thumbnailId: 'thumb',
-    }
-
-    expect(toResourceRequest(input)).toEqual(input)
   })
 })

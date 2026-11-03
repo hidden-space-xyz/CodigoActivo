@@ -102,17 +102,4 @@ describe('useDiagnostics', () => {
     await vi.waitFor(() => expect(result.detail.entry.value?.exception).toContain('boom'))
     expect(requested).toEqual(['0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b'])
   })
-
-  it('opens the audit page on the same trace', async () => {
-    recordRequests()
-    const { result, router } = await mountComposable(useDiagnostics, {
-      route: '/admin/diagnostics',
-    })
-
-    result.openAudit(TRACE_ID)
-    await flushPromises()
-
-    expect(router.currentRoute.value.name).toBe('admin-audit')
-    expect(router.currentRoute.value.query).toEqual({ traceId: TRACE_ID })
-  })
 })

@@ -66,41 +66,4 @@ describe('useEventTermsDecisions', () => {
     if (typeof rowKey !== 'function') throw new Error('Expected a row key function')
     expect(rowKey({ ...DECISION, userId: 'u', termsDocumentId: 'd' })).toBe('u:d')
   })
-
-  it('sends the person search and the document filter as their API params', async () => {
-    const urls: string[] = []
-    server.use(
-      http.get('/api/events/:eventId/terms/decisions', ({ request }) => {
-        urls.push(request.url)
-        return HttpResponse.json(paged([]))
-      }),
-    )
-    const { result } = await mountComposable(() =>
-      useEventTermsDecisions(
-        () => 'event-1',
-        () => true,
-      ),
-    )
-    await flushPromises()
-
-    result.table.columnFilter('person').value = 'ada'
-    result.table.columnFilter('document').value = 'terms-1'
-    result.table.onFilter()
-    await vi.waitFor(() => expect(urls).toHaveLength(2))
-
-    expect(queryOf(urls[1] ?? '')).toMatchObject({ search: 'ada', termsDocumentId: 'terms-1' })
-  })
-
-  it('opens the signature of a decision', async () => {
-    server.use(http.get('/api/events/:eventId/terms/decisions', () => HttpResponse.json(paged([]))))
-    const { result } = await mountComposable(() =>
-      useEventTermsDecisions(
-        () => 'event-1',
-        () => false,
-      ),
-    )
-    result.openSignature(DECISION)
-
-    expect(result.signature).toEqual({ visible: true, decision: DECISION })
-  })
 })

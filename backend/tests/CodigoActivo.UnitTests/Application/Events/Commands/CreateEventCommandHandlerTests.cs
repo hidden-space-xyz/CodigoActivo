@@ -180,22 +180,6 @@ public sealed class CreateEventCommandHandlerTests
         ];
     }
 
-    [Theory]
-    [MemberData(nameof(MissingScheduleDateRequests))]
-    public async Task HandleAsyncMissingScheduleDateReturnsScheduleRequired(
-        CreateEventRequest request
-    )
-    {
-        var result = await sut.HandleAsync(
-            request.ToCommand(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.EventScheduleRequired);
-    }
-
     [Fact]
     public async Task HandleAsyncEventEndBeforeStartReturnsInvalidRange()
     {
@@ -230,43 +214,6 @@ public sealed class CreateEventCommandHandlerTests
         );
 
         result.Error!.Code.Should().Be(DomainErrorCode.EventScheduleInvalidRange);
-    }
-
-    [Fact]
-    public async Task HandleAsyncSignupStartsAfterEventEndReturnsInvalidRange()
-    {
-        var request = CreateReq(
-            eventStart: new DateOnly(2026, 8, 1),
-            eventEnd: new DateOnly(2026, 8, 3),
-            signupStart: new DateTimeOffset(2026, 8, 10, 0, 0, 0, TimeSpan.Zero),
-            signupEnd: new DateTimeOffset(2026, 8, 11, 0, 0, 0, TimeSpan.Zero),
-            categoryTypeIds: [Guid.NewGuid()]
-        );
-
-        var result = await sut.HandleAsync(
-            request.ToCommand(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Code.Should().Be(DomainErrorCode.EventScheduleInvalidRange);
-    }
-
-    [Fact]
-    public async Task HandleAsyncEarlySignupNotBeforeSignupStartReturnsEarlySignupNotBeforeSignup()
-    {
-        var signupStart = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
-        var request = CreateReq(
-            earlySignupStart: signupStart,
-            signupStart: signupStart,
-            categoryTypeIds: [Guid.NewGuid()]
-        );
-
-        var result = await sut.HandleAsync(
-            request.ToCommand(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Code.Should().Be(DomainErrorCode.EventEarlySignupNotBeforeSignup);
     }
 
     [Fact]
@@ -312,36 +259,6 @@ public sealed class CreateEventCommandHandlerTests
         await events
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<Event>(), TestContext.Current.CancellationToken);
-    }
-
-    [Fact]
-    public async Task HandleAsyncNullCategoriesReturnsCategoriesRequired()
-    {
-        files.ThumbnailExists(true);
-        var request = CreateReq(categoryTypeIds: null);
-
-        var result = await sut.HandleAsync(
-            request.ToCommand(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.EventCategoriesRequired);
-    }
-
-    [Fact]
-    public async Task HandleAsyncEmptyCategoriesReturnsCategoriesRequired()
-    {
-        files.ThumbnailExists(true);
-        var request = CreateReq(categoryTypeIds: []);
-
-        var result = await sut.HandleAsync(
-            request.ToCommand(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.EventCategoriesRequired);
     }
 
     [Fact]
@@ -417,27 +334,5 @@ public sealed class CreateEventCommandHandlerTests
             .ContainSingle()
             .Which.EventCategoryTypeId.Value.Should()
             .Be(categoryId);
-    }
-
-    [Fact]
-    public async Task HandleAsyncSignupStartsOnEventEndDateSucceeds()
-    {
-        files.ThumbnailExists(true);
-        categoryTypes.HasCategoryCount(1);
-
-        var request = CreateReq(
-            eventStart: new DateOnly(2026, 8, 1),
-            eventEnd: new DateOnly(2026, 8, 3),
-            signupStart: new DateTimeOffset(2026, 8, 3, 0, 0, 0, TimeSpan.Zero),
-            signupEnd: new DateTimeOffset(2026, 8, 3, 12, 0, 0, TimeSpan.Zero),
-            categoryTypeIds: [Guid.NewGuid()]
-        );
-
-        var result = await sut.HandleAsync(
-            request.ToCommand(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
     }
 }

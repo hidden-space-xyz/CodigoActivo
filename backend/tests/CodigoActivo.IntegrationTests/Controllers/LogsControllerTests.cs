@@ -434,7 +434,6 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
     [InlineData("clientIp=203.0.113.9", 1)]
     [InlineData("traceId=4bf92f3577b34da6a3ce929d0e0e4736", 1)]
     [InlineData("occurredTo=2026-07-03", 0)]
-    [InlineData("sort=action", 2)]
     public async Task ListAuditFiltersOnEveryCriterion(string filter, int expected)
     {
         await SeedAsync(

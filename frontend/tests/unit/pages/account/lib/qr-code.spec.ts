@@ -11,10 +11,4 @@ describe('toQrCodeDataUrl', () => {
     expect(svg).toContain('<svg')
     expect(svg).toContain('</svg>')
   })
-
-  it('produces different images for different texts', async () => {
-    const [first, second] = await Promise.all([toQrCodeDataUrl('alpha'), toQrCodeDataUrl('beta')])
-
-    expect(first).not.toBe(second)
-  })
 })

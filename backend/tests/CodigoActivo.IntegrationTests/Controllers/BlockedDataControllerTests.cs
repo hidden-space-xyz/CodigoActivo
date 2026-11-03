@@ -152,6 +152,7 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
 
         using var response = await member.GetAsync(TestUri.Rel(AccessUrl), Ct);
 
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
         (await response.ReadJsonAsync<BlockedDataAccessResponse>(Ct))!
             .IsPrivacyOfficer.Should()
             .BeFalse();

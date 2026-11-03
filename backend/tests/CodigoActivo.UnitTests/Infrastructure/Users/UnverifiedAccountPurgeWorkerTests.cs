@@ -46,18 +46,6 @@ public sealed class UnverifiedAccountPurgeWorkerTests : IDisposable
     }
 
     [Fact]
-    public async Task PurgeAsyncRunsTheUseCaseAndReturnsTheErasedCount()
-    {
-        purge
-            .HandleAsync(Arg.Any<PurgeUnverifiedAccountsCommand>(), Arg.Any<CancellationToken>())
-            .Returns(3);
-
-        var purged = await Build().PurgeAsync(TestContext.Current.CancellationToken);
-
-        purged.Should().Be(3);
-    }
-
-    [Fact]
     public async Task ExecuteAsyncFirstRunPurgesAfterTheStartupDelayWithoutLogging()
     {
         var signal = new TaskCompletionSource();

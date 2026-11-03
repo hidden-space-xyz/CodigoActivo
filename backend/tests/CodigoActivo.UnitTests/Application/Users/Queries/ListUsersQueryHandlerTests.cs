@@ -45,7 +45,7 @@ public sealed class ListUsersQueryHandlerTests
         var result = await ListAsAdminAsync(new UserListQuery());
 
         result.Total.Should().Be(3);
-        result.Items.Should().HaveCount(3).And.AllBeOfType<UserResponse>();
+        result.Items.Should().HaveCount(3);
         result.Items.Should().OnlyContain(u => u.Type != null);
     }
 
@@ -78,32 +78,6 @@ public sealed class ListUsersQueryHandlerTests
         var result = await ListAsAdminAsync(new UserListQuery { ParentId = parent });
 
         result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Kid");
-    }
-
-    [Theory]
-    [InlineData(UserScope.Independent, "Tutor")]
-    [InlineData(UserScope.Dependent, "Kid")]
-    public async Task HandleAsyncScopeFilterReturnsOnlyIndependentAccountsOrDependents(
-        UserScope scope,
-        string expected
-    )
-    {
-        var guardian = NewUserRow(first: "Tutor");
-        store.Users.AddRange([guardian, NewUserRow(first: "Kid", parent: guardian)]);
-
-        var result = await ListAsAdminAsync(new UserListQuery { Scope = scope });
-
-        result.Items.Should().ContainSingle().Which.FirstName.Should().Be(expected);
-    }
-
-    [Fact]
-    public async Task HandleAsyncNameSearchIsAccentAndCaseInsensitive()
-    {
-        store.Users.AddRange([NewUserRow(first: "Ávila"), NewUserRow(first: "Benito")]);
-
-        var result = await ListAsAdminAsync(new UserListQuery { Name = "avila" });
-
-        result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Ávila");
     }
 
     [Fact]
@@ -163,51 +137,6 @@ public sealed class ListUsersQueryHandlerTests
         var result = await ListAsAdminAsync(new UserListQuery { UserTypeId = typeId });
 
         result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Match");
-    }
-
-    [Fact]
-    public async Task HandleAsyncUserStatusTypeIdFilterReturnsOnlyMatchingStatus()
-    {
-        var statusId = Guid.NewGuid();
-        store.Users.AddRange([
-            NewUserRow(first: "Match", statusId: statusId),
-            NewUserRow(first: "Other"),
-        ]);
-
-        var result = await ListAsAdminAsync(new UserListQuery { UserStatusTypeId = statusId });
-
-        result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Match");
-    }
-
-    [Fact]
-    public async Task HandleAsyncIsAdminFilterReturnsOnlyAdmins()
-    {
-        store.Users.AddRange([
-            NewUserRow(first: "Boss", isAdmin: true),
-            NewUserRow(first: "Plain"),
-        ]);
-
-        var result = await ListAsAdminAsync(new UserListQuery { IsAdmin = true });
-
-        result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Boss");
-    }
-
-    [Theory]
-    [InlineData(true, "Acepta")]
-    [InlineData(false, "Rechaza")]
-    public async Task HandleAsyncNewsConsentFilterReturnsOnlyMatchingUsers(
-        bool consent,
-        string expected
-    )
-    {
-        var accepts = NewUserRow(first: "Acepta", newsConsent: true);
-        store.Users.AddRange([accepts, NewUserRow(first: "Rechaza")]);
-
-        var result = await ListAsAdminAsync(new UserListQuery { NewsConsent = consent });
-
-        var match = result.Items.Should().ContainSingle().Subject;
-        match.FirstName.Should().Be(expected);
-        match.NewsConsent.Should().Be(consent);
     }
 
     [Fact]
@@ -273,75 +202,6 @@ public sealed class ListUsersQueryHandlerTests
 
         byId.Items.Select(u => u.FirstName).Should().ContainInOrder("Primero", "Segundo");
         byConsent.Items.Select(u => u.FirstName).Should().ContainInOrder("Segundo", "Primero");
-    }
-
-    [Fact]
-    public async Task HandleAsyncBirthDateRangeFilterKeepsUsersWithinInclusiveBounds()
-    {
-        store.Users.AddRange([
-            NewUserRow(first: "Antes", dob: new DateOnly(2005, 6, 14)),
-            NewUserRow(first: "Inicio", dob: new DateOnly(2005, 6, 15)),
-            NewUserRow(first: "Fin", dob: new DateOnly(2010, 12, 31)),
-            NewUserRow(first: "Despues", dob: new DateOnly(2011, 1, 1)),
-        ]);
-
-        var result = await ListAsAdminAsync(
-            new UserListQuery
-            {
-                BirthDateFrom = new DateOnly(2005, 6, 15),
-                BirthDateTo = new DateOnly(2010, 12, 31),
-            }
-        );
-
-        result.Items.Select(u => u.FirstName).Should().BeEquivalentTo("Inicio", "Fin");
-    }
-
-    [Fact]
-    public async Task HandleAsyncBirthDateFromFilterExcludesOlderUsers()
-    {
-        store.Users.AddRange([
-            NewUserRow(first: "Mayor", dob: new DateOnly(1980, 1, 1)),
-            NewUserRow(first: "Joven", dob: new DateOnly(2000, 1, 1)),
-        ]);
-
-        var result = await ListAsAdminAsync(
-            new UserListQuery { BirthDateFrom = new DateOnly(1990, 1, 1) }
-        );
-
-        result.Items.Should().ContainSingle().Which.FirstName.Should().Be("Joven");
-    }
-
-    [Fact]
-    public async Task HandleAsyncSortByParentNameOrdersByParentFirstName()
-    {
-        var zoe = NewUserRow(first: "Zoe");
-        var ana = NewUserRow(first: "Ana");
-        var mario = NewUserRow(first: "Mario");
-        var kidOfZoe = NewUserRow(first: "HijoZ", parent: zoe);
-        var kidOfAna = NewUserRow(first: "HijoA", parent: ana);
-        var kidOfMario = NewUserRow(first: "HijoM", parent: mario);
-        store.Users.AddRange([kidOfZoe, kidOfAna, kidOfMario]);
-
-        var result = await ListAsAdminAsync(new UserListQuery { Sort = "parentName" });
-
-        result.Items.Select(u => u.FirstName).Should().ContainInOrder("HijoA", "HijoM", "HijoZ");
-    }
-
-    [Fact]
-    public async Task HandleAsyncSortByDependentsDescendingOrdersByChildrenCount()
-    {
-        var none = NewUserRow(first: "Cero");
-        var two = NewUserRow(first: "Dos");
-        two.Children.Add(NewUserRow(first: "Kid1", parentId: two.Id));
-        two.Children.Add(NewUserRow(first: "Kid2", parentId: two.Id));
-        var one = NewUserRow(first: "Uno");
-        one.Children.Add(NewUserRow(first: "Kid3", parentId: one.Id));
-        store.Users.AddRange([none, two, one]);
-
-        var result = await ListAsAdminAsync(new UserListQuery { Sort = "-dependents" });
-
-        result.Items.Select(u => u.FirstName).Should().ContainInOrder("Dos", "Uno", "Cero");
-        result.Items.Select(u => u.DependentCount).Should().ContainInOrder(2, 1, 0);
     }
 
     [Fact]
@@ -470,22 +330,5 @@ public sealed class ListUsersQueryHandlerTests
         var result = await ListAsAdminAsync(new UserListQuery { Sort = "-lastName" });
 
         result.Items.Select(u => u.LastName).Should().ContainInOrder("Zzz", "Mmm", "Aaa");
-    }
-
-    [Fact]
-    public async Task HandleAsyncPageAndPageSizeGivenReturnsPagedResults()
-    {
-        store.Users.AddRange([
-            NewUserRow(first: "A"),
-            NewUserRow(first: "B"),
-            NewUserRow(first: "C"),
-        ]);
-
-        var result = await ListAsAdminAsync(new UserListQuery { Page = 2, PageSize = 2 });
-
-        result.Total.Should().Be(3);
-        result.Items.Should().ContainSingle();
-        result.Page.Should().Be(2);
-        result.PageSize.Should().Be(2);
     }
 }

@@ -309,7 +309,7 @@ describe('HistorySection', () => {
       buildHistoryResponse({ eventId: '', title: 'Sin id', isPast: true, canRate: true }),
     ])
     server.use(
-      http.put('/api/events/:eventId/rating', () => {
+      http.put('*', () => {
         saved()
         return new HttpResponse(null, { status: 204 })
       }),
@@ -320,8 +320,10 @@ describe('HistorySection', () => {
     const dialog = openDialog(t('pages.account.history.dialog.header'))
     await typeInto('#rating-most', 'Todo', dialog)
     await click(findButton(t('pages.account.history.dialog.submit'), dialog))
+    await new Promise((resolve) => setTimeout(resolve, 100))
 
     expect(saved).not.toHaveBeenCalled()
+    expect(notificationTexts()).toEqual([])
     expect(openDialogs()).toHaveLength(1)
   })
 })

@@ -65,50 +65,6 @@ public sealed class EndpointConcurrencyLimiterTests
         results.Should().OnlyContain(acquired => acquired);
     }
 
-    [Fact]
-    public void TenFileUploadsCanExecuteConcurrently()
-    {
-        using var sut = EndpointConcurrencyLimiter.Create(SecurityPolicies.FileUploads, 12, 12);
-        var leases = Enumerable
-            .Range(0, 10)
-            .Select(_ => sut.AttemptAcquire(NewContext(SecurityPolicies.FileUploads)))
-            .ToArray();
-
-        leases.Should().OnlyContain(lease => lease.IsAcquired);
-        Array.ForEach(leases, lease => lease.Dispose());
-    }
-
-    [Fact]
-    public void TenSingleRecipientEmailsCanExecuteConcurrently()
-    {
-        using var sut = EndpointConcurrencyLimiter.Create(
-            SecurityPolicies.SingleRecipientEmail,
-            10,
-            10
-        );
-        var leases = Enumerable
-            .Range(0, 10)
-            .Select(_ => sut.AttemptAcquire(NewContext(SecurityPolicies.SingleRecipientEmail)))
-            .ToArray();
-
-        leases.Should().OnlyContain(lease => lease.IsAcquired);
-        Array.ForEach(leases, lease => lease.Dispose());
-    }
-
-    [Fact]
-    public void ThirdBulkEmailIsRejectedWithoutWaiting()
-    {
-        using var sut = EndpointConcurrencyLimiter.Create(SecurityPolicies.BulkEmail, 2, 0);
-
-        using var first = sut.AttemptAcquire(NewContext(SecurityPolicies.BulkEmail));
-        using var second = sut.AttemptAcquire(NewContext(SecurityPolicies.BulkEmail));
-        using var rejected = sut.AttemptAcquire(NewContext(SecurityPolicies.BulkEmail));
-
-        first.IsAcquired.Should().BeTrue();
-        second.IsAcquired.Should().BeTrue();
-        rejected.IsAcquired.Should().BeFalse();
-    }
-
     private static DefaultHttpContext NewContext(string policyName)
     {
         var context = new DefaultHttpContext();

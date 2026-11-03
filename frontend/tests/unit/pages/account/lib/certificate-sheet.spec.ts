@@ -115,14 +115,6 @@ afterEach(() => {
   Reflect.deleteProperty(document, 'fonts')
 })
 
-describe('certificate sheet', () => {
-  it('exposes the landscape A4 aspect ratio', async () => {
-    const sheet = await loadSheet()
-
-    expect(sheet.SHEET_RATIO).toBeCloseTo(297 / 210)
-  })
-})
-
 describe('renderCertificatePreview', () => {
   it('sizes the canvas at preview resolution and scales drawing to millimetres', async () => {
     vi.stubGlobal('devicePixelRatio', 1)

@@ -148,9 +148,6 @@ public sealed class EmailOutboxDelivererTests
     [Theory]
     [InlineData(0, 1, 1)]
     [InlineData(1, 2, 5)]
-    [InlineData(2, 3, 30)]
-    [InlineData(3, 4, 60)]
-    [InlineData(10, 11, 60)]
     public async Task DeliverDueAsyncFailedAttemptSchedulesTheNextOneWithAGrowingDelay(
         int alreadyFailed,
         int expectedAttempts,

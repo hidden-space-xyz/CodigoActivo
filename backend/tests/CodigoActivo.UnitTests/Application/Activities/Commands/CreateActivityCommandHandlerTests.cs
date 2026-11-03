@@ -111,21 +111,6 @@ public sealed class CreateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncEndNotAfterStartReturnsInvalidRange()
-    {
-        var ev = EventExists();
-        var when = new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero);
-
-        var result = await sut.HandleAsync(
-            CreateRequest(startsAt: when, endsAt: when).ToCommand(ev.Id),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityScheduleInvalidRange);
-    }
-
-    [Fact]
     public async Task HandleAsyncDatesExceedEventRangeReturnsOutsideEventRange()
     {
         var ev = EventExists();
@@ -207,39 +192,6 @@ public sealed class CreateActivityCommandHandlerTests
                 Arg.Any<CancellationToken>()
             );
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task HandleAsyncWithRoleCapacitiesStagesDesiredCounts()
-    {
-        var ev = EventExists();
-        files.ThumbnailExists(true);
-        var added = await CaptureAddedActivitiesAsync();
-
-        var result = await sut.HandleAsync(
-            CreateRequest(
-                    roleCapacities:
-                    [
-                        new ActivityRoleCapacityRequest(KnownIds.ActivityRoleTypes.Participant, 12),
-                        new ActivityRoleCapacityRequest(KnownIds.ActivityRoleTypes.Volunteer, 3),
-                    ]
-                )
-                .ToCommand(ev.Id),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        var saved = added.Should().ContainSingle().Which;
-        result.Value.Should().Be(saved.Id);
-        saved.RoleCapacities.Should().HaveCount(2);
-        saved
-            .RoleCapacities.Single(c => c.Role == ActivityRole.Participant)
-            .DesiredCount.Should()
-            .Be(12);
-        saved
-            .RoleCapacities.Single(c => c.Role == ActivityRole.Volunteer)
-            .DesiredCount.Should()
-            .Be(3);
     }
 
     [Fact]

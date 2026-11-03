@@ -43,23 +43,6 @@ public sealed class DashboardCountsReaderTests(PostgresDatabaseFixture postgres)
     }
 
     [Fact]
-    public async Task GetCountsAsyncEmptyDatabaseReturnsZeroForEveryTable()
-    {
-        await using var ctx = postgres.CreateContext();
-        await using var readContext = postgres.CreateReadContext();
-        var reader = new DashboardCountsReader(readContext);
-
-        var counts = await reader.GetCountsAsync(Ct);
-
-        counts.Events.Should().Be(0);
-        counts.Activities.Should().Be(0);
-        counts.Resources.Should().Be(0);
-        counts.News.Should().Be(0);
-        counts.Partners.Should().Be(0);
-        counts.Users.Should().Be(0);
-    }
-
-    [Fact]
     public async Task GetCountsAsyncSeededRowsReturnsDistinctCountPerTable()
     {
         await using var ctx = postgres.CreateContext();

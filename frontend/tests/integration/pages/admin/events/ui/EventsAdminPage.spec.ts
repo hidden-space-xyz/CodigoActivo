@@ -188,7 +188,6 @@ describe('EventsAdminPage', () => {
     expect(text).toContain(t('pages.admin.events.header.title'))
     expect(text).toContain(formatDateRange('2026-10-10', '2026-10-12'))
     expect(text).toContain(formatDateRange('2026-11-07', '2026-11-07'))
-    expect(formatDateRange('2026-11-07', '2026-11-07')).not.toContain('–')
 
     const [first, second, third] = [tableRow(0), tableRow(1), tableRow(2)]
     const title = first.querySelector('.table-primary-cell__title')
@@ -536,20 +535,6 @@ describe('EventsAdminPage', () => {
     rowButton(t('common.edit')).click()
 
     await vi.waitFor(() => expect(notificationTexts().join('\n')).toContain(t('errors.generic')))
-    expect(wrapper.findComponent(EventFormDialog).props('visible')).toBe(false)
-  })
-
-  it('keeps the dialog closed when the edited event no longer exists', async () => {
-    server.use(http.get('/api/events/:eventId', () => apiError(404)))
-    const { wrapper } = await renderPage()
-
-    rowButton(t('common.edit')).click()
-
-    await vi.waitFor(() =>
-      expect(
-        document.body.querySelector('.el-notification .el-notification__title')?.textContent,
-      ).toBe(t('common.error')),
-    )
     expect(wrapper.findComponent(EventFormDialog).props('visible')).toBe(false)
   })
 

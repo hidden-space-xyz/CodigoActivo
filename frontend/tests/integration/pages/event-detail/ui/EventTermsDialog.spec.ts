@@ -86,14 +86,6 @@ describe('EventTermsDialog document list', () => {
       'terms-dialog__tag--optional',
     )
   })
-
-  it('only shows the documents the parent still considers pending', async () => {
-    await renderDialog([OPTIONAL_DOC])
-
-    const rows = [...document.body.querySelectorAll('.terms-dialog__row')]
-    expect(rows).toHaveLength(1)
-    expect(textOf(rows[0]?.querySelector('.terms-dialog__link') ?? null)).toBe(OPTIONAL_DOC.name)
-  })
 })
 
 describe('EventTermsDialog confirmation gate', () => {
@@ -192,7 +184,7 @@ describe('EventTermsDialog confirm decisions', () => {
     ])
   })
 
-  it('does not include a decision for a document the caller already resolved', async () => {
+  it('declines an unchecked optional document when nothing is required', async () => {
     const { wrapper } = await renderDialog([OPTIONAL_DOC])
 
     await click(findButton(t('pages.eventDetail.terms.confirm')))

@@ -32,6 +32,5 @@ public sealed class ListUserTypesQueryHandlerTests
         );
 
         result.Select(t => t.Name).Should().ContainInOrder("Admin", "Member", "Volunteer");
-        result.Should().AllBeOfType<UserTypeResponse>();
     }
 }

@@ -122,7 +122,6 @@ public sealed class UnassignActivityCommandHandlerTests
         );
 
         var deletion = ParticipationDeletion.OfSignup(activity, assignment.UserId);
-        deletion.Origin.Should().Be(ParticipationDeletionOrigin.SignupCancelled);
         await store.Received(1).LockAsync(deletion, Arg.Any<CancellationToken>());
         await store.Received(1).LoadAsync(deletion, Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());

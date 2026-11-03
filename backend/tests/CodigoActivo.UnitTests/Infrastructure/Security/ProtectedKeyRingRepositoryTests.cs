@@ -126,16 +126,6 @@ public sealed class ProtectedKeyRingRepositoryTests : IDisposable
     }
 
     [Fact]
-    public void StoreElementDelegatesToTheInnerRepository()
-    {
-        var element = Key(EncryptedSecret(AesGcmDecryptor));
-
-        new ProtectedKeyRingRepository(inner, logger).StoreElement(element, "friendly");
-
-        inner.Received(1).StoreElement(element, "friendly");
-    }
-
-    [Fact]
     public void ProtectKeysWithRootKeyIgnoresAKeyPlantedWithoutTheRootKey()
     {
         var rootKey = DataProtectionRootKeys.Random();

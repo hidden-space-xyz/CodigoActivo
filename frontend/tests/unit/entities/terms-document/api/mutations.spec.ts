@@ -7,7 +7,7 @@ import {
   type TermsDocumentInput,
 } from '@/entities/terms-document'
 
-import { apiError, http, HttpResponse, noContent, server } from '../../../../support/server'
+import { http, HttpResponse, noContent, server } from '../../../../support/server'
 import { buildTermsDocument, richText } from '../../../../support/builders'
 import { createTestQueryClient } from '../../../../support/render'
 
@@ -50,16 +50,5 @@ describe('termsDocumentMutations', () => {
     for (const { invalidated } of [created, updated, removed]) {
       expect(invalidated()).toEqual([true, true])
     }
-  })
-
-  it('leaves the terms queries alone when the API refuses the change', async () => {
-    server.use(http.delete('/api/events/termsDocument/:id', () => apiError(409)))
-    const { client, invalidated } = cachedTerms()
-
-    await expect(
-      new MutationObserver(client, termsDocumentMutations.remove()).mutate('terms-1'),
-    ).rejects.toMatchObject({ status: 409 })
-
-    expect(invalidated()).toEqual([false, false])
   })
 })

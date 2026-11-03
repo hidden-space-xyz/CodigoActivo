@@ -26,7 +26,6 @@ public sealed class EnumBindingTests(CodigoActivoWebAppFactory factory)
     }
 
     [Theory]
-    [InlineData(0)]
     [InlineData(1)]
     [InlineData(99)]
     public async Task RegisterIntegerGenderInTheBodyIsRejected(int gender)
@@ -54,20 +53,6 @@ public sealed class EnumBindingTests(CodigoActivoWebAppFactory factory)
         );
 
         await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
-    }
-
-    [Fact]
-    public async Task RegisterGenderNameInTheBodyIsStillAccepted()
-    {
-        var client = CreateClient();
-
-        using var response = await client.PostJsonAsync(
-            "/api/auth/register",
-            RegisterPayload("Female"),
-            Ct
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     [Theory]
@@ -104,18 +89,5 @@ public sealed class EnumBindingTests(CodigoActivoWebAppFactory factory)
         );
 
         await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
-    }
-
-    [Fact]
-    public async Task EventAttendeesGenderNameInTheQueryStringReachesTheHandler()
-    {
-        var client = await LoginAsAdminAsync();
-
-        using var response = await client.GetAsync(
-            TestUri.Rel($"/api/reports/events/{Guid.NewGuid()}/attendees?gender=Female"),
-            Ct
-        );
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
     }
 }

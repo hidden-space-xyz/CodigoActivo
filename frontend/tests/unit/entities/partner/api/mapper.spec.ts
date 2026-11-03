@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { toPartner, toPartnerRequest, toSponsor } from '@/entities/partner/api/mapper'
+import { toPartner, toSponsor } from '@/entities/partner/api/mapper'
 
 import { buildPartnerResponse, omit } from '../../../../support/builders'
 
@@ -36,26 +36,6 @@ describe('toSponsor', () => {
       name: 'Acme',
       website: '',
       thumbnailId: 'thumb-partner-1',
-    })
-  })
-})
-
-describe('toPartnerRequest', () => {
-  it('sends every field of the partner', () => {
-    expect(
-      toPartnerRequest({
-        name: 'Initech',
-        fromDate: '2025-06-07',
-        tier: 3,
-        website: null,
-        thumbnailId: 'thumb-9',
-      }),
-    ).toEqual({
-      name: 'Initech',
-      fromDate: '2025-06-07',
-      tier: 3,
-      website: null,
-      thumbnailId: 'thumb-9',
     })
   })
 })

@@ -338,7 +338,7 @@ public sealed class AssignHouseholdCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncMixedValidRolesCreatesAssignmentsForAllAndInvalidatesCache()
+    public async Task HandleAsyncMixedValidRolesCreatesAssignmentsForAll()
     {
         var activityId = Guid.NewGuid();
         var actingUserId = Guid.NewGuid();

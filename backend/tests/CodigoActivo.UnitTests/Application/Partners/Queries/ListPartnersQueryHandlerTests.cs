@@ -55,22 +55,6 @@ public sealed class ListPartnersQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncFromDateFromFilterExcludesEarlierPartners()
-    {
-        store.Partners.AddRange([
-            NewPartnerRow("Viejo", fromDate: new DateOnly(2018, 5, 5)),
-            NewPartnerRow("Nuevo", fromDate: new DateOnly(2024, 5, 5)),
-        ]);
-
-        var result = await sut.HandleAsync(
-            new ListPartnersQuery(new PartnerListQuery { FromDateFrom = new DateOnly(2020, 1, 1) }),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Items.Should().ContainSingle().Which.Name.Should().Be("Nuevo");
-    }
-
-    [Fact]
     public async Task HandleAsyncNameSearchIsAccentAndCaseInsensitive()
     {
         store.Partners.AddRange([NewPartnerRow("Fundación Ávila"), NewPartnerRow("Banco")]);

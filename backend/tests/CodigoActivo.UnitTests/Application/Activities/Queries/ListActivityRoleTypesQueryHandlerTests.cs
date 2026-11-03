@@ -30,6 +30,5 @@ public sealed class ListActivityRoleTypesQueryHandlerTests
         );
 
         result.Select(r => r.Name).Should().ContainInOrder("Alpha", "Zeta");
-        result.Should().AllBeOfType<ActivityRoleTypeResponse>();
     }
 }

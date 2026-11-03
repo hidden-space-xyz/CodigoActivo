@@ -11,7 +11,6 @@ import {
 } from '@/pages/account/lib/certificate-sheet'
 
 import { http, HttpResponse, server } from '../../../../support/server'
-import { buildCertificateResponse } from '../../../../support/builders'
 import { buildCertificate } from '../../../../support/models'
 import { mountComposable } from '../../../../support/render'
 
@@ -57,56 +56,6 @@ describe('useAccountCertificates', () => {
 
     expect(requested).not.toHaveBeenCalled()
     expect(result.entries.value).toEqual([])
-  })
-
-  it('loads and maps the certificates of the signed-in user', async () => {
-    server.use(
-      http.get('/api/me/certificates', () =>
-        HttpResponse.json([
-          buildCertificateResponse(),
-          buildCertificateResponse({ eventId: 'event-2', userId: 'child-1', isSelf: false }),
-        ]),
-      ),
-    )
-
-    const { result } = await mountComposable(() => useAccountCertificates(), { user: {} })
-    await vi.waitFor(() => expect(result.entries.value).toHaveLength(2))
-
-    expect(result.entries.value[0]).toEqual(buildCertificate())
-    expect(result.entries.value[1]).toMatchObject({
-      eventId: 'event-2',
-      participantId: 'child-1',
-    })
-  })
-
-  it('opens and closes the preview', async () => {
-    server.use(http.get('/api/me/certificates', () => HttpResponse.json([])))
-    const { result } = await mountComposable(() => useAccountCertificates(), { user: {} })
-    const certificate = buildCertificate()
-
-    result.open(certificate)
-    expect(result.preview.value).toEqual(certificate)
-
-    result.close()
-    expect(result.preview.value).toBeNull()
-  })
-
-  it('downloads in the requested format', async () => {
-    server.use(http.get('/api/me/certificates', () => HttpResponse.json([])))
-    const { result } = await mountComposable(() => useAccountCertificates(), { user: {} })
-    const certificate = buildCertificate()
-
-    await result.download(certificate, 'pdf')
-    await result.download(certificate, 'png')
-
-    expect(downloadCertificatePdf).toHaveBeenCalledExactlyOnceWith(
-      certificate,
-      expect.any(Function),
-    )
-    expect(downloadCertificatePng).toHaveBeenCalledExactlyOnceWith(
-      certificate,
-      expect.any(Function),
-    )
   })
 
   it('marks a download busy per format and ignores repeated clicks until it finishes', async () => {

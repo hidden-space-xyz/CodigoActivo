@@ -48,7 +48,7 @@ public sealed class DeleteActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncActivityExistsInvalidatesActivitiesCache()
+    public async Task HandleAsyncActivityExistsCommitsItsRemovalWithTheBlockedCopyOfItsSignups()
     {
         var activity = NewActivity();
         activities.Finds(activity);
@@ -60,19 +60,6 @@ public sealed class DeleteActivityCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         activities.Received(1).Remove(activity);
-    }
-
-    [Fact]
-    public async Task HandleAsyncActivityExistsCommitsItsRemovalWithTheBlockedCopyOfItsSignups()
-    {
-        var activity = NewActivity();
-        activities.Finds(activity);
-
-        await sut.HandleAsync(
-            new DeleteActivityCommand(activity.Id),
-            TestContext.Current.CancellationToken
-        );
-
         var deletion = ParticipationDeletion.OfActivity(activity);
         await store.Received(1).LockAsync(deletion, Arg.Any<CancellationToken>());
         await store.Received(1).LoadAsync(deletion, Arg.Any<CancellationToken>());

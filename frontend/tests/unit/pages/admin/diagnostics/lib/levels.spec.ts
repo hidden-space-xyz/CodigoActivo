@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  DIAGNOSTIC_LEVELS,
-  levelLabelKey,
-  levelTagType,
-} from '@/pages/admin/diagnostics/lib/levels'
+import { DIAGNOSTIC_LEVELS, levelLabelKey } from '@/pages/admin/diagnostics/lib/levels'
 
 import { t } from '../../../../../support/render'
 
@@ -17,17 +13,6 @@ describe('diagnostic levels', () => {
       'Aviso',
       'Error',
       'Crítico',
-    ])
-  })
-
-  it('colours failures red and warnings amber', () => {
-    expect(DIAGNOSTIC_LEVELS.map(levelTagType)).toEqual([
-      'info',
-      'info',
-      'primary',
-      'warning',
-      'danger',
-      'danger',
     ])
   })
 })

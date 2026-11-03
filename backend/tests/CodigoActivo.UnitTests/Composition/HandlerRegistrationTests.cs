@@ -5,6 +5,7 @@ using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Common.Messaging;
 using CodigoActivo.Composition;
+using CodigoActivo.Infrastructure.Caching;
 using CodigoActivo.Infrastructure.Files;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Configuration;
@@ -150,6 +151,12 @@ public sealed class HandlerRegistrationTests
 
         var resolved = scope.ServiceProvider.GetRequiredService(query);
 
-        resolved.GetType().GetGenericTypeDefinition().Should().Be(typeof(LoggingQueryDecorator<,>));
+        Decorators(resolved)
+            .Should()
+            .Equal(
+                typeof(LoggingQueryDecorator<,>),
+                typeof(ValidationQueryDecorator<,>),
+                typeof(CachingQueryDecorator<,>)
+            );
     }
 }

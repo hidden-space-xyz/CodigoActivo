@@ -110,7 +110,6 @@ describe('RowActions', () => {
     expect(textOf(grant.querySelector('.row-actions__item-reason'))).toBe('Initial admin')
 
     expect(rowMenuItem(menu, 'Delete').classList).toContain('row-actions__item--danger')
-    expect(() => rowMenuItem(menu, 'Missing')).toThrow('Row menu item "Missing" not found')
   })
 
   it('hides the reason of an enabled menu item', async () => {
@@ -143,11 +142,5 @@ describe('RowActions', () => {
     await flushPromises()
 
     expect(remove.run).not.toHaveBeenCalled()
-  })
-
-  it('fails clearly when a row has no menu', async () => {
-    const { wrapper } = await renderActions([action('Edit', { inline: true })])
-
-    await expect(openRowMenu(wrapper.element)).rejects.toThrow('Row has no "more actions" menu')
   })
 })

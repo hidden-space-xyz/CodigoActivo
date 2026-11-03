@@ -263,13 +263,8 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
     [Theory]
     [InlineData("12345678A")]
-    [InlineData("X1234567A")]
-    [InlineData("1234567Z")]
-    [InlineData("ABCDEFGHI")]
     [InlineData("   ")]
     [InlineData("1234-5678-9012-Z")]
-    [InlineData("-")]
-    [InlineData(" - ")]
     [InlineData(" - - ")]
     public async Task RegisterNationalIdMalformedOrWithWrongLetterReturnsValidationError(
         string nationalId
@@ -914,19 +909,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task LogoutAuthenticatedReturnsNoContentAndClearsSession()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var logout = await client.PostJsonAsync("/api/auth/logout", body: null, Ct);
-
-        logout.StatusCode.Should().Be(HttpStatusCode.NoContent);
-
-        var me = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
-        me.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]

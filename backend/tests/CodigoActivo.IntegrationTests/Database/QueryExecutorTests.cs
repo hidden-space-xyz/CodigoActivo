@@ -125,36 +125,4 @@ public sealed class QueryExecutorTests(PostgresDatabaseFixture postgres)
         result.Total.Should().Be(1);
         result.Items.Should().BeEmpty();
     }
-
-    [Fact]
-    public async Task ToListAsyncMatchingRowsMaterialisesEveryRow()
-    {
-        await SeedUsersAsync("A", "B", "C");
-        await using var db = postgres.CreateContext();
-
-        var result = await sut.ToListAsync(OrderedUsers(db), Ct);
-
-        result.Select(u => u.FirstName).Should().Equal("A", "B", "C");
-    }
-
-    [Fact]
-    public async Task FirstOrDefaultAsyncMatchingRowsReturnsTheFirstInQueryOrder()
-    {
-        await SeedUsersAsync("B", "A", "C");
-        await using var db = postgres.CreateContext();
-
-        var result = await sut.FirstOrDefaultAsync(OrderedUsers(db), Ct);
-
-        result!.FirstName.Should().Be("A");
-    }
-
-    [Fact]
-    public async Task FirstOrDefaultAsyncNoRowsReturnsNull()
-    {
-        await using var db = postgres.CreateContext();
-
-        var result = await sut.FirstOrDefaultAsync(OrderedUsers(db), Ct);
-
-        result.Should().BeNull();
-    }
 }

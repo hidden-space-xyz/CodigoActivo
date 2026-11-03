@@ -351,7 +351,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task AssignHouseholdSelfAndChildCreatesBothAssignments()
+    public async Task AssignHouseholdSelfAndChildCreatesBothAssignmentsWithoutEmail()
     {
         var (_, activityId) = await SeedActivityAsync();
         var client = await LoginAsMemberAsync();
@@ -373,6 +373,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         member!.Role.Should().Be(ActivityRole.Leader);
         var child = await FindAssignmentAsync(activityId, TestSeedData.Users.MemberChildId);
         child!.Role.Should().Be(ActivityRole.Participant);
+        Factory.EmailSender.Sent.Should().BeEmpty();
     }
 
     [Fact]
@@ -396,26 +397,6 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         );
 
         await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
-    }
-
-    [Fact]
-    public async Task AssignHouseholdSelfAndChildSendsNoEmail()
-    {
-        var (_, activityId) = await SeedActivityAsync();
-        var client = await LoginAsMemberAsync();
-        var request = new AssignHouseholdRequest([
-            new(TestSeedData.Users.MemberId, KnownIds.ActivityRoleTypes.Leader),
-            new(TestSeedData.Users.MemberChildId, KnownIds.ActivityRoleTypes.Participant),
-        ]);
-
-        var response = await client.PostJsonAsync(
-            $"/api/activities/{activityId}/assign-household",
-            request,
-            Ct
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        Factory.EmailSender.Sent.Should().BeEmpty();
     }
 
     [Fact]

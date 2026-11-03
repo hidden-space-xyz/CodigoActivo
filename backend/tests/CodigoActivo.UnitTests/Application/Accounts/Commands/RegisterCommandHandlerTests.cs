@@ -376,26 +376,7 @@ public sealed class RegisterCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncFirstOrdinaryUserIsNotPromotedToAdmin()
-    {
-        clock.UtcNow = new DateTimeOffset(2026, 3, 1, 9, 0, 0, TimeSpan.Zero);
-        var added = await CaptureAddedUsersAsync();
-
-        var result = await HandleAsync(NewRegister());
-
-        result.IsSuccess.Should().BeTrue();
-        added.Should().ContainSingle();
-        await users
-            .Received(1)
-            .AddAsync(
-                Arg.Is<User>(u => IsPendingParticipantAdult(u)),
-                Arg.Any<CancellationToken>()
-            );
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task HandleAsyncNewAdultSendsGuidOtpHashedAtRest()
+    public async Task HandleAsyncNewAdultSendsOtpHashedAtRest()
     {
         var added = await CaptureAddedUsersAsync();
 
@@ -454,7 +435,7 @@ public sealed class RegisterCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncSubsequentUserWithMinorCreatesAdultAndMinorAsParticipants()
+    public async Task HandleAsyncAdultWithMinorCreatesAdultAndMinorAsParticipants()
     {
         clock.UtcNow = new DateTimeOffset(2026, 4, 2, 10, 0, 0, TimeSpan.Zero);
         var added = await CaptureAddedUsersAsync();

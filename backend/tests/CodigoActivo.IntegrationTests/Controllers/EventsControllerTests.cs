@@ -831,7 +831,7 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task CreateCategoryTypeAsAdminPersistsAndReturnsOk()
+    public async Task CreateCategoryTypeAsAdminPersistsAndReturnsCreated()
     {
         var client = await LoginAsAdminAsync();
         var request = new CreateEventCategoryTypeRequest("Innovación", "#3366cc");

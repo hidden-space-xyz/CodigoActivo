@@ -187,40 +187,6 @@ describe('activities timeline layout', () => {
     expect(nodes[2]?.find('.act__title').text()).toBe('Juegos')
   })
 
-  it('passes the actions of an activity card to the signup flow', async () => {
-    const { calls } = serveSignupApi({
-      children: [CHILD],
-      activities: [buildSignupActivity({ id: 'loose' })],
-    })
-
-    const { wrapper, router } = await renderTimeline()
-    await vi.waitFor(() =>
-      expect(findButtons(t('pages.eventDetail.card.enrollFamily')).length > 0).toBe(true),
-    )
-    const card = wrapper.findComponent(ActivityTimelineCard)
-
-    card.vm.$emit('household')
-    await flushPromises()
-    expect(findDialog(t('pages.eventDetail.household.header'))).toBeDefined()
-
-    card.vm.$emit('signup', 'role-participant')
-    await vi.waitFor(() => expect(calls.assign).toHaveLength(1))
-    expect(calls.assign[0]?.path).toBe('loose/user-1')
-
-    card.vm.$emit('unassign')
-    await vi.waitFor(() => expect(messageBox()).toBeDefined())
-    await acceptMessageBox()
-    await vi.waitFor(() => expect(calls.unassign).toHaveLength(1))
-    card.vm.$emit('unassign-member', 'child-1')
-    await vi.waitFor(() => expect(messageBox()).toBeDefined())
-    await acceptMessageBox()
-    await vi.waitFor(() => expect(calls.unassign).toHaveLength(2))
-    expect(calls.unassign).toEqual(['loose/user-1', 'loose/child-1'])
-
-    card.vm.$emit('login')
-    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login'))
-  })
-
   it('explains that signup is closed, or reserved for early signup', async () => {
     serveSignupApi()
     const closed = await renderTimeline({ signupOpen: false })

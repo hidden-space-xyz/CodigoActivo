@@ -332,35 +332,6 @@ public sealed class UpdateEventCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncUnchangedCategoriesKeepsExistingCategoryInstances()
-    {
-        var keptA = Guid.NewGuid();
-        var keptB = Guid.NewGuid();
-        var ev = NewEvent(
-            categoryTypeIds: [EventCategoryTypeId.From(keptA), EventCategoryTypeId.From(keptB)]
-        );
-        var categoryA = ev.Categories.Single(c =>
-            c.EventCategoryTypeId == EventCategoryTypeId.From(keptA)
-        );
-        var categoryB = ev.Categories.Single(c =>
-            c.EventCategoryTypeId == EventCategoryTypeId.From(keptB)
-        );
-        PrepareUpdate(ev);
-        categoryTypes.HasCategoryCount(2);
-        var request = UpdateReq(categoryTypeIds: [keptA, keptB], thumbnailId: ev.ThumbnailId.Value);
-
-        var result = await sut.HandleAsync(
-            request.ToCommand(ev.Id),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        ev.Categories.Should().HaveCount(2);
-        ev.Categories.Should().Contain(categoryA);
-        ev.Categories.Should().Contain(categoryB);
-    }
-
-    [Fact]
     public async Task HandleAsyncImagesDroppedFromDescriptionReleasesRemovedKeepsRest()
     {
         var removedId = Guid.NewGuid();

@@ -5,16 +5,9 @@ import type { ActivityInput } from '@/entities/activity'
 import { eventReportKeys } from '@/pages/admin/event-detail/api/queries'
 import { useEventActivitiesAdmin } from '@/pages/admin/event-detail/model/use-event-activities-admin'
 
-import {
-  apiError,
-  http,
-  HttpResponse,
-  noContent,
-  paged,
-  server,
-} from '../../../../../support/server'
+import { http, HttpResponse, noContent, paged, server } from '../../../../../support/server'
 import { buildActivityResponse } from '../../../../../support/builders'
-import { expectNotification, queryOf } from '../../../../../support/dom'
+import { acceptMessageBox, expectNotification, queryOf } from '../../../../../support/dom'
 import { buildActivityListing } from '../../../../../support/models'
 import { mountComposable, t } from '../../../../../support/render'
 
@@ -96,19 +89,15 @@ describe('useEventActivitiesAdmin', () => {
     expect(calls).toEqual(['POST event-1', 'PUT act-1'])
     expect(invalidate).toHaveBeenCalledWith({ queryKey: eventReportKeys.stats('event-1') })
     expect(invalidate).toHaveBeenCalledWith({ queryKey: eventReportKeys.attendees() })
-  })
 
-  it('tells the admin when the edited activity no longer exists', async () => {
-    server.use(
-      http.get('/api/activities', () => HttpResponse.json(paged([]))),
-      http.get('/api/activities/:id', () => apiError(404, 'ActivityNotFound')),
-    )
-    const { result } = await mountComposable(() => useEventActivitiesAdmin(() => 'event-1'))
-
-    await result.dialog.openEdit(buildActivityListing())
+    invalidate.mockClear()
+    result.confirmRemove(buildActivityListing())
     await flushPromises()
+    await acceptMessageBox()
+    await expectNotification(t('pages.admin.eventDetail.toast.activityDeleted'))
 
-    await expectNotification(t('pages.admin.eventDetail.toast.activityNotFound'))
-    expect(result.dialog.visible.value).toBe(false)
+    expect(calls).toEqual(['POST event-1', 'PUT act-1', 'DELETE act-1'])
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: eventReportKeys.stats('event-1') })
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: eventReportKeys.attendees() })
   })
 })

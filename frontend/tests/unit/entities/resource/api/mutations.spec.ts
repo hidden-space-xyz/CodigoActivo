@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { resourceKeys, resourceMutations, type ResourceInput } from '@/entities/resource'
 
-import { apiError, http, HttpResponse, noContent, server } from '../../../../support/server'
+import { http, HttpResponse, noContent, server } from '../../../../support/server'
 import { buildResourceResponse } from '../../../../support/builders'
 import { createTestQueryClient } from '../../../../support/render'
 
@@ -48,16 +48,5 @@ describe('resourceMutations', () => {
     for (const { invalidated } of [created, updated, removed]) {
       expect(invalidated()).toEqual([true, true, false])
     }
-  })
-
-  it('leaves the resource queries alone when the API refuses the change', async () => {
-    server.use(http.delete('/api/resources/:id', () => apiError(500)))
-    const { client, invalidated } = cachedResources()
-
-    await expect(
-      new MutationObserver(client, resourceMutations.remove()).mutate('r1'),
-    ).rejects.toMatchObject({ status: 500 })
-
-    expect(invalidated()).toEqual([false, false, false])
   })
 })

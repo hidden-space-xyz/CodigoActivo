@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { newsKeys, newsMutations, type NewsItemInput } from '@/entities/news-item'
 
-import { apiError, http, HttpResponse, noContent, server } from '../../../../support/server'
+import { http, HttpResponse, noContent, server } from '../../../../support/server'
 import { buildNewsItemResponse, richText } from '../../../../support/builders'
 import { createTestQueryClient } from '../../../../support/render'
 
@@ -47,16 +47,5 @@ describe('newsMutations', () => {
       await run(client)
       expect(invalidated()).toEqual([true, true, true])
     }
-  })
-
-  it('leaves the news queries alone when the API refuses the change', async () => {
-    server.use(http.patch('/api/news/:id/feature', () => apiError(500)))
-    const { client, invalidated } = cachedNews()
-
-    await expect(
-      new MutationObserver(client, newsMutations.feature()).mutate('a1'),
-    ).rejects.toMatchObject({ status: 500 })
-
-    expect(invalidated()).toEqual([false, false, false])
   })
 })

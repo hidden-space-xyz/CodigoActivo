@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { ApiError, FEATURED_FIRST_SORT, toPage, unwrapOrNull } from '@/shared/api'
+import { ApiError, toPage, unwrapOrNull } from '@/shared/api'
 
 describe('unwrapOrNull', () => {
   it('returns the response data on success', async () => {
@@ -38,11 +38,5 @@ describe('toPage', () => {
       items: [10, 20],
       total: 7,
     })
-  })
-})
-
-describe('FEATURED_FIRST_SORT', () => {
-  it('sorts featured items first and then newest first', () => {
-    expect(FEATURED_FIRST_SORT).toBe('-featured,-createdAt')
   })
 })

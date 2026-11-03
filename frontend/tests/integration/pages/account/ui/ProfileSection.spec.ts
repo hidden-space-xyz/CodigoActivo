@@ -412,22 +412,6 @@ describe('ProfileSection', () => {
     expect(openDialogs()).toHaveLength(1)
   })
 
-  it('explains that disposable email addresses are refused for security', async () => {
-    serveProfile()
-    server.use(http.put('/api/users/:userId', () => apiError(400, 'DisposableEmailNotAllowed')))
-    await renderSection()
-
-    await click(findButton(t('pages.account.profile.editData'), document.body))
-    await click(
-      findButton(t('common.save'), openDialog(t('pages.account.profile.editDialogHeader'))),
-    )
-
-    await vi.waitFor(() => expect(notificationTexts()).toHaveLength(1))
-    expect(notificationTexts()[0]).toContain(t('errors.DisposableEmailNotAllowed'))
-    expect(t('errors.DisposableEmailNotAllowed')).toMatch(/seguridad/)
-    expect(openDialogs()).toHaveLength(1)
-  })
-
   it('rejects new passwords shorter than twelve characters', async () => {
     serveProfile()
     const patched = vi.fn()

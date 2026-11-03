@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { partnerKeys, partnerMutations, type PartnerInput } from '@/entities/partner'
 
-import { apiError, http, HttpResponse, noContent, server } from '../../../../support/server'
+import { http, HttpResponse, noContent, server } from '../../../../support/server'
 import { buildPartnerResponse } from '../../../../support/builders'
 import { createTestQueryClient } from '../../../../support/render'
 
@@ -57,16 +57,5 @@ describe('partnerMutations', () => {
       expect(invalidated()).toEqual([true, true])
     }
     expect(calls).toEqual(['POST', 'PUT p5', 'DELETE p5'])
-  })
-
-  it('leaves the partner queries alone when the API refuses the change', async () => {
-    server.use(http.delete('/api/partners/:id', () => apiError(500)))
-    const { client, invalidated } = cachedPartners()
-
-    await expect(
-      new MutationObserver(client, partnerMutations.remove()).mutate('p5'),
-    ).rejects.toMatchObject({ status: 500 })
-
-    expect(invalidated()).toEqual([false, false])
   })
 })

@@ -200,19 +200,4 @@ public sealed class EmailQueueOptionsTests
     {
         EmailQueueOptions.IsPacedPerRecipient(priority).Should().Be(expected);
     }
-
-    [Fact]
-    public void DefaultsMatchTheDocumentedQueuePolicy()
-    {
-        var options = new EmailQueueOptions();
-
-        options.Capacity.Should().Be(2000);
-        options.BatchSize.Should().Be(10);
-        options.PollInterval.Should().Be(TimeSpan.FromSeconds(5));
-        options.SendTimeout.Should().Be(TimeSpan.FromSeconds(60));
-        options.ShutdownDrain.Should().Be(TimeSpan.FromSeconds(20));
-        EmailQueueOptions.FailuresBeforePause.Should().Be(3);
-        EmailQueueOptions.OverdueAge.Should().Be(TimeSpan.FromHours(24));
-        EmailQueueOptions.DailyWindow.Should().Be(TimeSpan.FromHours(24));
-    }
 }

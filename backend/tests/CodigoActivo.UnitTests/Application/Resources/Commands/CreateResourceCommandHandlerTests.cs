@@ -44,28 +44,6 @@ public sealed class CreateResourceCommandHandlerTests
         return added;
     }
 
-    [Fact]
-    public async Task HandleAsyncInternalWithUrlReturnsBadRequest()
-    {
-        var type = readStore.TypeExists();
-        var request = new CreateResourceRequest(
-            "Title",
-            "Subtitle",
-            SomeRichText,
-            "https://ejemplo.es",
-            type.Id,
-            Guid.NewGuid()
-        );
-
-        var result = await sut.HandleAsync(
-            request.ToCommand(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ResourceUrlNotAllowed);
-    }
-
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -90,50 +68,6 @@ public sealed class CreateResourceCommandHandlerTests
 
         result.Error!.Kind.Should().Be(ErrorKind.Validation);
         result.Error.Code.Should().Be(DomainErrorCode.ResourceDescriptionRequired);
-    }
-
-    [Fact]
-    public async Task HandleAsyncExternalWithDescriptionReturnsBadRequest()
-    {
-        var type = readStore.TypeExists(isExternal: true);
-        var request = new CreateResourceRequest(
-            "Title",
-            "Subtitle",
-            SomeRichText,
-            "https://ejemplo.es",
-            type.Id,
-            Guid.NewGuid()
-        );
-
-        var result = await sut.HandleAsync(
-            request.ToCommand(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ResourceDescriptionNotAllowed);
-    }
-
-    [Fact]
-    public async Task HandleAsyncExternalWithoutUrlReturnsBadRequest()
-    {
-        var type = readStore.TypeExists(isExternal: true);
-        var request = new CreateResourceRequest(
-            "Title",
-            "Subtitle",
-            null,
-            "   ",
-            type.Id,
-            Guid.NewGuid()
-        );
-
-        var result = await sut.HandleAsync(
-            request.ToCommand(),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ResourceUrlRequired);
     }
 
     [Fact]

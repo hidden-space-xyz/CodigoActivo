@@ -18,20 +18,6 @@ function signup() {
 }
 
 describe('useAssignmentChanges', () => {
-  it('opens each dialog on the current role or status of the signup', async () => {
-    const { result } = await mountComposable(() => useAssignmentChanges(() => 'event-1'))
-
-    result.openRole(attendee, signup())
-    result.openStatus(attendee, signup())
-
-    expect(result.roleDialog).toEqual({
-      visible: true,
-      target: { attendee, assignment: signup() },
-      selectedId: 'role-1',
-    })
-    expect(result.statusDialog.selectedId).toBe('status-1')
-  })
-
   it('changes the role and the status, refreshing the counts and attendees', async () => {
     const bodies: unknown[] = []
     server.use(

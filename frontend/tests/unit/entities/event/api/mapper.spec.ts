@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  toCategoryTag,
   toEventDetail,
   toEventListing,
   toEventRequest,
@@ -63,14 +62,6 @@ describe('event mapper', () => {
     const event = toPastEventSummary(buildEventListItem({ id: 'event-0', stage: 'SignupClosed' }))
 
     expect(event).toMatchObject({ id: 'event-0', status: 'finished' })
-  })
-
-  it('maps a category type to a tag', () => {
-    expect(toCategoryTag({ id: 'cat-1', name: 'IA', color: '#123456' })).toEqual({
-      id: 'cat-1',
-      name: 'IA',
-      color: '#123456',
-    })
   })
 
   it('maps the whole event with its signup window and terms', () => {

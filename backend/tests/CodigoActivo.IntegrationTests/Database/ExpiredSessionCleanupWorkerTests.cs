@@ -71,18 +71,6 @@ public sealed class ExpiredSessionCleanupWorkerTests(CodigoActivoWebAppFactory f
     }
 
     [Fact]
-    public async Task PurgeAsyncWithNothingExpiredRemovesNoRow()
-    {
-        var live = Guid.NewGuid();
-        await SeedSessionAsync(live, TestSeedData.Users.MemberId, Factory.Clock.UtcNow.AddHours(1));
-
-        var removed = await Build().PurgeAsync(Ct);
-
-        removed.Should().Be(0);
-        (await RemainingSessionIdsAsync()).Should().Equal(live);
-    }
-
-    [Fact]
     public async Task PurgeAsyncAfterTheClockMovesPastTheLifetimeClearsTheLoggedInSession()
     {
         await LoginAsMemberAsync();

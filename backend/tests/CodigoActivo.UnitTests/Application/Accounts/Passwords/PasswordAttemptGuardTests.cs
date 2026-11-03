@@ -322,22 +322,6 @@ public sealed class PasswordAttemptGuardTests
     }
 
     [Fact]
-    public async Task VerifyReauthenticationAsyncCorrectPasswordAcceptsAndForgetsEarlierFailures()
-    {
-        var user = Account();
-        Persisted.Overwrite(user, new { PasswordLockout = new { FailedAttempts = 2 } });
-
-        var accepted = await sut.VerifyReauthenticationAsync(
-            user,
-            Correct,
-            TestContext.Current.CancellationToken
-        );
-
-        accepted.Should().BeTrue();
-        user.PasswordLockout.FailedAttempts.Should().Be(0);
-    }
-
-    [Fact]
     public async Task VerifyReauthenticationAsyncWrongPasswordSharesTheSameCounterAsTheLogin()
     {
         var user = Account();

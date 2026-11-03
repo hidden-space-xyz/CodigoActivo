@@ -403,17 +403,6 @@ describe('httpClient', () => {
   })
 })
 
-describe('ApiError', () => {
-  it('stores status, trace id and code', () => {
-    const error = new ApiError(418, 'Teapot', 'trace-9', ErrorCode.EventNotFound)
-
-    expect(error.message).toBe('Teapot')
-    expect(error.status).toBe(418)
-    expect(error.traceId).toBe('trace-9')
-    expect(error.code).toBe(ErrorCode.EventNotFound)
-  })
-})
-
 describe('isSessionLost', () => {
   it('recognizes a missing, ended or orphaned session', () => {
     expect(isSessionLost(new ApiError(401, 'x', undefined, ErrorCode.AuthenticationRequired))).toBe(

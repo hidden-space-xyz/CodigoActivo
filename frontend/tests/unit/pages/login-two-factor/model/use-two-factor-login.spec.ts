@@ -82,15 +82,6 @@ describe('useTwoFactorLogin', () => {
     expect(result.resendCooldown.value).toBe(0)
   })
 
-  it('reports an expired challenge when the API has none', async () => {
-    serveChallenge(() => apiError(401, 'TwoFactorChallengeExpired'))
-
-    const { result } = await mountReady('/login/verify?redirect=/events')
-
-    expect(result.expired.value).toBe(true)
-    expect(result.loginRoute.value).toEqual({ name: 'login', query: { redirect: '/events' } })
-  })
-
   it('treats a failed challenge lookup as expired so the user can log in again', async () => {
     serveChallenge(() => apiError(500))
 

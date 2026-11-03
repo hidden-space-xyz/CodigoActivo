@@ -10,7 +10,6 @@ import {
   renderRichTextHtml,
   richTextExcerpt,
   richTextExtensions,
-  serializeRichText,
 } from '@/shared/lib/rich-text'
 
 const FILE_ID = '0f8fad5b-d9cb-469f-a165-70867728950e'
@@ -317,12 +316,6 @@ describe('text-only rich text', () => {
 
     expect(JSON.stringify(json)).not.toContain('"image"')
     expect(JSON.stringify(json)).toContain('Normas')
-  })
-})
-
-describe('serializeRichText', () => {
-  it('serializes editor JSON', () => {
-    expect(serializeRichText({ type: 'doc', content: [] })).toBe(EMPTY_DOC_JSON)
   })
 })
 

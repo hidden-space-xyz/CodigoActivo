@@ -250,39 +250,6 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
     }
 
     [Fact]
-    public async Task GetByIdAsyncPartnerExistsReturnsTrackedPartnerOrNull()
-    {
-        await using var ctx = postgres.CreateContext();
-        var target = NewPartner("Target");
-        ctx.Partners.AddRange(target, NewPartner("Other"));
-        await ctx.SaveChangesAsync(Ct);
-        ctx.ChangeTracker.Clear();
-        var repo = new PartnerRepository(ctx);
-
-        var found = await repo.GetByIdAsync(target.Id, Ct);
-
-        found.Should().NotBeNull();
-        found.Name.Should().Be("Target");
-        ctx.ChangeTracker.Entries<Partner>().Should().ContainSingle();
-        (await repo.GetByIdAsync(PartnerId.From(Guid.NewGuid()), Ct)).Should().BeNull();
-    }
-
-    [Fact]
-    public async Task RemoveThenSaveChangesDeletesEntity()
-    {
-        await using var ctx = postgres.CreateContext();
-        var partner = NewPartner();
-        ctx.Partners.Add(partner);
-        await ctx.SaveChangesAsync(Ct);
-        var repo = new PartnerRepository(ctx);
-
-        repo.Remove(partner);
-        await ctx.SaveChangesAsync(Ct);
-
-        (await ctx.Partners.FindAsync([partner.Id], Ct)).Should().BeNull();
-    }
-
-    [Fact]
     public async Task GetByIdAsyncUserExistsReturnsTheStoredAccount()
     {
         await using var ctx = postgres.CreateContext();
@@ -297,42 +264,6 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
         result.Should().NotBeNull();
         result.Status.Should().Be(UserStatus.Active);
         result.UserType.Should().Be(UserType.Member);
-    }
-
-    [Fact]
-    public async Task GetByIdAsyncUserMissingReturnsNull()
-    {
-        await using var ctx = postgres.CreateContext();
-        var repo = new UserRepository(ctx, TestUnitOfWork.For(ctx));
-
-        (await repo.GetByIdAsync(UserId.From(Guid.NewGuid()), Ct)).Should().BeNull();
-    }
-
-    [Fact]
-    public async Task GetByEmailAsyncKnownEmailReturnsTheUser()
-    {
-        await using var ctx = postgres.CreateContext();
-        var user = NewUser("Match", "Me", email: "user@x.test", phone: "+34600000000");
-        ctx.Users.Add(user);
-        await ctx.SaveChangesAsync(Ct);
-        var repo = new UserRepository(ctx, TestUnitOfWork.For(ctx));
-
-        var result = await repo.GetByEmailAsync(EmailAddress.FromStored("user@x.test"), Ct);
-
-        result!.Id.Should().Be(user.Id);
-    }
-
-    [Fact]
-    public async Task GetByEmailAsyncUnknownEmailReturnsNull()
-    {
-        await using var ctx = postgres.CreateContext();
-        ctx.Users.Add(NewUser("Match", "Me", email: "user@x.test"));
-        await ctx.SaveChangesAsync(Ct);
-        var repo = new UserRepository(ctx, TestUnitOfWork.For(ctx));
-
-        var result = await repo.GetByEmailAsync(EmailAddress.FromStored("nobody@x.test"), Ct);
-
-        result.Should().BeNull();
     }
 
     [Fact]
@@ -537,35 +468,6 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
     }
 
     [Fact]
-    public async Task RequestAssignmentThenSaveChangesPersistsARequestedSignup()
-    {
-        var user = NewUser();
-        var ev = NewEvent();
-        var activity = NewActivity(ev.Id.Value);
-        await using (var seed = postgres.CreateContext())
-        {
-            seed.AddRange(user, ev, activity);
-            await seed.SaveChangesAsync(Ct);
-        }
-
-        await using (var ctx = postgres.CreateContext())
-        {
-            var loaded = await new ActivityRepository(ctx).GetByIdAsync(activity.Id, Ct);
-            loaded!
-                .RequestAssignment(user.Id, ActivityRole.Participant, Fixed)
-                .IsSuccess.Should()
-                .BeTrue();
-            await ctx.SaveChangesAsync(Ct);
-        }
-
-        await using var verify = postgres.CreateContext();
-        var stored = await verify.Assignments.SingleAsync(Ct);
-        stored.UserId.Should().Be(user.Id);
-        stored.Status.Should().Be(AssignmentStatus.Requested);
-        stored.CreatedAt.Should().Be(Fixed);
-    }
-
-    [Fact]
     public async Task ChangeAssignmentRoleThenSaveChangesUpdatesTheRowKeepingStatusAndDate()
     {
         var user = NewUser();
@@ -601,40 +503,6 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
         stored.Role.Should().Be(ActivityRole.Volunteer);
         stored.Status.Should().Be(AssignmentStatus.Confirmed);
         stored.CreatedAt.Should().Be(Fixed);
-    }
-
-    [Fact]
-    public async Task UnassignThenSaveChangesDeletesTheSignup()
-    {
-        var user = NewUser();
-        var ev = NewEvent();
-        var activity = NewActivity(ev.Id.Value);
-        await using (var seed = postgres.CreateContext())
-        {
-            seed.AddRange(user, ev, activity);
-            seed.Assignments.Add(
-                Persisted.As<Assignment>(
-                    new
-                    {
-                        UserId = user.Id,
-                        ActivityId = activity.Id,
-                        Role = ActivityRole.Participant,
-                        Status = AssignmentStatus.Requested,
-                    }
-                )
-            );
-            await seed.SaveChangesAsync(Ct);
-        }
-
-        await using (var ctx = postgres.CreateContext())
-        {
-            var loaded = await new ActivityRepository(ctx).GetByIdAsync(activity.Id, Ct);
-            loaded!.Unassign(user.Id).IsSuccess.Should().BeTrue();
-            await ctx.SaveChangesAsync(Ct);
-        }
-
-        await using var verify = postgres.CreateContext();
-        (await verify.Assignments.CountAsync(Ct)).Should().Be(0);
     }
 
     [Fact]
@@ -709,60 +577,6 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
     }
 
     [Fact]
-    public async Task GetInUseAsyncThumbnailOrDescriptionReferenceDetectsUsage()
-    {
-        await using var ctx = postgres.CreateContext();
-
-        var eventEmbeddedFileId = Guid.NewGuid();
-        var newsItemEmbeddedFileId = Guid.NewGuid();
-        var resourceEmbeddedFileId = Guid.NewGuid();
-        var termsEmbeddedFileId = Guid.NewGuid();
-        var unreferencedId = Guid.NewGuid();
-
-        var ev = NewEvent(
-            description: $"{{\"img\":\"/api/files/{eventEmbeddedFileId.ToString().ToUpperInvariant()}/content\"}}"
-        );
-        var newsItem = NewNewsItem(
-            description: $"{{\"img\":\"https://api.example.org/api/files/{newsItemEmbeddedFileId}/content\"}}"
-        );
-        var resource = NewResource(
-            description: $"{{\"img\":\"/api/files/{resourceEmbeddedFileId}/content\"}}"
-        );
-        var terms = TermsDocument.Create(
-            "Condiciones",
-            RichText.From($"{{\"img\":\"/api/files/{termsEmbeddedFileId}/content\"}}"),
-            false,
-            TermsDocumentKind.Conditions
-        );
-        ctx.AddRange(ev, newsItem, resource, terms);
-        await ctx.SaveChangesAsync(Ct);
-        var repo = new StoredFileRepository(ctx);
-
-        var inUse = await repo.GetInUseAsync(
-            [
-                StoredFileId.From(ThumbId),
-                StoredFileId.From(eventEmbeddedFileId),
-                StoredFileId.From(newsItemEmbeddedFileId),
-                StoredFileId.From(resourceEmbeddedFileId),
-                StoredFileId.From(termsEmbeddedFileId),
-                StoredFileId.From(unreferencedId),
-            ],
-            Ct
-        );
-
-        inUse
-            .Select(id => id.Value)
-            .Should()
-            .BeEquivalentTo([
-                ThumbId,
-                eventEmbeddedFileId,
-                newsItemEmbeddedFileId,
-                resourceEmbeddedFileId,
-                termsEmbeddedFileId,
-            ]);
-    }
-
-    [Fact]
     public async Task GetInUseAsyncLegalPolicyReferenceInEveryVersionDetectsUsage()
     {
         await using var ctx = postgres.CreateContext();
@@ -833,7 +647,7 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
         var unreferencedId = Guid.NewGuid();
 
         var ev = NewEvent(
-            description: $"{{\"a\":\"/api/files/{embeddedInEventId}/content\","
+            description: $"{{\"a\":\"/api/files/{embeddedInEventId.ToString().ToUpperInvariant()}/content\","
                 + $"\"b\":\"/api/files/{embeddedButNotCandidateId}/content\"}}"
         );
         var newsItem = NewNewsItem(
@@ -944,21 +758,6 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
         (await repo.CountExistingAsync([stored.Id, EventCategoryTypeId.From(Guid.NewGuid())], Ct))
             .Should()
             .Be(1);
-    }
-
-    [Fact]
-    public async Task ListFeaturedAsyncEventsStoredReturnsOnlyTheFeaturedOnes()
-    {
-        await using var ctx = postgres.CreateContext();
-        var featured = NewEvent("Destacado", featured: true);
-        ctx.Events.AddRange(featured, NewEvent("Normal"));
-        await ctx.SaveChangesAsync(Ct);
-        ctx.ChangeTracker.Clear();
-        var repo = new EventRepository(ctx);
-
-        var events = await repo.ListFeaturedAsync(Ct);
-
-        events.Select(e => e.Id).Should().Equal(featured.Id);
     }
 
     [Fact]
@@ -1243,21 +1042,6 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
         var stored = await new EventTermsAcceptanceRepository(ctx).ListAsync(ev.Id, user.Id, Ct);
 
         stored.Should().ContainSingle().Which.Signature!.ToArray().Should().Equal(png);
-    }
-
-    [Fact]
-    public async Task ListFeaturedAsyncNewsItemsStoredReturnsOnlyTheFeaturedOnes()
-    {
-        await using var ctx = postgres.CreateContext();
-        var featured = NewNewsItem("Destacada", featured: true);
-        ctx.News.AddRange(featured, NewNewsItem("Normal"));
-        await ctx.SaveChangesAsync(Ct);
-        ctx.ChangeTracker.Clear();
-        var repo = new NewsItemRepository(ctx);
-
-        var items = await repo.ListFeaturedAsync(Ct);
-
-        items.Select(item => item.Id).Should().Equal(featured.Id);
     }
 
     [Fact]

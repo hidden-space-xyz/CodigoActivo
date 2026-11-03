@@ -131,7 +131,7 @@ describe('ColumnFilterSelect', () => {
     )
   })
 
-  it('lets the user type to narrow the options only when filterable', async () => {
+  it('makes the select filterable only when asked to', async () => {
     const { wrapper } = await renderFilter(null)
     await open(wrapper)
 

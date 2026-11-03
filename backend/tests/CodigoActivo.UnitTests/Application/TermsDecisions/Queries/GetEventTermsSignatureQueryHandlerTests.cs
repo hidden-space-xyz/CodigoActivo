@@ -74,12 +74,4 @@ public sealed class GetEventTermsSignatureQueryHandlerTests
 
         result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventTermsSignatureNotFound);
     }
-
-    [Fact]
-    public async Task HandleAsyncDecisionMissingReturnsNotFound()
-    {
-        var result = await SignatureAsync();
-
-        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventTermsSignatureNotFound);
-    }
 }

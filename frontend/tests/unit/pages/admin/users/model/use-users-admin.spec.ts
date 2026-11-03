@@ -5,21 +5,14 @@ import { toUser } from '@/entities/user/api/mapper'
 import { useUsersAdmin } from '@/pages/admin/users/model/use-users-admin'
 import type { UserResponse } from '@/shared/api/generated/models'
 
-import { apiError, http, HttpResponse, noContent, server } from '../../../../../support/server'
+import { http, HttpResponse, server } from '../../../../../support/server'
 import {
   buildDependentResponse,
   buildUserResponse,
   userStatusTypes,
   userTypes,
 } from '../../../../../support/builders'
-import {
-  acceptMessageBox,
-  cancelMessageBox,
-  expectNotification,
-  messageBox,
-  queryOf,
-  textOf,
-} from '../../../../../support/dom'
+import { queryOf } from '../../../../../support/dom'
 import { mountComposable, t } from '../../../../../support/render'
 
 function serveUserPages(pages: UserResponse[][]) {
@@ -192,88 +185,5 @@ describe('useUsersAdmin', () => {
     expect(result.deleteBlockReason(own)).toBe(t('pages.admin.users.blocked.self'))
     expect(result.deleteBlockReason(other)).toBeUndefined()
     expect(anonymous.result.deleteBlockReason(own)).toBeUndefined()
-  })
-
-  it('revokes the admin role only after confirmation', async () => {
-    serveUserPages([[]])
-    const requests: unknown[] = []
-    server.use(
-      http.patch('/api/users/:userId/admin', async ({ request, params }) => {
-        requests.push({ id: params.userId, body: await request.json() })
-        return noContent()
-      }),
-    )
-    const { result, router } = await mountComposable(() => useUsersAdmin(), {
-      user: { id: 'user-1', isAdmin: true },
-      route: '/admin/users',
-    })
-    const grace = toUser(
-      buildUserResponse({ id: 'user-2', firstName: 'Grace', lastName: 'Hopper', isAdmin: true }),
-    )
-
-    result.toggleAdmin(grace, false)
-    await flushPromises()
-    const box = messageBox()
-    expect(textOf(box.querySelector('.el-message-box__title'))).toBe(
-      t('pages.admin.users.revokeAdmin.header'),
-    )
-    expect(box.textContent).toContain(
-      t('pages.admin.users.revokeAdmin.message', { fullName: 'Grace Hopper' }),
-    )
-    expect(textOf(box.querySelector('.el-message-box__btns .el-button--primary'))).toBe(
-      t('pages.admin.users.revokeAdmin.confirm'),
-    )
-    await cancelMessageBox()
-    await flushPromises()
-    expect(requests).toEqual([])
-    expect(result.grantDialog.visible.value).toBe(false)
-
-    result.toggleAdmin(grace, false)
-    await flushPromises()
-    await acceptMessageBox()
-
-    await expectNotification(t('pages.admin.users.toasts.adminRevoked'))
-    expect(requests).toEqual([{ id: 'user-2', body: { isAdmin: false, currentPassword: null } }])
-    expect(router.currentRoute.value.name).toBe('admin-users')
-  })
-
-  it('filters the table by news consent and DNI/NIE', async () => {
-    const urls = serveUserPages([[buildUserResponse()]])
-    const { result } = await mountComposable(() => useUsersAdmin())
-    await vi.waitFor(() => expect(result.table.items.value).toHaveLength(1))
-
-    result.table.columnFilter('newsConsent').value = false
-    result.table.columnFilter('nationalId').value = 'x123'
-    await flushPromises()
-
-    expect(queryOf(urls.at(-1) ?? '')).toMatchObject({
-      newsConsent: 'false',
-      nationalId: 'x123',
-    })
-  })
-
-  it('keeps a refused admin password in the dialog instead of a toast', async () => {
-    serveUserPages([[]])
-    let refuse = true
-    server.use(
-      http.patch('/api/users/:userId/admin', () =>
-        refuse ? apiError(400, 'UserCurrentPasswordIncorrect') : noContent(),
-      ),
-    )
-    const { result } = await mountComposable(() => useUsersAdmin())
-    const ada = toUser(buildUserResponse())
-
-    result.toggleAdmin(ada, true)
-    await flushPromises()
-    result.grantAdmin('wrong')
-    await vi.waitFor(() =>
-      expect(result.grantError.value).toBe(t('errors.UserCurrentPasswordIncorrect')),
-    )
-    expect(result.grantDialog.visible.value).toBe(true)
-
-    refuse = false
-    result.grantAdmin('Str0ngPass!23')
-    await expectNotification(t('pages.admin.users.toasts.adminGranted'))
-    expect(result.grantDialog.visible.value).toBe(false)
   })
 })

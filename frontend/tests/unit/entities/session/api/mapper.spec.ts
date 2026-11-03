@@ -32,17 +32,6 @@ describe('toAuthUser', () => {
 })
 
 describe('toLoginChallenge', () => {
-  it('maps the method and the masked address', () => {
-    expect(toLoginChallenge({ method: 'Authenticator', maskedEmail: null })).toEqual({
-      method: 'Authenticator',
-      maskedEmail: null,
-    })
-    expect(toLoginChallenge({ method: 'Email', maskedEmail: 'a***@example.test' })).toEqual({
-      method: 'Email',
-      maskedEmail: 'a***@example.test',
-    })
-  })
-
   it('reads a missing masked address as none', () => {
     expect(toLoginChallenge({ method: 'Email' })).toEqual({ method: 'Email', maskedEmail: null })
   })

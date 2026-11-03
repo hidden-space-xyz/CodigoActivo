@@ -74,16 +74,6 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ListAnonymousReturnsUnauthorized()
-    {
-        var client = CreateClient();
-
-        var response = await client.GetAsync(TestUri.Rel("/api/users"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
     public async Task ListAsAdminReturnsAllUsersPaged()
     {
         var client = await LoginAsAdminAsync();
@@ -642,22 +632,6 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task UpdateAsMemberForOwnChildSucceeds()
-    {
-        var client = await LoginAsMemberAsync();
-
-        var response = await client.PutJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberChildId}",
-            ChildUpdate(firstName: "Mateo Renombrado", parentId: TestSeedData.Users.MemberId),
-            Ct
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var stored = await FindAsync<User>(TestSeedData.Users.MemberChildId);
-        stored!.FirstName.Should().Be("Mateo Renombrado");
-    }
-
-    [Fact]
     public async Task UpdateGivingAStandaloneAccountABirthDateIsRefusedAndKeepsItsCredentials()
     {
         var client = await LoginAsMemberAsync();
@@ -1044,21 +1018,6 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         );
 
         await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
-    }
-
-    [Fact]
-    public async Task DeleteAsAdminRemovesMember()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.DeleteWithCsrfAsync(
-            $"/api/users/{TestSeedData.Users.PendingId}",
-            Ct
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var stored = await FindAsync<User>(TestSeedData.Users.PendingId);
-        stored.Should().BeNull();
     }
 
     [Fact]

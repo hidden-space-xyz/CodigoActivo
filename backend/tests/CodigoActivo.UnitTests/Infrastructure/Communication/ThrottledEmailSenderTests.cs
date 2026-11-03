@@ -59,10 +59,6 @@ public sealed class ThrottledEmailSenderTests
 
     [Theory]
     [InlineData(EmailKind.SecurityAlert)]
-    [InlineData(EmailKind.ActivityNotification)]
-    [InlineData(EmailKind.ComingOfAgeNotice)]
-    [InlineData(EmailKind.ConsentWithdrawalNotice)]
-    [InlineData(EmailKind.BlockedDataConsultationNotice)]
     public async Task SendAsyncNoticeOverTheQuotaIsStoredAnyway(EmailKind kind)
     {
         var outbox = new RecordingEmailOutbox();

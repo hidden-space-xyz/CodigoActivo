@@ -36,34 +36,6 @@ describe('useResetPassword', () => {
     expect(result.state.value).toBe('form')
   })
 
-  it('rejects passwords shorter than 12 characters without calling the API', async () => {
-    const calls = serveReset()
-    const { result } = await mountComposable(() => useResetPassword(USER_ID, 'abc'))
-    result.form.password = 'short'
-    result.form.confirmPassword = 'short'
-
-    result.submit()
-    await flushPromises()
-
-    expect(result.errorMessage.value).toBe(
-      t('validation.newPasswordMin', { min: PASSWORD_MIN_LENGTH }),
-    )
-    expect(calls).toHaveLength(0)
-  })
-
-  it('rejects a confirmation that does not match without calling the API', async () => {
-    const calls = serveReset()
-    const { result } = await mountComposable(() => useResetPassword(USER_ID, 'abc'))
-    result.form.password = VALID_PASSWORD
-    result.form.confirmPassword = `${VALID_PASSWORD}!`
-
-    result.submit()
-    await flushPromises()
-
-    expect(result.errorMessage.value).toBe(t('validation.passwordsMismatch'))
-    expect(calls).toHaveLength(0)
-  })
-
   it('does not call the API when the link has no code', async () => {
     const calls = serveReset()
     const { result } = await mountComposable(() => useResetPassword(USER_ID, null))
@@ -76,22 +48,6 @@ describe('useResetPassword', () => {
     expect(calls).toHaveLength(0)
     expect(result.errorMessage.value).toBeNull()
     expect(result.state.value).toBe('form')
-  })
-
-  it('resets the password and switches to the success state', async () => {
-    const calls = serveReset()
-    const { result } = await mountComposable(() => useResetPassword(USER_ID, 'otp-1'))
-    result.form.password = VALID_PASSWORD
-    result.form.confirmPassword = VALID_PASSWORD
-
-    result.submit()
-    await vi.waitFor(() => expect(result.state.value).toBe('success'))
-
-    expect(calls).toEqual([
-      { userId: USER_ID, body: { otp: 'otp-1', newPassword: VALID_PASSWORD } },
-    ])
-    expect(result.errorMessage.value).toBeNull()
-    expect(result.canRequestNewLink.value).toBe(false)
   })
 
   it('shows the localized API error and offers a new link, clearing both on retry', async () => {

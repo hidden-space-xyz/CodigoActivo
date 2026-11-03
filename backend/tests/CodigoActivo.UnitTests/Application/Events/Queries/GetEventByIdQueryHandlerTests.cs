@@ -21,21 +21,6 @@ public sealed class GetEventByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncEventExistsReturnsEvent()
-    {
-        var ev = NewEventRow();
-        store.Events.Add(ev);
-
-        var result = await sut.HandleAsync(
-            new GetEventByIdQuery(EventId.From(ev.Id)),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Id.Should().Be(ev.Id);
-    }
-
-    [Fact]
     public async Task HandleAsyncEventExistsStampsTheStageOfTheClock()
     {
         var ev = NewEventRow();

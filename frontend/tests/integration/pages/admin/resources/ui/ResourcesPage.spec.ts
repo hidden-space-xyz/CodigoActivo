@@ -292,20 +292,7 @@ describe('admin resources page', () => {
     await expectNotification(t('common.error'))
   })
 
-  it('does not open the editor for a resource that no longer exists', async () => {
-    serveResources()
-    server.use(detail(() => apiError(404)))
-    await renderPage()
-
-    await click(findButton(t('common.edit')))
-
-    await vi.waitFor(() =>
-      expect(document.body.querySelector('.el-notification--error')).not.toBeNull(),
-    )
-    expect(isDialogOpen(t('pages.admin.resources.form.editHeader'))).toBe(false)
-  })
-
-  it('reports a resource that no longer exists with the not-found message', async () => {
+  it('reports a resource that no longer exists with the not-found message without opening the editor', async () => {
     serveResources()
     server.use(detail(() => apiError(404)))
     await renderPage()
@@ -313,6 +300,7 @@ describe('admin resources page', () => {
     await click(findButton(t('common.edit')))
 
     await expectNotification(t('pages.admin.resources.toasts.notFound'))
+    expect(isDialogOpen(t('pages.admin.resources.form.editHeader'))).toBe(false)
   })
 
   it('reports a failure loading the resource detail', async () => {

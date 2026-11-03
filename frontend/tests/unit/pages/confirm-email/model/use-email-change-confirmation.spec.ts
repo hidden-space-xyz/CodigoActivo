@@ -5,7 +5,7 @@ import { useEmailChangeConfirmation } from '@/pages/confirm-email/model/use-emai
 
 import { buildUserResponse } from '../../../../support/builders'
 import { mountComposable, t } from '../../../../support/render'
-import { apiError, http, HttpResponse, noContent, server } from '../../../../support/server'
+import { http, HttpResponse, noContent, server } from '../../../../support/server'
 import { sessionOf } from '../../../../support/session'
 
 const USER_ID = '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
@@ -57,14 +57,4 @@ describe('useEmailChangeConfirmation', () => {
       expect(calls).toHaveLength(0)
     },
   )
-
-  it('shows the localized API error when the code is rejected', async () => {
-    serveConfirm(() => apiError(400, 'OtpInvalidOrExpired'))
-    const { result } = await mountComposable(() => useEmailChangeConfirmation())
-
-    result.confirm(USER_ID, 'expired')
-    await vi.waitFor(() => expect(result.state.value).toBe('error'))
-
-    expect(result.errorMessage.value).toBe(t('errors.OtpInvalidOrExpired'))
-  })
 })

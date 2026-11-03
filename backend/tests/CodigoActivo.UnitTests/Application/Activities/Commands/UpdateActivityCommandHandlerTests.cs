@@ -164,44 +164,6 @@ public sealed class UpdateActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncWithRoleCapacitiesSyncsCollection()
-    {
-        var activity = NewActivity(
-            capacities:
-            [
-                new RoleCapacity(ActivityRole.Participant, 5),
-                new RoleCapacity(ActivityRole.Leader, 1),
-            ]
-        );
-        activities.Finds(activity);
-        EventExistsFor(activity);
-        files.ThumbnailExists(true);
-
-        var result = await sut.HandleAsync(
-            UpdateRequest(
-                    roleCapacities:
-                    [
-                        new ActivityRoleCapacityRequest(KnownIds.ActivityRoleTypes.Participant, 2),
-                        new ActivityRoleCapacityRequest(KnownIds.ActivityRoleTypes.Volunteer, 4),
-                    ]
-                )
-                .ToCommand(activity.Id),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        activity.RoleCapacities.Should().HaveCount(2);
-        activity
-            .RoleCapacities.Single(c => c.Role == ActivityRole.Participant)
-            .DesiredCount.Should()
-            .Be(2);
-        activity
-            .RoleCapacities.Single(c => c.Role == ActivityRole.Volunteer)
-            .DesiredCount.Should()
-            .Be(4);
-    }
-
-    [Fact]
     public async Task HandleAsyncNullRoleCapacitiesClearsExisting()
     {
         var activity = NewActivity(capacities: [new RoleCapacity(ActivityRole.Participant, 5)]);

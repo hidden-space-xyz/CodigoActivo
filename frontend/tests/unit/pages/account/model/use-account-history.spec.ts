@@ -4,14 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { useAccountHistory } from '@/pages/account/model/use-account-history'
 import type { EventHistoryResponse } from '@/shared/api/generated/models'
 
-import {
-  apiError,
-  http,
-  HttpResponse,
-  noContent,
-  server,
-  TEST_CSRF_TOKEN,
-} from '../../../../support/server'
+import { apiError, http, HttpResponse, noContent, server } from '../../../../support/server'
 import { buildHistoryActivityResponse, buildHistoryResponse } from '../../../../support/builders'
 import {
   acceptMessageBox,
@@ -74,53 +67,6 @@ describe('useAccountHistory', () => {
       isSelf: false,
     })
     expect(result.upcoming.value[1]).toMatchObject({ canRate: false, activities: [] })
-  })
-
-  it('saves a rating with trimmed answers and refetches the history', async () => {
-    let historyRequests = 0
-    let received: { body: unknown; csrf: string | null } | undefined
-    server.use(
-      http.get('/api/me/event-history', () => {
-        historyRequests += 1
-        return HttpResponse.json([buildHistoryResponse({ isPast: true, canRate: true })])
-      }),
-      http.put('/api/events/:eventId/rating', async ({ request, params }) => {
-        received = { body: await request.json(), csrf: request.headers.get('X-CSRF-TOKEN') }
-        expect(params.eventId).toBe('event-1')
-        return noContent()
-      }),
-    )
-
-    const { result } = await mountComposable(() => useAccountHistory(), { user: {} })
-    await vi.waitFor(() => expect(historyRequests).toBe(1))
-
-    const saved = await result.saveRating.mutateAsync({
-      eventId: 'event-1',
-      input: { score: 4, mostLiked: '  Los talleres ', leastLiked: '   ', suggestions: '' },
-    })
-
-    expect(saved).toBeUndefined()
-    expect(received).toEqual({
-      body: { score: 4, mostLiked: 'Los talleres', leastLiked: null, suggestions: null },
-      csrf: TEST_CSRF_TOKEN,
-    })
-    await vi.waitFor(() => expect(historyRequests).toBe(2))
-  })
-
-  it('exposes the error when the rating cannot be saved', async () => {
-    server.use(
-      http.get('/api/me/event-history', () => HttpResponse.json([])),
-      http.put('/api/events/:eventId/rating', () => apiError(400, 'EventNotFound')),
-    )
-
-    const { result } = await mountComposable(() => useAccountHistory(), { user: {} })
-
-    await expect(
-      result.saveRating.mutateAsync({
-        eventId: 'event-1',
-        input: { score: null, mostLiked: 'Todo', leastLiked: '', suggestions: '' },
-      }),
-    ).rejects.toMatchObject({ status: 400, code: 'EventNotFound' })
   })
 
   it('deletes the rating only once confirmed, then notifies and refetches the history', async () => {

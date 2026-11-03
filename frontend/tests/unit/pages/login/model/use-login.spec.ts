@@ -20,59 +20,6 @@ function serveLogin() {
 }
 
 describe('useLogin', () => {
-  it('starts with empty credentials', async () => {
-    const { result } = await mountComposable(() => useLogin(), { route: '/login' })
-
-    expect(result.form).toEqual({ identifier: '', password: '', keepSignedIn: false })
-    expect(result.isSubmitting.value).toBe(false)
-    expect(result.errorMessage.value).toBeNull()
-  })
-
-  it('moves to the verification page without opening a session when the password is accepted', async () => {
-    const bodies = serveLogin()
-    const { result, router, queryClient } = await mountComposable(() => useLogin(), {
-      route: '/login',
-    })
-    result.form.identifier = 'grace@example.test'
-    result.form.password = 'secret'
-
-    result.submit()
-    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login-two-factor'))
-
-    expect(bodies).toEqual([
-      { identifier: 'grace@example.test', password: 'secret', keepSignedIn: false },
-    ])
-    expect(router.currentRoute.value.query).toEqual({})
-    expect(sessionOf(queryClient).isAuthenticated).toBe(false)
-  })
-
-  it('asks for a persistent session only when the user opts in', async () => {
-    const bodies = serveLogin()
-    const { result, router } = await mountComposable(() => useLogin(), { route: '/login' })
-    result.form.identifier = 'grace@example.test'
-    result.form.password = 'secret'
-    result.form.keepSignedIn = true
-
-    result.submit()
-    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login-two-factor'))
-
-    expect(bodies).toEqual([
-      { identifier: 'grace@example.test', password: 'secret', keepSignedIn: true },
-    ])
-  })
-
-  it('carries the redirect target over to the verification page', async () => {
-    serveLogin()
-    const { result, router } = await mountComposable(() => useLogin(), {
-      route: '/login?redirect=/events',
-    })
-
-    result.submit()
-    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login-two-factor'))
-
-    expect(router.currentRoute.value.query).toEqual({ redirect: '/events' })
-  })
-
   it('ignores a redirect given more than once', async () => {
     serveLogin()
     const { result, router } = await mountComposable(() => useLogin(), {

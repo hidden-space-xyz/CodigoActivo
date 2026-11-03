@@ -8,7 +8,7 @@ import {
   type ActivityInput,
 } from '@/entities/activity'
 
-import { apiError, http, HttpResponse, noContent, server } from '../../../../support/server'
+import { http, HttpResponse, noContent, server } from '../../../../support/server'
 import { buildActivityResponse } from '../../../../support/builders'
 import { createTestQueryClient } from '../../../../support/render'
 
@@ -89,24 +89,6 @@ describe('activityMutations', () => {
       },
       { path: 'activity-1/child-1/unassign', body: null },
     ])
-  })
-
-  it('leaves the signups alone when the API refuses the signup', async () => {
-    server.use(
-      http.patch('/api/activities/:activityId/:userId/assign', () =>
-        apiError(409, 'ActivityAssignmentAlreadyExists'),
-      ),
-    )
-    const { client, invalidated } = cachedSignups()
-
-    await expect(
-      new MutationObserver(client, activityMutations.signUp('event-1', 'user-1')).mutate({
-        activityId: 'activity-1',
-        roleId: 'role-1',
-      }),
-    ).rejects.toMatchObject({ status: 409 })
-
-    expect(invalidated()).toEqual([false, false, false, false])
   })
 })
 

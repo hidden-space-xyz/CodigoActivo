@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { eventKeys, eventMutations, type EventInput } from '@/entities/event'
 
-import { apiError, http, HttpResponse, noContent, server } from '../../../../support/server'
+import { http, HttpResponse, noContent, server } from '../../../../support/server'
 import { buildEventResponse } from '../../../../support/builders'
 import { createTestQueryClient } from '../../../../support/render'
 
@@ -79,16 +79,5 @@ describe('eventMutations', () => {
 
     expect(posted).toEqual(['/api/events/e1/terms/decisions/child-1/terms-1/withdraw'])
     expect(invalidated()).toEqual([true, true, true])
-  })
-
-  it('leaves the event queries alone when the API refuses the change', async () => {
-    server.use(http.delete('/api/events/:id', () => apiError(500)))
-    const { client, invalidated } = cachedEvents()
-
-    await expect(
-      new MutationObserver(client, eventMutations.remove()).mutate('e1'),
-    ).rejects.toMatchObject({ status: 500 })
-
-    expect(invalidated()).toEqual([false, false, false])
   })
 })

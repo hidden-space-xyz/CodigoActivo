@@ -292,7 +292,7 @@ public sealed class LoginCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncAuthenticatorUserOpensChallengeWithoutEmailingOrMaskedAddress()
+    public async Task HandleAsyncAuthenticatorUserOpensChallengeWithoutEmailingACode()
     {
         var user = Returns(NewUserWithAuthenticator("SECRET"));
 

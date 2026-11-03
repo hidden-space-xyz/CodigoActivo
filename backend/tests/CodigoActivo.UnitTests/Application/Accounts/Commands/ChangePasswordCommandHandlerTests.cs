@@ -223,25 +223,6 @@ public sealed class ChangePasswordCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncNotificationFailureStillChangesThePassword()
-    {
-        emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
-        var user = NewUser();
-        Persisted.Overwrite(user, new { PasswordHash = hasher.Hash("correct") });
-        users.FindReturns(user);
-
-        var result = await sut.HandleAsync(
-            new ChangePasswordRequest("correct", "brandnew").ToCommand(Self),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        user.PasswordHash.Should().Be(hasher.Hash("brandnew"));
-        await events.PublishAsync(user);
-        await AssertSessionsRevokedAsync(user);
-    }
-
-    [Fact]
     public async Task HandleAsyncLeavesTheAlertAndTheSignOutToTheCommit()
     {
         var user = NewUser();

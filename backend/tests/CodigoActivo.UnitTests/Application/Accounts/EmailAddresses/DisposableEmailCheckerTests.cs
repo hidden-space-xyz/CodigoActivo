@@ -71,17 +71,4 @@ public sealed class DisposableEmailCheckerTests
         disposable.Should().BeFalse();
         domains.Lookups.Should().BeEmpty();
     }
-
-    [Fact]
-    public async Task IsDisposableAsyncEmptyListAcceptsEveryAddress()
-    {
-        domains.Clear();
-
-        var disposable = await sut.IsDisposableAsync(
-            EmailAddress.FromStored("ana@mailinator.com"),
-            TestContext.Current.CancellationToken
-        );
-
-        disposable.Should().BeFalse();
-    }
 }

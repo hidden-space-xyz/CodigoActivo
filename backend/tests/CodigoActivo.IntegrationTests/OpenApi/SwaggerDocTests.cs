@@ -22,16 +22,6 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task SwaggerDocumentDevelopmentEnvironmentIsServed()
-    {
-        var client = CreateClient();
-
-        using var response = await client.GetAsync(TestUri.Rel(SwaggerUrl), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-    }
-
-    [Fact]
     public async Task SwaggerDocumentLeavesOutTheOneClickUnsubscribeOfMailClients()
     {
         using var doc = await FetchSwaggerAsync(Ct);

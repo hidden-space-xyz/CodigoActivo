@@ -193,7 +193,7 @@ public sealed class AddChildCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncValidRequestCreatesDependentChildPersistsAndInvalidatesCache()
+    public async Task HandleAsyncValidRequestCreatesAndPersistsDependentChild()
     {
         var parentId = Guid.NewGuid();
         var parent = NewUser(id: parentId);

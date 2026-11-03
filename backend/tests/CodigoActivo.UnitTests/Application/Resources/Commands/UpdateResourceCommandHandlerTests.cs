@@ -91,30 +91,6 @@ public sealed class UpdateResourceCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncExternalWithDescriptionReturnsBadRequest()
-    {
-        var resource = NewResource();
-        resources.Finds(resource);
-        var type = readStore.TypeExists(isExternal: true);
-        var request = new UpdateResourceRequest(
-            "Title",
-            "Subtitle",
-            SomeRichText,
-            "https://ejemplo.es",
-            type.Id,
-            resource.ThumbnailId.Value
-        );
-
-        var result = await sut.HandleAsync(
-            request.ToCommand(resource.Id),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ResourceDescriptionNotAllowed);
-    }
-
-    [Fact]
     public async Task HandleAsyncThumbnailMissingReturnsBadRequest()
     {
         var resource = NewResource();

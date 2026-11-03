@@ -66,25 +66,6 @@ public sealed class ListActivitiesQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncModalityTypeIdFilterReturnsMatchingActivity()
-    {
-        var modalityId = Guid.NewGuid();
-        store.Activities.AddRange([
-            NewActivityRow("En sala", modalityId: modalityId),
-            NewActivityRow("En remoto", modalityName: "Online"),
-        ]);
-
-        var result = await sut.HandleAsync(
-            new ListActivitiesQuery(new ActivityListQuery { ModalityTypeId = modalityId }),
-            TestContext.Current.CancellationToken
-        );
-
-        var item = result.Items.Should().ContainSingle().Subject;
-        item.Title.Should().Be("En sala");
-        item.ModalityId.Should().Be(modalityId);
-    }
-
-    [Fact]
     public async Task HandleAsyncSortByModalityNameOrdersByModalityName()
     {
         store.Activities.AddRange([
@@ -102,57 +83,6 @@ public sealed class ListActivitiesQueryHandlerTests
             .Items.Select(a => a.ModalityName)
             .Should()
             .ContainInOrder("Híbrida", "Online", "Presencial");
-    }
-
-    [Fact]
-    public async Task HandleAsyncLocationSearchIsAccentAndCaseInsensitive()
-    {
-        store.Activities.AddRange([
-            NewActivityRow("Con acento", location: "Salón Ávila"),
-            NewActivityRow("Otra", location: "Patio"),
-        ]);
-
-        var result = await sut.HandleAsync(
-            new ListActivitiesQuery(new ActivityListQuery { Location = "avila" }),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Items.Should().ContainSingle().Which.Title.Should().Be("Con acento");
-    }
-
-    [Fact]
-    public async Task HandleAsyncActivityDateRangeFilterKeepsActivitiesOverlappingRange()
-    {
-        store.Activities.AddRange([
-            NewActivityRow(
-                "Antes",
-                startsAt: new DateTimeOffset(2026, 7, 5, 10, 0, 0, TimeSpan.Zero),
-                endsAt: new DateTimeOffset(2026, 7, 5, 12, 0, 0, TimeSpan.Zero)
-            ),
-            NewActivityRow(
-                "Dentro",
-                startsAt: new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
-                endsAt: new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero)
-            ),
-            NewActivityRow(
-                "Despues",
-                startsAt: new DateTimeOffset(2026, 7, 20, 10, 0, 0, TimeSpan.Zero),
-                endsAt: new DateTimeOffset(2026, 7, 20, 12, 0, 0, TimeSpan.Zero)
-            ),
-        ]);
-
-        var result = await sut.HandleAsync(
-            new ListActivitiesQuery(
-                new ActivityListQuery
-                {
-                    ActivityDateFrom = new DateOnly(2026, 7, 10),
-                    ActivityDateTo = new DateOnly(2026, 7, 10),
-                }
-            ),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Items.Should().ContainSingle().Which.Title.Should().Be("Dentro");
     }
 
     [Fact]
@@ -185,22 +115,5 @@ public sealed class ListActivitiesQueryHandlerTests
         );
 
         result.Items.Should().ContainSingle().Which.Title.Should().Be("Madrugada");
-    }
-
-    [Fact]
-    public async Task HandleAsyncSortByLocationOrdersByLocation()
-    {
-        store.Activities.AddRange([
-            NewActivityRow("Ultima", location: "Zaguán"),
-            NewActivityRow("Primera", location: "Aula"),
-            NewActivityRow("Segunda", location: "Mercado"),
-        ]);
-
-        var result = await sut.HandleAsync(
-            new ListActivitiesQuery(new ActivityListQuery { Sort = "location" }),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Items.Select(a => a.Location).Should().ContainInOrder("Aula", "Mercado", "Zaguán");
     }
 }

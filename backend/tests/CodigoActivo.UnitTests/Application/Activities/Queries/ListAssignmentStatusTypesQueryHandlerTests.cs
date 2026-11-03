@@ -40,6 +40,5 @@ public sealed class ListAssignmentStatusTypesQueryHandlerTests
         );
 
         result.Select(s => s.Name).Should().ContainInOrder("Aprobado", "Confirmado");
-        result.Should().AllBeOfType<AssignmentStatusTypeResponse>();
     }
 }

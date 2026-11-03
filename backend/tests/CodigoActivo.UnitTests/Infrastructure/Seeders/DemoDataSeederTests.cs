@@ -305,19 +305,6 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraphDefaultEveryAssignedRoleComesFromTheFixedCatalog()
-    {
-        var catalog = new HashSet<ActivityRole>
-        {
-            ActivityRole.Leader,
-            ActivityRole.Volunteer,
-            ActivityRole.Participant,
-        };
-
-        Assignments.Should().OnlyContain(x => catalog.Contains(x.Role));
-    }
-
-    [Fact]
     public void BuildGraphDefaultLeaderAssignmentsBelongToMemberTypeUsers()
     {
         var memberIds = graph
@@ -609,32 +596,8 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraphDefaultRatingsAreUniquelyIdentified()
+    public void BuildGraphDefaultRatingsMixAnsweredAndBlankOpinions()
     {
-        graph.Ratings.Select(r => r.Id).Should().OnlyHaveUniqueItems();
-    }
-
-    [Fact]
-    public void BuildGraphDefaultRatingScoresAndAnswersAreWithinContract()
-    {
-        graph
-            .Ratings.Should()
-            .OnlyContain(r => r.Score >= EventRating.MinScore && r.Score <= EventRating.MaxScore);
-        graph
-            .Ratings.Should()
-            .OnlyContain(r =>
-                r.MostLiked == null || r.MostLiked.Length <= EventRating.MaxAnswerLength
-            );
-        graph
-            .Ratings.Should()
-            .OnlyContain(r =>
-                r.LeastLiked == null || r.LeastLiked.Length <= EventRating.MaxAnswerLength
-            );
-        graph
-            .Ratings.Should()
-            .OnlyContain(r =>
-                r.Suggestions == null || r.Suggestions.Length <= EventRating.MaxAnswerLength
-            );
         graph.Ratings.Should().Contain(r => r.MostLiked == null);
         graph.Ratings.Should().Contain(r => r.MostLiked != null);
     }

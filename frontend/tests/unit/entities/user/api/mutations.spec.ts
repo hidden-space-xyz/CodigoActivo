@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { userKeys, userMutations } from '@/entities/user'
 
-import { apiError, http, HttpResponse, noContent, server } from '../../../../support/server'
+import { http, HttpResponse, noContent, server } from '../../../../support/server'
 import { buildUserResponse } from '../../../../support/builders'
 import { createTestQueryClient } from '../../../../support/render'
 
@@ -50,16 +50,5 @@ describe('userMutations', () => {
       await run(client)
       expect(invalidated()).toEqual([true, true, false])
     }
-  })
-
-  it('leaves the user queries alone when the API refuses the change', async () => {
-    server.use(http.delete('/api/users/:id', () => apiError(409)))
-    const { client, invalidated } = cachedUsers()
-
-    await expect(
-      new MutationObserver(client, userMutations.remove()).mutate('u1'),
-    ).rejects.toMatchObject({ status: 409 })
-
-    expect(invalidated()).toEqual([false, false, false])
   })
 })

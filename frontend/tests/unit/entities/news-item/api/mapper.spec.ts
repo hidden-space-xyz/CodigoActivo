@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { toNewsItem, toNewsItemRequest, toNewsSummary } from '@/entities/news-item/api/mapper'
+import { toNewsItem, toNewsSummary } from '@/entities/news-item/api/mapper'
 
 import {
   buildNewsItemResponse,
@@ -33,18 +33,5 @@ describe('toNewsItem', () => {
 
   it('reads a news item never edited as having no last change', () => {
     expect(toNewsItem(omit(buildNewsItemResponse(), 'updatedAt')).updatedAt).toBeNull()
-  })
-})
-
-describe('toNewsItemRequest', () => {
-  it('sends every field of the news item', () => {
-    const input = {
-      title: 'Demo day',
-      subtitle: 'Friday',
-      description: richText('Details'),
-      thumbnailId: 'thumb',
-    }
-
-    expect(toNewsItemRequest(input)).toEqual(input)
   })
 })

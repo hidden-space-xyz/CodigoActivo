@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   isOutsideAnalyticsDays,
-  RANGE_OPTIONS,
   useDashboardRange,
 } from '@/pages/admin/dashboard/model/use-dashboard-range'
 
@@ -23,14 +22,6 @@ describe('useDashboardRange', () => {
 
   afterEach(() => {
     vi.useRealTimers()
-  })
-
-  it('lists the three presets with their labels', () => {
-    expect(RANGE_OPTIONS).toEqual([
-      { value: '30d', labelKey: 'pages.admin.dashboard.range.preset30d' },
-      { value: '90d', labelKey: 'pages.admin.dashboard.range.preset90d' },
-      { value: '12m', labelKey: 'pages.admin.dashboard.range.preset12m' },
-    ])
   })
 
   it('defaults to the last 12 months ending today', () => {

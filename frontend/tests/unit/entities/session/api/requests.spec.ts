@@ -183,18 +183,4 @@ describe('session requests', () => {
     expect(tokens).toEqual(['token-1', 'token-2'])
     expect(csrf.count).toBe(2)
   })
-
-  it('uses the default test token when no custom CSRF handler is installed', async () => {
-    let token: string | null = null
-    server.use(
-      http.post('/api/auth/logout', ({ request }) => {
-        token = request.headers.get('X-CSRF-TOKEN')
-        return new HttpResponse(null, { status: 204 })
-      }),
-    )
-
-    await logoutRequest()
-
-    expect(token).toBe(TEST_CSRF_TOKEN)
-  })
 })

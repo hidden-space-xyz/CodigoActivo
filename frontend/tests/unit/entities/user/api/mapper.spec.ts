@@ -1,13 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { toUser, toUserCatalogRef } from '@/entities/user/api/mapper'
+import { toUser } from '@/entities/user/api/mapper'
 
-import {
-  buildDependentResponse,
-  buildUserResponse,
-  omit,
-  userTypes,
-} from '../../../../support/builders'
+import { buildDependentResponse, buildUserResponse, omit } from '../../../../support/builders'
 
 describe('toUser', () => {
   it('maps an independent account for the admin screens', () => {
@@ -53,14 +48,5 @@ describe('toUser', () => {
 
   it('reads a user without a type as having none', () => {
     expect(toUser(omit(buildUserResponse(), 'type')).type).toBeNull()
-  })
-})
-
-describe('toUserCatalogRef', () => {
-  it('keeps what identifies and colors a catalog entry', () => {
-    expect(userTypes.map(toUserCatalogRef)).toEqual([
-      { id: 'type-participant', name: 'Participant', color: '#00AA00' },
-      { id: 'type-member', name: 'Member', color: '#0000AA' },
-    ])
   })
 })

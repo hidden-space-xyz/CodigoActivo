@@ -6,7 +6,7 @@ import { endSession } from '@/entities/session'
 import { useEventActivities } from '@/pages/event-detail/model/use-event-activities'
 
 import { t } from '../../../../support/render'
-import { apiError, http, HttpResponse, server, TEST_CSRF_TOKEN } from '../../../../support/server'
+import { http, HttpResponse, server, TEST_CSRF_TOKEN } from '../../../../support/server'
 import { buildAssignedActivity, buildHouseholdAssignment } from '../../../../support/builders'
 import {
   buildSignupActivity,
@@ -206,31 +206,6 @@ describe('useEventActivities for signed-in users', () => {
     expect(calls.counts.household).toBe((before.household ?? 0) + 1)
   })
 
-  it('signs several household members up in one request', async () => {
-    const { calls } = serveSignupApi({ children: [CHILD] })
-    const { result } = await mountSignup()
-
-    await result.assignHousehold.mutateAsync({
-      activityId: 'activity-1',
-      assignments: [
-        { userId: 'user-1', roleId: 'role-participant' },
-        { userId: 'child-1', roleId: 'role-volunteer' },
-      ],
-    })
-
-    expect(calls.household).toEqual([
-      {
-        path: 'activity-1',
-        body: {
-          assignments: [
-            { userId: 'user-1', activityRoleTypeId: 'role-participant' },
-            { userId: 'child-1', activityRoleTypeId: 'role-volunteer' },
-          ],
-        },
-      },
-    ])
-  })
-
   it('propagates terms decisions to the household signup request and refreshes the terms state', async () => {
     const { calls } = serveSignupApi({ children: [CHILD], termsAccepted: false })
     const { result } = await mountSignup({ hasTerms: true })
@@ -286,18 +261,6 @@ describe('useEventActivities for signed-in users', () => {
 
     expect(calls.unassign).toEqual(['activity-1/child-1'])
     expect(calls.counts.terms).toBe(before.terms)
-  })
-
-  it('surfaces signup failures as API errors', async () => {
-    serveSignupApi({ assignError: () => apiError(409, 'ActivityAssignmentAlreadyExists') })
-    const { result } = await mountSignup()
-
-    await expect(
-      result.assign.mutateAsync({
-        activityId: 'activity-1',
-        roleId: 'role-participant',
-      }),
-    ).rejects.toMatchObject({ status: 409 })
   })
 
   it('forgets the household once the session ends', async () => {

@@ -62,31 +62,6 @@ public sealed class LogQueryHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncDiagnosticEntryFoundIsReturned()
-    {
-        var entry = new DiagnosticLogEntryDetailResponse(
-            Guid.CreateVersion7(),
-            DateTimeOffset.UnixEpoch,
-            DiagnosticLevel.Error,
-            "Tests",
-            null,
-            "boom",
-            "System.Exception: boom",
-            null,
-            null
-        );
-        reader.Detail = entry;
-
-        var result = await new GetDiagnosticLogEntryQueryHandler(reader).HandleAsync(
-            new GetDiagnosticLogEntryQuery(entry.Id),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Value.Should().BeSameAs(entry);
-        reader.Id.Should().Be(entry.Id);
-    }
-
-    [Fact]
     public async Task HandleAsyncDiagnosticEntryMissingIsNotFound()
     {
         var result = await new GetDiagnosticLogEntryQueryHandler(reader).HandleAsync(

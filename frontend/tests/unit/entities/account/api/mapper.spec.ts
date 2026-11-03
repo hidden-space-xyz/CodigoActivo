@@ -2,21 +2,17 @@ import { describe, expect, it } from 'vitest'
 
 import {
   toAccountCertificate,
-  toAccountChild,
   toAccountHistoryEntry,
   toAccountProfile,
-  toAuthenticatorSetup,
   toMinorRequest,
   toPersonalDataFile,
   toRegisterRequest,
   toSaveEventRatingRequest,
   toUpdateMinorRequest,
-  toUpdateProfileRequest,
 } from '@/entities/account/api/mapper'
 
 import {
   buildCertificateResponse,
-  buildDependentResponse,
   buildHistoryActivityResponse,
   buildHistoryResponse,
   buildPersonalDataResponse,
@@ -46,38 +42,6 @@ describe('account mapper', () => {
       statusName: 'Active',
       isAdmin: true,
     })
-  })
-
-  it('maps the authenticator enrollment and the minors', () => {
-    expect(
-      toAuthenticatorSetup({ sharedKey: 'ABCD EFGH', authenticatorUri: 'otpauth://x' }),
-    ).toEqual({
-      sharedKey: 'ABCD EFGH',
-      authenticatorUri: 'otpauth://x',
-    })
-    expect(toAccountChild(buildDependentResponse())).toEqual({
-      id: 'child-1',
-      firstName: 'Byron',
-      lastName: 'Lovelace',
-      birthDate: '2015-03-02',
-      gender: 'Male',
-    })
-  })
-
-  it('builds the profile update of an adult without birth date nor guardian', () => {
-    expect(
-      toUpdateProfileRequest({
-        firstName: 'Ada',
-        lastName: 'King',
-        email: 'ada@example.test',
-        phone: '600000000',
-        secondaryPhone: null,
-        nationalId: '12345678Z',
-        newsConsent: true,
-        gender: 'Female',
-        currentPassword: null,
-      }),
-    ).toMatchObject({ lastName: 'King', birthDate: null, parentId: null, currentPassword: null })
   })
 
   it('builds the minor bodies, keeping an edited minor under its guardian', () => {

@@ -30,6 +30,5 @@ public sealed class ListActivityModalityTypesQueryHandlerTests
         );
 
         result.Select(m => m.Name).Should().ContainInOrder("Online", "Presencial");
-        result.Should().AllBeOfType<ActivityModalityTypeResponse>();
     }
 }

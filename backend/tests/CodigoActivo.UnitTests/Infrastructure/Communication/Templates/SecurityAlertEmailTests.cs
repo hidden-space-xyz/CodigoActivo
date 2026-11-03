@@ -206,6 +206,8 @@ public sealed class SecurityAlertEmailTests
             "https://app.test"
         );
 
-        message.TextBody.Should().NotContain("n***@test.com");
+        message
+            .TextBody.Should()
+            .NotContain(AppStrings.EmailsSecurityAlertNewEmail(string.Empty).TrimEnd('.'));
     }
 }

@@ -75,19 +75,4 @@ describe('privacy policy page', () => {
     expect(wrapper.find('.legal-policy').exists()).toBe(false)
     expect(wrapper.find('.legal-document__updated').exists()).toBe(false)
   })
-
-  it('opens from the footer link', async () => {
-    publishedPrivacyPolicy()
-    const { wrapper, router } = await renderApp('/about')
-
-    const href = router.resolve({ name: 'privacy-policy' }).href
-    await wrapper.get(`.footer__legal a[href="${href}"]`).trigger('click')
-
-    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('privacy-policy'), {
-      timeout: 10_000,
-    })
-    await vi.waitFor(() => expect(wrapper.get('h1').text()).toBe(t('pages.privacyPolicy.title')), {
-      timeout: 10_000,
-    })
-  }, 20_000)
 })

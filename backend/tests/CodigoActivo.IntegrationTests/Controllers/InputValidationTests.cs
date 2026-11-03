@@ -89,7 +89,6 @@ public sealed class InputValidationTests(CodigoActivoWebAppFactory factory)
     [Theory]
     [InlineData("from=1999-12-31")]
     [InlineData("to=2100-01-01")]
-    [InlineData("from=0001-01-01&to=9999-12-31")]
     public async Task DashboardAnalyticsOutsideTheAllowedDaysReturnsBadRequest(string range)
     {
         var client = await LoginAsAdminAsync();

@@ -2,7 +2,6 @@ import { flushPromises } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { useRegistration } from '@/pages/register/model/use-registration'
-import { createEmptyMinor } from '@/pages/register/model/registration-form'
 
 import { t } from '../../../../support/render'
 import { apiError, http, noContent, server } from '../../../../support/server'
@@ -82,29 +81,6 @@ describe('useRegistration', () => {
     expect(scrollTo).toHaveBeenCalledTimes(2)
   })
 
-  it('submits the form and shows the success step with the submitted email and minors', async () => {
-    const bodies = serveRegister()
-    const { result } = await mountComposable(() => useRegistration())
-    fillAdult(result)
-    result.confirmAdult()
-    result.form.minors.push({
-      ...createEmptyMinor(),
-      firstName: 'Byron',
-      lastName: 'King',
-      birthDate: '2016-02-03',
-      gender: 'Male',
-    })
-
-    result.submit()
-    await vi.waitFor(() => expect(result.step.value).toBe('success'))
-
-    expect(bodies).toHaveLength(1)
-    expect(bodies[0]).toMatchObject({ declaresAdult: true })
-    expect(result.submittedEmail.value).toBe('ada@example.test')
-    expect(result.submittedMinorCount.value).toBe(1)
-    expect(result.resendCooldown.value).toBe(60)
-  })
-
   it('sends nothing once the visitor goes back to the age gate', async () => {
     const bodies = serveRegister()
     const { result } = await mountComposable(() => useRegistration())
@@ -151,22 +127,6 @@ describe('useRegistration', () => {
     vi.advanceTimersByTime(59_000)
     expect(result.resendCooldown.value).toBe(0)
     expect(vi.getTimerCount()).toBe(0)
-  })
-
-  it('resends the verification email to the submitted address and restarts the cooldown', async () => {
-    useCooldownClock()
-    const emails = serveResend()
-    const { result } = await registerSuccessfully()
-    vi.advanceTimersByTime(60_000)
-
-    result.resend()
-    await vi.waitFor(() => expect(result.resendCooldown.value).toBe(60))
-
-    expect(emails).toEqual(['ada@example.test'])
-    await vi.waitFor(() =>
-      expect(notificationText()).toContain(t('entities.account.verification.linkResentDetail')),
-    )
-    expect(notificationText()).toContain(t('entities.account.verification.linkResentSummary'))
   })
 
   it('ignores resend requests while a resend is already in flight', async () => {

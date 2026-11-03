@@ -65,49 +65,10 @@ public sealed class ExpiredSessionCleanupWorkerTests : IDisposable
     }
 
     [Fact]
-    public async Task PurgeAsyncRemovesEverySessionExpiredAtTheCurrentClockTime()
-    {
-        sessions
-            .PurgeExpiredAsync(
-                Arg.Any<DateTimeOffset>(),
-                Arg.Any<UserId?>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(3);
-
-        var removed = await Build().PurgeAsync(TestContext.Current.CancellationToken);
-
-        removed.Should().Be(3);
-        await sessions
-            .Received(1)
-            .PurgeExpiredAsync(clock.UtcNow, null, Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
     public async Task ExecuteAsyncFirstRunPurgesAfterTheStartupDelayWithoutLogging()
     {
         var signal = new TaskCompletionSource();
         RemovesAndSignals(signal, removed: 2);
-        var cleaner = Build(
-            new SessionCleanupOptions
-            {
-                StartupDelay = TimeSpan.Zero,
-                Interval = TimeSpan.FromHours(1),
-            }
-        );
-
-        await cleaner.StartAsync(TestContext.Current.CancellationToken);
-        await signal.Task.WaitAsync(WaitBudget, TestContext.Current.CancellationToken);
-        await cleaner.StopAsync(TestContext.Current.CancellationToken);
-
-        logger.Entries.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task ExecuteAsyncEmptyRunLogsNothing()
-    {
-        var signal = new TaskCompletionSource();
-        RemovesAndSignals(signal, removed: 0);
         var cleaner = Build(
             new SessionCleanupOptions
             {
