@@ -3,9 +3,11 @@ using CodigoActivo.Application.Common.Mapping;
 using Xunit;
 using DomainGender = CodigoActivo.Domain.Users.Gender;
 using DomainLegalPolicyKind = CodigoActivo.Domain.Legal.LegalPolicyKind;
+using DomainTermsDocumentKind = CodigoActivo.Domain.TermsDocuments.TermsDocumentKind;
 using DomainTwoFactorMethod = CodigoActivo.Domain.Users.TwoFactorMethod;
 using Gender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
 using LegalPolicyKind = CodigoActivo.Application.Abstractions.Querying.ReadModel.LegalPolicyKind;
+using TermsDocumentKind = CodigoActivo.Application.Abstractions.Querying.ReadModel.TermsDocumentKind;
 using TwoFactorMethod = CodigoActivo.Application.Abstractions.Querying.ReadModel.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Common;
@@ -43,6 +45,18 @@ public sealed class ContractEnumsTests
             .Should()
             .Equal(
                 Enum.GetValues<DomainLegalPolicyKind>().Select(kind => (kind.ToString(), (int)kind))
+            );
+    }
+
+    [Fact]
+    public void TermsDocumentKindContractMirrorsTheDomainNamesAndValues()
+    {
+        Enum.GetValues<TermsDocumentKind>()
+            .Select(kind => (kind.ToString(), (int)kind))
+            .Should()
+            .Equal(
+                Enum.GetValues<DomainTermsDocumentKind>()
+                    .Select(kind => (kind.ToString(), (int)kind))
             );
     }
 

@@ -121,6 +121,15 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
             .Value;
     }
 
+    private Task SeedMemberSecondaryPhoneAsync()
+    {
+        return Factory.SeedAsync(async db =>
+        {
+            var member = await db.Users.FindAsync([UserId.From(TestSeedData.Users.MemberId)], Ct);
+            Persisted.Overwrite(member!, new { SecondaryPhone = "+34700000002" });
+        });
+    }
+
     private async Task EraseMemberAsync()
     {
         var admin = await LoginAsAdminAsync();
@@ -391,6 +400,51 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
             .Contain(candidate =>
                 candidate.AccountId == TestSeedData.Users.MemberId && candidate.Exists
             );
+    }
+
+    [Theory]
+    [InlineData("22222222-2222-2222-2222-222222222222")]
+    [InlineData("+34600000002")]
+    [InlineData("+34700000002")]
+    [InlineData("marta MIEMBRO")]
+    public async Task SearchExistingAccountByIdPhoneOrNameIsFoundAsExisting(string query)
+    {
+        await SeedMemberSecondaryPhoneAsync();
+        var officer = await OfficerAsync();
+        var consultationId = await OpenedAsync(officer);
+
+        using var searched = await SearchAsync(officer, consultationId, query);
+
+        searched.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await searched.ReadJsonAsync<BlockedDataSearch>(Ct))!
+            .Candidates.Should()
+            .Contain(candidate =>
+                candidate.AccountId == TestSeedData.Users.MemberId && candidate.Exists
+            )
+            .And.NotContain(candidate => candidate.AccountId == TestSeedData.Users.AdminId);
+    }
+
+    [Theory]
+    [InlineData("22222222-2222-2222-2222-222222222222")]
+    [InlineData("+34600000002")]
+    [InlineData("+34700000002")]
+    [InlineData("marta MIEMBRO")]
+    public async Task SearchErasedAccountByIdPhoneOrNameIsFoundInItsHistory(string query)
+    {
+        await SeedMemberSecondaryPhoneAsync();
+        await EraseMemberAsync();
+        var officer = await OfficerAsync();
+        var consultationId = await OpenedAsync(officer);
+
+        using var searched = await SearchAsync(officer, consultationId, query);
+
+        searched.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await searched.ReadJsonAsync<BlockedDataSearch>(Ct))!
+            .Candidates.Should()
+            .Contain(candidate =>
+                candidate.AccountId == TestSeedData.Users.MemberId && !candidate.Exists
+            )
+            .And.NotContain(candidate => candidate.AccountId == TestSeedData.Users.AdminId);
     }
 
     [Fact]

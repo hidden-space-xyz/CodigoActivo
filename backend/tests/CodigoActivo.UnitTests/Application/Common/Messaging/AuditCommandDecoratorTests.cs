@@ -249,6 +249,22 @@ public sealed class AuditCommandDecoratorTests
     }
 
     [Fact]
+    public async Task HandleAsyncUniqueConstraintViolationIsRecordedAsRejectedAndRethrown()
+    {
+        var failure = new UniqueConstraintViolationException();
+
+        var act = () =>
+            FailAsync<DeleteUserCommand, Result>(new DeleteUserCommand(UserId.New()), failure);
+
+        (await act.Should().ThrowAsync<UniqueConstraintViolationException>())
+            .Which.Should()
+            .BeSameAs(failure);
+        var record = trail.Records.Should().ContainSingle().Subject;
+        record.Outcome.Should().Be(AuditOutcome.Rejected);
+        record.ErrorCode.Should().Be("UniqueConstraintViolation");
+    }
+
+    [Fact]
     public async Task HandleAsyncUnexpectedExceptionIsRecordedAsFailedAndRethrown()
     {
         var act = () =>

@@ -1,10 +1,12 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Infrastructure.Communication;
+using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Npgsql;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Database;
@@ -117,6 +119,76 @@ public sealed class EmailOutboxDeliveryWorkerTests(CodigoActivoWebAppFactory fac
         await first.DisposeAsync();
 
         (await second.HoldAsync(Ct)).Should().BeTrue("a released lock is taken over at once");
+    }
+
+    [Fact]
+    public async Task HoldAsyncConnectionLostWhileHoldingTakesTheLockAgain()
+    {
+        await using var first = new EmailDeliveryLock(Scopes);
+        await using var second = new EmailDeliveryLock(Scopes);
+        (await first.HoldAsync(Ct)).Should().BeTrue();
+        var holder = await Factory.QueryAsync(db =>
+            db.Database.SqlQuery<int>(
+                    $"SELECT pid AS \"Value\" FROM pg_locks WHERE locktype = 'advisory' AND granted AND database = (SELECT oid FROM pg_database WHERE datname = current_database())"
+                )
+                .SingleAsync(Ct)
+        );
+
+        await Factory.QueryAsync(db =>
+            db.Database.SqlQuery<bool>($"SELECT pg_terminate_backend({holder}) AS \"Value\"")
+                .SingleAsync(Ct)
+        );
+        await WaitUntilEndedAsync(holder);
+
+        (await first.HoldAsync(Ct))
+            .Should()
+            .BeTrue("a lost lock is taken again on a new connection");
+        (await second.HoldAsync(Ct)).Should().BeFalse("the first instance holds it again");
+    }
+
+    [Fact]
+    public async Task HoldAsyncUnreachableDatabaseFailsTheRun()
+    {
+        await using var services = new ServiceCollection()
+            .AddDbContext<CodigoActivoDbContext>(options =>
+                options.UseWriteDatabase(
+                    "Host=127.0.0.1;Port=1;Database=none;Username=none;Password=none;Timeout=1"
+                )
+            )
+            .BuildServiceProvider();
+        await using var unreachable = new EmailDeliveryLock(
+            services.GetRequiredService<IServiceScopeFactory>()
+        );
+
+        await unreachable
+            .Invoking(deliveryLock => deliveryLock.HoldAsync(Ct))
+            .Should()
+            .ThrowAsync<InvalidOperationException>()
+            .WithInnerException(typeof(NpgsqlException));
+        await unreachable
+            .Invoking(deliveryLock => deliveryLock.HoldAsync(Ct))
+            .Should()
+            .ThrowAsync<InvalidOperationException>(
+                "a failed attempt leaves no connection behind to reuse"
+            )
+            .WithInnerException(typeof(NpgsqlException));
+    }
+
+    private async Task WaitUntilEndedAsync(int pid)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        timeout.CancelAfter(Patience);
+        while (
+            await Factory.QueryAsync(db =>
+                db.Database.SqlQuery<int>(
+                        $"SELECT count(*)::int AS \"Value\" FROM pg_stat_activity WHERE pid = {pid}"
+                    )
+                    .SingleAsync(timeout.Token)
+            ) > 0
+        )
+        {
+            await Task.Delay(TimeSpan.FromMilliseconds(20), timeout.Token);
+        }
     }
 
     private sealed class AwaitedEmailTransport : IEmailTransport, IEmailTransportSession

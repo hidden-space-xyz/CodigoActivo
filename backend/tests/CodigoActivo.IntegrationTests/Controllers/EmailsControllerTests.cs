@@ -660,6 +660,19 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task SendToUserAsMemberReturnsForbidden()
+    {
+        var client = await LoginAsMemberAsync();
+
+        using var response = await client.SendEmailFormAsync(
+            $"{UsersUrl}/{TestSeedData.Users.MemberId}"
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        Factory.EmailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task SendToEventAttendeesAsAdminSkipsTheDependentAndTheAccountPendingVerification()
     {
         await SeedEventGraphAsync();

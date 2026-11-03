@@ -3,6 +3,7 @@ import { ElSelect } from 'element-plus'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { BlockedDataPage } from '@/pages/admin/blocked-data'
+import ConsultationPanel from '@/pages/admin/blocked-data/ui/ConsultationPanel.vue'
 import OpenConsultationDialog from '@/pages/admin/blocked-data/ui/OpenConsultationDialog.vue'
 import type {
   BlockedDataAccessResponse,
@@ -11,6 +12,7 @@ import type {
   BlockedDataSearch,
 } from '@/shared/api/generated/models'
 import { toDateOnly } from '@/shared/lib/date'
+import { ColumnFilterDate } from '@/shared/ui/column-filter'
 
 import { renderWithProviders, t } from '../../../../../support/render'
 import { apiError, http, HttpResponse, paged, server } from '../../../../../support/server'
@@ -246,6 +248,51 @@ describe('BlockedDataPage', () => {
       destinatario: t('pages.admin.blockedData.authorities.Court'),
       entradas: [{ tipo: t('pages.admin.blockedData.entities.User'), legible: true }],
     })
+  })
+
+  it('emails another code for the same request after one is rejected and clears the rejection', async () => {
+    const bodies = serve(OFFICER)
+    server.use(
+      http.post('/api/blocked-data/consultations', () => apiError(400, 'TwoFactorCodeInvalid')),
+    )
+    const { wrapper } = await renderPage('Email')
+    const dialog = wrapper.findComponent(OpenConsultationDialog)
+
+    await click(findButton(t('pages.admin.blockedData.open.action')))
+    await fillDialog(wrapper, 'Court', 'Ref', '000000', t('pages.admin.blockedData.open.sendCode'))
+    await vi.waitFor(() => expect(dialog.props('error')).toBe(t('errors.TwoFactorCodeInvalid')))
+
+    await click(findButton(t('pages.admin.blockedData.open.resend')))
+
+    await vi.waitFor(() => expect(bodies.code).toHaveLength(2))
+    expect(bodies.code).toEqual([{ currentPassword: 'secret' }, { currentPassword: 'secret' }])
+    expect(dialog.props('error')).toBe('')
+    expect(dialog.props('codeStep')).toBe(true)
+  })
+
+  it('narrows the extract to the chosen period and kinds of data', async () => {
+    const bodies = serve(OFFICER)
+    saved()
+    const { wrapper } = await renderPage()
+    await click(findButton(t('pages.admin.blockedData.open.action')))
+    await fillDialog(wrapper, 'Court', 'Ref', '123456')
+    await vi.waitFor(() => expect(document.querySelector('#blocked-query')).not.toBeNull())
+    await typeInto('#blocked-query', 'marta@example.test')
+    await click(findButton(t('pages.admin.blockedData.consultation.searchAction')))
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Marta Miembro'))
+
+    const panel = wrapper.findComponent(ConsultationPanel)
+    panel
+      .findComponent(ColumnFilterDate)
+      .vm.$emit('update:modelValue', [new Date(2026, 0, 1), new Date(2026, 5, 30)])
+    panel.findComponent(ElSelect).vm.$emit('update:modelValue', ['User'])
+    await flushPromises()
+    await click(findButton(t('pages.admin.blockedData.consultation.download')))
+    await vi.waitFor(() => expect(bodies.extract).toHaveLength(1))
+
+    expect(bodies.extract).toEqual([
+      { accountId: ACCOUNT, from: '2026-01-01', to: '2026-06-30', entities: ['User'] },
+    ])
   })
 
   it('shows why a consultation could not be opened inside the dialog', async () => {
