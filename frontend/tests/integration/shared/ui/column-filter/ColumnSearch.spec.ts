@@ -52,8 +52,10 @@ async function type(input: HTMLInputElement, value: string): Promise<void> {
   await flushPromises()
 }
 
-function key(input: HTMLInputElement, name: string): void {
-  input.dispatchEvent(new KeyboardEvent('keydown', { key: name, bubbles: true }))
+function key(input: HTMLInputElement, name: string): KeyboardEvent {
+  const event = new KeyboardEvent('keydown', { key: name, bubbles: true, cancelable: true })
+  input.dispatchEvent(event)
+  return event
 }
 
 function visible(wrapper: VueWrapper): unknown {
@@ -156,16 +158,17 @@ describe('ColumnSearch', () => {
     )
   })
 
-  it('applies immediately on Enter and closes the popover', async () => {
+  it('applies immediately on Enter, cancels the key so it cannot reach the toggle, and closes the popover', async () => {
     const { wrapper } = await renderSearch()
     const input = await open(wrapper)
     vi.useFakeTimers()
 
     await type(input, 'grace')
-    key(input, 'Enter')
+    const enter = key(input, 'Enter')
     await flushPromises()
     vi.runAllTimers()
 
+    expect(enter.defaultPrevented).toBe(true)
     expect(wrapper.emitted('update:modelValue')).toEqual([['grace']])
     await vi.waitFor(() => expect(visible(wrapper)).toBe(false))
   })

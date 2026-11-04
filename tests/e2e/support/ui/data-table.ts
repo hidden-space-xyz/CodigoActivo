@@ -66,14 +66,12 @@ export class DataTable {
   }
 
   /**
-   * Types `text` into the header search «Buscar por {label}», applies it with Enter once the panel
-   * has focused its box, and dismisses the panel with Escape, since the app reopens it right after
-   * Enter closes it.
+   * Types `text` into the header search «Buscar por {label}» and applies it with Enter once the panel
+   * has focused its box, which also closes the panel.
    */
   async searchColumn(label: string, text: string): Promise<void> {
     const panel = await this.enterColumnSearch(label, text)
     await this.expectSettled()
-    await panel.locator('input').press('Escape')
     await expect(panel).toBeHidden()
   }
 

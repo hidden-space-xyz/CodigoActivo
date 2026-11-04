@@ -111,7 +111,7 @@ onBeforeUnmount(() => {
       :maxlength="MAX_SEARCH_LENGTH"
       :placeholder="placeholder || $t('table.searchBy', { label })"
       @input="onInput"
-      @keydown.enter="applyNow"
+      @keydown.enter.prevent="applyNow"
       @keydown.esc="cancel"
     />
   </ColumnFilterShell>

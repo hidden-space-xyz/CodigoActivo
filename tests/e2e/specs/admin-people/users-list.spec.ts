@@ -35,7 +35,6 @@ test.describe('admin user list', () => {
     admin,
     accounts,
   }) => {
-    test.fixme(true, 'The panel starts closing on Enter and reopens about 25 ms later')
     const account = await accounts.create({ label: 'enter' })
     const users = new UsersAdminPage(await pageAs(admin))
     await users.open()
