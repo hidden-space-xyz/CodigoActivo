@@ -128,6 +128,35 @@ npm run check           # Complete frontend gate, coverage included
 
 The remaining scripts are in `package.json`.
 
+### End-to-end tests
+
+`tests/e2e/` is a [Playwright](https://playwright.dev/) suite in TypeScript that drives the SPA in Chromium
+through every page as each kind of user: visitors, participants, members, sponsors, guardians, activity
+leaders, administrators, the privacy officer and the initial administrator. Like the performance suite it runs
+in Docker as its own Compose project with its own volumes: PostgreSQL, Mailpit, the API (`Development`, without
+demo data) and the nginx image built from the working tree, plus the Playwright runner. From the repository root:
+
+```bash
+docker compose -f tests/e2e/compose.yaml run --rm --build playwright
+docker compose -f tests/e2e/compose.yaml down -v
+```
+
+Arguments after `playwright` replace its command, such as `npx playwright test specs/account` or
+`npm run check`, the suite's gate (types, ESLint, Knip and Prettier). The stack publishes the site on
+<http://localhost:8180> and Mailpit on <http://localhost:8125>, so after
+`docker compose -f tests/e2e/compose.yaml up -d --build --wait web` the suite also runs from `tests/e2e/` on
+the host (`npm ci`, `npx playwright install chromium`, then `npm test` or `npm run test:ui`).
+
+The `setup` project takes over the initial administrator through a password reset and makes
+`PRIVACY_OFFICER_EMAIL` an administrator; every other account and all content are created through the API by
+the tests that need them, so the suite runs again on the same volumes. Logins complete the second factor with
+the code read from Mailpit. The `desktop` project runs every spec and `mobile` the ones tagged `@mobile`; a
+full run takes 10 to 20 minutes with the default four workers. Each
+worker sends its own `X-Forwarded-For`, so the rate limits treat workers as different visitors. The email guard
+allows 1,000 verification and reset emails per hour and only resets with a new API process: after several runs
+in an hour, restart `api` or run `down -v`. The HTML report and the traces of failed tests are written to
+`tests/e2e/results/`; conventions are in [tests/e2e/AGENTS.md](tests/e2e/AGENTS.md).
+
 ### Performance tests
 
 `tests/performance/` is a [Grafana k6](https://grafana.com/docs/k6/) suite that loads the API the way the SPA

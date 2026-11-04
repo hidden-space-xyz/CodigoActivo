@@ -18,7 +18,9 @@ updates:
     multi-ecosystem-group: "all-dependencies"
 
   - package-ecosystem: "npm"
-    directory: "/frontend"
+    directories:
+      - "/frontend"
+      - "/tests/e2e"
     patterns: ["*"]
     multi-ecosystem-group: "all-dependencies"
 
@@ -26,12 +28,14 @@ updates:
     directories:
       - "/backend/src/CodigoActivo.API"
       - "/frontend"
+      - "/tests/e2e"
     patterns: ["*"]
     multi-ecosystem-group: "all-dependencies"
 
   - package-ecosystem: "docker-compose"
     directories:
       - "/"
+      - "/tests/e2e"
       - "/tests/performance"
     patterns: ["*"]
     multi-ecosystem-group: "all-dependencies"

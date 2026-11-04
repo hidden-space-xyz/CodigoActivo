@@ -1,0 +1,130 @@
+name: codigoactivo-e2e
+
+x-database: &database
+  POSTGRES_DB: codigoactivo
+  POSTGRES_USER: codigoactivo
+
+x-accounts: &accounts
+  BOOTSTRAP_ADMIN_EMAIL: admin@e2e.codigoactivo.test
+  PRIVACY_OFFICER_EMAIL: privacy@e2e.codigoactivo.test
+
+services:
+  secrets:
+    image: postgres:18-alpine
+    entrypoint:
+      - sh
+      - -c
+      - for key in postgres_password data_protection_key; do [ -s "/secrets/$$key" ] || head -c 32 /dev/urandom | base64 | tr -d '\n' > "/secrets/$$key"; done; chmod 444 /secrets/*
+    volumes:
+      - secrets:/secrets
+
+  db:
+    image: postgres:18-alpine
+    depends_on:
+      secrets:
+        condition: service_completed_successfully
+    environment:
+      <<: *database
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    volumes:
+      - db-data:/var/lib/postgresql
+      - secrets:/run/secrets:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+      start_interval: 1s
+
+  mailpit:
+    image: axllent/mailpit:v1.31.5
+    environment:
+      MP_MAX_MESSAGES: 50000
+    ports:
+      - '127.0.0.1:${E2E_MAILPIT_PORT:-8125}:8025'
+
+  api:
+    image: codigoactivo-api-e2e
+    build:
+      context: ../../backend
+      dockerfile: src/CodigoActivo.API/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    environment:
+      <<: [*database, *accounts]
+      ASPNETCORE_ENVIRONMENT: Development
+      POSTGRES_HOST: db
+      APP_BASE_URL: http://web:8080/
+      APP_TIMEZONE: Europe/Madrid
+      DEMO_MODE: 'false'
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_SECURITY: None
+      SMTP_MAX_PER_MINUTE: 60000
+      SMTP_MAX_PER_DAY: 10000000
+      SMTP_FROM_ADDRESS: no-reply@e2e.codigoactivo.test
+      SMTP_FROM_NAME: Código Activo (e2e)
+      LEGAL_NAME: Código Activo (e2e)
+      LEGAL_TAX_ID: G00000000
+      LEGAL_ADDRESS: León (e2e)
+      LEGAL_REGISTRY: Sin inscripción (e2e)
+      LEGAL_EMAIL: contacto@e2e.codigoactivo.test
+      LEGAL_PHONE: 600 00 00 00
+    volumes:
+      - secrets:/run/secrets:ro
+      - api-files:/app/files
+      - api-dataprotection:/home/app/.aspnet/DataProtection-Keys
+      - api-state:/app/state
+    read_only: true
+    tmpfs: [/tmp]
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q -O /dev/null http://127.0.0.1:8080/api/auth/csrf']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5m
+      start_interval: 2s
+
+  web:
+    image: codigoactivo-web-e2e
+    build:
+      context: ../../frontend
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:${E2E_WEB_PORT:-8180}:8080'
+    read_only: true
+    tmpfs: [/tmp]
+
+  playwright:
+    image: codigoactivo-playwright-e2e
+    profiles: [playwright]
+    build:
+      context: .
+      additional_contexts:
+        contract: ../../frontend/src/shared/api/generated/models
+    depends_on:
+      web:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    environment:
+      <<: *accounts
+      BASE_URL: http://web:8080
+      MAILPIT_URL: http://mailpit:8025
+    init: true
+    ipc: host
+    volumes:
+      - ./results:/repo/tests/e2e/results
+
+volumes:
+  secrets:
+  db-data:
+  api-files:
+  api-dataprotection:
+  api-state:

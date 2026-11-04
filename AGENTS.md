@@ -14,7 +14,8 @@ document with every change: update the fact that changed, remove what it replace
 new operational facts.
 
 Backend and frontend coding conventions live in [backend/AGENTS.md](backend/AGENTS.md) and
-[frontend/AGENTS.md](frontend/AGENTS.md).
+[frontend/AGENTS.md](frontend/AGENTS.md), those of the end-to-end suite in
+[tests/e2e/AGENTS.md](tests/e2e/AGENTS.md).
 
 ## Not deployed yet
 
