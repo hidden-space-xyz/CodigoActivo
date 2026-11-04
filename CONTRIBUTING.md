@@ -200,11 +200,11 @@ and budget, worst first), `summary.json` and the k6 dashboard in `report.html`. 
 catalogued endpoint is never requested, when a profile other than `capacity` sees an endpoint fail more than 1%
 of its requests, or when the gate of `load` or `spike` is missed.
 
-The containers reproduce the production VPS (4 vCPUs, 8 GB): the API and PostgreSQL share CPUs 0–3 with 4 GB
-and 3 GB, and k6 and Mailpit run on CPUs 4–11 so they take nothing from them. On another host, or one with
-fewer than 12 CPUs, set `PERF_SERVER_CPUSET`, `PERF_TOOLS_CPUSET`, `PERF_API_MEMORY` and `PERF_DB_MEMORY` in the
-shell. nginx and the TLS proxy share the VPS in production but are not measured, and the host's CPUs may be
-faster than the VPS's, so leave headroom on any capacity figure.
+The containers reproduce the production server (4 vCPUs, 8 GB): the API and PostgreSQL share CPUs 0–3 with
+4 GB and 3 GB, and k6 and Mailpit run on CPUs 4–11 so they take nothing from them. On another host, or one
+with fewer than 12 CPUs, set `PERF_SERVER_CPUSET`, `PERF_TOOLS_CPUSET`, `PERF_API_MEMORY` and `PERF_DB_MEMORY`
+in the shell. nginx and the TLS proxy share the server in production but are not measured, and the host's
+CPUs may be faster than the server's, so leave headroom on any capacity figure.
 
 ## Changing the API
 

@@ -56,12 +56,6 @@ nginx allows 8,192 connections per worker, 4,000 active client connections and 2
 limit is raised to 65,536). Application request and credential-work rate limits are documented once, in
 [SECURITY.md](SECURITY.md#passwords-and-credential-endpoints).
 
-### Backups
-
-Back up the `api-dataprotection` volume with every `db-data` backup and keep `secrets/data_protection_key`:
-without both the data history cannot be read. Data Protection adds a key every 90 days, so a copy of the volume
-older than the database copy cannot read the entries protected with the keys created since.
-
 ## First production start
 
 ```bash
