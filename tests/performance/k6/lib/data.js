@@ -1,12 +1,7 @@
 import { EMAIL_DOMAIN, PASSWORD } from './config.js'
 
-export const CATALOG = {
-  userTypes: {
-    member: 'b0df7ac6-1312-412f-9c2a-88e6cdfb6e1c',
-    sponsor: '8e0b7dc4-59d3-4c3b-9a71-4f25c6b0de88',
-    participant: '1c038ae8-306f-4785-a5f5-b9c25e5cc4aa',
-  },
-  userStatuses: { active: '766f114c-6168-4be5-89f2-bae2a7a919e4' },
+export const LOOKUPS = {
+  userTypes: { member: 'b0df7ac6-1312-412f-9c2a-88e6cdfb6e1c' },
   roles: {
     leader: '5bd627de-831a-4169-874e-26a90550db9f',
     volunteer: '3b31564d-9879-434c-9152-5907db0c46fb',
@@ -15,15 +10,10 @@ export const CATALOG = {
   statuses: {
     requested: '3d717eeb-de06-44b8-b7df-2cc3e2ce5cb0',
     confirmed: '3c172c13-d238-4f0b-a61b-0a5ffc6a53ba',
-    denied: '714c9041-5536-420a-8176-bf745957d80e',
   },
   modalities: {
     onSite: '3a7956c5-2346-4fc3-b3e8-10ecc07f1e1f',
     online: '44b62b00-17f5-46c3-ac65-245fbd8e7db2',
-  },
-  resourceTypes: {
-    internal: '47833436-b131-4536-87a6-737a9680a423',
-    external: 'd4b28595-eed5-4728-ad87-8eaf9d8ce754',
   },
 }
 
@@ -38,7 +28,7 @@ const nationalIds = ['12345678Z', '87654321X', '45678912S', '23456789D', '765432
 export const DRAFT = 'Borrador k6'
 
 export function published(items) {
-  return items.filter((item) => !(item.title ?? item.name).startsWith(DRAFT))
+  return items.filter((item) => !item.title?.startsWith(DRAFT))
 }
 
 export function pick(items, index) {
@@ -90,7 +80,7 @@ export function day(offset) {
   return date.toISOString().slice(0, 10)
 }
 
-export function minor(age = randomInt(8, 15)) {
+function minor(age = randomInt(8, 15)) {
   return { ...person(), birthDate: day(-365 * age - 30), declaresGuardianship: true }
 }
 

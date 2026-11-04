@@ -1,70 +1,50 @@
-import { ADMIN_POOL_SIZE, adminSlice, PROFILE } from './lib/config.js'
-import { thresholds } from './lib/catalog.js'
+import { PROFILE } from './lib/profiles.js'
+import { RUN_PHASE, thresholds } from './lib/thresholds.js'
 import { report } from './lib/summary.js'
-import {
-  bootstrapAdmin,
-  household,
-  register,
-  takeOverDemoMembers,
-  waitForApi,
-} from './lib/accounts.js'
+import { bootstrapAdmin, register, takeOverDemoMembers, waitForApi } from './lib/accounts.js'
 import { createFixtures, seedSignups } from './lib/fixtures.js'
-import { CATALOG, email } from './lib/data.js'
+import { email, LOOKUPS } from './lib/data.js'
+import { household } from './lib/pages.js'
 
-export { visitor } from './scenarios/visitors.js'
-export { member } from './scenarios/members.js'
-export { signup } from './scenarios/signups.js'
+export { visitors } from './scenarios/visitors.js'
+export { members } from './scenarios/members.js'
+export { signups } from './scenarios/signups.js'
+export { newcomers } from './scenarios/newcomers.js'
 export { backoffice } from './scenarios/backoffice.js'
 export { reports } from './scenarios/reports.js'
-export { upload } from './scenarios/uploads.js'
+export { uploads } from './scenarios/uploads.js'
 export { mailing } from './scenarios/mailing.js'
-export { privacy } from './scenarios/privacy.js'
-export { accountLifecycle } from './scenarios/accounts.js'
 
-const functions = {
-  visitors: 'visitor',
-  members: 'member',
-  signups: 'signup',
-  backoffice: 'backoffice',
-  reports: 'reports',
-  uploads: 'upload',
-  mailing: 'mailing',
-  privacy: 'privacy',
-  accounts: 'accountLifecycle',
-}
+const FIRST_IP = { demoMembers: 1000, admins: 2000, members: 3000 }
 
-const singleVu = new Set(['privacy'])
-const tags = { phase: 'run' }
-
-function scenario(name) {
-  const config = PROFILE.scenarios[name]
-  const exec = functions[name]
-  if (config.iterations) {
+function scenario(name, { iterations, vus, stages }) {
+  const common = { exec: name, tags: { phase: RUN_PHASE } }
+  if (iterations) {
     return {
+      ...common,
       executor: 'shared-iterations',
-      exec,
-      tags,
-      vus: singleVu.has(name) ? 1 : config.iterations,
-      iterations: config.iterations,
+      vus: iterations,
+      iterations,
       maxDuration: '20m',
     }
   }
   return {
+    ...common,
     executor: 'ramping-arrival-rate',
-    exec,
-    tags,
     startRate: 0,
     timeUnit: '1m',
-    preAllocatedVUs: Math.ceil(config.vus / 2),
-    maxVUs: config.vus,
-    stages: config.stages ?? (config.shape ?? PROFILE.shape)(config.perMinute),
-    gracefulStop: name === 'accounts' ? '6m' : '1m',
+    preAllocatedVUs: Math.ceil(vus / 2),
+    maxVUs: vus,
+    stages,
+    gracefulStop: '1m',
   }
 }
 
 export const options = {
-  scenarios: Object.fromEntries(Object.keys(functions).map((name) => [name, scenario(name)])),
-  thresholds: thresholds({ steps: PROFILE.steps, budgets: PROFILE.budgets !== false }),
+  scenarios: Object.fromEntries(
+    Object.entries(PROFILE.scenarios).map(([name, config]) => [name, scenario(name, config)]),
+  ),
+  thresholds: thresholds(PROFILE),
   setupTimeout: '20m',
   summaryTrendStats: ['avg', 'min', 'med', 'p(90)', 'p(95)', 'p(99)', 'max', 'count'],
   batch: 16,
@@ -72,50 +52,53 @@ export const options = {
   userAgent: 'codigoactivo-k6',
 }
 
-function account(entry) {
-  return {
-    id: entry.session.userId,
-    email: entry.email,
-    codeAt: entry.codeAt,
-    dependents: entry.dependents ?? [],
-    session: entry.session.snapshot(),
-  }
+function account({ session, dependents = [] }) {
+  return { id: session.userId, dependents, session: session.snapshot() }
+}
+
+function adminSpecs(runId, pools) {
+  return Object.entries(pools)
+    .flatMap(([pool, size]) =>
+      Array.from({ length: size }, (_, index) => ({
+        pool,
+        email: email('admin', runId, pool, index),
+      })),
+    )
+    .map((spec, index) => ({
+      ...spec,
+      grantAdmin: true,
+      actor: 'admin',
+      ipIndex: FIRST_IP.admins + index,
+    }))
+}
+
+function memberSpecs(runId, size) {
+  return Array.from({ length: size }, (_, index) => ({
+    email: email('socio', runId, index),
+    minors: 1 + (index % 2),
+    userTypeId: LOOKUPS.userTypes.member,
+    actor: 'member',
+    ipIndex: FIRST_IP.members + index,
+  }))
 }
 
 export function setup() {
   const runId = Date.now().toString(36)
+  const { pools } = PROFILE
   waitForApi()
   const admin = bootstrapAdmin()
-  const admins = register(
-    Array.from({ length: ADMIN_POOL_SIZE }, (_, index) => ({
-      email: email('admin', runId, index),
-      grantAdmin: true,
-      actor: 'admin',
-      ipIndex: 2000 + index,
-    })),
-    admin,
-  )
-  const members = register(
-    Array.from({ length: PROFILE.pools.members }, (_, index) => ({
-      email: email('socio', runId, index),
-      minors: 1 + (index % 2),
-      userTypeId: CATALOG.userTypes.member,
-      actor: 'member',
-      ipIndex: 3000 + index,
-    })),
-    admin,
-  )
-  members.forEach((member) => (member.dependents = household(member.session)))
-  const demoMembers = takeOverDemoMembers(admin, PROFILE.pools.demoMembers)
+  const admins = register(adminSpecs(runId, pools.admins), admin)
+  const members = register(memberSpecs(runId, pools.members), admin)
+  members.forEach((member) => (member.dependents = household(member.session).map(({ id }) => id)))
+  const demoMembers = takeOverDemoMembers(admin, pools.demoMembers, FIRST_IP.demoMembers)
   const fixtures = createFixtures(admin, runId)
   const roster = seedSignups(admin, members, fixtures)
   return {
     runId,
-    admin: account(admin),
     admins: Object.fromEntries(
-      ['backoffice', 'reports', 'uploads', 'mailing'].map((name) => [
-        name,
-        admins.slice(...adminSlice(name)).map(account),
+      Object.keys(pools.admins).map((pool) => [
+        pool,
+        admins.filter((entry) => entry.pool === pool).map(account),
       ]),
     ),
     members: members.map(account),

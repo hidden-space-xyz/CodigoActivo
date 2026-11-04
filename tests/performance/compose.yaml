@@ -73,6 +73,8 @@ services:
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
       SMTP_SECURITY: None
+      SMTP_MAX_PER_MINUTE: 60000
+      SMTP_MAX_PER_DAY: 10000000
       SMTP_FROM_ADDRESS: no-reply@performance.codigoactivo.test
       SMTP_FROM_NAME: Código Activo (rendimiento)
       LEGAL_NAME: Código Activo (rendimiento)

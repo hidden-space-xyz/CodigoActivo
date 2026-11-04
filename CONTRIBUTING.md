@@ -130,36 +130,46 @@ The remaining scripts are in `package.json`.
 
 ### Performance tests
 
-`tests/performance/` is a [Grafana k6](https://grafana.com/docs/k6/) suite that calls every API endpoint
-under concurrent load to find what needs optimizing. It runs only in Docker, as its own Compose project with its
-own volumes: PostgreSQL, Mailpit, the API image built from the working tree (in `Staging`, with demo data) and
-k6. From the repository root:
+`tests/performance/` is a [Grafana k6](https://grafana.com/docs/k6/) suite that loads the API the way the SPA
+does, to find what needs optimizing. It runs only in Docker, as its own Compose project with its own volumes:
+PostgreSQL, Mailpit, the API image built from the working tree (in `Staging`, with demo data) and k6. From the
+repository root:
 
 ```bash
 docker compose -f tests/performance/compose.yaml run --rm --build -e PROFILE=load k6
 docker compose -f tests/performance/compose.yaml down -v
 ```
 
-`PROFILE` is `smoke` (every endpoint at least once, about four minutes, to check the suite; no latency budgets),
-`load` (the expected peak for ten minutes, the default), `stress` (that peak multiplied by up to four in steps
-over twelve minutes) or `capacity`. `capacity` raises the people using the site at once from 1,000 to 10,000 in
-eight two-minute steps, with a few administrators working throughout, and reports the largest step whose API
-requests kept p95 under 500 ms, p99 under 1.5 s and failures under 1%. Of those people, 70% browse anonymously
-(80-second visits), 25% browse as members (70 s) and 5% sign up their household (60 s), one page every ten
-seconds; k6 replays their visits at the matching arrival rate with short pauses of its own. The account scenario
-waits out the one-minute code cooldowns, so a run ends up to six minutes after its last stage. The first start
-also seeds the demo data, which downloads images from `picsum.photos`. Setup signs in the bootstrap
+Each scenario sends the requests the SPA sends when its pages open: anonymous visitors (home, events, an event
+and its activities, news, resources), members (home, an event with their signups, profile, history,
+certificates), households signing up for the shared event, new families that register, confirm their email and
+sign in, and administrators who manage an event, its signups and news, read reports and logs, upload images and
+send email. The suite measures only the requests that carry the site's traffic or its heavy work; the rare
+account, authenticator, unsubscribe and blocked data flows are left to the integration tests.
+
+`PROFILE` is `smoke` (one or two iterations per scenario, to check the suite; no latency budgets), `load` (the
+expected peak for ten minutes, the default; every endpoint must keep the p95 budget of `k6/lib/catalog.js`),
+`spike` (signups open: signups and new families jump to ten times the peak for three minutes; the API must then
+meet the objective again in the `recovery` window) or `capacity`. `capacity` raises the people using the site at
+once from 1,000 to 10,000 in eight two-minute steps and reports the largest step whose API requests met the
+objective: p95 under 500 ms, p99 under 1.5 s and failures under 1%. Of those people, 70% browse anonymously, 25%
+as members and 5% sign up their household, one page every ten seconds; k6 replays their visits at the matching
+arrival rate with short pauses of its own, while new families and administrators keep a fixed pace. The first
+start also seeds the demo data, which downloads images from `picsum.photos`. Setup signs in the bootstrap
 administrator, registers administrators and members, takes over demo members through a password reset and
 creates the events the scenarios share, reading every code from Mailpit; its requests stay out of the results.
 k6 calls the API directly as its trusted proxy, sending a private `X-Forwarded-For` per simulated client and
 `X-Forwarded-Proto: https`, so nginx is not measured and the rate limits apply per client and account as in
-production. Scenarios stay within those limits; a `429` therefore points at a capacity limit.
+production. Scenarios stay within those limits; a `429` therefore points at a capacity limit. The API delivers
+to Mailpit without the provider pace (`SMTP_MAX_PER_MINUTE`), but the email guard still allows 1,000
+verification and reset emails per hour, which bounds new families and the account pools and only resets with a
+new process: run `down -v` between runs.
 
-`tests/performance/results/` receives `summary.md` (every endpoint with its p50, p95, p99, errors and
-the p95 budget of `k6/lib/catalog.js`, worst first, plus each step of `capacity`), `summary.json` and the k6
-dashboard in `report.html`. k6 exits with code 99 when an endpoint misses its budget or fails more than 1% of
-its requests, which `capacity` does once it goes past the capacity. Run `down -v` between runs: the API's
-automatic-email limiter (1,000 messages per hour) only resets with a new process.
+`tests/performance/results/` receives `summary.md`, also printed at the end of the run (each window of `spike`
+and `capacity` with its verdict and p95 by kind of endpoint, then every endpoint with its p50, p95, p99, errors
+and budget, worst first), `summary.json` and the k6 dashboard in `report.html`. k6 exits with code 99 when a
+catalogued endpoint is never requested, when a profile other than `capacity` sees an endpoint fail more than 1%
+of its requests, or when the gate of `load` or `spike` is missed.
 
 The containers reproduce the production VPS (4 vCPUs, 8 GB): the API and PostgreSQL share CPUs 0–3 with 4 GB
 and 3 GB, and k6 and Mailpit run on CPUs 4–11 so they take nothing from them. On another host, or one with

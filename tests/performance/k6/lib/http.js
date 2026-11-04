@@ -1,35 +1,17 @@
 import http from 'k6/http'
-import { check, sleep } from 'k6'
 import { Counter } from 'k6/metrics'
-import { API_URL, PROFILE } from './config.js'
-import { KINDS } from './catalog.js'
-import { currentUsers } from './steps.js'
+import { API_URL } from './config.js'
+import { KIND_OF } from './catalog.js'
+import { currentWindow, inRun } from './windows.js'
 
 const unsafeMethods = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+const ipRanges = { visitor: 1, account: 2, setup: 3, newcomer: 4 }
 const rateLimited = new Counter('rate_limited')
-const unexpected = new Counter('unexpected_responses')
-const warnings = {}
-const ipRanges = { visitor: 1, account: 2, setup: 3, lifecycle: 4 }
-
-const BATCH_SIZE = 16
+const reported = {}
 
 export function clientIp(kind, index) {
   const value = index % 65536
   return `10.${ipRanges[kind]}.${value >> 8}.${value & 255}`
-}
-
-export function think(scale = 1) {
-  const [min, max] = PROFILE.think
-  if (max > 0) {
-    sleep((min + Math.random() * (max - min)) * scale)
-  }
-}
-
-export function query(params = {}) {
-  const pairs = Object.entries(params)
-    .filter(([, value]) => value !== undefined && value !== null && value !== '')
-    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-  return pairs.length ? `?${pairs.join('&')}` : ''
 }
 
 export function body(res) {
@@ -41,37 +23,51 @@ export function body(res) {
 }
 
 export function parallel(calls) {
-  const responses = []
-  for (let start = 0; start < calls.length; start += BATCH_SIZE) {
-    const chunk = calls.slice(start, start + BATCH_SIZE)
-    const prepared = chunk.map(({ session, method, path, options }) =>
-      session.prepare(method, path, options),
-    )
-    const results = http.batch(prepared.map((item) => item.request))
-    results.forEach((res, index) => responses.push(prepared[index].settle(res)))
-  }
-  return responses
+  const prepared = calls.map(({ session, method, path, options }) =>
+    session.prepare(method, path, options),
+  )
+  return http
+    .batch(prepared.map(({ request }) => request))
+    .map((res, index) => prepared[index].settle(res))
 }
 
-function expiresAt(cookie) {
-  return typeof cookie.expires === 'string' ? Date.parse(cookie.expires) : cookie.expires || 0
+function url(path, route = {}, query = {}) {
+  const resolved = path.replace(/\{(\w+)\}/g, (_, key) => {
+    if (route[key] === undefined) {
+      throw new Error(`${path} needs a value for {${key}}`)
+    }
+    return encodeURIComponent(route[key])
+  })
+  const pairs = Object.entries(query)
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+  return `${API_URL}${resolved}${pairs.length ? `?${pairs.join('&')}` : ''}`
 }
 
 function tagsFor(name, actor) {
-  const tags = { name, actor, target: 'api', kind: KINDS[name] }
-  const users = currentUsers()
-  if (users) {
-    tags.users = users
+  const tags = { name, actor, target: 'api' }
+  const kind = KIND_OF[name]
+  if (kind) {
+    tags.kind = kind
+  } else if (inRun()) {
+    reportOnce(`uncatalogued ${name}`, `${name} has no budget in lib/catalog.js`)
+  }
+  const window = currentWindow()
+  if (window) {
+    tags.window = window
   }
   return tags
 }
 
-function warn(name, res) {
-  warnings[name] = (warnings[name] || 0) + 1
-  if (warnings[name] <= 3) {
-    const detail = typeof res.body === 'string' ? res.body.slice(0, 300) : ''
-    console.warn(`${name} answered ${res.status} ${res.error || ''} ${detail}`)
+function reportOnce(key, message) {
+  reported[key] = (reported[key] || 0) + 1
+  if (reported[key] <= 3) {
+    console.warn(message)
   }
+}
+
+function expiresAt(cookie) {
+  return typeof cookie.expires === 'string' ? Date.parse(cookie.expires) : cookie.expires || 0
 }
 
 export class Session {
@@ -81,10 +77,6 @@ export class Session {
     this.cookies = { ...cookies }
     this.csrf = csrf
     this.user = user
-  }
-
-  static restore(data) {
-    return new Session(data)
   }
 
   snapshot() {
@@ -101,25 +93,29 @@ export class Session {
     return this.user?.id
   }
 
+  name(method, path) {
+    return method === 'GET' && !this.user ? `${method} ${path} [anonymous]` : `${method} ${path}`
+  }
+
   prepare(method, path, options = {}) {
-    const { json, form, name, expect = [200], headers = {}, responseType = 'text' } = options
-    const requestHeaders = { 'X-Forwarded-For': this.ip, 'X-Forwarded-Proto': 'https', ...headers }
+    const { route, query, json, form, expect = [200], responseType = 'text' } = options
+    const headers = { 'X-Forwarded-For': this.ip, 'X-Forwarded-Proto': 'https' }
     let payload = form ?? null
     if (json !== undefined) {
       payload = JSON.stringify(json)
-      requestHeaders['Content-Type'] = 'application/json'
+      headers['Content-Type'] = 'application/json'
     }
     if (unsafeMethods.has(method) && options.csrf !== false) {
-      requestHeaders['X-CSRF-TOKEN'] = this.ensureCsrf()
+      headers['X-CSRF-TOKEN'] = this.csrf || this.refreshCsrf()
     }
-    const tags = tagsFor(name, this.actor)
+    const tags = tagsFor(this.name(method, path), this.actor)
     return {
       request: {
         method,
-        url: `${API_URL}${path}`,
+        url: url(path, route, query),
         body: payload,
         params: {
-          headers: requestHeaders,
+          headers,
           cookies: { ...this.cookies },
           tags,
           responseCallback: http.expectedStatuses(...expect),
@@ -133,14 +129,12 @@ export class Session {
 
   settle(res, tags, expect) {
     this.keepCookies(res)
-    const expected = expect.includes(res.status)
-    check(res, { 'expected status': () => expected }, tags)
     if (res.status === 429) {
       rateLimited.add(1, tags)
     }
-    if (!expected) {
-      unexpected.add(1, tags)
-      warn(tags.name, res)
+    if (!expect.includes(res.status)) {
+      const detail = typeof res.body === 'string' ? res.body.slice(0, 300) : ''
+      reportOnce(tags.name, `${tags.name} answered ${res.status} ${res.error || ''} ${detail}`)
     }
     return res
   }
@@ -170,13 +164,8 @@ export class Session {
     return this.request('DELETE', path, options)
   }
 
-  ensureCsrf() {
-    return this.csrf || this.refreshCsrf()
-  }
-
   refreshCsrf() {
-    const res = this.get('/api/auth/csrf', { name: 'GET /api/auth/csrf' })
-    this.csrf = body(res)?.token ?? null
+    this.csrf = body(this.get('/api/auth/csrf'))?.token ?? null
     return this.csrf
   }
 
@@ -191,11 +180,5 @@ export class Session {
         this.cookies[name] = cookie.value
       }
     }
-  }
-
-  forget() {
-    this.cookies = {}
-    this.csrf = null
-    this.user = null
   }
 }

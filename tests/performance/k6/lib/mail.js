@@ -5,8 +5,6 @@ import { MAILPIT_URL } from './config.js'
 export const LOGIN_CODE = /^\s*(\d{6})\s*$/m
 export const VERIFICATION_LINK = /\/verify-account#userId=([0-9a-f-]{36})&code=([^\s<>"')\]]+)/
 export const RESET_LINK = /\/reset-password#userId=([0-9a-f-]{36})&code=([^\s<>"')\]]+)/
-export const EMAIL_CHANGE_LINK = /\/confirm-email#userId=([0-9a-f-]{36})&code=([^\s<>"')\]]+)/
-export const UNSUBSCRIBE_LINK = /\/unsubscribe#token=([^\s<>"')\]]+)/
 
 const params = { tags: { name: 'mailpit', target: 'mailpit' } }
 

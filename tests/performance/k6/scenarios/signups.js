@@ -1,10 +1,20 @@
-import { body, query, think } from '../lib/http.js'
+import { think } from '../lib/profiles.js'
 import { nextAccount, sessionFor } from '../lib/pool.js'
-import { CATALOG, decisionsFor } from '../lib/data.js'
+import { decisionsFor, LOOKUPS } from '../lib/data.js'
+import { eventActivities, eventDetail, eventTerms, signupState } from '../lib/pages.js'
 
 const WITHDRAWAL_EVERY = 100
 
-export function signup(data) {
+function signUp(session, event, activityId, request) {
+  session.get('/api/activities/{activityId}/overlaps/{userId}', {
+    route: { activityId, userId: session.userId },
+  })
+  request()
+  signupState(session, event.id)
+  eventTerms(session, event)
+}
+
+export function signups(data) {
   const { account, round, iteration } = nextAccount(data.members)
   const session = sessionFor(account)
   const { rushEventId, consentId, activities } = data.fixtures
@@ -13,61 +23,46 @@ export function signup(data) {
   const shared = open[(round * 2 + 1) % open.length]
   const people = [session.userId, ...account.dependents]
 
-  session.get(`/api/events/${rushEventId}`, { name: 'GET /api/events/{eventId}' })
-  session.get(`/api/activities${query({ eventId: rushEventId, pageSize: 50 })}`, {
-    name: 'GET /api/activities',
-  })
-  const terms = body(
-    session.get(`/api/events/${rushEventId}/terms`, { name: 'GET /api/events/{eventId}/terms' }),
-  )
-  session.get('/api/activities/signup-roles', { name: 'GET /api/activities/signup-roles' })
-  session.get(`/api/activities/household-assignments/${rushEventId}`, {
-    name: 'GET /api/activities/household-assignments/{eventId}',
-  })
+  const event = eventDetail(session, rushEventId)
+  think()
+  const termsDecisions = decisionsFor(eventActivities(session, event).documents)
+  const participant = { activityRoleTypeId: LOOKUPS.roles.participant, termsDecisions }
   think()
 
-  const decisions = decisionsFor(terms.documents)
-  session.get(`/api/activities/${single}/overlaps/${session.userId}`, {
-    name: 'GET /api/activities/{activityId}/overlaps/{userId}',
-  })
-  session.patch(`/api/activities/${single}/${session.userId}/assign`, {
-    name: 'PATCH /api/activities/{activityId}/{userId}/assign',
-    json: { activityRoleTypeId: CATALOG.roles.participant, termsDecisions: decisions },
-  })
-  session.post(`/api/activities/${shared}/assign-household`, {
-    name: 'POST /api/activities/{activityId}/assign-household',
-    json: {
-      assignments: people.map((userId) => ({
-        userId,
-        activityRoleTypeId: CATALOG.roles.participant,
-        termsDecisions: decisions,
-      })),
-    },
-  })
-  session.get(`/api/me/assigned-activities${query({ eventId: rushEventId })}`, {
-    name: 'GET /api/me/assigned-activities',
-  })
+  signUp(session, event, single, () =>
+    session.patch('/api/activities/{activityId}/{userId}/assign', {
+      route: { activityId: single, userId: session.userId },
+      json: participant,
+    }),
+  )
+  think()
+
+  signUp(session, event, shared, () =>
+    session.post('/api/activities/{activityId}/assign-household', {
+      route: { activityId: shared },
+      json: { assignments: people.map((userId) => ({ userId, ...participant })) },
+    }),
+  )
   think()
 
   if (iteration % WITHDRAWAL_EVERY === 0) {
-    session.post(
-      `/api/events/${rushEventId}/terms/decisions/${session.userId}/${consentId}/withdraw`,
-      {
-        name: 'POST /api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/withdraw',
-        expect: [204],
-      },
-    )
-    think()
-  }
-
-  session.patch(`/api/activities/${single}/${session.userId}/unassign`, {
-    name: 'PATCH /api/activities/{activityId}/{userId}/unassign',
-    expect: [204],
-  })
-  for (const userId of people) {
-    session.patch(`/api/activities/${shared}/${userId}/unassign`, {
-      name: 'PATCH /api/activities/{activityId}/{userId}/unassign',
+    session.post('/api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/withdraw', {
+      route: { eventId: rushEventId, userId: session.userId, termsDocumentId: consentId },
       expect: [204],
     })
   }
+
+  for (const [activityId, userIds] of [
+    [single, [session.userId]],
+    [shared, people],
+  ]) {
+    for (const userId of userIds) {
+      session.patch('/api/activities/{activityId}/{userId}/unassign', {
+        route: { activityId, userId },
+        expect: [204],
+      })
+    }
+  }
+  signupState(session, rushEventId)
+  think()
 }

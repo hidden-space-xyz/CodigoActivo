@@ -14,7 +14,7 @@ export function nextAccount(pool) {
 
 export function sessionFor(account) {
   if (!sessions[account.id]) {
-    sessions[account.id] = Session.restore(account.session)
+    sessions[account.id] = new Session(account.session)
   }
   return sessions[account.id]
 }
