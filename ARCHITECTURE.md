@@ -287,7 +287,8 @@ records each decision as an `EventTermsAcceptance` about that person, which keep
 decisions taken and whether they decide their own consents, and administrators list the decisions of an event
 under `/api/events/{eventId}/terms/decisions`. A withdrawal (`WithdrawTermsConsent`) leaves its notice pending
 (`WithdrawalNoticePending`, kept out of the data history), which `SendConsentWithdrawalNotices` turns into an
-email to the legal contact. Who
+email to the legal contact; `AccountEraser` and `ParticipationEraser` tell it first the pending withdrawals and
+the consents given that they delete. Who
 decides, what each kind requires, withdrawals, versions and signatures are in
 [SECURITY.md](SECURITY.md#terms-documents-and-decisions).
 

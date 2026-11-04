@@ -304,6 +304,39 @@ Equipo de Código Activo</value>
   <data name="emails.consentWithdrawn.historyNoteMany" xml:space="preserve">
     <value>En la ficha de cada evento, en la administración de la web, las decisiones figuran como retiradas. Las aceptaciones anteriores, con su firma si la tenían, se conservan en el historial de cada decisión para poder demostrarlas.</value>
   </data>
+  <data name="emails.consentErased.subject" xml:space="preserve">
+    <value>Ya no consta un consentimiento</value>
+  </data>
+  <data name="emails.consentErased.subjectMany" xml:space="preserve">
+    <value>Ya no constan {0} consentimientos</value>
+  </data>
+  <data name="emails.consentErased.heading" xml:space="preserve">
+    <value>Consentimiento borrado</value>
+  </data>
+  <data name="emails.consentErased.headingMany" xml:space="preserve">
+    <value>Consentimientos borrados</value>
+  </data>
+  <data name="emails.consentErased.introText" xml:space="preserve">
+    <value>Al borrar una cuenta o un evento se ha borrado el consentimiento «{1}» de {0} para el evento «{2}».</value>
+  </data>
+  <data name="emails.consentErased.introHtml" xml:space="preserve">
+    <value>Al borrar una cuenta o un evento se ha borrado el consentimiento &lt;b&gt;«{1}»&lt;/b&gt; de &lt;b&gt;{0}&lt;/b&gt; para el evento &lt;b&gt;«{2}»&lt;/b&gt;.</value>
+  </data>
+  <data name="emails.consentErased.given" xml:space="preserve">
+    <value>Lo dio {0} el {1} h.</value>
+  </data>
+  <data name="emails.consentErased.action" xml:space="preserve">
+    <value>Ya no podéis consultar ese consentimiento, así que tampoco podéis seguir usando lo que cubría: quitad sus imágenes o su nombre de esta web y de los perfiles de la asociación y no los uséis en nuevas publicaciones.</value>
+  </data>
+  <data name="emails.consentErased.actionMany" xml:space="preserve">
+    <value>Ya no podéis consultar esos consentimientos, así que tampoco podéis seguir usando lo que cubrían: quitad las imágenes o los nombres de esas personas de esta web y de los perfiles de la asociación y no los uséis en nuevas publicaciones.</value>
+  </data>
+  <data name="emails.consentErased.blockedNote" xml:space="preserve">
+    <value>La decisión, con su firma si la tenía, queda guardada bloqueada y cifrada, como exige la ley: solo se consulta para entregarla a un juzgado, a la autoridad de protección de datos o ante una reclamación.</value>
+  </data>
+  <data name="emails.consentErased.blockedNoteMany" xml:space="preserve">
+    <value>Las decisiones, con su firma si la tenían, quedan guardadas bloqueadas y cifradas, como exige la ley: solo se consultan para entregarlas a un juzgado, a la autoridad de protección de datos o ante una reclamación.</value>
+  </data>
   <data name="emails.comingOfAge.subject" xml:space="preserve">
     <value>Un menor a tu cargo va a cumplir 18 años</value>
   </data>

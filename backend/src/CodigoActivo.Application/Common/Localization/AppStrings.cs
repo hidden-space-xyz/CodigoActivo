@@ -243,6 +243,95 @@ public static class AppStrings
         Get("emails.consentWithdrawn.historyNoteMany");
 
     /// <summary>
+    /// Gets the subject of the notice of an erased consent.
+    /// </summary>
+    public static string EmailsConsentErasedSubject => Get("emails.consentErased.subject");
+
+    /// <summary>
+    /// Gets the heading of the notice of an erased consent.
+    /// </summary>
+    public static string EmailsConsentErasedHeading => Get("emails.consentErased.heading");
+
+    /// <summary>
+    /// Gets the heading of the notice of several erased consents.
+    /// </summary>
+    public static string EmailsConsentErasedHeadingMany => Get("emails.consentErased.headingMany");
+
+    /// <summary>
+    /// Gets what the notice of an erased consent tells the association to do from now on.
+    /// </summary>
+    public static string EmailsConsentErasedAction => Get("emails.consentErased.action");
+
+    /// <summary>
+    /// Gets what the notice of several erased consents tells the association to do from now on.
+    /// </summary>
+    public static string EmailsConsentErasedActionMany => Get("emails.consentErased.actionMany");
+
+    /// <summary>
+    /// Gets the note of the notice of an erased consent on where the decision stays blocked.
+    /// </summary>
+    public static string EmailsConsentErasedBlockedNote => Get("emails.consentErased.blockedNote");
+
+    /// <summary>
+    /// Gets the note of the notice of several erased consents on where the decisions stay blocked.
+    /// </summary>
+    public static string EmailsConsentErasedBlockedNoteMany =>
+        Get("emails.consentErased.blockedNoteMany");
+
+    /// <summary>
+    /// Formats the subject of the notice of several erased consents.
+    /// </summary>
+    /// <param name="count">Number of erased consents.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsConsentErasedSubjectMany(int count)
+    {
+        return Format("emails.consentErased.subjectMany", count);
+    }
+
+    /// <summary>
+    /// Formats the plain-text introduction of the notice of an erased consent.
+    /// </summary>
+    /// <param name="personName">Name of the person.</param>
+    /// <param name="documentName">Name of the document.</param>
+    /// <param name="eventTitle">Title of the event.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsConsentErasedIntroText(
+        string personName,
+        string documentName,
+        string eventTitle
+    )
+    {
+        return Format("emails.consentErased.introText", personName, documentName, eventTitle);
+    }
+
+    /// <summary>
+    /// Formats the HTML introduction of the notice of an erased consent.
+    /// </summary>
+    /// <param name="personName">Name of the person, already HTML-encoded.</param>
+    /// <param name="documentName">Name of the document, already HTML-encoded.</param>
+    /// <param name="eventTitle">Title of the event, already HTML-encoded.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsConsentErasedIntroHtml(
+        string personName,
+        string documentName,
+        string eventTitle
+    )
+    {
+        return Format("emails.consentErased.introHtml", personName, documentName, eventTitle);
+    }
+
+    /// <summary>
+    /// Formats who gave an erased consent and when, for its notice.
+    /// </summary>
+    /// <param name="decidedByName">Name of whoever gave it.</param>
+    /// <param name="givenAt">When it was given, already formatted.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsConsentErasedGiven(string decidedByName, string givenAt)
+    {
+        return Format("emails.consentErased.given", decidedByName, givenAt);
+    }
+
+    /// <summary>
     /// Gets the label of the activity row in the details block of an email.
     /// </summary>
     public static string EmailsDetailsActivityLabel => Get("emails.details.activityLabel");

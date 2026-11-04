@@ -9,7 +9,8 @@ namespace CodigoActivo.Application.Activities.Erasure;
 /// a rating removed, or a signup cancelled) in one transaction that first locks what it takes away
 /// and tracks it, so every deleted signup, rating and terms decision leaves its data history,
 /// which the law requires to keep blocked (LOPDGDD article 32). A withdrawn consent it deletes
-/// before the association's legal contact was told about it is told first.
+/// before the association's legal contact was told about it is told first, and so is every
+/// consent given it deletes.
 /// </summary>
 /// <param name="store">Storage steps of the removal.</param>
 /// <param name="withdrawalNotices">Notifier that tells the legal contact about withdrawals.</param>
@@ -37,6 +38,10 @@ public sealed class ParticipationEraser(
                 await store.LoadAsync(deletion, attempt);
                 await withdrawalNotices.NotifyAsync(
                     await store.ListWithdrawalNoticesPendingAsync(deletion, attempt),
+                    attempt
+                );
+                await withdrawalNotices.NotifyErasedAsync(
+                    await store.ListAcceptedDecisionsAsync(deletion, attempt),
                     attempt
                 );
                 await uow.SaveChangesAsync(attempt);

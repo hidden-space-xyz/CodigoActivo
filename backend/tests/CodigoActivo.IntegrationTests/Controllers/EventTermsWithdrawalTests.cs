@@ -210,6 +210,59 @@ public sealed class EventTermsWithdrawalTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task DeleteAStartedEventTellsTheLegalContactTheConsentsGivenItErases()
+    {
+        await SeedAsync();
+        var admin = await LoginAsAdminAsync();
+
+        using var response = await admin.DeleteWithCsrfAsync($"/api/events/{eventId}", Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var notice = Factory.EmailSender.Sent.Should().ContainSingle().Subject;
+        notice.ToAddress.Should().Be("contacto@codigoactivo.test");
+        notice.Subject.Should().Be("Ya no consta un consentimiento");
+        notice
+            .TextBody.Should()
+            .Contain($"«Imagen {imageId:N}» de Mateo Miembro para el evento «Feria»")
+            .And.Contain("Lo dio Marta Miembro el 01/01/2026, 00:00 h.")
+            .And.NotContain($"Normas {conditionsId:N}");
+    }
+
+    [Fact]
+    public async Task DeleteThePersonWithAConsentGivenTellsTheLegalContact()
+    {
+        await SeedAsync();
+        var member = await LoginAsMemberAsync();
+
+        using var response = await member.DeleteWithCsrfAsync(
+            $"/api/users/{TestSeedData.Users.MemberChildId}",
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var notice = Factory.EmailSender.Sent.Should().ContainSingle().Subject;
+        notice.Subject.Should().Be("Ya no consta un consentimiento");
+        notice
+            .TextBody.Should()
+            .Contain($"«Imagen {imageId:N}» de Mateo Miembro para el evento «Feria»");
+    }
+
+    [Fact]
+    public async Task DeleteAnEventThatHasNotStartedTellsNothingAboutItsConsents()
+    {
+        await SeedAsync();
+        Factory.Clock.Today = new DateOnly(2026, 6, 30);
+        var admin = await LoginAsAdminAsync();
+
+        using var response = await admin.DeleteWithCsrfAsync($"/api/events/{eventId}", Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Factory
+            .EmailSender.Sent.Should()
+            .BeEmpty("no image of an event that has not started exists");
+    }
+
+    [Fact]
     public async Task WithdrawAsAdministratorRecordsItForTheGuardian()
     {
         await SeedAsync();

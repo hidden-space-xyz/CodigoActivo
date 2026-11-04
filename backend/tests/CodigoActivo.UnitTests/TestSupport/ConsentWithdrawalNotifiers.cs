@@ -13,7 +13,8 @@ public static class ConsentWithdrawalNotifiers
             new FakeQueryExecutor(),
             new LegalEntityOptions(),
             new RecordingEmailSender(),
-            Substitute.For<IConsentWithdrawalEmailComposer>()
+            Substitute.For<IConsentWithdrawalEmailComposer>(),
+            new TestClock()
         );
     }
 }

@@ -65,4 +65,15 @@ public interface IAccountErasureStore
         UserId accountId,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// Loads, once they are locked, the accepted terms decisions the erasure deletes.
+    /// </summary>
+    /// <param name="accountId">Identifier of the account.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the decisions.</returns>
+    public Task<IReadOnlyList<EventTermsAcceptance>> ListAcceptedDecisionsAsync(
+        UserId accountId,
+        CancellationToken ct = default
+    );
 }

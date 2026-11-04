@@ -145,6 +145,21 @@ public sealed class AccountErasureStore(CodigoActivoDbContext context) : IAccoun
             .ToListAsync(ct);
     }
 
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<EventTermsAcceptance>> ListAcceptedDecisionsAsync(
+        UserId accountId,
+        CancellationToken ct = default
+    )
+    {
+        var household = await HouseholdAsync(accountId, ct);
+
+        return await context
+            .EventTermsAcceptances.Where(t =>
+                t.Accepted && (household.Contains(t.UserId) || household.Contains(t.DecidedById))
+            )
+            .ToListAsync(ct);
+    }
+
     private Task<List<UserId>> HouseholdAsync(UserId accountId, CancellationToken ct)
     {
         return context

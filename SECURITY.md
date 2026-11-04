@@ -455,6 +455,13 @@ code cite only these laws.
   and the notice keeps waiting) so what the consent covered stops being used and is removed from the site and
   the social profiles. Several withdrawals go in one email, a withdrawal accepted again before the notice needs
   none, and a failure only delays the notice: it never undoes the withdrawal nor loses the notice.
+- Erasing an account (by its holder, a guardian or an administrator, or on coming of age) or an event deletes
+  its terms decisions, which then stay only in the [data history](#data-history), blocked: nobody may consult
+  them to tell whether a published image or name is still covered. So the erasure, in its own transaction and
+  before deleting them, also emails the legal contact every consent given it deletes about an event that has
+  already started (`ConsentWithdrawalNotifier.NotifyErasedAsync`, at most 50 per email, of the same kind as
+  the withdrawal notice), so what they covered stops being used as well. Consents about an event still to come
+  are left out, since nothing of it can have been published.
 - A terms document is versioned (`terms_documents.version`), so the text each decision was taken on can always be
   shown (article 7.1 GDPR): every rewrite that changes its name, text, kind or signature keeps the replaced version
   in `terms_document_versions` and numbers the new one, even when nobody decided yet, so a decision recorded while

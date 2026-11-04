@@ -120,4 +120,23 @@ public sealed class ParticipationErasureStore(CodigoActivoDbContext context)
             .EventTermsAcceptances.Where(t => t.EventId == eventId && t.WithdrawalNoticePending)
             .ToListAsync(ct);
     }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<EventTermsAcceptance>> ListAcceptedDecisionsAsync(
+        ParticipationDeletion deletion,
+        CancellationToken ct = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(deletion);
+
+        if (deletion.Origin is not ParticipationDeletionOrigin.EventDeleted)
+        {
+            return [];
+        }
+
+        var eventId = deletion.EventId;
+        return await context
+            .EventTermsAcceptances.Where(t => t.EventId == eventId && t.Accepted)
+            .ToListAsync(ct);
+    }
 }

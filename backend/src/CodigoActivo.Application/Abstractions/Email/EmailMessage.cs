@@ -47,7 +47,8 @@ public enum EmailKind
     ComingOfAgeNotice,
 
     /// <summary>
-    /// Selects the notice that tells the association a consent was withdrawn.
+    /// Selects the notices that tell the association a consent was withdrawn, or erased with an
+    /// account or an event.
     /// </summary>
     ConsentWithdrawalNotice,
 

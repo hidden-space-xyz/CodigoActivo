@@ -116,7 +116,8 @@ public sealed class SendConsentWithdrawalNoticesCommandHandlerTests
                 new ConsentWithdrawalEmailComposer(
                     new ApplicationOptions { BaseUrl = "https://app.test/" },
                     new TestClock()
-                )
+                ),
+                new TestClock()
             )
         );
         var result = await handler.HandleAsync(

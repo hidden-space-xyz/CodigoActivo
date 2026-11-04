@@ -40,4 +40,16 @@ public interface IParticipationErasureStore
         ParticipationDeletion deletion,
         CancellationToken ct = default
     );
+
+    /// <summary>
+    /// Loads, once they are locked, the accepted terms decisions the removal takes away; only an
+    /// event takes decisions away.
+    /// </summary>
+    /// <param name="deletion">What is removed.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the decisions.</returns>
+    public Task<IReadOnlyList<EventTermsAcceptance>> ListAcceptedDecisionsAsync(
+        ParticipationDeletion deletion,
+        CancellationToken ct = default
+    );
 }
