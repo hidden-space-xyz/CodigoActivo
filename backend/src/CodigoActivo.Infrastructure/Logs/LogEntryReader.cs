@@ -377,7 +377,7 @@ public sealed class LogEntryReader(CodigoActivoReadDbContext context, IQueryExec
                 .Select(row => new NamedEntity(row.Id, row.Title)),
             AuditEntityType.StoredFile => context
                 .Files.Where(row => ids.Contains(row.Id))
-                .Select(row => new NamedEntity(row.Id, row.Name)),
+                .Select(row => new NamedEntity(row.Id, row.Id.ToString())),
             AuditEntityType.TermsDocument => context
                 .TermsDocuments.Where(row => ids.Contains(row.Id))
                 .Select(row => new NamedEntity(row.Id, row.Name)),

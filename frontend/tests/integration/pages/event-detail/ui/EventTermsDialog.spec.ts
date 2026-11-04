@@ -301,6 +301,10 @@ describe('EventTermsDialog household sections', () => {
     ],
   }
 
+  beforeEach(() => {
+    resetFakePads()
+  })
+
   it('names each person and tells who decides each document of a minor', async () => {
     await renderDialog([], [selfSection([REQUIRED_DOC]), teenager])
 
@@ -338,6 +342,8 @@ describe('EventTermsDialog household sections', () => {
 
     await click(termsCheckbox(document.body, REQUIRED_DOC.id, 'child-1'))
     await click(termsCheckbox(document.body, IMAGE_DOC.id, 'child-1'))
+    fakePads[0]?.draw()
+    await flushPromises()
     await click(findButton(t('pages.eventDetail.terms.confirm')))
 
     expect(wrapper.emitted('confirm')).toEqual([
@@ -346,10 +352,31 @@ describe('EventTermsDialog household sections', () => {
           'user-1': [{ termsDocumentId: REQUIRED_DOC.id, version: 1, accepted: true }],
           'child-1': [
             { termsDocumentId: REQUIRED_DOC.id, version: 1, accepted: true },
-            { termsDocumentId: IMAGE_DOC.id, version: 1, accepted: true },
+            {
+              termsDocumentId: IMAGE_DOC.id,
+              version: 1,
+              accepted: true,
+              signature: FAKE_SIGNATURE,
+            },
           ],
         },
       ],
     ])
+  })
+
+  it('asks the minor to sign each consent they accept before confirming', async () => {
+    const { wrapper } = await renderDialog([], [teenager])
+    const rows = [...document.body.querySelectorAll('.terms-dialog__row')]
+    expect(textOf(rows[1] ?? null)).toContain(t('pages.eventDetail.terms.signature.tag'))
+    expect(textOf(rows[0] ?? null)).not.toContain(t('pages.eventDetail.terms.signature.tag'))
+
+    await click(termsCheckbox(document.body, REQUIRED_DOC.id, 'child-1'))
+    await click(termsCheckbox(document.body, IMAGE_DOC.id, 'child-1'))
+    await click(findButton(t('pages.eventDetail.terms.confirm')))
+
+    expect(wrapper.emitted('confirm')).toBeUndefined()
+    expect(textOf(document.body.querySelector('.terms-dialog__warning'))).toBe(
+      t('pages.eventDetail.terms.signature.missing'),
+    )
   })
 })

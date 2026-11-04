@@ -404,7 +404,7 @@ describe('RichTextEditor', () => {
       const image = lastEmitted(wrapper).content?.find((node) => node.type === 'image')
       expect(image?.attrs).toMatchObject({
         src: `/api/files/${FILE_ID}/content`,
-        alt: 'poster.png',
+        alt: '',
       })
       expect(wrapper.find('.rt__error').exists()).toBe(false)
     })

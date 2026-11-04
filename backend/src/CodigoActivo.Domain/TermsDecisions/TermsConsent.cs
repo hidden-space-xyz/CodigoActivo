@@ -12,7 +12,9 @@ namespace CodigoActivo.Domain.TermsDecisions;
 /// guardian before. Decisions about documents the event does not link are ignored, a declined
 /// document can be accepted later, and declining a required document is not recorded, so it can
 /// still be accepted to sign up; a consent is never required. Accepting a document that asks for a
-/// signature needs one drawn; other documents keep none.
+/// signature needs one drawn, and so does accepting a consent that a dependent decides from the age
+/// of 14, so the acceptance taken on their guardian's screen carries their own signature; other
+/// documents keep none.
 /// </summary>
 public static class TermsConsent
 {
@@ -35,7 +37,7 @@ public static class TermsConsent
     /// The decisions to record and whether a required document is still not accepted, or
     /// <see cref="DomainErrorCode.EventTermsSignatureRequired"/> or
     /// <see cref="DomainErrorCode.EventTermsSignatureInvalid"/> when a document that asks for a
-    /// signature is accepted without a valid one, or
+    /// signature, or a consent a dependent decides, is accepted without a valid one, or
     /// <see cref="DomainErrorCode.EventTermsDocumentChanged"/> when a decision names a version of its
     /// document that is no longer current.
     /// </returns>
@@ -78,7 +80,13 @@ public static class TermsConsent
             return Error.Conflict(DomainErrorCode.EventTermsDocumentChanged);
         }
 
-        var signatures = Signatures(linked, signedDocumentIds, acceptanceByDocument);
+        var signatures = Signatures(
+            linked,
+            person.ParentId is not null && person.GivesOwnConsent(today)
+                ? [.. signedDocumentIds, .. consentDocumentIds]
+                : signedDocumentIds,
+            acceptanceByDocument
+        );
         if (signatures.IsFailure)
         {
             return signatures.Error!;

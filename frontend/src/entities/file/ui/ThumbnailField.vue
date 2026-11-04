@@ -2,7 +2,6 @@
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { getThumbnailNameRequest } from '../api/requests'
 import { fileContentUrl } from '@/shared/api'
 import { IMAGE_UPLOAD_ACCEPT, MAX_IMAGE_UPLOAD_BYTES } from '@/shared/config'
 import { formatFileSize } from '@/shared/lib/number'
@@ -45,12 +44,7 @@ function revokeObjectUrl(): void {
 function showExisting(id: string): void {
   revokeObjectUrl()
   previewUrl.value = fileContentUrl(id)
-  fileName.value = ''
-  void getThumbnailNameRequest(id)
-    .then((name) => {
-      fileName.value = name
-    })
-    .catch(() => undefined)
+  fileName.value = id
 }
 
 watch(

@@ -268,7 +268,6 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             new
             {
                 Id = id,
-                Name = "thumb",
                 Extension = "png",
                 UploadedAt = At,
                 UploadedBy = TestSeedData.Users.AdminId,

@@ -32,13 +32,12 @@ internal static class FileTestData
         return new(new byte[32], writable: false);
     }
 
-    public static StoredFile NewFile(string name = "photo.png", string extension = "png")
+    public static StoredFile NewFile(string extension = "png")
     {
         return Persisted.As<StoredFile>(
             new
             {
                 Id = Guid.NewGuid(),
-                Name = name,
                 Extension = extension,
                 UploadedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
                 UploadedBy = Guid.NewGuid(),
@@ -46,12 +45,11 @@ internal static class FileTestData
         );
     }
 
-    public static FileRow NewFileRow(string name = "photo.png", string extension = "png")
+    public static FileRow NewFileRow(string extension = "png")
     {
         return new()
         {
             Id = Guid.NewGuid(),
-            Name = name,
             Extension = extension,
             UploadedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
         };

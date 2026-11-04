@@ -13,6 +13,8 @@ import type { ResourceResponse } from '@contract/resourceResponse'
 import type { TermsDecisionRequest } from '@contract/termsDecisionRequest'
 import type { TermsDocumentKind } from '@contract/termsDocumentKind'
 import type { TermsDocumentResponse } from '@contract/termsDocumentResponse'
+import type { UpdateActivityRequest } from '@contract/updateActivityRequest'
+import type { UpdateEventRequest } from '@contract/updateEventRequest'
 
 import { dayFromToday, instantOn } from '../data/time'
 import { uniqueTitle } from '../data/unique'
@@ -215,21 +217,85 @@ export class ContentSeeder {
     return this.admin.post(`/api/activities/${event.id}`, request)
   }
 
-  /** Signs `userId` up for an activity as an administrator, who may do it in any window. */
+  /**
+   * Signs `userId` (the signed-in user of `api` or one of their dependents) up for an activity that
+   * still takes signups, accepting every terms document as the SPA does, and then decides the
+   * signup as an administrator. An administrator never signs anyone else up: to reach an activity
+   * that has started or an event that has ended, sign up first and then `reschedule` or
+   * `moveToPast`.
+   */
   async enrol(
+    api: ApiClient,
     activity: ActivityResponse,
     userId: string,
     role: RoleName = 'participant',
     status: SignupStatusName = 'confirmed',
   ): Promise<void> {
-    const terms = await this.admin.get<EventTermsStateResponse>(
-      `/api/events/${activity.eventId}/terms`,
-    )
-    await this.admin.patch(`/api/activities/${activity.id}/${userId}/assign`, {
+    const terms = await api.get<EventTermsStateResponse>(`/api/events/${activity.eventId}/terms`)
+    await api.patch(`/api/activities/${activity.id}/${userId}/assign`, {
       activityRoleTypeId: CATALOG.roles[role],
       termsDecisions: acceptAll(terms),
     })
     if (status !== 'requested') await this.decide(activity, userId, status)
+  }
+
+  /** Moves an activity to `startsAt`–`endsAt` as an administrator, keeping its signups. */
+  reschedule(activity: ActivityResponse, startsAt: Date, endsAt: Date): Promise<ActivityResponse> {
+    const request: UpdateActivityRequest = {
+      title: activity.title,
+      description: activity.description,
+      location: activity.location,
+      activityModalityTypeId: activity.modalityId,
+      activityStartsAt: startsAt.toISOString(),
+      activityEndsAt: endsAt.toISOString(),
+      thumbnailId: activity.thumbnailId,
+      roleCapacities: activity.roleCapacities.map(({ activityRoleTypeId, desiredCount }) => ({
+        activityRoleTypeId,
+        desiredCount,
+      })),
+    }
+    return this.admin.put(`/api/activities/${activity.id}`, request)
+  }
+
+  /**
+   * Moves an event and its `activities` as an administrator so that it starts `daysAgo` days ago,
+   * with its signup closed, keeping their signups and the time of each activity. The event first
+   * spans both its old and its new days, so no activity falls outside it meanwhile.
+   */
+  async moveToPast(
+    event: EventResponse,
+    activities: readonly ActivityResponse[],
+    daysAgo: number,
+  ): Promise<EventResponse> {
+    const eventStartsAt = dayFromToday(-daysAgo)
+    const eventEndsAt = dayFromToday(daysBetween(event.eventStartsAt, event.eventEndsAt) - daysAgo)
+    const shift = daysBetween(eventStartsAt, event.eventStartsAt) * DAY_MS
+    const update = (endsAt: string): Promise<EventResponse> => {
+      const request: UpdateEventRequest = {
+        title: event.title,
+        subtitle: event.subtitle,
+        description: event.description,
+        eventStartsAt,
+        eventEndsAt: endsAt,
+        ...signupWindow('closed', eventStartsAt, eventEndsAt),
+        thumbnailId: event.thumbnailId,
+        categoryTypeIds: event.categories.map((category) => category.categoryTypeId),
+        termsDocuments: event.termsDocuments.map(({ termsDocumentId, required }) => ({
+          termsDocumentId,
+          required,
+        })),
+      }
+      return this.admin.put(`/api/events/${event.id}`, request)
+    }
+    await update(event.eventEndsAt)
+    for (const activity of activities) {
+      await this.reschedule(
+        activity,
+        new Date(Date.parse(activity.activityStartsAt) - shift),
+        new Date(Date.parse(activity.activityEndsAt) - shift),
+      )
+    }
+    return update(eventEndsAt)
   }
 
   /** Confirms or denies the signup of `userId`. */

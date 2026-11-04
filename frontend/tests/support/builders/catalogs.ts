@@ -1,6 +1,5 @@
 import type {
   EventCategoryTypeResponse,
-  FileResponse,
   TermsDocumentResponse,
 } from '@/shared/api/generated/models'
 
@@ -24,17 +23,6 @@ export function buildTermsDocument(
     requiresSignature: false,
     kind: 'Conditions',
     version: 1,
-    ...overrides,
-  }
-}
-
-/** Stored file metadata as `GET /api/files/:fileId` returns it. */
-export function buildFileResponse(overrides: Partial<FileResponse> = {}): FileResponse {
-  return {
-    id: 'file-1',
-    name: 'cover',
-    extension: '.png',
-    uploadedAt: '2026-01-01T10:00:00Z',
     ...overrides,
   }
 }

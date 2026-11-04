@@ -268,9 +268,9 @@ it, never from their input. `GetAccountQuery` is the one query that reads the ca
 email verification and two-factor login completion answer before the session exists. `ActingUserPolicy` lets
 the signed-in user act for themselves or one of their dependents, and an administrator for anyone, reading the
 guardianship from the read side so commands and queries share it, and answers anything else with
-`ActingForAnotherUserForbidden` (403 `AccessDenied` on the wire); signing up or withdrawing a person, checking
-their agenda, withdrawing a consent and deleting a user check it. Personal data is narrower: updating a user
-and adding a dependent accept only the holder or their guardian, administrators included
+`ActingForAnotherUserForbidden` (403 `AccessDenied` on the wire); withdrawing a person, checking their agenda,
+withdrawing a consent and deleting a user check it. Personal data and signups are narrower: updating a user,
+adding a dependent and signing a person up accept only the holder or their guardian, administrators included
 (`EnsureMayManagePersonalDataAsync`), and changing a password only the holder. Signing up a household is the
 exception: it only takes the signed-in user and their own dependents (`Household.Includes`), administrators
 included, and answers anyone else with `ActivityHouseholdMemberNotAllowed`. The `[AllowOnlySelf]` and

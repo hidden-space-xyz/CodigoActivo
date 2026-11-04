@@ -530,11 +530,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("text")
                         .HasColumnName("extension");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("name");
-
                     b.Property<DateTimeOffset>("UploadedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("uploaded_at");

@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import { uploadFileRequest } from '@/entities/file'
-import { getThumbnailNameRequest } from '@/entities/file/api/requests'
-import { ApiError } from '@/shared/api'
 
 import { apiError, http, HttpResponse, server, TEST_CSRF_TOKEN } from '../../../../support/server'
 import { readMultipartFile } from '../../../../support/multipart'
@@ -54,30 +52,6 @@ describe('file requests', () => {
         status: 413,
         code: 'FileUploadTooLarge',
       })
-    })
-  })
-
-  describe('getThumbnailNameRequest', () => {
-    it('returns the stored name, which already carries the extension', async () => {
-      server.use(
-        http.get('/api/files/file-1', () =>
-          HttpResponse.json({ name: 'poster.png', extension: 'png' }),
-        ),
-      )
-
-      await expect(getThumbnailNameRequest('file-1')).resolves.toBe('poster.png')
-    })
-
-    it('returns an empty name when the file no longer exists', async () => {
-      server.use(http.get('/api/files/gone', () => apiError(404, 'FileNotFound')))
-
-      await expect(getThumbnailNameRequest('gone')).resolves.toBe('')
-    })
-
-    it('rethrows other errors', async () => {
-      server.use(http.get('/api/files/broken', () => apiError(500)))
-
-      await expect(getThumbnailNameRequest('broken')).rejects.toBeInstanceOf(ApiError)
     })
   })
 })

@@ -18,12 +18,13 @@ test.describe('diplomas', () => {
   }) => {
     const actor = await accounts.actor({ label: 'diplomas', minors: 1 })
     const minor = firstDependent(actor.account)
-    const ended = await seed.event({ startsIn: -10 })
-    const activity = await seed.activity(ended)
-    await seed.enrol(activity, actor.account.id)
-    await seed.enrol(activity, minor.id)
+    const signedUp = await seed.event()
+    const activity = await seed.activity(signedUp)
+    await seed.enrol(actor.api, activity, actor.account.id)
+    await seed.enrol(actor.api, activity, minor.id)
+    const ended = await seed.moveToPast(signedUp, [activity], 10)
     const upcoming = await seed.event()
-    await seed.enrol(await seed.activity(upcoming), actor.account.id)
+    await seed.enrol(actor.api, await seed.activity(upcoming), actor.account.id)
     const guardianName = `${actor.account.firstName} ${actor.account.lastName}`
     const minorName = `${minor.firstName} ${minor.lastName}`
     const issued = await certificatesFor(actor.api, ended.id)

@@ -96,7 +96,7 @@ async function onFileChange(event: Event): Promise<void> {
   try {
     const fileId = await upload(file)
     const url = fileContentUrl(fileId)
-    if (url) editor.value.chain().focus().setImage({ src: url, alt: file.name }).run()
+    if (url) editor.value.chain().focus().setImage({ src: url, alt: '' }).run()
   } catch {
     uploadError.value = t('common.imageUploadFailed')
   } finally {

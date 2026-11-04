@@ -4,6 +4,7 @@ import type { EventTermsDocumentState, EventTermsPerson } from '@/entities/event
 import {
   asksForSignature,
   draftKey,
+  needsSignature,
   pendingDocuments,
   readTermsDecisions,
   termsSections,
@@ -126,15 +127,42 @@ describe('termsSections', () => {
   })
 })
 
+describe('needsSignature', () => {
+  it('is true for a document that asks for a signature and for whatever a minor decides', () => {
+    const consent = terms('consent', { consent: true })
+
+    expect(
+      needsSignature({ document: terms('signed', { requiresSignature: true }), decider: 'user' }),
+    ).toBe(true)
+    expect(needsSignature({ document: consent, decider: 'person' })).toBe(true)
+    expect(needsSignature({ document: consent, decider: 'user' })).toBe(false)
+  })
+})
+
 describe('asksForSignature', () => {
   it('is true only for a document that asks for a signature and is checked for that person', () => {
-    const signed = terms('signed', { requiresSignature: true })
-    const plain = terms('plain')
+    const signed = {
+      document: terms('signed', { requiresSignature: true }),
+      decider: 'user',
+    } as const
+    const plain = { document: terms('plain'), decider: 'user' } as const
     const checked = { [draftKey('ada', 'signed')]: true, [draftKey('ada', 'plain')]: true }
 
     expect(asksForSignature('ada', signed, { checked, signatures: {} })).toBe(true)
     expect(asksForSignature('leo', signed, { checked, signatures: {} })).toBe(false)
     expect(asksForSignature('ada', plain, { checked, signatures: {} })).toBe(false)
+  })
+
+  it('is true for a consent a minor decides once it is checked', () => {
+    const consent = { document: terms('consent', { consent: true }), decider: 'person' } as const
+
+    expect(
+      asksForSignature('leo', consent, {
+        checked: { [draftKey('leo', 'consent')]: true },
+        signatures: {},
+      }),
+    ).toBe(true)
+    expect(asksForSignature('leo', consent, { checked: {}, signatures: {} })).toBe(false)
   })
 })
 
@@ -159,6 +187,31 @@ describe('readTermsDecisions', () => {
     })
 
     expect(reading).toEqual({ missingRequired: false, missingSignature: true, decisions: null })
+  })
+
+  it('reports a consent a minor accepts without their signature and sends it once drawn', () => {
+    const consent = terms('consent', { consent: true })
+    const minor: TermsDialogSection = {
+      personId: 'leo',
+      name: 'leo',
+      self: false,
+      items: [{ document: consent, decider: 'person' }],
+    }
+    const checked = { [draftKey('leo', 'consent')]: true }
+
+    expect(readTermsDecisions([minor], { checked, signatures: {} })).toEqual({
+      missingRequired: false,
+      missingSignature: true,
+      decisions: null,
+    })
+    expect(
+      readTermsDecisions([minor], {
+        checked,
+        signatures: { [draftKey('leo', 'consent')]: SIGNATURE },
+      }).decisions,
+    ).toEqual({
+      leo: [{ termsDocumentId: 'consent', version: 1, accepted: true, signature: SIGNATURE }],
+    })
   })
 
   it('returns the decisions of each person, with a signature only where one was asked for', () => {

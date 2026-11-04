@@ -67,7 +67,6 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
                 new
                 {
                     Id = ThumbId,
-                    Name = "thumb",
                     Extension = "png",
                     UploadedAt = Fixed,
                     UploadedBy = AuthorId,
@@ -193,7 +192,6 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
             new
             {
                 Id = Guid.NewGuid(),
-                Name = "thumb",
                 Extension = "png",
                 UploadedAt = Fixed,
                 UploadedBy = AuthorId,

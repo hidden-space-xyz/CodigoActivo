@@ -465,7 +465,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    name = table.Column<string>(type: "text", nullable: false),
                     extension = table.Column<string>(type: "text", nullable: false),
                     uploaded_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     uploaded_by = table.Column<Guid>(type: "uuid", nullable: false)

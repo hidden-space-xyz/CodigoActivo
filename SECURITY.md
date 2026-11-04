@@ -39,9 +39,9 @@ authentication are not supported.
   authorization policy).
 - Authorization is a boolean administrator flag, not a role system. `[AllowOnlyAdmin]` protects
   administration endpoints; `[AllowOnlySelf]` accepts the target user, that user's guardian or an
-  administrator, except on `PUT /api/users/{id}` and `POST /api/users/{id}/children`
-  (`AdministratorsAllowed = false`): personal data, consents and dependents change only through their
-  holder or guardian, never an administrator. Catalog values
+  administrator, except on `PUT /api/users/{id}`, `POST /api/users/{id}/children` and
+  `PATCH /api/activities/{activityId}/{userId}/assign` (`AdministratorsAllowed = false`): personal data,
+  consents, dependents and signups change only through their holder or guardian, never an administrator. Catalog values
   such as `UserType` are not authorization roles. Activity leadership grants one read, decided on every
   request from the session user's own signups: `GET /api/events/{eventId}/leader-roster` returns only
   the event's activities that have not ended and in which the caller holds a confirmed leader signup,
@@ -426,17 +426,19 @@ code cite only these laws.
   person signed up, keyed by event, person and document, with who took them (`event_terms_acceptances.user_id`
   and `decided_by_id`): an adult decides for themselves; for a dependent, the guardian decides the conditions
   and, before the age of 14, the consents, and from the age of 14 the dependent decides their own consents
-  (article 7 LOPDGDD, article 3.1 LO 1/1982) on the guardian's screen; `TermsConsent.DeciderOf` names the
-  decider from the birth date, never from the request. A consent is never required: an event that links one
+  on the guardian's screen. Article 3.1 LO 1/1982 leaves the consent of a minor to their maturity without
+  setting an age; the association applies to every consent, images included, the age of 14 that article 7
+  LOPDGDD sets for data processing. `TermsConsent.DeciderOf` names the decider from the birth date, never
+  from the request. A consent is never required: an event that links one
   as required is refused (`EventTermsConsentRequired`), and `TermsGate` never blocks a signup on a consent.
   An acceptance is never re-asked and holds until its consent is withdrawn; a rejection or a withdrawal is
   revisable and the stored row takes who accepts it now; a required document's rejection is never persisted,
   so it blocks that signup without excluding the person for good. The row is the current state: each change
   of it (the first decision, a later acceptance, a withdrawal) also appends to `terms_decision_changes` whether
   it accepts, who decided, the account that recorded it (the signed-in user, an administrator included), when and the
-  signature, so each earlier state can still be proven (article 7.1 GDPR). `AssignActivity` skips this step
-  when an administrator signs up someone else; `AssignHousehold` runs it for every member it signs up, each
-  with their own decisions. Decisions stored before they were per person name the deciding guardian as the
+  signature, so each earlier state can still be proven (article 7.1 GDPR). `AssignActivity` and
+  `AssignHousehold` run it for every person they sign up, each with their own decisions, since only the
+  person or their guardian signs them up. Decisions stored before they were per person name the deciding guardian as the
   person; documents stored before they had a kind are conditions; decisions stored before the history began
   with one change, their state then, recorded by who decided it. The rows and their history go with
   the person or the decider and with the event, each leaving its data history.
@@ -466,7 +468,9 @@ code cite only these laws.
   and the SPA reloads the documents and asks again. Texts are compared as JSON, so saving without changes keeps
   the version. Decisions stored before versions existed name version 1, the text then current.
 - A terms document can ask for a handwritten signature (`requires_signature`): accepting it then needs a PNG
-  drawn on screen (`TermsConsent` refuses the acceptance without one), which `HandwrittenSignature` refuses above 128 KiB or 2000×1000 pixels and which is stored
+  drawn on screen (`TermsConsent` refuses the acceptance without one). Every consent a dependent accepts from
+  the age of 14 needs one too, whatever the document asks, so the acceptance taken on the guardian's screen
+  carries the minor's own signature. The signature is a PNG `HandwrittenSignature` refuses above 128 KiB or 2000×1000 pixels and which is stored
   in `event_terms_acceptances.signature`, never in the public file storage. Only administrators read it
   (`GET /api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/signature`, answered
   `no-store`).
@@ -621,11 +625,14 @@ more than 50 megapixels before decoding (`FileUploadDimensionsTooLarge`), keeps 
 WebP loaders enabled, decodes at most two uploads at a time, applies the EXIF orientation, converts to sRGB,
 drops every metadata block (EXIF with any GPS position, XMP, IPTC, color profile) and stores two WebP variants:
 the content, at most 2048 × 2048 pixels, and a thumbnail at most 800 pixels wide, lossless when the image has
-an alpha channel. An upload no loader decodes is refused (`FileUploadInvalidImage`). The variants are saved
+an alpha channel. An upload no loader decodes is refused (`FileUploadInvalidImage`). The name it was sent with
+is discarded too, since it may name the people the image shows: the file is known only by its id, which the
+admin forms show, and the rich text editor inserts images with an empty `alt`. The variants are saved
 under `/app/files` in the `api-files` volume, each written to a temporary entry, flushed to disk and only then
 moved to its name, which never replaces stored content. Files are served only by the API, never from a static
 mount of the volume: only administrators upload or delete them, and anyone who knows a file's id may read it
-(`GET /api/files/{id}`, `/content`, `/thumbnail`). An upload is kept while content references it
+(`GET /api/files/{id}/content` and `/thumbnail`); no route returns its metadata, which only the upload answers
+with. An upload is kept while content references it
 (`StoredFileRepository.GetInUseAsync`); one that nothing references 7 days after it was uploaded, such as an
 image picked for a form that was never saved, is deleted with its content by `PurgeUnusedFiles`, which
 `UnusedFilePurgeWorker` runs 30 seconds after startup and then hourly. The purge locks the files it deletes

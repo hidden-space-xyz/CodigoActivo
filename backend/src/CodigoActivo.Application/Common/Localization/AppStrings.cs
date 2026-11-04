@@ -593,11 +593,6 @@ public static class AppStrings
     public static string FilesFallbackAttachmentName => Get("files.fallbackAttachmentName");
 
     /// <summary>
-    /// Gets the name given to an uploaded file whose name is empty once sanitized.
-    /// </summary>
-    public static string FilesFallbackFileName => Get("files.fallbackFileName");
-
-    /// <summary>
     /// Gets the name of the cookie policy.
     /// </summary>
     public static string LegalPoliciesCookies => Get("legal.policies.cookies");

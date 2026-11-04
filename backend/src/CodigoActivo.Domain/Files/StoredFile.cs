@@ -4,8 +4,9 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Domain.Files;
 
 /// <summary>
-/// Uploaded file: its original name, the format its content is stored in and who uploaded it.
-/// Its content never changes; a new image is uploaded as a new file.
+/// Uploaded file: the format its content is stored in and who uploaded it. It keeps no name, since
+/// the one it was uploaded with may name the people it shows; its identifier names it. Its content
+/// never changes; a new image is uploaded as a new file.
 /// </summary>
 public class StoredFile : AggregateRoot<StoredFileId>
 {
@@ -17,11 +18,6 @@ public class StoredFile : AggregateRoot<StoredFileId>
     public const int UnusedRetentionDays = 7;
 
     private StoredFile() { }
-
-    /// <summary>
-    /// Gets the original name, already sanitized.
-    /// </summary>
-    public string Name { get; private set; } = string.Empty;
 
     /// <summary>
     /// Gets the extension, without a leading dot, of the format the content is stored in, which
@@ -42,27 +38,23 @@ public class StoredFile : AggregateRoot<StoredFileId>
     /// <summary>
     /// Records a new upload.
     /// </summary>
-    /// <param name="name">Original name, already sanitized.</param>
     /// <param name="extension">Extension of the format the content is stored in.</param>
     /// <param name="uploaderId">Identifier of the user who uploads it.</param>
     /// <param name="now">Current time.</param>
     /// <param name="id">Stable identifier for seeded files; a new one otherwise.</param>
     /// <returns>The new file.</returns>
     public static StoredFile Upload(
-        string name,
         string extension,
         UserId uploaderId,
         DateTimeOffset now,
         StoredFileId? id = null
     )
     {
-        ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(extension);
 
         return new StoredFile
         {
             Id = id ?? StoredFileId.New(),
-            Name = name,
             Extension = extension,
             UploadedAt = now,
             UploadedBy = uploaderId,

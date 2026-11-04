@@ -8,9 +8,9 @@ namespace CodigoActivo.Application.Common.Security;
 
 /// <summary>
 /// Decides whether the signed-in user may act for a person: for themselves, for one of their
-/// dependents, or for anyone when they are an administrator. Personal data, the news consent and
-/// dependents are narrower: only the holder or their guardian manages them, administrators
-/// included. The guardianship is read from the read side, so commands and queries can both check
+/// dependents, or for anyone when they are an administrator. Personal data, the news consent,
+/// dependents and signups are narrower: only the holder or their guardian manages them,
+/// administrators included. The guardianship is read from the read side, so commands and queries can both check
 /// it without loading the account.
 /// </summary>
 /// <param name="currentUser">Person the use case runs for.</param>
@@ -40,7 +40,8 @@ public sealed class ActingUserPolicy(
 
     /// <summary>
     /// Checks that the signed-in user is the person or their guardian, the only ones who may change
-    /// the person's personal data, news consent or dependents; being an administrator grants nothing.
+    /// the person's personal data, news consent or dependents, or sign the person up; being an
+    /// administrator grants nothing.
     /// </summary>
     /// <param name="userId">Identifier of the person whose data would change.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

@@ -65,7 +65,6 @@ public sealed class GetFileContentQueryHandler(
         return new FileContent(
             stream,
             ImageFormat.FromExtension(meta.Value.Extension)?.ContentType ?? FallbackContentType,
-            meta.Value.Name,
             meta.Value.UploadedAt
         );
     }

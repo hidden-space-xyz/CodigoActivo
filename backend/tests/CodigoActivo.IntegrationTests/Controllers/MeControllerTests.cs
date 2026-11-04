@@ -22,7 +22,6 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             new
             {
                 Id = id,
-                Name = "thumb",
                 Extension = "png",
                 UploadedAt = SeededAt,
                 UploadedBy = TestSeedData.Users.AdminId,

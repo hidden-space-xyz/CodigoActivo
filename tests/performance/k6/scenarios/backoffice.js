@@ -37,9 +37,8 @@ function eventPage(session, eventId) {
   session.get('/api/users/types')
 }
 
-function editDialog(session, path, route, fileId) {
+function editDialog(session, path, route) {
   session.get(path, { route })
-  session.get('/api/files/{fileId}', { route: { fileId } })
 }
 
 function draftEvent(session, fixtures, round) {
@@ -65,12 +64,12 @@ function draftEvent(session, fixtures, round) {
       session.post('/api/activities/{eventId}', { route: event, json: plan, expect: [201] }),
     ).id,
   }
-  editDialog(session, '/api/activities/{activityId}', activity, thumbnailId)
+  editDialog(session, '/api/activities/{activityId}', activity)
   session.put('/api/activities/{activityId}', {
     route: activity,
     json: { ...plan, location: 'Online' },
   })
-  editDialog(session, '/api/events/{eventId}', event, thumbnailId)
+  editDialog(session, '/api/events/{eventId}', event)
   session.put('/api/events/{eventId}', {
     route: event,
     json: { ...draft, subtitle: 'Evento revisado por la suite de rendimiento' },
@@ -135,7 +134,7 @@ function newsItem(session, fixtures, round) {
     thumbnailId,
   }
   const news = { newsItemId: body(session.post('/api/news', { json: draft, expect: [201] })).id }
-  editDialog(session, '/api/news/{newsItemId}', news, thumbnailId)
+  editDialog(session, '/api/news/{newsItemId}', news)
   session.put('/api/news/{newsItemId}', {
     route: news,
     json: { ...draft, subtitle: 'Noticia revisada' },

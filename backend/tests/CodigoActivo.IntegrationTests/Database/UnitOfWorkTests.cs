@@ -49,7 +49,6 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
                 new
                 {
                     Id = FileId,
-                    Name = "thumb",
                     Extension = "png",
                     UploadedAt = Fixed,
                     UploadedBy = UserId,

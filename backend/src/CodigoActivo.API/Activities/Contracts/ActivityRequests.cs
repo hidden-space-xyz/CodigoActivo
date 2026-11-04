@@ -174,8 +174,7 @@ public record TermsDecisionRequest(
 /// </summary>
 /// <param name="ActivityRoleTypeId">Identifier of the role requested.</param>
 /// <param name="TermsDecisions">
-/// Decisions on the terms documents of the event for the person signed up, if any were asked; an
-/// administrator signing up someone else may leave them out.
+/// Decisions on the terms documents of the event for the person signed up, if any were asked.
 /// </param>
 public record AssignRequest(
     [Required] Guid ActivityRoleTypeId,

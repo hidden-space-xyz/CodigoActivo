@@ -128,7 +128,6 @@ public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory)
                     new
                     {
                         Id = id,
-                        Name = "thumb",
                         Extension = "png",
                         UploadedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
                         UploadedBy = TestSeedData.Users.AdminId,

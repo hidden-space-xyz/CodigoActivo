@@ -4,7 +4,6 @@ import type {
 } from '@/shared/api/generated/models'
 
 import { assignmentStatusTypes, modalityTypes, roleTypes } from '../builders/activities'
-import { buildFileResponse } from '../builders/catalogs'
 import { userTypes } from '../builders/users'
 import { http, HttpResponse, paged, server } from '../server'
 
@@ -35,6 +34,5 @@ export function useCatalogHandlers(): void {
       HttpResponse.json(assignmentStatusTypes),
     ),
     http.get('/api/users/types', () => HttpResponse.json(userTypes)),
-    http.get('/api/files/:fileId', () => HttpResponse.json(buildFileResponse())),
   )
 }

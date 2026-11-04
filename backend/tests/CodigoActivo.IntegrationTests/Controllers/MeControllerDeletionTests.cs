@@ -52,7 +52,6 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         Id = ThumbnailId,
-                        Name = "thumb",
                         Extension = "png",
                         UploadedAt = SeededAt,
                         UploadedBy = TestSeedData.Users.AdminId,
@@ -435,7 +434,6 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         Id = ThumbnailId,
-                        Name = "thumb",
                         Extension = "png",
                         UploadedAt = SeededAt,
                         UploadedBy = TestSeedData.Users.AdminId,
@@ -484,7 +482,6 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         Id = ThumbnailId,
-                        Name = "thumb",
                         Extension = "png",
                         UploadedAt = SeededAt,
                         UploadedBy = TestSeedData.Users.AdminId,

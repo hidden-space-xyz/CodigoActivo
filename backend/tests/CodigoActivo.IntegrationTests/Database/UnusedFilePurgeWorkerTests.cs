@@ -29,7 +29,6 @@ public sealed class UnusedFilePurgeWorkerTests(CodigoActivoWebAppFactory factory
             new
             {
                 Id = Guid.NewGuid(),
-                Name = "foto.png",
                 Extension = "png",
                 UploadedAt = Factory.Clock.UtcNow.AddDays(-daysAgo),
                 UploadedBy = TestSeedData.Users.AdminId,

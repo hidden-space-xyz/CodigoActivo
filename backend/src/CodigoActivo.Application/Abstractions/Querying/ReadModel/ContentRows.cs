@@ -128,9 +128,6 @@ public sealed class FileRow
     /// <summary>Gets the identifier of the file.</summary>
     public Guid Id { get; init; }
 
-    /// <summary>Gets the original name, already sanitized.</summary>
-    public string Name { get; init; } = string.Empty;
-
     /// <summary>
     /// Gets the extension, without a leading dot, of the format the content is stored in, which
     /// every upload is re-encoded to.

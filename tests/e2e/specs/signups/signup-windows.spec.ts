@@ -4,6 +4,7 @@ import {
   ongoingEvent,
   startedActivity,
 } from '../../support/api/signups-extra'
+import { hoursFromNow } from '../../support/data/time'
 import { expect, test } from '../../support/fixtures/test'
 import { EventDetailPage } from '../../support/pages/event-detail-page'
 import { ActivityCard } from '../../support/pages/signups/activity-card'
@@ -113,10 +114,11 @@ test.describe('signup windows', () => {
     pageAs,
   }) => {
     const event = await ongoingEvent(seed)
-    const joined = await startedActivity(admin.api, seed, event)
+    const toJoin = await seed.activity(event, { dayOfEvent: 2, startHour: 16 })
+    await seed.enrol(participant.api, toJoin, participant.account.id, 'participant', 'requested')
+    const joined = await seed.reschedule(toJoin, hoursFromNow(-2), hoursFromNow(1))
     const missed = await startedActivity(admin.api, seed, event)
     const later = await seed.activity(event, { dayOfEvent: 2 })
-    await seed.enrol(joined, participant.account.id, 'participant', 'requested')
     const page = await pageAs(participant)
     const eventPage = new EventDetailPage(page)
     await eventPage.goto(event.id, event.title)

@@ -29,25 +29,6 @@ public class FilesController : ApiControllerBase
     private const string ImmutableContentCacheControl = "public, max-age=31536000, immutable";
 
     /// <summary>
-    /// Gets the metadata of the requested file, without its content.
-    /// </summary>
-    /// <param name="fileId">Identifier of the file.</param>
-    /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing the file metadata, or an error response.</returns>
-    [HttpGet("{fileId:guid}")]
-    [AllowAnonymous]
-    [OutputCache(PolicyName = CacheTags.Files)]
-    public async Task<ActionResult<FileResponse>> GetAsync(
-        Guid fileId,
-        [FromServices] IQueryHandler<GetFileByIdQuery, Result<FileResponse>> handler,
-        CancellationToken ct
-    )
-    {
-        return ToOk(await handler.HandleAsync(new GetFileByIdQuery(StoredFileId.From(fileId)), ct));
-    }
-
-    /// <summary>
     /// Gets the requested content. Content never changes under its id (a new image is a new
     /// file), so clients may keep it for a year without revalidating.
     /// </summary>
@@ -95,7 +76,10 @@ public class FilesController : ApiControllerBase
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="getById">Query handler that reads the created file.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A 201 response with the file metadata and its location, or an error response.</returns>
+    /// <returns>
+    /// A 201 response with the file metadata and the URL of its content as its location, or an
+    /// error response.
+    /// </returns>
     [HttpPost]
     [AllowOnlyAdmin]
     [Consumes("multipart/form-data")]
@@ -112,7 +96,7 @@ public class FilesController : ApiControllerBase
         return await ToCreatedAfterAsync(
             await handler.HandleAsync(new CreateFileCommand(ToUploadRequest(file)), ct),
             id => getById.HandleAsync(new GetFileByIdQuery(id), ct),
-            id => $"/api/files/{id}"
+            id => $"/api/files/{id}/content"
         );
     }
 

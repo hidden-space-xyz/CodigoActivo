@@ -43,7 +43,6 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         Id = thumbnailId,
-                        Name = "thumb",
                         Extension = "png",
                         UploadedAt = SeededAt,
                         UploadedBy = TestSeedData.Users.AdminId,

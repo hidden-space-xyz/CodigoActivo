@@ -712,21 +712,13 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncTermsRequiredForOtherUserAsAdminSkipsTermsGate()
+    public async Task HandleAsyncOtherUserAsAdminReturnsForbidden()
     {
         var activityId = Guid.NewGuid();
         var userId = Guid.NewGuid();
         clock.UtcNow = Now;
-        activities.HasActivityWindow(
-            events,
-            activityId,
-            OpenStart,
-            OpenEnd,
-            eventId: Guid.NewGuid(),
-            termsDocumentId: Guid.NewGuid()
-        );
+        var activity = activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
         users.TargetUser(userId, KnownIds.UserTypes.Participant);
-        termsAcceptances.TermsAccepted(null);
 
         var result = await AssignAsync(
             activityId,
@@ -736,11 +728,11 @@ public sealed class AssignActivityCommandHandlerTests
             isAdmin: true
         );
 
-        result.IsSuccess.Should().BeTrue();
-        await termsAcceptances
-            .DidNotReceiveWithAnyArgs()
-            .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        result.Error!.Kind.Should().Be(ErrorKind.Forbidden);
+        result.Error.Code.Should().Be(ApplicationErrorCode.ActingForAnotherUserForbidden);
+        activity.Assignments.Should().BeEmpty();
+        await uow.DidNotReceiveWithAnyArgs()
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

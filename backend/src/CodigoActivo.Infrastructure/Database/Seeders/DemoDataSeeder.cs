@@ -356,14 +356,13 @@ public sealed class DemoDataSeeder(
             DateTimeOffset? earlySignupOpensAt = earlyOpensDaysBeforeStart is { } earlyDays
                 ? ToUtc(clock.TimeZone, start.AddDays(-earlyDays), 9, 0)
                 : null;
-            var label = (eventIndex + 1).ToString("D2", CultureInfo.InvariantCulture);
             var eventCreatedAt = MinTime(
                 (earlySignupOpensAt ?? signupOpensAt)
                     .AddDays(-(7 + (eventIndex % 5)))
                     .AddHours(eventIndex % 12),
                 now.AddDays(-1)
             );
-            var descriptionImageId = NewFile(files, $"evento-{label}-galeria.jpg", now);
+            var descriptionImageId = NewFile(files, now);
             var eventAssignments = new List<Assignment>();
 
             var ev = Event.Create(
@@ -371,7 +370,7 @@ public sealed class DemoDataSeeder(
                     seed.Title,
                     seed.Subtitle,
                     RichText.From(BuildRichText(seed.Description, descriptionImageId, seed.Title)),
-                    NewFile(files, $"evento-{label}-portada.jpg", now)
+                    NewFile(files, now)
                 ),
                 EventSchedule
                     .Create(start, end, earlySignupOpensAt, signupOpensAt, signupClosesAt)
@@ -403,7 +402,6 @@ public sealed class DemoDataSeeder(
             {
                 var activity = seed.Activities[activityIndex];
                 var globalIndex = (eventIndex * 5) + activityIndex;
-                var activityLabel = (activityIndex + 1).ToString(CultureInfo.InvariantCulture);
                 var activityStart = ToUtc(
                     clock.TimeZone,
                     start.AddDays(activityIndex % duration),
@@ -418,7 +416,7 @@ public sealed class DemoDataSeeder(
                         activity.Description,
                         activity.Location,
                         ResolveModality(activity.Modality),
-                        NewFile(files, $"evento-{label}-actividad-{activityLabel}.jpg", now)
+                        NewFile(files, now)
                     ),
                     ActivitySchedule
                         .Create(
@@ -452,13 +450,12 @@ public sealed class DemoDataSeeder(
             .Select(
                 (seed, index) =>
                 {
-                    var label = (index + 1).ToString("D2", CultureInfo.InvariantCulture);
                     var newsItem = NewsItem.Create(
                         new NewsItemContent(
                             seed.Title,
                             seed.Subtitle,
                             RichText.From(BuildRichText(seed.Description, null, null)),
-                            NewFile(files, $"noticia-{label}-portada.jpg", now)
+                            NewFile(files, now)
                         ),
                         DemoAuthorId,
                         now.AddDays(-(index * 6) - 3)
@@ -479,13 +476,8 @@ public sealed class DemoDataSeeder(
         var internalResources = DemoResources.Select(
             (seed, index) =>
             {
-                var label = (index + 1).ToString("D2", CultureInfo.InvariantCulture);
                 return Resource.Create(
-                    new ResourceDetails(
-                        seed.Title,
-                        seed.Subtitle,
-                        NewFile(files, $"recurso-{label}-portada.jpg", now)
-                    ),
+                    new ResourceDetails(seed.Title, seed.Subtitle, NewFile(files, now)),
                     ResourceContent
                         .For(
                             ResourceType.Internal,
@@ -502,13 +494,8 @@ public sealed class DemoDataSeeder(
             (seed, index) =>
             {
                 var globalIndex = DemoResources.Length + index;
-                var label = (globalIndex + 1).ToString("D2", CultureInfo.InvariantCulture);
                 return Resource.Create(
-                    new ResourceDetails(
-                        seed.Title,
-                        seed.Subtitle,
-                        NewFile(files, $"recurso-{label}-portada.jpg", now)
-                    ),
+                    new ResourceDetails(seed.Title, seed.Subtitle, NewFile(files, now)),
                     ResourceContent.For(ResourceType.External, RichText.Empty, seed.Url).Value,
                     DemoAuthorId,
                     now.AddDays(-(globalIndex * 8) - 5)
@@ -528,14 +515,13 @@ public sealed class DemoDataSeeder(
             .Select(
                 (seed, index) =>
                 {
-                    var label = (index + 1).ToString("D2", CultureInfo.InvariantCulture);
                     return Partner.Create(
                         new PartnerDetails(
                             seed.Name,
                             clock.Today.AddMonths(-(6 + (index * 4))),
                             seed.Tier,
                             seed.Web,
-                            NewFile(files, $"partner-{label}-logo.jpg", now)
+                            NewFile(files, now)
                         ),
                         DemoAuthorId,
                         SpreadCreatedAt(now, index, DemoPartners.Length, 720, 30)
@@ -602,9 +588,9 @@ public sealed class DemoDataSeeder(
         return now.AddDays(-daysAgo).AddHours(index % 12);
     }
 
-    private static StoredFileId NewFile(List<StoredFile> files, string name, DateTimeOffset now)
+    private static StoredFileId NewFile(List<StoredFile> files, DateTimeOffset now)
     {
-        var file = StoredFile.Upload(name, ProcessedImage.Format.Extension, DemoAuthorId, now);
+        var file = StoredFile.Upload(ProcessedImage.Format.Extension, DemoAuthorId, now);
         files.Add(file);
         return file.Id;
     }

@@ -33,13 +33,12 @@ public sealed class OrphanFileCleanerTests
             .Returns(call => call.Arg<IReadOnlyCollection<StoredFileId>>().ToList());
     }
 
-    private static StoredFile NewFile(string name = "photo.png", string extension = "png")
+    private static StoredFile NewFile(string extension = "png")
     {
         return Persisted.As<StoredFile>(
             new
             {
                 Id = Guid.NewGuid(),
-                Name = name,
                 Extension = extension,
                 UploadedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
                 UploadedBy = Guid.NewGuid(),
@@ -76,9 +75,9 @@ public sealed class OrphanFileCleanerTests
     [Fact]
     public async Task DeleteOrphanedAsyncMixedCandidatesRemovesOrphansOnceAndDeletesStoredContent()
     {
-        var inUseFile = NewFile(name: "used.png", extension: "png");
-        var orphanPng = NewFile(name: "a.png", extension: "png");
-        var orphanJpg = NewFile(name: "b.jpg", extension: "jpg");
+        var inUseFile = NewFile(extension: "png");
+        var orphanPng = NewFile(extension: "png");
+        var orphanJpg = NewFile(extension: "jpg");
         InUseFilesAre(inUseFile.Id.Value);
         StoredFilesAre(inUseFile, orphanPng, orphanJpg);
 

@@ -89,7 +89,6 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
             new
             {
                 Id = Guid.NewGuid(),
-                Name = "never-committed",
                 Extension = "png",
                 UploadedAt = Factory.Clock.UtcNow,
                 UploadedBy = TestSeedData.Users.AdminId,

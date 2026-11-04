@@ -274,8 +274,8 @@ public class ActivitiesController : ApiControllerBase
 
     /// <summary>
     /// Signs the person up to the activity with the requested role, pending a decision. The
-    /// signed-in user may sign up themselves or a dependent; an administrator may sign up anyone,
-    /// even outside the signup window.
+    /// signed-in user may sign up only themselves or a dependent, administrators included; an
+    /// administrator may do it outside the signup window.
     /// </summary>
     /// <param name="activityId">Identifier of the activity.</param>
     /// <param name="userId">Identifier of the person signed up.</param>
@@ -285,7 +285,7 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an assignment, or an error response.</returns>
     [HttpPatch("{activityId:guid}/{userId:guid}/assign")]
-    [AllowOnlySelf]
+    [AllowOnlySelf(AdministratorsAllowed = false)]
     public async Task<ActionResult<AssignmentResponse>> AssignAsync(
         Guid activityId,
         Guid userId,

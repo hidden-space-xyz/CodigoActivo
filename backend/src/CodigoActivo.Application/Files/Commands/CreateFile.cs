@@ -3,7 +3,6 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Storage;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
@@ -20,9 +19,10 @@ public sealed record CreateFileCommand(FileUpload? Upload) : ICommand<Result<Sto
 
 /// <summary>
 /// Executes the command to create a file: the upload is validated, turned into its variants by
-/// <see cref="IImageProcessor"/> and only those are stored; the upload itself is discarded. When
-/// the row cannot be saved, the stored variants are discarded before the failure is rethrown. A
-/// file no content references is purged after <see cref="StoredFile.UnusedRetentionDays"/> days.
+/// <see cref="IImageProcessor"/> and only those are stored; the upload itself and its name are
+/// discarded. When the row cannot be saved, the stored variants are discarded before the failure
+/// is rethrown. A file no content references is purged after
+/// <see cref="StoredFile.UnusedRetentionDays"/> days.
 /// </summary>
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
@@ -70,7 +70,6 @@ public sealed class CreateFileCommandHandler(
         }
 
         var file = StoredFile.Upload(
-            FileNaming.SanitizeName(upload.FileName, AppStrings.FilesFallbackFileName),
             ProcessedImage.Format.Extension,
             currentUser.RequiredId(),
             clock.UtcNow

@@ -186,7 +186,10 @@ public sealed class EventTermsPerPersonTests(CodigoActivoWebAppFactory factory)
                     TestSeedData.Users.MemberChildId,
                     new TermsDecisionRequest(conditionsId, true, Version: 1)
                 ),
-                Member(teenagerId, new TermsDecisionRequest(consentId, true, Version: 1)),
+                Member(
+                    teenagerId,
+                    new TermsDecisionRequest(consentId, true, TestSeedData.ValidPng(), Version: 1)
+                ),
             ]),
             Ct
         );
@@ -202,5 +205,57 @@ public sealed class EventTermsPerPersonTests(CodigoActivoWebAppFactory factory)
         )
             .Should()
             .Be(0);
+    }
+
+    [Fact]
+    public async Task AssignHouseholdTeenagerAcceptingAConsentWithoutTheirSignatureIsRefused()
+    {
+        var (eventId, activityId) = await SeedEventAsync();
+        var client = await LoginAsMemberAsync();
+
+        using var response = await client.PostJsonAsync(
+            $"/api/activities/{activityId}/assign-household",
+            new AssignHouseholdRequest([
+                Member(
+                    teenagerId,
+                    new TermsDecisionRequest(conditionsId, true, Version: 1),
+                    new TermsDecisionRequest(consentId, true, Version: 1)
+                ),
+            ]),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.EventTermsSignatureRequired);
+        (await DecisionsAsync(eventId)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task AssignHouseholdTeenagerAcceptingAConsentKeepsTheirSignature()
+    {
+        var (eventId, activityId) = await SeedEventAsync();
+        var client = await LoginAsMemberAsync();
+        var png = TestSeedData.ValidPng();
+
+        using var response = await client.PostJsonAsync(
+            $"/api/activities/{activityId}/assign-household",
+            new AssignHouseholdRequest([
+                Member(
+                    teenagerId,
+                    new TermsDecisionRequest(conditionsId, true, Version: 1),
+                    new TermsDecisionRequest(consentId, true, png, Version: 1)
+                ),
+            ]),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var decisions = await DecisionsAsync(eventId);
+        var consent = decisions
+            .Should()
+            .ContainSingle(a => a.TermsDocumentId.Value == consentId)
+            .Which;
+        consent.DecidedById.Should().Be(UserId.From(teenagerId));
+        consent.Signature!.ToArray().Should().Equal(png);
+        decisions.Single(a => a.TermsDocumentId.Value == conditionsId).Signature.Should().BeNull();
     }
 }

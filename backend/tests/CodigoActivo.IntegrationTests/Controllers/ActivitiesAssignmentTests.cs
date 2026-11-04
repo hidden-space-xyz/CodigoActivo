@@ -305,7 +305,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task AssignActivityMissingReturnsNotFound()
     {
-        var client = await LoginAsAdminAsync();
+        var client = await LoginAsMemberAsync();
         var request = new AssignRequest(KnownIds.ActivityRoleTypes.Leader);
 
         var response = await client.PatchJsonAsync(
@@ -348,6 +348,23 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task AssignAnotherUserAsAdminReturnsForbiddenAndSignsNobodyUp()
+    {
+        var (_, activityId) = await SeedActivityAsync();
+        var client = await LoginAsAdminAsync();
+        var request = new AssignRequest(KnownIds.ActivityRoleTypes.Participant);
+
+        var response = await client.PatchJsonAsync(
+            $"/api/activities/{activityId}/{TestSeedData.Users.MemberId}/assign",
+            request,
+            Ct
+        );
+
+        await response.ShouldBeForbiddenAsync(ErrorCode.AccessDenied);
+        (await FindAssignmentAsync(activityId, TestSeedData.Users.MemberId)).Should().BeNull();
     }
 
     [Fact]

@@ -1,14 +1,4 @@
-import { getApiFilesFileId, postApiFiles } from '@/shared/api/generated/endpoints/files/files'
-import { unwrapOrNull } from '@/shared/api'
-
-/**
- * Resolves the display file name, the original name as uploaded (it already carries its extension);
- * empty when the file no longer exists.
- */
-export async function getThumbnailNameRequest(id: string): Promise<string> {
-  const meta = await unwrapOrNull(getApiFilesFileId(id))
-  return meta?.name ?? ''
-}
+import { postApiFiles } from '@/shared/api/generated/endpoints/files/files'
 
 /**
  * Uploads a new file and resolves to its id. A new file never reuses the id of the one it replaces,

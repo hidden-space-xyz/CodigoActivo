@@ -1,9 +1,27 @@
+import type { EventResponse } from '@contract/eventResponse'
+
 import { historyEntry } from '../../support/api/account'
+import type { SignupStatusName } from '../../support/api/catalogs'
+import type { ContentSeeder } from '../../support/api/content'
 import { signUp } from '../../support/api/signups'
+import type { Actor } from '../../support/fixtures/actors'
 import { expect, test } from '../../support/fixtures/test'
 import { AccountPage } from '../../support/pages/account/account-page'
 import { HistoryTab, RatingDialog } from '../../support/pages/account/history-tab'
 import { confirm, notification } from '../../support/ui/element-plus'
+
+/** An event that started `daysAgo` days ago, with one activity `actor` signed up for. */
+async function pastEventWith(
+  seed: ContentSeeder,
+  actor: Actor,
+  daysAgo: number,
+  status: SignupStatusName,
+): Promise<EventResponse> {
+  const event = await seed.event()
+  const activity = await seed.activity(event)
+  await seed.enrol(actor.api, activity, actor.account.id, 'participant', status)
+  return seed.moveToPast(event, [activity], daysAgo)
+}
 
 test.describe('event history', () => {
   test('upcoming signups show their status and past events only the confirmed ones', async ({
@@ -16,11 +34,9 @@ test.describe('event history', () => {
     const requested = await seed.activity(upcoming)
     const confirmed = await seed.activity(upcoming, { startHour: 16 })
     await signUp(actor.api, requested, actor.account.id)
-    await seed.enrol(confirmed, actor.account.id)
-    const attended = await seed.event({ startsIn: -10 })
-    await seed.enrol(await seed.activity(attended), actor.account.id)
-    const missed = await seed.event({ startsIn: -12 })
-    await seed.enrol(await seed.activity(missed), actor.account.id, 'participant', 'denied')
+    await seed.enrol(actor.api, confirmed, actor.account.id)
+    const attended = await pastEventWith(seed, actor, 10, 'confirmed')
+    const missed = await pastEventWith(seed, actor, 12, 'denied')
 
     const page = await pageAs(actor)
     await new AccountPage(page).goto('Historial')
@@ -47,8 +63,7 @@ test.describe('event history', () => {
     seed,
   }) => {
     const actor = await accounts.actor({ label: 'rating' })
-    const event = await seed.event({ startsIn: -10 })
-    await seed.enrol(await seed.activity(event), actor.account.id)
+    const event = await pastEventWith(seed, actor, 10, 'confirmed')
     const page = await pageAs(actor)
     await new AccountPage(page).goto('Historial')
     const entry = new HistoryTab(page).event('Eventos anteriores', event.title)

@@ -2740,34 +2740,6 @@
       }
     },
     "/api/files/{fileId}": {
-      "get": {
-        "tags": [
-          "Files"
-        ],
-        "parameters": [
-          {
-            "name": "fileId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FileResponse"
-                }
-              }
-            }
-          }
-        }
-      },
       "delete": {
         "tags": [
           "Files"
@@ -8125,7 +8097,6 @@
         "required": [
           "extension",
           "id",
-          "name",
           "uploadedAt"
         ],
         "type": "object",
@@ -8133,9 +8104,6 @@
           "id": {
             "type": "string",
             "format": "uuid"
-          },
-          "name": {
-            "type": "string"
           },
           "extension": {
             "type": "string"

@@ -96,18 +96,26 @@ export function termsSections(
   })
 }
 
-/** Whether `document` shows its signature pad for `personId`: it asks for one and is checked. */
+/**
+ * Whether accepting `item` needs a signature: its document asks for one, or a minor decides it,
+ * who signs every consent they accept.
+ */
+export function needsSignature(item: TermsDialogItem): boolean {
+  return item.document.requiresSignature || item.decider === 'person'
+}
+
+/** Whether `item` shows its signature pad for `personId`: it needs a signature and is checked. */
 export function asksForSignature(
   personId: string,
-  document: EventTermsDocumentState,
+  item: TermsDialogItem,
   draft: TermsDialogDraft,
 ): boolean {
-  return document.requiresSignature && !!draft.checked[draftKey(personId, document.id)]
+  return needsSignature(item) && !!draft.checked[draftKey(personId, item.document.id)]
 }
 
 /**
  * Reads the terms dialog: every required document must be checked for every person and every
- * checked document that asks for a signature needs one drawn. Decisions carry a signature only for
+ * checked document that needs a signature needs one drawn. Decisions carry a signature only for
  * those documents.
  */
 export function readTermsDecisions(
@@ -115,24 +123,23 @@ export function readTermsDecisions(
   draft: TermsDialogDraft,
 ): TermsDialogReading {
   const entries = sections.flatMap((section) =>
-    section.items.map(({ document }) => ({ personId: section.personId, document })),
+    section.items.map((item) => ({ personId: section.personId, item, document: item.document })),
   )
   const missingRequired = entries.some(
     ({ personId, document }) =>
       document.required && !draft.checked[draftKey(personId, document.id)],
   )
   const missingSignature = entries.some(
-    ({ personId, document }) =>
-      asksForSignature(personId, document, draft) &&
-      !draft.signatures[draftKey(personId, document.id)],
+    ({ personId, item, document }) =>
+      asksForSignature(personId, item, draft) && !draft.signatures[draftKey(personId, document.id)],
   )
   if (missingRequired || missingSignature) {
     return { missingRequired, missingSignature, decisions: null }
   }
   const decisions: Record<string, TermsDecisionInput[]> = {}
-  for (const { personId, document } of entries) {
+  for (const { personId, item, document } of entries) {
     const key = draftKey(personId, document.id)
-    const signature = asksForSignature(personId, document, draft) ? draft.signatures[key] : ''
+    const signature = asksForSignature(personId, item, draft) ? draft.signatures[key] : ''
     decisions[personId] = [
       ...(decisions[personId] ?? []),
       {

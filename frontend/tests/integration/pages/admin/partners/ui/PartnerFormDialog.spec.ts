@@ -6,7 +6,7 @@ import type { Partner } from '@/entities/partner'
 import PartnerFormDialog from '@/pages/admin/partners/ui/PartnerFormDialog.vue'
 
 import { renderWithProviders, t } from '../../../../../support/render'
-import { apiError, http, HttpResponse, server } from '../../../../../support/server'
+import { apiError, http, server } from '../../../../../support/server'
 import { buildPartner } from '../../../../../support/models'
 import {
   click,
@@ -19,9 +19,6 @@ import {
 } from '../../../../../support/dom'
 
 async function renderDialog(partner: Partner | null = null) {
-  server.use(
-    http.get('/api/files/:id', () => HttpResponse.json({ name: 'logo.png', extension: 'png' })),
-  )
   const rendered = await renderWithProviders(PartnerFormDialog, {
     props: { visible: false, partner, saving: false },
     attach: true,

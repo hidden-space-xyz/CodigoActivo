@@ -133,7 +133,7 @@ export function decisionsFor(documents) {
   return documents.map((document) => ({
     termsDocumentId: document.termsDocumentId,
     accepted: true,
-    signature: document.requiresSignature ? SIGNATURE_PNG : null,
+    signature: document.requiresSignature || document.kind === 'Consent' ? SIGNATURE_PNG : null,
     version: document.version,
   }))
 }

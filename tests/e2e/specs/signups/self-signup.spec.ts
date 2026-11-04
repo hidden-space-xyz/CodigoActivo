@@ -131,8 +131,8 @@ test.describe('self signup', () => {
   }) => {
     const event = await eventOnFreeDay(seed)
     const activity = await seed.activity(event, { roles: { participant: 1, volunteer: 3 } })
-    await seed.enrol(activity, participant.account.id, 'participant', 'requested')
-    await seed.enrol(activity, guardian.account.id, 'participant', 'confirmed')
+    await seed.enrol(participant.api, activity, participant.account.id, 'participant', 'requested')
+    await seed.enrol(guardian.api, activity, guardian.account.id, 'participant', 'confirmed')
     const page = await pageAs(member)
     const eventPage = new EventDetailPage(page)
     await eventPage.goto(event.id, event.title)

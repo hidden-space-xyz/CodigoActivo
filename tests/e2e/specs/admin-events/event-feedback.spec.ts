@@ -16,9 +16,10 @@ test.describe('event opinions and terms admin', () => {
     seed,
     member,
   }) => {
-    const event = await seed.event({ startsIn: -1 })
-    const activity = await seed.activity(event)
-    await seed.enrol(activity, member.account.id)
+    const signedUp = await seed.event()
+    const activity = await seed.activity(signedUp)
+    await seed.enrol(member.api, activity, member.account.id)
+    const event = await seed.moveToPast(signedUp, [activity], 1)
     await rateEvent(member.api, event.id, {
       score: 4,
       mostLiked: 'Programar el robot con mi grupo.',

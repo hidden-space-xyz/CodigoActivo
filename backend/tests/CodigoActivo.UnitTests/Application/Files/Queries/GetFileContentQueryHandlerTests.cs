@@ -48,7 +48,7 @@ public sealed class GetFileContentQueryHandlerTests
         string variantInfix
     )
     {
-        var file = NewFileRow(name: "avatar.png", extension: "webp");
+        var file = NewFileRow(extension: "webp");
         store.Files.Add(file);
         var stream = PngStream();
         storage
@@ -62,7 +62,6 @@ public sealed class GetFileContentQueryHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value.ContentType.Should().Be("image/webp");
-        result.Value.FileName.Should().Be("avatar.png");
         result.Value.Content.Should().BeSameAs(stream);
     }
 

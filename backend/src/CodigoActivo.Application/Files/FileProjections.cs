@@ -14,7 +14,6 @@ public static class FileProjections
     /// </summary>
     public static readonly Expression<Func<FileRow, FileResponse>> File = file => new FileResponse(
         file.Id,
-        file.Name,
         file.Extension,
         file.UploadedAt
     );

@@ -68,7 +68,6 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
                     new
                     {
                         Id = ThumbnailId,
-                        Name = "thumb",
                         Extension = "png",
                         UploadedAt = SeededAt,
                         UploadedBy = TestSeedData.Users.AdminId,

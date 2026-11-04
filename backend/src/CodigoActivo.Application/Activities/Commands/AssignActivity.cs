@@ -32,8 +32,8 @@ public sealed record AssignActivityCommand(
 
 /// <summary>
 /// Executes the command to sign a person up to an activity, pending a decision. The signed-in user
-/// may sign up themselves or one of their dependents; an administrator may sign up anyone, even
-/// outside the signup window, and without terms decisions when signing up someone else.
+/// may sign up only themselves or one of their dependents, administrators included, and decides the
+/// terms documents of the event for them; an administrator may do it outside the signup window.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
 /// <param name="users">Repository used to persist and retrieve users.</param>
@@ -76,7 +76,7 @@ public sealed class AssignActivityCommandHandler(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var allowed = await actingUser.EnsureMayActForAsync(command.UserId, ct);
+        var allowed = await actingUser.EnsureMayManagePersonalDataAsync(command.UserId, ct);
         if (allowed.IsFailure)
         {
             return allowed;
@@ -117,18 +117,15 @@ public sealed class AssignActivityCommandHandler(
             return free;
         }
 
-        if (!currentUser.IsAdmin || currentUser.RequiredId() == command.UserId)
+        var terms = await termsGate.EnsureDecidedAsync(
+            activity.EventId,
+            [new PersonTermsDecisions(user, command.TermsDecisions)],
+            currentUser.RequiredId(),
+            ct
+        );
+        if (terms.IsFailure)
         {
-            var terms = await termsGate.EnsureDecidedAsync(
-                activity.EventId,
-                [new PersonTermsDecisions(user, command.TermsDecisions)],
-                currentUser.RequiredId(),
-                ct
-            );
-            if (terms.IsFailure)
-            {
-                return terms.Error!;
-            }
+            return terms.Error!;
         }
 
         var assigned = activity.RequestAssignment(command.UserId, command.Role, clock.UtcNow);

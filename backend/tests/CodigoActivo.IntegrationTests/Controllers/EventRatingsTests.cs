@@ -158,7 +158,6 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
             new
             {
                 Id = id,
-                Name = "thumb",
                 Extension = "png",
                 UploadedAt = At,
                 UploadedBy = TestSeedData.Users.AdminId,

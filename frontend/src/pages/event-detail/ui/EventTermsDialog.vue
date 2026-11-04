@@ -10,6 +10,7 @@ import { RichTextContent } from '@/shared/ui/rich-text-content'
 import {
   asksForSignature,
   draftKey,
+  needsSignature,
   readTermsDecisions,
   type TermsDecider,
   type TermsDialogItem,
@@ -29,8 +30,8 @@ const emit = defineEmits<{
   'update:visible': [value: boolean]
   /**
    * Fired with the decisions of each person, by person id, once every required document is checked
-   * and every checked one that asks for a signature is signed; confirming earlier only reveals what
-   * is missing.
+   * and every checked one that needs a signature is signed; confirming earlier only reveals what is
+   * missing.
    */
   confirm: [decisions: Readonly<Record<string, TermsDecisionInput[]>>]
 }>()
@@ -81,8 +82,8 @@ function groupsOf(
     .filter((group) => group.items.length > 0)
 }
 
-function showsSignature(personId: string, document: EventTermsDocumentState): boolean {
-  return asksForSignature(personId, document, { checked, signatures })
+function showsSignature(personId: string, item: TermsDialogItem): boolean {
+  return asksForSignature(personId, item, { checked, signatures })
 }
 
 const preview = reactive<{
@@ -146,7 +147,11 @@ function confirm(): void {
           {{ t('pages.eventDetail.terms.handOver', { name: section.name }) }}
         </p>
         <ul class="terms-dialog__list">
-          <li v-for="{ document } in group.items" :key="document.id" class="terms-dialog__row">
+          <li
+            v-for="{ document, decider } in group.items"
+            :key="document.id"
+            class="terms-dialog__row"
+          >
             <div class="terms-dialog__decision">
               <el-checkbox
                 :id="`terms-${draftKey(section.personId, document.id)}`"
@@ -182,13 +187,13 @@ function confirm(): void {
                       : t('pages.eventDetail.terms.optional')
                   }}
                 </span>
-                <span v-if="document.requiresSignature" class="terms-dialog__tag">
+                <span v-if="needsSignature({ document, decider })" class="terms-dialog__tag">
                   {{ t('pages.eventDetail.terms.signature.tag') }}
                 </span>
               </div>
             </div>
             <SignaturePad
-              v-if="showsSignature(section.personId, document)"
+              v-if="showsSignature(section.personId, { document, decider })"
               :model-value="signatures[draftKey(section.personId, document.id)] ?? ''"
               :label="t('pages.eventDetail.terms.signature.label', { name: document.name })"
               :invalid="attempted && !signatures[draftKey(section.personId, document.id)]"

@@ -190,7 +190,6 @@ public sealed class CreateFileCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         var created = added.Should().ContainSingle().Which;
         result.Value.Should().Be(created.Id);
-        created.Name.Should().Be("avatar.png");
         created.Extension.Should().Be("webp");
         created.UploadedBy.Value.Should().Be(caller);
         created.UploadedAt.Should().Be(clock.UtcNow);
@@ -216,54 +215,6 @@ public sealed class CreateFileCommandHandlerTests
                 full => full.Content.Should().Equal(Processed.Full),
                 thumbnail => thumbnail.Content.Should().Equal(Processed.Thumbnail)
             );
-    }
-
-    [Fact]
-    public async Task HandleAsyncBlankFilenameDefaultsNameToFile()
-    {
-        var upload = new FileUpload(PngStream(), "   ", 32);
-        var added = await CaptureAddedFilesAsync();
-
-        var result = await sut.HandleAsync(
-            new CreateFileCommand(upload),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        added.Should().ContainSingle().Which.Name.Should().Be("file");
-    }
-
-    [Fact]
-    public async Task HandleAsyncFileNameLongerThanMaxLengthTruncatesNameTo260Chars()
-    {
-        var longName = new string('a', 300);
-        var upload = new FileUpload(PngStream(), longName, 32);
-        var added = await CaptureAddedFilesAsync();
-
-        var result = await sut.HandleAsync(
-            new CreateFileCommand(upload),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        var name = added.Should().ContainSingle().Which.Name;
-        name.Should().HaveLength(260);
-        name.Should().Be(new string('a', 260));
-    }
-
-    [Fact]
-    public async Task HandleAsyncFileNameWithControlOrFormatCharactersDropsThem()
-    {
-        var upload = new FileUpload(PngStream(), "fac\u0000tura\r\n‮gnp.exe", 32);
-        var added = await CaptureAddedFilesAsync();
-
-        var result = await sut.HandleAsync(
-            new CreateFileCommand(upload),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        added.Should().ContainSingle().Which.Name.Should().Be("facturagnp.exe");
     }
 
     [Fact]

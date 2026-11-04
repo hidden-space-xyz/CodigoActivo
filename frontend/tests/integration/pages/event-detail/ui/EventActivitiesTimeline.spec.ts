@@ -29,7 +29,13 @@ import {
   textOf,
   tp,
 } from '../../../../support/dom'
+import { FAKE_SIGNATURE, fakePads, resetFakePads } from '../../../../support/signature-pad-mock'
 import { formatDateTime, formatDateTimeRange } from '@/shared/lib/date'
+
+vi.mock(
+  'signature_pad',
+  async () => (await import('../../../../support/signature-pad-mock')).signaturePadModule,
+)
 
 /** Summary shape the `terms` prop expects, without the description only `/terms` returns. */
 interface TermsSummary {
@@ -941,7 +947,8 @@ describe('activities timeline household signup', () => {
     })
   })
 
-  it('lets a minor from 14 decide their own consent and sends the decisions of each member', async () => {
+  it('lets a minor from 14 decide and sign their own consent and sends the decisions of each member', async () => {
+    resetFakePads()
     const { calls } = serveSignupApi({
       children: [CHILD],
       consentingChildren: [CHILD.id],
@@ -968,6 +975,10 @@ describe('activities timeline household signup', () => {
     await click(termsCheckbox(terms, TERMS_DOCUMENT.termsDocumentId, CHILD.id))
     await click(termsCheckbox(terms, IMAGE_CONSENT_DOCUMENT.termsDocumentId, CHILD.id))
     await click(findButton(t('pages.eventDetail.terms.confirm'), terms))
+    expect(calls.household).toEqual([])
+    fakePads.at(-1)?.draw()
+    await flushPromises()
+    await click(findButton(t('pages.eventDetail.terms.confirm'), terms))
 
     await vi.waitFor(() => expect(calls.household).toHaveLength(1))
     expect(calls.household[0]?.body).toEqual({
@@ -989,7 +1000,12 @@ describe('activities timeline household signup', () => {
           activityRoleTypeId: 'role-volunteer',
           termsDecisions: [
             { termsDocumentId: TERMS_DOCUMENT.termsDocumentId, version: 1, accepted: true },
-            { termsDocumentId: IMAGE_CONSENT_DOCUMENT.termsDocumentId, version: 1, accepted: true },
+            {
+              termsDocumentId: IMAGE_CONSENT_DOCUMENT.termsDocumentId,
+              version: 1,
+              accepted: true,
+              signature: FAKE_SIGNATURE.slice(FAKE_SIGNATURE.indexOf(',') + 1),
+            },
           ],
         },
       ],

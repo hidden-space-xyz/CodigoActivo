@@ -39,7 +39,6 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         Id = ThumbnailId,
-                        Name = "thumb",
                         Extension = "png",
                         UploadedAt = At,
                         UploadedBy = TestSeedData.Users.AdminId,

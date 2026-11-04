@@ -240,7 +240,6 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         Id = ThumbnailId,
-                        Name = "thumb",
                         Extension = "png",
                         UploadedAt = SeededAt,
                         UploadedBy = TestSeedData.Users.AdminId,
@@ -823,7 +822,6 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         Id = UploadId,
-                        Name = "subida",
                         Extension = "png",
                         UploadedAt = SeededAt,
                         UploadedBy = child,
@@ -833,7 +831,6 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         Id = OtherUploadId,
-                        Name = "ajena",
                         Extension = "png",
                         UploadedAt = SeededAt,
                         UploadedBy = other,

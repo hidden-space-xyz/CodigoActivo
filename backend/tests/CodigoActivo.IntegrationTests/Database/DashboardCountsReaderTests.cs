@@ -153,7 +153,6 @@ public sealed class DashboardCountsReaderTests(PostgresDatabaseFixture postgres)
                 new
                 {
                     Id = ThumbId,
-                    Name = "thumb",
                     Extension = "png",
                     UploadedAt = Fixed,
                     UploadedBy = AuthorId,

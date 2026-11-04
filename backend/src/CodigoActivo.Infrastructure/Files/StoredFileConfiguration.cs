@@ -20,7 +20,6 @@ public class StoredFileConfiguration : IEntityTypeConfiguration<StoredFile>
         builder.HasHistory();
         builder.HasKey(f => f.Id);
 
-        builder.Property(f => f.Name).IsRequired();
         builder.Property(f => f.Extension).IsRequired();
         builder.Property(f => f.UploadedAt).IsRequired();
 

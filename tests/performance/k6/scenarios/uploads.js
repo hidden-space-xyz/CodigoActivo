@@ -15,7 +15,6 @@ export function uploads(data) {
     return
   }
   const route = { fileId: file.id }
-  session.get('/api/files/{fileId}', { route })
   session.get('/api/files/{fileId}/content', { route, responseType: 'none' })
   session.get('/api/files/{fileId}/thumbnail', { route, responseType: 'none' })
   session.delete('/api/files/{fileId}', { route, expect: [204] })

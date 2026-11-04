@@ -47,11 +47,11 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
+        (await response.Content.ReadAsStringAsync(Ct)).Should().NotContain("picture");
         var created = await response.ReadJsonAsync<FileResponse>(Ct);
-        created!.Name.Should().Be("picture.png");
-        created.Extension.Should().Be("webp");
+        created!.Extension.Should().Be("webp");
         created.UploadedAt.Should().Be(Factory.Clock.UtcNow);
-        response.Headers.Location!.ToString().Should().EndWith($"/api/files/{created.Id}");
+        response.Headers.Location!.ToString().Should().EndWith($"/api/files/{created.Id}/content");
 
         var stored = await FindAsync<StoredFile>(created.Id);
         stored!.Extension.Should().Be("webp");
@@ -166,26 +166,11 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task GetAnonymousReturnsUploadedFileMetadata()
-    {
-        var created = await UploadAsAdminAsync(fileName: "avatar.png");
-        var client = CreateClient();
-
-        var response = await client.GetAsync(TestUri.Rel($"/api/files/{created.Id}"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var meta = await response.ReadJsonAsync<FileResponse>(Ct);
-        meta!.Id.Should().Be(created.Id);
-        meta.Name.Should().Be("avatar.png");
-        meta.Extension.Should().Be("webp");
-    }
-
-    [Fact]
-    public async Task GetUnknownIdReturnsNotFoundFileNotFound()
+    public async Task GetContentUnknownIdReturnsNotFoundFileNotFound()
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync(TestUri.Rel($"/api/files/{Guid.NewGuid()}"), Ct);
+        var response = await client.GetAsync(TestUri.Rel($"/api/files/{Guid.NewGuid()}/content"), Ct);
 
         await response.ShouldBeNotFoundAsync(ErrorCode.FileNotFound);
     }
@@ -241,7 +226,6 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         Id = id,
-                        Name = "orphan",
                         Extension = "png",
                         UploadedAt = Factory.Clock.UtcNow,
                         UploadedBy = TestSeedData.Users.AdminId,
@@ -300,7 +284,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         stored.Should().BeNull();
 
         using var followUp = await CreateClient()
-            .GetAsync(TestUri.Rel($"/api/files/{created.Id}"), Ct);
+            .GetAsync(TestUri.Rel($"/api/files/{created.Id}/content"), Ct);
         followUp.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
@@ -316,7 +300,6 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         Id = thumbnailId,
-                        Name = "thumb",
                         Extension = "png",
                         UploadedAt = Factory.Clock.UtcNow,
                         UploadedBy = TestSeedData.Users.AdminId,

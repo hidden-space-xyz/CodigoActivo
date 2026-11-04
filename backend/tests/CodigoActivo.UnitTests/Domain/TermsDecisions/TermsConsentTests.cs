@@ -567,7 +567,7 @@ public sealed class TermsConsentTests
             [],
             [
                 new TermsDecision(TermsDocumentId.From(conditions), true),
-                new TermsDecision(TermsDocumentId.From(consent), true),
+                new TermsDecision(TermsDocumentId.From(consent), true, SignatureImages.Png()),
             ]
         );
 
@@ -603,11 +603,93 @@ public sealed class TermsConsentTests
         Apply(
             Documents((consent, false)),
             [stored],
-            [new TermsDecision(TermsDocumentId.From(consent), true)]
+            [new TermsDecision(TermsDocumentId.From(consent), true, SignatureImages.Png())]
         );
 
         stored.Accepted.Should().BeTrue();
         stored.DecidedById.Value.Should().Be(userId);
         stored.DecidedAt.Should().Be(Now);
+    }
+
+    [Fact]
+    public void ApplyAcceptingAConsentAMinorDecidesWithoutTheirSignatureIsRefused()
+    {
+        DecideFor(new DateOnly(2012, 7, 4));
+        var consent = Guid.NewGuid();
+        consents.Add(TermsDocumentId.From(consent));
+
+        var result = Consent(
+            Documents((consent, false)),
+            [],
+            [new TermsDecision(TermsDocumentId.From(consent), true)]
+        );
+
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventTermsSignatureRequired);
+    }
+
+    [Fact]
+    public void ApplyAcceptingAConsentAMinorDecidesKeepsTheirSignature()
+    {
+        DecideFor(new DateOnly(2012, 7, 4));
+        var conditions = Guid.NewGuid();
+        var consent = Guid.NewGuid();
+        consents.Add(TermsDocumentId.From(consent));
+        var png = SignatureImages.Png();
+
+        var outcome = Apply(
+            Documents((conditions, true), (consent, false)),
+            [],
+            [
+                new TermsDecision(TermsDocumentId.From(conditions), true),
+                new TermsDecision(TermsDocumentId.From(consent), true, png),
+            ]
+        );
+
+        outcome
+            .Recorded.Single(recorded => recorded.TermsDocumentId.Value == consent)
+            .Signature!.ToArray()
+            .Should()
+            .Equal(png);
+        outcome
+            .Recorded.Single(recorded => recorded.TermsDocumentId.Value == conditions)
+            .Signature.Should()
+            .BeNull();
+    }
+
+    [Fact]
+    public void ApplyAcceptingAConsentTheGuardianDecidesNeedsNoSignature()
+    {
+        DecideFor(new DateOnly(2012, 7, 5));
+        var consent = Guid.NewGuid();
+        consents.Add(TermsDocumentId.From(consent));
+
+        var outcome = Apply(
+            Documents((consent, false)),
+            [],
+            [new TermsDecision(TermsDocumentId.From(consent), true)]
+        );
+
+        var recorded = outcome.Recorded.Should().ContainSingle().Which;
+        recorded.Accepted.Should().BeTrue();
+        recorded.DecidedById.Value.Should().Be(guardianId);
+        recorded.Signature.Should().BeNull();
+    }
+
+    [Fact]
+    public void ApplyDecliningAConsentAMinorDecidesNeedsNoSignature()
+    {
+        DecideFor(new DateOnly(2012, 7, 4));
+        var consent = Guid.NewGuid();
+        consents.Add(TermsDocumentId.From(consent));
+
+        var outcome = Apply(
+            Documents((consent, false)),
+            [],
+            [new TermsDecision(TermsDocumentId.From(consent), false)]
+        );
+
+        var recorded = outcome.Recorded.Should().ContainSingle().Which;
+        recorded.Accepted.Should().BeFalse();
+        recorded.Signature.Should().BeNull();
     }
 }

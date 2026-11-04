@@ -1930,7 +1930,7 @@
         "selfHeader": "Tú",
         "decidedByUser": "Decides tú por {name}",
         "decidedByPerson": "Decide {name}",
-        "handOver": "Deja que {name} lea estos documentos y decida: desde los 14 años es quien da o niega sus propios consentimientos.",
+        "handOver": "Deja que {name} lea estos documentos y decida: desde los 14 años es quien da o niega sus propios consentimientos, y firma los que acepta.",
         "required": "Obligatorio",
         "optional": "Opcional",
         "openDocument": "Ver el contenido de {name}",

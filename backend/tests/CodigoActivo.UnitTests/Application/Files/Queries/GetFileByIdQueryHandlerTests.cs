@@ -23,7 +23,7 @@ public sealed class GetFileByIdQueryHandlerTests
     [Fact]
     public async Task HandleAsyncFileExistsReturnsItsMetadata()
     {
-        var file = NewFileRow(name: "acta.pdf", extension: "pdf");
+        var file = NewFileRow(extension: "pdf");
         store.Files.AddRange([NewFileRow(), file]);
 
         var result = await sut.HandleAsync(
@@ -32,7 +32,7 @@ public sealed class GetFileByIdQueryHandlerTests
         );
 
         result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(new FileResponse(file.Id, "acta.pdf", "pdf", file.UploadedAt));
+        result.Value.Should().Be(new FileResponse(file.Id, "pdf", file.UploadedAt));
     }
 
     [Fact]

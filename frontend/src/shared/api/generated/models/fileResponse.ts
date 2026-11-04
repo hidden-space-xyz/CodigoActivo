@@ -7,7 +7,6 @@
 
 export interface FileResponse {
   id: string;
-  name: string;
   extension: string;
   uploadedAt: string;
 }

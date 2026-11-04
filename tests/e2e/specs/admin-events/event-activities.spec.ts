@@ -22,8 +22,8 @@ test.describe('event activities admin', () => {
     const event = await seed.event({ startsIn: EVENT_DAY })
     const activity = await seed.activity(event)
     await seed.activity(event, { startHour: 16 })
-    await seed.enrol(activity, member.account.id, 'leader')
-    await seed.enrol(activity, participant.account.id, 'participant', 'requested')
+    await seed.enrol(member.api, activity, member.account.id, 'leader')
+    await seed.enrol(participant.api, activity, participant.account.id, 'participant', 'requested')
     const page = await pageAs(admin)
     const eventPage = new EventAdminPage(page)
 

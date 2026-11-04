@@ -6,7 +6,6 @@ import { MAX_IMAGE_UPLOAD_BYTES } from '@/shared/config'
 import { formatFileSize } from '@/shared/lib/number'
 
 import { renderWithProviders, t } from '../../../../support/render'
-import { apiError, http, HttpResponse, server } from '../../../../support/server'
 
 function image(name = 'poster.png', size?: number): File {
   const file = new File(['bytes'], name, { type: 'image/png' })
@@ -22,19 +21,6 @@ async function pickFiles(wrapper: VueWrapper, files: File[]): Promise<void> {
 
 function buttonLabels(wrapper: VueWrapper): string[] {
   return wrapper.findAll('button').map((button) => button.text())
-}
-
-function serveFileNames(names: Record<string, { name?: string; extension?: string }>) {
-  const requested: string[] = []
-  server.use(
-    http.get('/api/files/:fileId', ({ params }) => {
-      const id = String(params.fileId)
-      requested.push(id)
-      const meta = names[id]
-      return meta ? HttpResponse.json({ id, ...meta }) : apiError(404, 'FileNotFound')
-    }),
-  )
-  return requested
 }
 
 describe('ThumbnailField', () => {
@@ -67,9 +53,7 @@ describe('ThumbnailField', () => {
     expect(wrapper.find('.thumb__preview--invalid').exists()).toBe(false)
   })
 
-  it('previews the stored thumbnail and shows its file name', async () => {
-    const requested = serveFileNames({ 'file-1': { name: 'poster.png', extension: 'png' } })
-
+  it('previews the stored thumbnail and names it by its identifier', async () => {
     const { wrapper } = await renderWithProviders(ThumbnailField, {
       props: { existingThumbnailId: 'file-1' },
     })
@@ -79,21 +63,8 @@ describe('ThumbnailField', () => {
       src: '/api/files/file-1/content',
       alt: t('entities.file.thumbnail.alt'),
     })
-    expect(wrapper.find('.thumb__name').text()).toBe('poster.png')
+    expect(wrapper.find('.thumb__name').text()).toBe('file-1')
     expect(buttonLabels(wrapper)).toEqual([t('entities.file.thumbnail.change')])
-    expect(requested).toEqual(['file-1'])
-  })
-
-  it('keeps the preview without a name when the file metadata cannot be loaded', async () => {
-    server.use(http.get('/api/files/file-1', () => apiError(500)))
-
-    const { wrapper } = await renderWithProviders(ThumbnailField, {
-      props: { existingThumbnailId: 'file-1' },
-    })
-    await flushPromises()
-
-    expect(wrapper.find('img').attributes('src')).toBe('/api/files/file-1/content')
-    expect(wrapper.find('.thumb__name').exists()).toBe(false)
   })
 
   it('opens the native file picker from the select button', async () => {
@@ -167,7 +138,6 @@ describe('ThumbnailField', () => {
   })
 
   it('restores the stored thumbnail when the picked image is removed', async () => {
-    const requested = serveFileNames({ 'file-1': { name: 'poster.png', extension: 'png' } })
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:picked')
     const revoke = vi.spyOn(URL, 'revokeObjectURL')
     const { wrapper } = await renderWithProviders(ThumbnailField, {
@@ -185,9 +155,8 @@ describe('ThumbnailField', () => {
     expect(wrapper.emitted('update:file')?.at(-1)).toEqual([null])
     expect(revoke).toHaveBeenCalledWith('blob:picked')
     expect(wrapper.find('img').attributes('src')).toBe('/api/files/file-1/content')
-    expect(wrapper.find('.thumb__name').text()).toBe('poster.png')
+    expect(wrapper.find('.thumb__name').text()).toBe('file-1')
     expect(buttonLabels(wrapper)).toEqual([t('entities.file.thumbnail.change')])
-    expect(requested).toEqual(['file-1', 'file-1'])
   })
 
   it('returns to the placeholder when the picked image is removed without a stored one', async () => {
@@ -206,10 +175,6 @@ describe('ThumbnailField', () => {
   })
 
   it('follows changes of the stored thumbnail id and drops a picked image', async () => {
-    const requested = serveFileNames({
-      'file-1': { name: 'uno.png', extension: 'png' },
-      'file-2': { name: 'dos.jpg', extension: 'jpg' },
-    })
     const { wrapper } = await renderWithProviders(ThumbnailField, {
       props: { existingThumbnailId: 'file-1' },
     })
@@ -220,24 +185,12 @@ describe('ThumbnailField', () => {
     await flushPromises()
 
     expect(wrapper.find('img').attributes('src')).toBe('/api/files/file-2/content')
-    expect(wrapper.find('.thumb__name').text()).toBe('dos.jpg')
+    expect(wrapper.find('.thumb__name').text()).toBe('file-2')
     expect(buttonLabels(wrapper)).toEqual([t('entities.file.thumbnail.change')])
 
     await wrapper.setProps({ existingThumbnailId: null })
 
     expect(wrapper.find('img').exists()).toBe(false)
-    expect(wrapper.find('.thumb__name').exists()).toBe(false)
-    expect(requested).toEqual(['file-1', 'file-2'])
-  })
-
-  it('shows an empty name for a stored thumbnail that no longer exists', async () => {
-    serveFileNames({})
-    const { wrapper } = await renderWithProviders(ThumbnailField, {
-      props: { existingThumbnailId: 'gone' },
-    })
-    await flushPromises()
-
-    expect(wrapper.find('img').attributes('src')).toBe('/api/files/gone/content')
     expect(wrapper.find('.thumb__name').exists()).toBe(false)
   })
 })

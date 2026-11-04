@@ -601,7 +601,7 @@ public sealed class TermsGateTests
         IReadOnlyList<TermsDecision> both =
         [
             new TermsDecision(TermsDocumentId.From(conditionsId), true),
-            new TermsDecision(TermsDocumentId.From(consentId), true),
+            new TermsDecision(TermsDocumentId.From(consentId), true, SignatureImages.Png()),
         ];
 
         var result = await sut.EnsureDecidedAsync(

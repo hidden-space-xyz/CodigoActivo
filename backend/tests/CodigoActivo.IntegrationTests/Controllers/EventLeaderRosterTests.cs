@@ -146,7 +146,6 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
                     new
                     {
                         Id = ThumbnailId,
-                        Name = "thumb",
                         Extension = "png",
                         UploadedAt = SeededAt,
                         UploadedBy = TestSeedData.Users.AdminId,

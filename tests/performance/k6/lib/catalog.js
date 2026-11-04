@@ -40,7 +40,6 @@ const endpoints = {
     'GET /api/events/{eventId}/leader-roster',
     'GET /api/events/{eventId}/terms',
     'GET /api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/signature',
-    'GET /api/files/{fileId}',
     'GET /api/files/{fileId}/content',
     'GET /api/files/{fileId}/thumbnail',
     'GET /api/legal-entity',
