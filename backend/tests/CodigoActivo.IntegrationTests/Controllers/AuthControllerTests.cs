@@ -549,9 +549,8 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var body = await response.ReadJsonAsync<UserResponse>(Ct);
-        body!.Status.Id.Should().Be(KnownIds.UserStatusTypes.Active);
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await response.Content.ReadAsStringAsync(Ct)).Should().BeEmpty();
 
         var stored = await FindAsync<User>(userId);
         stored!.Status.Should().Be(UserStatus.Active);
@@ -569,7 +568,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             new VerifyRequest(otp),
             Ct
         );
-        verify.StatusCode.Should().Be(HttpStatusCode.OK);
+        verify.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var challenge = await PassPasswordStepAsync(
             client,
@@ -678,7 +677,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             new VerifyRequest(newOtp),
             Ct
         );
-        verify.StatusCode.Should().Be(HttpStatusCode.OK);
+        verify.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     [Fact]
@@ -705,7 +704,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             new VerifyRequest(secondOtp),
             Ct
         );
-        verify.StatusCode.Should().Be(HttpStatusCode.OK);
+        verify.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
     [Theory]
@@ -1275,7 +1274,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
             new VerifyRequest(verificationOtp),
             Ct
         );
-        verify.StatusCode.Should().Be(HttpStatusCode.OK);
+        verify.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var reset = await client.PatchJsonAsync(
             $"/api/auth/{userId}/reset-password",

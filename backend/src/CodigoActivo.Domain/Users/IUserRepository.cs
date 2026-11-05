@@ -74,6 +74,18 @@ public interface IUserRepository : IRepository<User>
     );
 
     /// <summary>
+    /// Loads the accounts that keep an email change or an authenticator enrollment that can no
+    /// longer be confirmed (<see cref="User.DiscardExpiredChanges"/>).
+    /// </summary>
+    /// <param name="now">Current timestamp.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result contains the accounts.</returns>
+    public Task<IReadOnlyList<User>> ListWithExpiredChangesAsync(
+        DateTimeOffset now,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
     /// Loads the dependents born up to a day.
     /// </summary>
     /// <param name="latestBirthDate">Latest birth date included.</param>

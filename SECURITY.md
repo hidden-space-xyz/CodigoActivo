@@ -107,7 +107,10 @@ authentication are not supported.
   Changing the DNI/NIE needs no password. Holders who change their own email keep
   the current one until they open the link emailed to the new address (`PATCH /api/auth/{id}/confirm-email`,
   no session needed): the rest of the edit applies at once, nothing changes when the mail cannot be queued
-  (`OtpResendCooldownActive`, `EmailSendFailed`), and a newer request replaces the pending one. When the new
+  (`OtpResendCooldownActive`, `EmailSendFailed`), and a newer request replaces the pending one. A pending
+  address whose link expired is dropped by `DiscardExpiredAccountChanges`, which
+  `ExpiredAccountChangeCleanupWorker` runs 30 seconds after startup and then hourly, keeping its data history,
+  together with any authenticator enrollment nobody confirmed in time. When the new
   address belongs to a verified account, its holder gets the same notice as registration instead of the link,
   so the answer never tells whether the address is in use; an account nobody verified that holds it is
   erased, keeping its data history, when the link is confirmed, and one verified in the meantime keeps it
@@ -218,8 +221,8 @@ since the row itself is the record, and neither does a change of excluded proper
 - **What**: each configuration declares `HasHistory()` or `HasNoHistory()` (`DataHistoryModelTests`).
   Historized: users, signups, terms decisions and their history, news consent changes, ratings, events,
   activities, terms documents and their versions, news, partners, resources and file metadata (never the file).
-  `ExcludedFromHistory()` keeps out the password hash, every code, the unconfirmed email change, authenticator
-  secrets, the login challenge, lockouts, the last login and the row version.
+  `ExcludedFromHistory()` keeps out the password hash, every code (of an email change, only the address asked
+  for is kept), authenticator secrets, the login challenge, lockouts, the last login and the row version.
 - **Coverage**: historized rows change only through the change tracker, the only writes the recorder sees, so
   none escapes the history; the model and `DataHistoryConventionTests` enforce it, as
   [ARCHITECTURE.md](ARCHITECTURE.md#domain-and-persistence) describes.
@@ -682,11 +685,12 @@ attachments of 8 MiB in all.
 
 New accounts must always confirm an emailed OTP before their first login, and holders confirm their own new
 email the same way; there is no switch. Mail to an address nobody has verified yet greets nobody, so neither
-registration nor an email change relays a name typed by someone else to that mailbox. Verification and
-password-reset codes expire after 15 minutes with a 60-second resend cooldown; an email-change link also
-lasts 15 minutes, and each new one needs the password again. Login and account-deletion codes share storage
-and expire after 10 minutes with the same cooldown. SMTP must be configured everywhere or the API refuses to
-start. Activity signup sends no message;
+registration nor an email change relays a name typed by someone else to that mailbox, and opening the
+verification link (`PATCH /api/auth/{id}/verify`) answers 204 without any of the account's data.
+Verification and password-reset codes expire after 15 minutes with a 60-second resend cooldown; an
+email-change link also lasts 15 minutes, and each new one needs the password again. Login and
+account-deletion codes share storage and expire after 10 minutes with the same cooldown. SMTP must be
+configured everywhere or the API refuses to start. Activity signup sends no message;
 confirming or rejecting one queues an outcome email after commit, always to the guardian address for a
 dependent. Delivery errors never roll back registration, recovery, activity decisions or security
 changes.

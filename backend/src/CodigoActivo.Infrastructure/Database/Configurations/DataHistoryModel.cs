@@ -63,6 +63,22 @@ public static class DataHistoryModel
     }
 
     /// <summary>
+    /// Leaves a member of a complex property out of the history, as
+    /// <see cref="ExcludedFromHistory{TProperty}(PropertyBuilder{TProperty})"/> does for a property.
+    /// </summary>
+    /// <typeparam name="TProperty">Property type.</typeparam>
+    /// <param name="builder">Builder of the member.</param>
+    /// <returns>The same builder.</returns>
+    public static ComplexTypePropertyBuilder<TProperty> ExcludedFromHistory<TProperty>(
+        this ComplexTypePropertyBuilder<TProperty> builder
+    )
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        return builder.HasAnnotation(ExcludedAnnotation, true);
+    }
+
+    /// <summary>
     /// Leaves a complex property, with every member, out of the history.
     /// </summary>
     /// <typeparam name="TComplex">Complex type.</typeparam>

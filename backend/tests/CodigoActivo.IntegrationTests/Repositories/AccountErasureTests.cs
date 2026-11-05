@@ -489,6 +489,87 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task EraseAsyncMinorDiscardsTheWaitingEmailAboutItSentToTheGuardian()
+    {
+        var outbox = Factory.Services.GetRequiredService<IEmailOutboxStore>();
+        EmailRecipient[] guardian = [new(TestSeedData.MemberEmail, "Miembro")];
+        var topics = new (EmailKind Kind, string Topic)[]
+        {
+            (
+                EmailKind.ActivityNotification,
+                EmailTopics.SignupDecision(ClimbingId, TestSeedData.Users.MemberChildId)
+            ),
+            (
+                EmailKind.ComingOfAgeNotice,
+                EmailTopics.ComingOfAge(TestSeedData.Users.MemberChildId)
+            ),
+            (
+                EmailKind.ActivityNotification,
+                EmailTopics.SignupDecision(ClimbingId, TestSeedData.Users.MemberId)
+            ),
+        };
+        foreach (var (kind, topic) in topics)
+        {
+            await outbox.TryEnqueueAsync(
+                new EmailBatch(kind, "Asunto", "<p>Hola</p>", "Hola", guardian) { Topic = topic },
+                Ct
+            );
+        }
+
+        (await EraseAsync(TestSeedData.Users.MemberChildId)).Should().BeTrue();
+
+        var waiting = await Factory.QueryAsync(db =>
+            db.EmailOutboxMessages.AsNoTracking().Select(message => message.Topic).ToListAsync(Ct)
+        );
+        waiting
+            .Should()
+            .Equal(
+                [EmailTopics.SignupDecision(ClimbingId, TestSeedData.Users.MemberId)],
+                "only the mail about the erased minor goes, not the guardian's own"
+            );
+    }
+
+    [Fact]
+    public async Task EraseAsyncDiscardsTheLinkToTheNewAddressButNotTheMailOfItsHolder()
+    {
+        var outbox = Factory.Services.GetRequiredService<IEmailOutboxStore>();
+        EmailRecipient[] newAddress = [new(TestSeedData.AdminEmail, "Administrador")];
+        string[] topics =
+        [
+            EmailTopics.EmailChange(TestSeedData.Users.MemberId),
+            EmailTopics.AccountCode,
+        ];
+        foreach (var topic in topics)
+        {
+            await outbox.TryEnqueueAsync(
+                new EmailBatch(
+                    EmailKind.AccountVerification,
+                    "Asunto",
+                    "<p>Hola</p>",
+                    "Hola",
+                    newAddress
+                )
+                {
+                    Topic = topic,
+                },
+                Ct
+            );
+        }
+
+        (await EraseAsync(TestSeedData.Users.MemberId)).Should().BeTrue();
+
+        var waiting = await Factory.QueryAsync(db =>
+            db.EmailOutboxMessages.AsNoTracking().Select(message => message.Topic).ToListAsync(Ct)
+        );
+        waiting
+            .Should()
+            .Equal(
+                [EmailTopics.AccountCode],
+                "the holder of the address the erased account asked for keeps their own mail"
+            );
+    }
+
+    [Fact]
     public async Task EraseAsyncGuardianDecisionForAMinorIsKeptUnderTheMinor()
     {
         await SeedHouseholdAsync();
@@ -601,7 +682,8 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                 || key.StartsWith(nameof(User.PasswordResetCode), StringComparison.Ordinal)
                 || key.StartsWith(nameof(User.VerificationCode), StringComparison.Ordinal)
                 || key.StartsWith(nameof(User.LoginChallenge), StringComparison.Ordinal)
-                || key.StartsWith(nameof(User.EmailChange), StringComparison.Ordinal)
+                || key == $"{nameof(User.EmailChange)}.{nameof(EmailChange.CodeHash)}"
+                || key == $"{nameof(User.EmailChange)}.{nameof(EmailChange.ExpiresAt)}"
                 || key.StartsWith(nameof(User.TwoFactorLockout), StringComparison.Ordinal)
                 || key.StartsWith(nameof(User.PasswordLockout), StringComparison.Ordinal)
             );

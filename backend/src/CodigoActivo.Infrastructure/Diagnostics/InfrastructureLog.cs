@@ -228,6 +228,21 @@ public static partial class InfrastructureLog
     );
 
     /// <summary>
+    /// Records that the periodic removal of the expired email changes and authenticator
+    /// enrollments failed.
+    /// </summary>
+    /// <param name="logger">Logger used to record operational diagnostics.</param>
+    /// <param name="exception">Failure that ended the run.</param>
+    [LoggerMessage(
+        Level = LogLevel.Error,
+        Message = "The expired account change cleanup run failed; the next run will retry"
+    )]
+    public static partial void ExpiredAccountChangeCleanupFailed(
+        this ILogger logger,
+        Exception exception
+    );
+
+    /// <summary>
     /// Records that the periodic purge of the data history failed.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>

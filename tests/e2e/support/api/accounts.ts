@@ -91,9 +91,9 @@ export async function registerAccount(
     sentAfter,
   })
   const { userId, code } = accountLinkParts(linkIn(email, '/verify-account'))
-  const user = await api.patch<UserResponse>(`/api/auth/${userId}/verify`, { otp: code })
-  const dependents = minors.length && admin ? await dependentsOf(admin, user.id, minors) : []
-  return { ...person, password: PASSWORD, id: user.id, dependents }
+  await api.patch(`/api/auth/${userId}/verify`, { otp: code })
+  const dependents = minors.length && admin ? await dependentsOf(admin, userId, minors) : []
+  return { ...person, password: PASSWORD, id: userId, dependents }
 }
 
 async function dependentsOf(

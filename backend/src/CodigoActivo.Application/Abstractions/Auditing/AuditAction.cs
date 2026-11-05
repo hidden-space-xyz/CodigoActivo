@@ -222,4 +222,7 @@ public enum AuditAction
 
     /// <summary>Told the legal contact about the consultations of the blocked data opened.</summary>
     SendBlockedDataConsultationNotices,
+
+    /// <summary>Dropped the email changes and authenticator enrollments that expired.</summary>
+    DiscardExpiredAccountChanges,
 }

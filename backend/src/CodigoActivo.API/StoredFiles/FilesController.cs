@@ -27,11 +27,12 @@ namespace CodigoActivo.API.StoredFiles;
 [Route("api/files")]
 public class FilesController : ApiControllerBase
 {
-    private const string ImmutableContentCacheControl = "public, max-age=31536000, immutable";
+    private const string RevalidatedContentCacheControl = "public, no-cache";
 
     /// <summary>
-    /// Gets the requested content. Content never changes under its id (a new image is a new
-    /// file), so clients may keep it for a year without revalidating.
+    /// Gets the requested content. Clients may store it but must revalidate it on every use, which
+    /// its validators answer with a 304 while it exists, so an image deleted, for example after its
+    /// consent was withdrawn, stops being shown by browsers and intermediaries alike.
     /// </summary>
     /// <param name="fileId">Identifier of the file.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
@@ -50,8 +51,8 @@ public class FilesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Gets the smaller copy of the requested content that lists, cards and logos show. Like the
-    /// content, it never changes under its id.
+    /// Gets the smaller copy of the requested content that lists, cards and logos show,
+    /// revalidated on every use like the content.
     /// </summary>
     /// <param name="fileId">Identifier of the file.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
@@ -143,7 +144,7 @@ public class FilesController : ApiControllerBase
         var ticks = lastModified.UtcTicks.ToString(CultureInfo.InvariantCulture);
         var suffix = variant is FileVariant.Thumbnail ? "-thumbnail" : string.Empty;
         var etag = new EntityTagHeaderValue($"\"{fileId:N}-{ticks}{suffix}\"");
-        Response.Headers.CacheControl = ImmutableContentCacheControl;
+        Response.Headers.CacheControl = RevalidatedContentCacheControl;
         return File(content.Content, content.ContentType, lastModified, etag);
     }
 

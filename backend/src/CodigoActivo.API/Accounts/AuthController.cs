@@ -77,28 +77,26 @@ public class AuthController : ApiControllerBase
 
     /// <summary>
     /// Verifies the email of a new account with the code of the link emailed to it. It needs no
-    /// session.
+    /// session and returns none of the account's data, since whoever opens the link may not be the
+    /// person who registered.
     /// </summary>
     /// <param name="userId">Identifier of the account to verify.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getUser">Query handler that reads the verified account.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing the verified account, or an error response.</returns>
+    /// <returns>A 204 response, or an error response.</returns>
     [HttpPatch("{userId:guid}/verify")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
-    public async Task<ActionResult<UserResponse>> VerifyAsync(
+    public async Task<ActionResult> VerifyAsync(
         Guid userId,
         [FromBody] VerifyRequest request,
         [FromServices] ICommandHandler<VerifyUserCommand, Result> handler,
-        [FromServices] IQueryHandler<GetAccountQuery, Result<UserResponse>> getUser,
         CancellationToken ct
     )
     {
-        return await ToOkAfterAsync(
-            await handler.HandleAsync(new VerifyUserCommand(UserId.From(userId), request.Otp), ct),
-            () => getUser.HandleAsync(new GetAccountQuery(UserId.From(userId)), ct)
+        return ToNoContent(
+            await handler.HandleAsync(new VerifyUserCommand(UserId.From(userId), request.Otp), ct)
         );
     }
 

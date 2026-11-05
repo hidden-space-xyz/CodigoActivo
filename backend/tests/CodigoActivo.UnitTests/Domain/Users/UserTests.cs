@@ -365,6 +365,44 @@ public sealed class UserTests
     }
 
     [Fact]
+    public void DiscardExpiredChangesDropsTheExpiredEmailChangeAndEnrollmentButNotTheAuthenticator()
+    {
+        var user = NewPendingUser();
+        Persisted.Overwrite(
+            user,
+            new
+            {
+                EmailChange = new EmailChange(
+                    EmailAddress.FromStored("nueva@test.local"),
+                    "HASH",
+                    Now.AddSeconds(-1)
+                ),
+                Authenticator = new Authenticator("ACTIVE", 41, "PENDING", Now),
+            }
+        );
+
+        user.DiscardExpiredChanges(Now).Should().BeTrue();
+
+        user.EmailChange.Should().Be(default(EmailChange));
+        user.Authenticator.Should()
+            .Be(new Authenticator("ACTIVE", 41, PendingKey: null, PendingExpiresAt: null));
+    }
+
+    [Fact]
+    public void DiscardExpiredChangesKeepsWhatCanStillBeConfirmed()
+    {
+        var user = NewPendingUser();
+        var emailChange = new EmailChange(EmailAddress.FromStored("nueva@test.local"), "HASH", Now);
+        var authenticator = new Authenticator(null, null, "PENDING", Now.AddSeconds(1));
+        Persisted.Overwrite(user, new { EmailChange = emailChange, Authenticator = authenticator });
+
+        user.DiscardExpiredChanges(Now).Should().BeFalse();
+
+        user.EmailChange.Should().Be(emailChange);
+        user.Authenticator.Should().Be(authenticator);
+    }
+
+    [Fact]
     public void EnableAuthenticatorActiveAuthenticatorIsNeverReplaced()
     {
         var user = NewPendingUser();

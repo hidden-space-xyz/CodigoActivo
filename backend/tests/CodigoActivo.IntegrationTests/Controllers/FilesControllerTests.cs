@@ -170,7 +170,10 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     {
         var client = CreateClient();
 
-        var response = await client.GetAsync(TestUri.Rel($"/api/files/{Guid.NewGuid()}/content"), Ct);
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/files/{Guid.NewGuid()}/content"),
+            Ct
+        );
 
         await response.ShouldBeNotFoundAsync(ErrorCode.FileNotFound);
     }
@@ -196,7 +199,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task GetThumbnailReturnsTheImmutableThumbnailWithItsOwnEtag()
+    public async Task GetThumbnailReturnsTheRevalidatedThumbnailWithItsOwnEtag()
     {
         var created = await UploadAsAdminAsync(TestImages.Png(), "photo.png");
         var client = CreateClient();
@@ -208,7 +211,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         response.Content.Headers.ContentType!.MediaType.Should().Be("image/webp");
-        response.Headers.CacheControl!.Extensions.Select(e => e.Name).Should().Contain("immutable");
+        response.Headers.CacheControl!.NoCache.Should().BeTrue();
         var ticks = created.UploadedAt.UtcTicks.ToString(CultureInfo.InvariantCulture);
         response.Headers.ETag!.Tag.Should().Be($"\"{created.Id:N}-{ticks}-thumbnail\"");
         var downloaded = await response.Content.ReadAsByteArrayAsync(Ct);

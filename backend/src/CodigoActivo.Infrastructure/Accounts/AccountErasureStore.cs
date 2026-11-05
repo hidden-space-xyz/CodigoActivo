@@ -58,15 +58,21 @@ public sealed class AccountErasureStore(CodigoActivoDbContext context) : IAccoun
     /// <inheritdoc />
     public async Task DiscardPendingEmailAsync(UserId accountId, CancellationToken ct = default)
     {
+        var aboutHousehold = (await HouseholdAsync(accountId, ct))
+            .Select(id => "%" + EmailTopics.AboutPersonSuffix(id.Value))
+            .ToArray();
         await context.Database.ExecuteSqlAsync(
             $"""
             DELETE FROM email_outbox_messages
-            WHERE to_address IN (
-                SELECT email
-                FROM users
-                WHERE (id = {accountId.Value} OR parent_id = {accountId.Value})
-                  AND email IS NOT NULL
-            )
+            WHERE (
+                to_address IN (
+                    SELECT email
+                    FROM users
+                    WHERE (id = {accountId.Value} OR parent_id = {accountId.Value})
+                      AND email IS NOT NULL
+                )
+                OR topic LIKE ANY ({aboutHousehold})
+              )
               AND kind NOT IN (
                 {nameof(EmailKind.ConsentWithdrawalNotice)},
                 {nameof(EmailKind.BlockedDataConsultationNotice)}

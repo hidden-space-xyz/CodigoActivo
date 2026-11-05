@@ -1196,17 +1196,17 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
                             b1.Property<string>("CodeHash")
                                 .HasColumnType("text")
-                                .HasColumnName("email_change_code_hash");
+                                .HasColumnName("email_change_code_hash")
+                                .HasAnnotation("CodigoActivo:DataHistoryExcluded", true);
 
                             b1.Property<DateTimeOffset?>("ExpiresAt")
                                 .HasColumnType("timestamp with time zone")
-                                .HasColumnName("email_change_expires_at");
+                                .HasColumnName("email_change_expires_at")
+                                .HasAnnotation("CodigoActivo:DataHistoryExcluded", true);
 
                             b1.Property<string>("NewEmail")
                                 .HasColumnType("text")
                                 .HasColumnName("pending_email");
-
-                            b1.HasPropertyAnnotation("CodigoActivo:DataHistoryExcluded", true);
                         });
 
                     b.ComplexProperty(typeof(Dictionary<string, object>), "LoginChallenge", "CodigoActivo.Domain.Users.User.LoginChallenge#LoginChallenge", b1 =>

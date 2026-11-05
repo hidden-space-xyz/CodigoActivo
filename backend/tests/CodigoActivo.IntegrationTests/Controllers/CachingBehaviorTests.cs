@@ -255,7 +255,7 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task GetContentIsImmutableForClientsAndLeavesOutputCacheOnDelete()
+    public async Task GetContentIsRevalidatedByClientsAndLeavesOutputCacheOnDelete()
     {
         var admin = await LoginAsAdminAsync();
         using var uploaded = await admin.SendUploadAsync(
@@ -273,11 +273,17 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
 
         first.StatusCode.Should().Be(HttpStatusCode.OK);
         first.Headers.CacheControl!.Public.Should().BeTrue();
-        first.Headers.CacheControl.MaxAge.Should().Be(TimeSpan.FromDays(365));
-        first.Headers.CacheControl.Extensions.Select(e => e.Name).Should().Contain("immutable");
+        first.Headers.CacheControl.NoCache.Should().BeTrue();
+        first.Headers.CacheControl.MaxAge.Should().BeNull();
+        first.Headers.CacheControl.Extensions.Should().BeEmpty();
         cached.StatusCode.Should().Be(HttpStatusCode.OK);
         cached.Headers.Age.Should().NotBeNull();
-        cached.Headers.CacheControl!.Extensions.Select(e => e.Name).Should().Contain("immutable");
+        cached.Headers.CacheControl!.NoCache.Should().BeTrue();
+
+        using var revalidation = new HttpRequestMessage(HttpMethod.Get, contentUrl);
+        revalidation.Headers.IfNoneMatch.Add(first.Headers.ETag!);
+        using var unchanged = await anonymous.SendAsync(revalidation, Ct);
+        unchanged.StatusCode.Should().Be(HttpStatusCode.NotModified);
 
         using var deleted = await admin.DeleteWithCsrfAsync($"/api/files/{file.Id}", Ct);
         deleted.StatusCode.Should().Be(HttpStatusCode.NoContent);

@@ -40,4 +40,14 @@ public readonly record struct EmailChange(
     {
         return ExpiresAt >= now ? CodeHash : null;
     }
+
+    /// <summary>
+    /// Determines whether a change waits although its code can no longer confirm it.
+    /// </summary>
+    /// <param name="now">Current time.</param>
+    /// <returns><see langword="true"/> when a new email waits and its code expired.</returns>
+    public bool HasExpired(DateTimeOffset now)
+    {
+        return NewEmail is not null && UsableCodeHash(now) is null;
+    }
 }

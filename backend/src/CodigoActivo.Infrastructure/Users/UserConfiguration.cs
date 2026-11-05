@@ -54,10 +54,15 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             u => u.EmailChange,
             change =>
             {
-                change.ExcludedFromHistory();
                 change.Property(c => c.NewEmail).HasColumnName("pending_email");
-                change.Property(c => c.CodeHash).HasColumnName("email_change_code_hash");
-                change.Property(c => c.ExpiresAt).HasColumnName("email_change_expires_at");
+                change
+                    .Property(c => c.CodeHash)
+                    .HasColumnName("email_change_code_hash")
+                    .ExcludedFromHistory();
+                change
+                    .Property(c => c.ExpiresAt)
+                    .HasColumnName("email_change_expires_at")
+                    .ExcludedFromHistory();
             }
         );
         builder.ComplexProperty(

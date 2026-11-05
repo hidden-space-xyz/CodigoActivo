@@ -21,7 +21,6 @@ public sealed class SeoDocumentsTests
             "User-agent: *",
             "Disallow: /admin",
             "Disallow: /api/",
-            "Allow: /api/files/",
             "",
             $"Sitemap: {BaseUrl}/sitemap.xml"
         );

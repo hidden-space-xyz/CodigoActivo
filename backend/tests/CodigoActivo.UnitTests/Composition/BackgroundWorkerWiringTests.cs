@@ -16,6 +16,7 @@ public sealed class BackgroundWorkerWiringTests
 {
     [Theory]
     [InlineData(typeof(DataHistoryPurgeWorker))]
+    [InlineData(typeof(ExpiredAccountChangeCleanupWorker))]
     [InlineData(typeof(LegalNoticeWorker))]
     [InlineData(typeof(LogRetentionWorker))]
     [InlineData(typeof(UnverifiedAccountPurgeWorker))]

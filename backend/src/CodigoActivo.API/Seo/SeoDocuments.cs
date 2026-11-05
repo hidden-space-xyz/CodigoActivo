@@ -36,7 +36,6 @@ public static class SeoDocuments
             "User-agent: *",
             "Disallow: /admin",
             "Disallow: /api/",
-            "Allow: /api/files/",
             "",
             $"Sitemap: {baseUrl.TrimEnd('/')}/sitemap.xml"
         );

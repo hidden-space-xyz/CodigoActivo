@@ -75,6 +75,7 @@ export type AuditAction =
   | 'ExportBlockedData'
   | 'SendConsentWithdrawalNotices'
   | 'SendBlockedDataConsultationNotices'
+  | 'DiscardExpiredAccountChanges'
 
 /** Kind of thing an audit entry points at. */
 export type AuditEntityType =

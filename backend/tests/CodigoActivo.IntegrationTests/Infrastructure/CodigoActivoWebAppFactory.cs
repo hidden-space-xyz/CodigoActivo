@@ -152,6 +152,7 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, 
         builder.ConfigureTestServices(services =>
         {
             RemoveHostedService<ExpiredSessionCleanupWorker>(services);
+            RemoveHostedService<ExpiredAccountChangeCleanupWorker>(services);
             RemoveHostedService<DataHistoryPurgeWorker>(services);
             RemoveHostedService<UnverifiedAccountPurgeWorker>(services);
             RemoveHostedService<AdultDependentPurgeWorker>(services);

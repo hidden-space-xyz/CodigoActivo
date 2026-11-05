@@ -161,8 +161,9 @@ no check enforces.
   which replaces an unverified account whose email a registration or a confirmed email change takes. It refuses
   the initial administrator and, in one `ExecuteInTransactionAsync` transaction, locks (`FOR UPDATE`) and loads
   the household and what belongs to it, signups, terms decisions and ratings included (`IAccountErasureStore`),
-  hands the content credited to the household over to the initial administrator and removes the account; any
-  other change staged in the unit of work commits with it. `InitialAdministratorGuard`, a
+  hands the content credited to the household over to the initial administrator, discards the email still
+  waiting about its members, whatever address it waits for (`EmailTopics.AboutPersonSuffix`), and removes the
+  account; any other change staged in the unit of work commits with it. `InitialAdministratorGuard`, a
   `SaveChangesInterceptor` that `CodigoActivoDbContext` adds to itself, refuses any deletion of the initial
   administrator. Deleting an event, an activity or a rating, or cancelling a signup, commits through
   `ParticipationEraser`, which locks and loads what the removal takes away (`IParticipationErasureStore`) in the
@@ -174,10 +175,10 @@ no check enforces.
   `DataHistoryConventionTests` forbids `ExecuteUpdate`/`ExecuteDelete` on historized types, except the password
   state `UserRepository` writes, which the history excludes, and limits raw SQL to a reviewed list of types that
   only lock, read or write tables without history. The scheduled commands (`PurgeDataHistory`,
-  `PurgeUnverifiedAccounts`, `PurgeAdultDependents`, `PurgeUnusedFiles`, `RemoveExpiredSessions` and
-  `SendComingOfAgeNotices`) apply the retentions [SECURITY.md](SECURITY.md) states, erasing accounts through
-  `AccountEraser` and uploads through `IOrphanFileCleaner`; hosted services in Infrastructure only run them on a
-  schedule. What the history holds, how long it is kept and who reads it is in
+  `PurgeUnverifiedAccounts`, `PurgeAdultDependents`, `PurgeUnusedFiles`, `RemoveExpiredSessions`,
+  `DiscardExpiredAccountChanges` and `SendComingOfAgeNotices`) apply the retentions [SECURITY.md](SECURITY.md)
+  states, erasing accounts through `AccountEraser` and uploads through `IOrphanFileCleaner`; hosted services in
+  Infrastructure only run them on a schedule. What the history holds, how long it is kept and who reads it is in
   [SECURITY.md](SECURITY.md#data-history).
 - Technical ports (`IClock`, `IPasswordHasher`, `IOneTimeCodeHasher`, `ITotpService`, `ISecretProtector`,
   `IFileStorage`, `IAuditTrail`, `IRequestOrigin`, the email, persistence and read ports) live in
@@ -316,9 +317,10 @@ list every version under `/versions` and read one under `/versions/{version}`.
 - Both stores are process-local and invalidated in process, which assumes one API replica.
 - nginx does not cache API responses. It adds `Cache-Control: no-store` to every proxied response that sets
   none, so browsers and intermediaries never store API data. File content and thumbnails keep the API's own
-  `public, max-age` of a year, `immutable`: a stored file's content never changes (there is no replace
-  endpoint; a new image is uploaded as a new file and the one it replaces is removed once unreferenced), so
-  a browser that already holds a deleted file may keep showing it from its cache.
+  `public, no-cache`: browsers and intermediaries may store them but revalidate every use against their
+  `ETag`, answered with a 304 while the file exists, so a deleted file, such as an image
+  whose consent was withdrawn, stops being shown everywhere. `robots.txt` keeps crawlers out of `/api/`,
+  files included.
 - Static files: hashed `/assets/` are `immutable` for a year, the stable-named icons last a day, and
   `index.html` with every SPA route is `no-cache`, so a deployment is picked up on the next navigation.
   Errors and any response without an explicit policy are `no-store`. A tab left open across a deployment

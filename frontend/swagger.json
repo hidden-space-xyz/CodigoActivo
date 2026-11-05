@@ -670,14 +670,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserResponse"
-                }
-              }
-            }
+            "description": "OK"
           }
         }
       }
@@ -5395,7 +5388,8 @@
           "SearchBlockedData",
           "ExportBlockedData",
           "SendConsentWithdrawalNotices",
-          "SendBlockedDataConsultationNotices"
+          "SendBlockedDataConsultationNotices",
+          "DiscardExpiredAccountChanges"
         ],
         "type": "string"
       },

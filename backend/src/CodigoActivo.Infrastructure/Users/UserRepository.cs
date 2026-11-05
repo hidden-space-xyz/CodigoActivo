@@ -74,6 +74,29 @@ public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<User>> ListWithExpiredChangesAsync(
+        DateTimeOffset now,
+        CancellationToken ct = default
+    )
+    {
+        return await Accounts
+            .Where(user =>
+                (
+                    user.EmailChange.NewEmail != null
+                    && (user.EmailChange.ExpiresAt == null || user.EmailChange.ExpiresAt < now)
+                )
+                || (
+                    user.Authenticator.PendingKey != null
+                    && (
+                        user.Authenticator.PendingExpiresAt == null
+                        || user.Authenticator.PendingExpiresAt <= now
+                    )
+                )
+            )
+            .ToListAsync(ct);
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<User>> ListDependentsBornUpToAsync(
         DateOnly latestBirthDate,
         CancellationToken ct = default

@@ -44,8 +44,10 @@ public interface IAccountErasureStore
     );
 
     /// <summary>
-    /// Deletes the email still waiting for the addresses of the account and its dependents, so no
-    /// message about an erased person leaves after the erasure. The notices to the association's
+    /// Deletes the email still waiting for the addresses of the account and its dependents and the
+    /// messages about one of them waiting for another address, such as a signup decision sent to
+    /// the guardian or the link to a new address, so no message about an erased person leaves
+    /// after the erasure. The notices to the association's
     /// legal contact, which are about other people, stay even when its address is one of them. It
     /// runs at once, inside the transaction of the erasure.
     /// </summary>

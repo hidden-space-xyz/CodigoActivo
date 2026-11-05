@@ -1573,7 +1573,8 @@
           "SearchBlockedData": "Buscar cuentas en los datos bloqueados",
           "ExportBlockedData": "Descargar un extracto de datos bloqueados",
           "SendConsentWithdrawalNotices": "Avisar al contacto legal de consentimientos retirados",
-          "SendBlockedDataConsultationNotices": "Avisar al contacto legal de consultas de datos bloqueados"
+          "SendBlockedDataConsultationNotices": "Avisar al contacto legal de consultas de datos bloqueados",
+          "DiscardExpiredAccountChanges": "Descartar cambios de email y autenticadores caducados"
         },
         "codes": {
           "UniqueConstraintViolation": "Otra petición guardó el mismo dato a la vez.",

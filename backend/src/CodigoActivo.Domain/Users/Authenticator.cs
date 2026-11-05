@@ -40,6 +40,25 @@ public readonly record struct Authenticator(
     }
 
     /// <summary>
+    /// Determines whether an enrollment is still stored although it can no longer be confirmed.
+    /// </summary>
+    /// <param name="now">Current timestamp.</param>
+    /// <returns><see langword="true"/> when a pending key exists and has expired.</returns>
+    public bool HasExpiredEnrollment(DateTimeOffset now)
+    {
+        return PendingKey is not null && !HasPendingEnrollment(now);
+    }
+
+    /// <summary>
+    /// Drops the pending enrollment, keeping the active authenticator.
+    /// </summary>
+    /// <returns>The authenticator with no enrollment pending.</returns>
+    public Authenticator WithoutEnrollment()
+    {
+        return this with { PendingKey = null, PendingExpiresAt = null };
+    }
+
+    /// <summary>
     /// Makes the pending enrollment the active authenticator.
     /// </summary>
     /// <param name="usedStep">Time step of the code that confirmed the enrollment.</param>

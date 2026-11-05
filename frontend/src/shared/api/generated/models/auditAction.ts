@@ -81,4 +81,5 @@ export const AuditAction = {
   ExportBlockedData: 'ExportBlockedData',
   SendConsentWithdrawalNotices: 'SendConsentWithdrawalNotices',
   SendBlockedDataConsultationNotices: 'SendBlockedDataConsultationNotices',
+  DiscardExpiredAccountChanges: 'DiscardExpiredAccountChanges',
 } as const;

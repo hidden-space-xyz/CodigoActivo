@@ -78,4 +78,16 @@ public static class EmailTopics
     {
         return $"coming-of-age:{dependentId:N}";
     }
+
+    /// <summary>
+    /// Gets the ending of every topic about one person: <see cref="EmailChange"/>,
+    /// <see cref="SignupDecision"/> and <see cref="ComingOfAge"/> end with it, whichever address
+    /// their message waits for, so the messages about an erased person can be found.
+    /// </summary>
+    /// <param name="userId">Identifier of the person.</param>
+    /// <returns>A colon followed by the 32 hexadecimal digits of the identifier.</returns>
+    public static string AboutPersonSuffix(Guid userId)
+    {
+        return $":{userId:N}";
+    }
 }

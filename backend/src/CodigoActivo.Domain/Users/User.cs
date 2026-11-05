@@ -466,6 +466,30 @@ public class User : AggregateRoot<UserId>
         );
     }
 
+    /// <summary>
+    /// Drops the email change whose code expired and the authenticator enrollment nobody confirmed
+    /// in time, so neither the address asked for nor the pending secret is kept once it can no
+    /// longer be used.
+    /// </summary>
+    /// <param name="now">Current timestamp.</param>
+    /// <returns><see langword="true"/> when anything was dropped.</returns>
+    public bool DiscardExpiredChanges(DateTimeOffset now)
+    {
+        var emailChangeExpired = EmailChange.HasExpired(now);
+        var enrollmentExpired = Authenticator.HasExpiredEnrollment(now);
+        if (emailChangeExpired)
+        {
+            ClearEmailChange();
+        }
+
+        if (enrollmentExpired)
+        {
+            Authenticator = Authenticator.WithoutEnrollment();
+        }
+
+        return emailChangeExpired || enrollmentExpired;
+    }
+
     private void EnsurePlannedHere(ProfileChange change)
     {
         ArgumentNullException.ThrowIfNull(change);

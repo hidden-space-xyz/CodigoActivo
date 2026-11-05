@@ -46,7 +46,8 @@ public sealed class DataHistoryModelTests : IDisposable
     [
         UserConfiguration.RowVersion,
         nameof(User.Authenticator),
-        nameof(User.EmailChange),
+        $"{nameof(User.EmailChange)}.{nameof(EmailChange.CodeHash)}",
+        $"{nameof(User.EmailChange)}.{nameof(EmailChange.ExpiresAt)}",
         nameof(User.LastLoginAt),
         nameof(User.LoginChallenge),
         nameof(User.LoginCode),
@@ -114,19 +115,32 @@ public sealed class DataHistoryModelTests : IDisposable
     [Fact]
     public void UserHistoryLeavesOutCredentialsAndSecurityState()
     {
-        var user = context.Model.FindEntityType(typeof(User))!;
-        var excluded = user.GetProperties()
-            .Cast<IReadOnlyPropertyBase>()
-            .Concat(user.GetComplexProperties())
-            .Where(property => property.IsExcludedFromHistory())
-            .Select(property => property.Name);
+        var excluded = ExcludedMembers(context.Model.FindEntityType(typeof(User))!, prefix: "");
 
         excluded
             .Should()
             .BeEquivalentTo(
                 ExcludedUserProperties,
-                "passwords, codes, authenticator secrets, unconfirmed email changes, lockouts and "
-                    + "logins never reach the data history; every other user property does"
+                "passwords, codes, authenticator secrets, lockouts and logins never reach the data "
+                    + "history; every other user property does, the address an email change asks "
+                    + "for included"
+            );
+    }
+
+    private static IEnumerable<string> ExcludedMembers(IReadOnlyTypeBase type, string prefix)
+    {
+        var complex = type.GetComplexProperties().ToList();
+        return type.GetProperties()
+            .Cast<IReadOnlyPropertyBase>()
+            .Concat(complex)
+            .Where(property => property.IsExcludedFromHistory())
+            .Select(property => prefix + property.Name)
+            .Concat(
+                complex
+                    .Where(property => !property.IsExcludedFromHistory())
+                    .SelectMany(property =>
+                        ExcludedMembers(property.ComplexType, $"{prefix}{property.Name}.")
+                    )
             );
     }
 }

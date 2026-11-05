@@ -61,6 +61,7 @@ internal static class AccountsRegistration
         services.AddScoped<AuthenticatorCodeVerifier>();
         services.AddScoped<DisposableEmailChecker>();
         services.AddHostedService<ExpiredSessionCleanupWorker>();
+        services.AddHostedService<ExpiredAccountChangeCleanupWorker>();
         services.AddSingleton(provider => new DisposableEmailDomainDownloader(
             new SocketsHttpHandler { AutomaticDecompression = System.Net.DecompressionMethods.All },
             provider.GetRequiredService<DisposableEmailDomainOptions>()
@@ -77,6 +78,7 @@ internal static class AccountsRegistration
         services.AddFixedOptions<TwoFactorOptions>();
         services.AddFixedOptions<SessionLifetimeOptions>();
         services.AddFixedOptions<SessionCleanupOptions>();
+        services.AddFixedOptions<ExpiredAccountChangeCleanupOptions>();
         services.AddFixedOptions<DisposableEmailDomainOptions>();
         services.AddValidatedOptions<InitialAdministratorOptions>(options =>
             options.Email = settings.Text("BOOTSTRAP_ADMIN_EMAIL", string.Empty)

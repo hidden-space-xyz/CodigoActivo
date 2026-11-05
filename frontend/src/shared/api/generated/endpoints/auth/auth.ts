@@ -231,7 +231,7 @@ export function usePostApiAuthRegister<TData = Awaited<ReturnType<typeof postApi
 
 
 export type patchApiAuthUserIdVerifyResponse200 = {
-  data: UserResponse
+  data: void
   status: 200
 }
 

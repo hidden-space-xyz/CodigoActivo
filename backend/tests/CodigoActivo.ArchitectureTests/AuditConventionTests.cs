@@ -75,6 +75,7 @@ public sealed class AuditConventionTests
             .Should()
             .BeEquivalentTo(
                 "RemoveExpiredSessionsCommand",
+                "DiscardExpiredAccountChangesCommand",
                 "PurgeDataHistoryCommand",
                 "PurgeUnverifiedAccountsCommand",
                 "PurgeUnusedFilesCommand",

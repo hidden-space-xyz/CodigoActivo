@@ -1,0 +1,114 @@
+using System.Text.Json;
+using AwesomeAssertions;
+using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.DataHistory;
+using CodigoActivo.Infrastructure.Users;
+using CodigoActivo.IntegrationTests.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Xunit;
+
+namespace CodigoActivo.IntegrationTests.Database;
+
+public sealed class ExpiredAccountChangeCleanupWorkerTests(CodigoActivoWebAppFactory factory)
+    : IntegrationTestBase(factory)
+{
+    private const string ExpiredAddress = "caducada@codigoactivo.test";
+    private const string WaitingAddress = "pendiente@codigoactivo.test";
+
+    private ExpiredAccountChangeCleanupWorker Build()
+    {
+        return new ExpiredAccountChangeCleanupWorker(
+            Factory.Services.GetRequiredService<IServiceScopeFactory>(),
+            new ExpiredAccountChangeCleanupOptions(),
+            NullLogger<ExpiredAccountChangeCleanupWorker>.Instance
+        );
+    }
+
+    private Task SeedChangesAsync()
+    {
+        var now = Factory.Clock.UtcNow;
+        return Factory.SeedAsync(async db =>
+        {
+            var member = await db.Users.SingleAsync(
+                u => u.Id == UserId.From(TestSeedData.Users.MemberId),
+                Ct
+            );
+            Persisted.Overwrite(
+                member,
+                new
+                {
+                    EmailChange = new
+                    {
+                        NewEmail = ExpiredAddress,
+                        CodeHash = "fake:email-change",
+                        ExpiresAt = now.AddSeconds(-1),
+                    },
+                    Authenticator = new
+                    {
+                        PendingKey = "protected:pending-secret",
+                        PendingExpiresAt = now,
+                    },
+                }
+            );
+            var admin = await db.Users.SingleAsync(
+                u => u.Id == UserId.From(TestSeedData.Users.AdminId),
+                Ct
+            );
+            Persisted.Overwrite(
+                admin,
+                new
+                {
+                    EmailChange = new
+                    {
+                        NewEmail = WaitingAddress,
+                        CodeHash = "fake:email-change",
+                        ExpiresAt = now,
+                    },
+                }
+            );
+        });
+    }
+
+    private Task<User?> UserAsync(Guid id)
+    {
+        return Factory.QueryAsync(db =>
+            db.Users.AsNoTracking().SingleOrDefaultAsync(u => u.Id == UserId.From(id), Ct)
+        );
+    }
+
+    [Fact]
+    public async Task CleanUpAsyncDropsTheExpiredChangesAndBlocksOnlyTheAddress()
+    {
+        await SeedChangesAsync();
+        await Factory.QueryAsync(db => db.DataHistory.ExecuteDeleteAsync(Ct));
+
+        (await Build().CleanUpAsync(Ct)).Should().Be(1);
+
+        var member = await UserAsync(TestSeedData.Users.MemberId);
+        member!.EmailChange.Should().Be(default(EmailChange));
+        member.Authenticator.PendingKey.Should().BeNull();
+        member.Authenticator.PendingExpiresAt.Should().BeNull();
+        (await UserAsync(TestSeedData.Users.AdminId))!
+            .EmailChange.NewEmail?.Value.Should()
+            .Be(WaitingAddress, "its code can still confirm it");
+
+        var history = await DataHistoryAsync();
+        var record = history.Should().ContainSingle().Which.Record;
+        record.Operation.Should().Be(DataHistoryOperation.Modified);
+        record.Command.Should().Be("DiscardExpiredAccountChanges");
+        ((JsonElement)record.Values[$"{nameof(User.EmailChange)}.{nameof(EmailChange.NewEmail)}"]!)
+            .GetString()
+            .Should()
+            .Be(ExpiredAddress);
+        record
+            .Values.Keys.Should()
+            .NotContain(key =>
+                key.StartsWith(nameof(User.Authenticator), StringComparison.Ordinal)
+                || key.EndsWith(nameof(EmailChange.CodeHash), StringComparison.Ordinal)
+            );
+
+        (await Build().CleanUpAsync(Ct)).Should().Be(0);
+    }
+}
