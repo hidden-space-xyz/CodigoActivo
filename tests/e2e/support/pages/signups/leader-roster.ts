@@ -1,7 +1,10 @@
 import type { Locator, Page } from '@playwright/test'
 
-/** A group of attendees of one role in the leader roster. */
-export type AttendeeGroup = 'Usuarios' | 'Dependientes'
+import type { RoleName } from '../../api/catalogs'
+import { ROLE_LABELS } from './activity-card'
+
+/** A group of attendees of one role in the leader roster: adults with an account or minors. */
+export type AttendeeGroup = 'users' | 'dependents'
 
 /**
  * The «Asistentes» tab of the event page, which a confirmed leader sees: a confidentiality note and,
@@ -12,29 +15,26 @@ export class LeaderRoster {
   readonly notice: Locator
 
   constructor(private readonly page: Page) {
-    this.notice = page.getByRole('main').getByRole('note')
+    this.notice = page.getByTestId('page-event-detail').getByTestId('leader-roster-notice')
   }
 
   /** The block of the led activity titled `title`. */
   activity(title: string): Locator {
-    return this.page
-      .locator('article.lr-activity')
-      .filter({ has: this.page.getByRole('heading', { level: 2, name: title, exact: true }) })
+    return this.page.getByTestId('leader-roster-activity').filter({ hasText: title })
   }
 
   /** The section of `activity` that lists the attendees with the role `role`. */
-  role(activity: Locator, role: string): Locator {
-    return activity
-      .locator('section.lr-role')
-      .filter({ has: this.page.getByRole('heading', { level: 3, name: new RegExp(`^${role}`) }) })
+  role(activity: Locator, role: RoleName): Locator {
+    return activity.getByTestId('leader-roster-role').filter({
+      has: this.page.getByTestId('leader-roster-role-name').filter({ hasText: ROLE_LABELS[role] }),
+    })
   }
 
   /** The attendee of `group` in a role section whose entry shows `text`, such as a last name. */
   attendee(role: Locator, group: AttendeeGroup, text: string): Locator {
     return role
-      .locator('.lr-group')
-      .filter({ hasText: group })
-      .getByRole('listitem')
+      .getByTestId(`leader-roster-${group}`)
+      .getByTestId('leader-roster-person')
       .filter({ hasText: text })
   }
 }

@@ -21,23 +21,33 @@ const {
 </script>
 
 <template>
-  <section class="acc-pane acc-danger">
+  <section class="acc-pane acc-danger" data-testid="delete-account-section">
     <div class="acc-pane__heading">
       <h2 class="acc-danger__title">{{ $t('pages.account.deleteAccount.title') }}</h2>
       <p class="acc-danger__lead">{{ $t('pages.account.deleteAccount.lead') }}</p>
     </div>
 
-    <p v-if="isInitialAdmin" class="acc-danger__note">
+    <p
+      v-if="isInitialAdmin"
+      class="acc-danger__note"
+      data-testid="delete-account-initial-admin-note"
+    >
       {{ $t('pages.account.deleteAccount.initialAdminNote') }}
     </p>
     <div v-else-if="canDelete" class="acc-danger__actions">
-      <BrandButton variant="ghost" class="acc-danger__trigger" @click="open">
+      <BrandButton
+        variant="ghost"
+        class="acc-danger__trigger"
+        data-testid="delete-account-open"
+        @click="open"
+      >
         {{ $t('pages.account.deleteAccount.action') }}
       </BrandButton>
     </div>
 
     <el-dialog
       :model-value="visible"
+      data-testid="delete-account-dialog"
       :title="$t('pages.account.deleteAccount.dialogHeader')"
       width="min(90vw, 480px)"
       :close-on-click-modal="false"
@@ -53,6 +63,7 @@ const {
             <el-input
               id="del-password"
               v-model="draft.password"
+              data-testid="delete-account-password"
               type="password"
               show-password
               autocomplete="current-password"
@@ -60,14 +71,18 @@ const {
               :aria-invalid="!!errors.password"
               :aria-describedby="errors.password ? 'del-password-error' : undefined"
             />
-            <small v-if="errors.password" id="del-password-error" class="ca-field__error">{{
-              errors.password
-            }}</small>
+            <small
+              v-if="errors.password"
+              id="del-password-error"
+              class="ca-field__error"
+              data-testid="delete-account-password-error"
+              >{{ errors.password }}</small
+            >
           </div>
         </template>
 
         <template v-else>
-          <p class="acc-form__intro">
+          <p class="acc-form__intro" data-testid="delete-account-code-intro">
             {{
               isAuthenticator
                 ? $t('pages.account.deleteAccount.authenticatorIntro')
@@ -81,6 +96,7 @@ const {
             <el-input
               id="del-code"
               v-model="draft.code"
+              data-testid="delete-account-code"
               inputmode="numeric"
               autocomplete="one-time-code"
               :maxlength="TWO_FACTOR_CODE_MAX_LENGTH"
@@ -101,6 +117,7 @@ const {
             <el-checkbox
               id="del-accept"
               v-model="draft.accepted"
+              data-testid="delete-account-irreversible"
               class="ca-checkbox-text acc-danger__consent-label"
             >
               {{ $t('pages.account.deleteAccount.irreversible') }}
@@ -108,7 +125,12 @@ const {
           </div>
         </template>
 
-        <p v-if="errorMessage" class="ca-form-alert acc-form__alert" role="alert">
+        <p
+          v-if="errorMessage"
+          class="ca-form-alert acc-form__alert"
+          role="alert"
+          data-testid="delete-account-error"
+        >
           {{ errorMessage }}
         </p>
         <div class="acc-form__actions">
@@ -119,6 +141,7 @@ const {
             v-if="!codeStep"
             variant="primary"
             type="submit"
+            data-testid="delete-account-send-code"
             :loading="requestCode.isPending.value"
           >
             {{
@@ -132,6 +155,7 @@ const {
             variant="primary"
             type="submit"
             class="acc-danger__submit"
+            data-testid="delete-account-submit"
             :disabled="!canConfirm"
             :loading="confirm.isPending.value"
           >

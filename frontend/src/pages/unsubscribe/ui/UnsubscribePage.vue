@@ -37,7 +37,7 @@ onMounted(() => {
           :text="$t('pages.unsubscribe.successText')"
         >
           <template #actions>
-            <BrandButton :to="{ name: 'home' }" variant="primary">
+            <BrandButton :to="{ name: 'home' }" variant="primary" data-testid="unsubscribe-home">
               {{ $t('common.backToHome') }}
             </BrandButton>
           </template>
@@ -51,7 +51,7 @@ onMounted(() => {
           :hint="$t('pages.unsubscribe.hint', { email: legalEntity?.email || '—' })"
         >
           <template #actions>
-            <BrandButton :to="{ name: 'home' }" variant="ghost">
+            <BrandButton :to="{ name: 'home' }" variant="ghost" data-testid="unsubscribe-home">
               {{ $t('common.backToHome') }}
             </BrandButton>
           </template>

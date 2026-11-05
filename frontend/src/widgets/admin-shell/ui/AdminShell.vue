@@ -34,12 +34,13 @@ watch(
       <RouterLink :to="{ name: 'home' }" class="admin__brand">{{
         $t('common.brand.name')
       }}</RouterLink>
-      <nav class="admin__nav">
+      <nav class="admin__nav" data-testid="admin-nav">
         <RouterLink
           v-for="item in navItems"
           :key="item.routeName"
           :to="{ name: item.routeName }"
           class="admin__link"
+          :data-testid="`nav-${item.routeName}`"
           active-class="admin__link--active"
         >
           <AppIcon :name="item.icon" />
@@ -53,13 +54,19 @@ watch(
         <button
           type="button"
           class="admin__burger"
+          data-testid="admin-shell-menu"
           :aria-label="$t('common.openMenu')"
           :aria-expanded="menuOpen"
           @click="menuOpen = true"
         >
           <AppIcon name="bars" />
         </button>
-        <BrandButton variant="back" :to="{ name: 'home' }" class="admin__home">
+        <BrandButton
+          variant="back"
+          :to="{ name: 'home' }"
+          class="admin__home"
+          data-testid="admin-shell-home"
+        >
           {{ $t('widgets.adminShell.goToSite') }}
         </BrandButton>
         <div class="admin__user">
@@ -68,6 +75,7 @@ watch(
           <button
             type="button"
             class="admin__logout"
+            data-testid="admin-shell-logout"
             :title="$t('common.logout')"
             @click="logout()"
           >
@@ -76,13 +84,14 @@ watch(
         </div>
       </header>
 
-      <main class="admin__main">
+      <main class="admin__main" :data-testid="`page-${String(route.name)}`">
         <slot />
       </main>
     </div>
 
     <el-drawer
       v-model="menuOpen"
+      data-testid="admin-menu"
       append-to-body
       direction="ltr"
       size="min(288px, 84vw)"
@@ -95,6 +104,7 @@ watch(
           :key="item.routeName"
           :to="{ name: item.routeName }"
           class="admin__link admin__link--drawer"
+          :data-testid="`nav-${item.routeName}`"
           active-class="admin__link--active"
           @click="menuOpen = false"
         >
@@ -104,6 +114,7 @@ watch(
         <RouterLink
           :to="{ name: 'home' }"
           class="admin__link admin__link--drawer"
+          data-testid="admin-menu-home"
           @click="menuOpen = false"
         >
           <AppIcon name="home" />

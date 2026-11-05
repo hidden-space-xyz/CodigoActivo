@@ -2,38 +2,38 @@ import { expect, test } from '../../support/fixtures/test'
 import { AdminShell, type AdminSection } from '../../support/pages/admin-shell'
 
 const SECTIONS: readonly AdminSection[] = [
-  'Métricas',
-  'Eventos',
-  'Novedades',
-  'Patrocinadores',
-  'Recursos',
-  'Usuarios',
-  'Diagnóstico',
-  'Archivo legal',
-  'Políticas',
-  'Catálogos',
+  'admin-dashboard',
+  'admin-events',
+  'admin-news',
+  'admin-partners',
+  'admin-resources',
+  'admin-users',
+  'admin-diagnostics',
+  'admin-blocked-data',
+  'admin-legal-policies',
+  'admin-catalogs',
 ]
 
 const EDITOR_SECTIONS: readonly AdminSection[] = [
-  'Eventos',
-  'Novedades',
-  'Patrocinadores',
-  'Recursos',
-  'Catálogos',
+  'admin-events',
+  'admin-news',
+  'admin-partners',
+  'admin-resources',
+  'admin-catalogs',
 ]
 
 const PRIVACY_OFFICER_SECTIONS: readonly AdminSection[] = [
-  'Métricas',
-  'Eventos',
-  'Novedades',
-  'Patrocinadores',
-  'Recursos',
-  'Usuarios',
-  'Diagnóstico',
-  'Auditoría',
-  'Archivo legal',
-  'Políticas',
-  'Catálogos',
+  'admin-dashboard',
+  'admin-events',
+  'admin-news',
+  'admin-partners',
+  'admin-resources',
+  'admin-users',
+  'admin-diagnostics',
+  'admin-audit',
+  'admin-blocked-data',
+  'admin-legal-policies',
+  'admin-catalogs',
 ]
 
 test.describe('admin access', () => {
@@ -41,7 +41,7 @@ test.describe('admin access', () => {
     await page.goto('/admin/events')
 
     await expect(page).toHaveURL(/\/login\?redirect=\/admin\/events$/)
-    await expect(page.getByRole('heading', { name: 'Bienvenido de nuevo' })).toBeVisible()
+    await expect(page.getByTestId('page-login')).toBeVisible()
   })
 
   test('participants and members are sent home from the administration', async ({
@@ -55,7 +55,7 @@ test.describe('admin access', () => {
       await page.goto('/admin/events')
 
       await expect(page).toHaveURL('/')
-      await expect(new AdminShell(page).heading('Eventos')).toBeHidden()
+      await expect(new AdminShell(page).view('admin-events')).toBeHidden()
     }
   })
 
@@ -68,9 +68,9 @@ test.describe('admin access', () => {
 
     await page.goto('/admin')
 
-    await expect(page).toHaveURL(AdminShell.path('Eventos'))
-    await expect(shell.sidebar.getByRole('link')).toHaveText([...EDITOR_SECTIONS])
-    await page.goto(AdminShell.path('Usuarios'))
+    await expect(page).toHaveURL(AdminShell.path('admin-events'))
+    await expect.poll(() => shell.sections()).toStrictEqual([...EDITOR_SECTIONS])
+    await page.goto(AdminShell.path('admin-users'))
     await expect(page).toHaveURL('/')
   })
 
@@ -80,12 +80,12 @@ test.describe('admin access', () => {
   }) => {
     const page = await pageAs(privacyOfficer)
     const shell = new AdminShell(page)
-    await shell.open('Métricas')
+    await shell.open('admin-dashboard')
 
-    await expect(shell.sidebar.getByRole('link')).toHaveText([...PRIVACY_OFFICER_SECTIONS])
-    await shell.link('Auditoría').click()
-    await expect(page).toHaveURL(AdminShell.path('Auditoría'))
-    await expect(shell.heading('Auditoría')).toBeVisible()
+    await expect.poll(() => shell.sections()).toStrictEqual([...PRIVACY_OFFICER_SECTIONS])
+    await shell.link('admin-audit').click()
+    await expect(page).toHaveURL(AdminShell.path('admin-audit'))
+    await expect(shell.view('admin-audit')).toBeVisible()
   })
 
   test('an administrator other than the superadministrator is sent home from the audit', async ({
@@ -94,7 +94,7 @@ test.describe('admin access', () => {
   }) => {
     const page = await pageAs(admin)
 
-    await page.goto(AdminShell.path('Auditoría'))
+    await page.goto(AdminShell.path('admin-audit'))
 
     await expect(page).toHaveURL('/')
   })
@@ -104,8 +104,8 @@ test.describe('admin access', () => {
 
     await page.goto('/admin')
 
-    await expect(page).toHaveURL(AdminShell.path('Métricas'))
-    await expect(new AdminShell(page).heading('Métricas')).toBeVisible()
+    await expect(page).toHaveURL(AdminShell.path('admin-dashboard'))
+    await expect(new AdminShell(page).view('admin-dashboard')).toBeVisible()
   })
 
   test('an administrator finds every section but the audit in the sidebar and a way back to the site', async ({
@@ -114,14 +114,14 @@ test.describe('admin access', () => {
   }) => {
     const page = await pageAs(admin)
     const shell = new AdminShell(page)
-    await shell.open('Métricas')
+    await shell.open('admin-dashboard')
 
-    await expect(shell.sidebar.getByRole('link')).toHaveText([...SECTIONS])
-    await shell.link('Eventos').click()
-    await expect(page).toHaveURL(AdminShell.path('Eventos'))
-    await expect(shell.heading('Eventos')).toBeVisible()
+    await expect.poll(() => shell.sections()).toStrictEqual([...SECTIONS])
+    await shell.link('admin-events').click()
+    await expect(page).toHaveURL(AdminShell.path('admin-events'))
+    await expect(shell.view('admin-events')).toBeVisible()
 
-    await page.getByRole('link', { name: 'Ir al sitio' }).click()
+    await page.getByTestId('admin-shell-home').click()
     await expect(page).toHaveURL('/')
   })
 
@@ -131,16 +131,21 @@ test.describe('admin access', () => {
     async ({ pageAs, admin }) => {
       const page = await pageAs(admin)
       const shell = new AdminShell(page)
-      await shell.open('Métricas')
+      await shell.open('admin-dashboard')
       await expect(shell.sidebar).toBeHidden()
 
-      await page.getByRole('button', { name: 'Abrir menú' }).click()
+      await page.getByTestId('admin-shell-menu').click()
 
-      const drawer = page.getByRole('dialog', { name: 'Administración' })
-      await expect(drawer.getByRole('link')).toHaveText([...SECTIONS, 'Ir al sitio'])
-      await drawer.getByRole('link', { name: 'Eventos', exact: true }).click()
-      await expect(page).toHaveURL(AdminShell.path('Eventos'))
-      await expect(shell.heading('Eventos')).toBeVisible()
+      const drawer = page.getByTestId('admin-menu')
+      const links = drawer.getByTestId(/^nav-/)
+      await expect(links).toHaveCount(SECTIONS.length)
+      for (const [index, section] of SECTIONS.entries()) {
+        await expect(links.nth(index)).toHaveAttribute('data-testid', `nav-${section}`)
+      }
+      await expect(drawer.getByTestId('admin-menu-home')).toBeVisible()
+      await drawer.getByTestId('nav-admin-events').click()
+      await expect(page).toHaveURL(AdminShell.path('admin-events'))
+      await expect(shell.view('admin-events')).toBeVisible()
       await expect(drawer).toBeHidden()
     },
   )

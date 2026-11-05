@@ -36,7 +36,7 @@ function participantsLabel(count: number): string {
 <template>
   <section class="chunk">
     <header class="chunk__head" data-part="head">
-      <h2 class="chunk__title">
+      <h2 class="chunk__title" data-testid="roster-chunk-title">
         {{ activity.title
         }}<span v-if="continued" class="chunk__cont">{{
           $t('pages.admin.eventRoster.continued')
@@ -45,7 +45,9 @@ function participantsLabel(count: number): string {
       <p class="chunk__meta">
         <span>{{ formatDateTimeRange(activity.startsAt, activity.endsAt) }}</span>
         <span>· {{ activity.location }}</span>
-        <span>· {{ participantsLabel(activity.participants.length) }}</span>
+        <span data-testid="roster-chunk-count"
+          >· {{ participantsLabel(activity.participants.length) }}</span
+        >
       </p>
     </header>
 
@@ -62,11 +64,15 @@ function participantsLabel(count: number): string {
       <tbody>
         <template v-for="row in rows" :key="row.key">
           <tr v-if="row.kind === 'role'" class="list__role-row">
-            <td colspan="5">{{ $t(roleHeadingKey(row.roleName), { name: row.roleName }) }}</td>
+            <td colspan="5" data-testid="roster-chunk-role">
+              {{ $t(roleHeadingKey(row.roleName), { name: row.roleName }) }}
+            </td>
           </tr>
-          <tr v-else>
+          <tr v-else data-testid="roster-chunk-person">
             <td class="list__check-col"><span class="list__checkbox" /></td>
-            <td class="list__name">{{ fullName(row.participant) }}</td>
+            <td class="list__name" data-testid="roster-chunk-name">
+              {{ fullName(row.participant) }}
+            </td>
             <td class="list__age-col">{{ ageLabel(row.participant) }}</td>
             <td class="list__contact">
               <template v-if="contactLines(row.participant).length">

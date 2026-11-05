@@ -112,7 +112,7 @@ useSeo(seo)
   <div>
     <section class="detail-back">
       <div class="ca-container--narrow">
-        <BrandButton variant="back" :to="{ name: 'events' }">
+        <BrandButton data-testid="event-detail-back" variant="back" :to="{ name: 'events' }">
           {{ $t('pages.eventDetail.backToEvents') }}
         </BrandButton>
       </div>
@@ -120,21 +120,26 @@ useSeo(seo)
 
     <p v-if="isLoading" class="detail-state ca-container--narrow">{{ $t('common.loading') }}</p>
 
-    <p v-else-if="!event" class="detail-state ca-container--narrow">
+    <p
+      v-else-if="!event"
+      data-testid="event-detail-not-found"
+      class="detail-state ca-container--narrow"
+    >
       {{ $t('pages.eventDetail.notFound') }}
     </p>
 
     <template v-else>
       <section class="detail-head">
         <div class="ca-container--narrow">
-          <h1 class="detail-head__title">{{ event.title }}</h1>
-          <div class="detail-head__slogan">
+          <h1 data-testid="event-detail-title" class="detail-head__title">{{ event.title }}</h1>
+          <div data-testid="event-detail-slogan" class="detail-head__slogan">
             {{ $t('pages.eventDetail.slogan', { subtitle: event.subtitle }) }}
           </div>
           <div v-if="event.categories.length" class="detail-head__cats">
             <ColorTag
               v-for="cat in event.categories"
               :key="cat.id"
+              data-testid="event-detail-category"
               :value="cat.name"
               :color="cat.color"
             />
@@ -145,6 +150,7 @@ useSeo(seo)
       <nav class="detail-tabs">
         <div class="ca-container--narrow detail-tabs__inner">
           <button
+            data-testid="event-detail-tab-info"
             type="button"
             class="detail-tab"
             :class="{ 'detail-tab--active': tab === 'info' }"
@@ -154,6 +160,7 @@ useSeo(seo)
             {{ $t('pages.eventDetail.tabs.info') }}
           </button>
           <button
+            data-testid="event-detail-tab-activities"
             type="button"
             class="detail-tab"
             :class="{ 'detail-tab--active': tab === 'activities' }"
@@ -164,6 +171,7 @@ useSeo(seo)
           </button>
           <button
             v-if="canSeeAttendees"
+            data-testid="event-detail-tab-attendees"
             type="button"
             class="detail-tab"
             :class="{ 'detail-tab--active': tab === 'attendees' }"
@@ -178,25 +186,45 @@ useSeo(seo)
       <section v-if="tab === 'info'" class="detail-body">
         <div class="ca-container--narrow detail-body__grid">
           <div class="detail-body__main">
-            <img :src="posterUrl" :alt="event.title" class="detail-body__poster" />
+            <img
+              data-testid="event-detail-poster"
+              :src="posterUrl"
+              :alt="event.title"
+              class="detail-body__poster"
+            />
 
-            <h2 class="detail-body__h2">{{ $t('pages.eventDetail.aboutEvent') }}</h2>
-            <RichTextContent v-if="hasDescription" :content="event.description" />
+            <h2 data-testid="event-detail-about" class="detail-body__h2">
+              {{ $t('pages.eventDetail.aboutEvent') }}
+            </h2>
+            <RichTextContent
+              v-if="hasDescription"
+              data-testid="event-detail-description"
+              :content="event.description"
+            />
             <p v-else class="detail-body__p detail-body__p--muted">
               {{ $t('pages.eventDetail.noDescription') }}
             </p>
           </div>
 
-          <aside class="detail-body__panel">
+          <aside data-testid="event-detail-info" class="detail-body__panel">
             <h3 class="detail-panel__title">{{ $t('pages.eventDetail.tabs.info') }}</h3>
             <dl class="detail-panel__info">
               <div v-for="row in infoRows" :key="row.label" class="detail-panel__row">
-                <dt class="detail-panel__label">{{ row.label }}</dt>
-                <dd class="detail-panel__value">{{ row.value }}</dd>
+                <dt data-testid="event-detail-info-label" class="detail-panel__label">
+                  {{ row.label }}
+                </dt>
+                <dd data-testid="event-detail-info-value" class="detail-panel__value">
+                  {{ row.value }}
+                </dd>
               </div>
             </dl>
             <p class="detail-panel__note">{{ $t('pages.eventDetail.panelNote') }}</p>
-            <BrandButton variant="primary" block @click="tab = 'activities'">
+            <BrandButton
+              data-testid="event-detail-view-activities"
+              variant="primary"
+              block
+              @click="tab = 'activities'"
+            >
               {{ $t('pages.eventDetail.tabs.viewActivities') }}
             </BrandButton>
           </aside>

@@ -83,6 +83,30 @@ export default defineConfig(
       'playwright/prefer-to-have-count': 'error',
       'playwright/prefer-to-have-length': 'error',
       'playwright/require-to-throw-message': 'error',
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'CallExpression[callee.property.name=/^getBy(AltText|Label|Placeholder|Role|Text|Title)$/]',
+          message: 'Locate elements by their data-testid with getByTestId.',
+        },
+        {
+          selector:
+            'CallExpression[callee.property.name=/^(toHaveText|toContainText|toHaveAccessibleName|toHaveAccessibleDescription)$/] > Literal.arguments[value=/[a-z]/i]',
+          message:
+            'Compare visible text with t() from support/i18n.ts or with the data the test created.',
+        },
+        {
+          selector:
+            'CallExpression[callee.property.name=/^(toHaveText|toContainText)$/] > ArrayExpression.arguments > Literal.elements[value=/[a-z]/i]',
+          message:
+            'Compare visible text with t() from support/i18n.ts or with the data the test created.',
+        },
+        {
+          selector: 'Property[key.name=/^has(Not)?Text$/] > Literal.value[value=/[a-z]/i]',
+          message: 'Filter by t() from support/i18n.ts or by the data the test created.',
+        },
+      ],
     },
   },
   {

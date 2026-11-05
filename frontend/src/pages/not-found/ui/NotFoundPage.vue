@@ -10,7 +10,7 @@ import { PageHead } from '@/shared/ui/page-head'
         {{ $t('pages.notFound.text') }}
       </p>
       <div class="not-found__actions">
-        <BrandButton variant="primary" :to="{ name: 'home' }">{{
+        <BrandButton variant="primary" :to="{ name: 'home' }" data-testid="not-found-home">{{
           $t('common.backToHome')
         }}</BrandButton>
       </div>

@@ -25,7 +25,7 @@ async function onDownload(
 </script>
 
 <template>
-  <section class="acc-pane">
+  <section class="acc-pane" data-testid="certificates-section">
     <div class="acc-pane__head">
       <p class="acc-pane__lead">{{ $t('pages.account.certificates.lead') }}</p>
     </div>
@@ -34,15 +34,21 @@ async function onDownload(
     <p v-else-if="certificates.isError.value" class="acc-pane__state">
       {{ $t('pages.account.certificates.error') }}
     </p>
-    <p v-else-if="entries.length === 0" class="acc-pane__state">
+    <p v-else-if="entries.length === 0" class="acc-pane__state" data-testid="certificates-empty">
       {{ $t('pages.account.certificates.empty') }}
     </p>
 
     <ul v-else class="cert-grid">
-      <li v-for="certificate in entries" :key="certificateKey(certificate)" class="cert-tile">
+      <li
+        v-for="certificate in entries"
+        :key="certificateKey(certificate)"
+        class="cert-tile"
+        data-testid="certificate-tile"
+      >
         <button
           type="button"
           class="cert-tile__open"
+          data-testid="certificate-tile-open"
           :aria-label="
             $t('pages.account.certificates.openAria', {
               name: fullName(certificate),

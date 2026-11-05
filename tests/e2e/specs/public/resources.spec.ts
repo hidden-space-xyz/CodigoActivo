@@ -2,6 +2,9 @@ import { uniqueLetters, uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
 import { CardListPage } from '../../support/pages/public/card-list-page'
 import { cardDate, dayText } from '../../support/data/formats'
+import { t } from '../../support/i18n'
+
+const INTERNAL_TEXT = 'Guía paso a paso para el primer programa.'
 
 function externalUrl(): string {
   return `https://recursos.e2e.codigoactivo.test/guia-${uniqueLetters()}`
@@ -15,20 +18,23 @@ test.describe('resources', () => {
     await resources.searchFor(resource.title)
 
     const card = resources.card(resource.title)
-    await expect(card.getByRole('time')).toHaveText(
-      cardDate('Publicado', dayText(resource.createdAt)),
+    await expect(card.getByTestId('card-date')).toHaveText(
+      cardDate(t('entities.resource.card.dateLabel'), dayText(resource.createdAt)),
     )
     await expect(card).toContainText(resource.subtitle)
     await expect(card).toHaveAttribute('href', `/resources/${resource.id}`)
     await card.click()
 
     await expect(page).toHaveURL(`/resources/${resource.id}`)
-    const article = page.getByRole('main').getByRole('article')
-    await expect(article.getByRole('heading', { level: 1, name: resource.title })).toBeVisible()
-    await expect(article.getByText(resource.subtitle, { exact: true })).toBeVisible()
-    await expect(article.getByRole('img', { name: resource.title })).toBeVisible()
-    await expect(article.getByText('Guía paso a paso para el primer programa.')).toBeVisible()
-    await page.getByRole('main').getByRole('link', { name: 'Volver a recursos' }).click()
+    const main = page.getByTestId('page-resource-detail')
+    const article = main.getByTestId('resource-detail-article')
+    await expect(article.getByTestId('resource-detail-title')).toHaveText(resource.title)
+    await expect(article.getByTestId('resource-detail-subtitle')).toHaveText(resource.subtitle)
+    const poster = article.getByTestId('resource-detail-poster')
+    await expect(poster).toBeVisible()
+    await expect(poster).toHaveAccessibleName(resource.title)
+    await expect(article.getByTestId('resource-detail-body')).toContainText(INTERNAL_TEXT)
+    await main.getByTestId('resource-detail-back').click()
     await expect(page).toHaveURL('/resources')
   })
 
@@ -50,13 +56,16 @@ test.describe('resources', () => {
     const url = externalUrl()
     const resource = await seed.resource({ url })
     await page.route(url, (route) =>
-      route.fulfill({ contentType: 'text/html; charset=utf-8', body: '<h1>Guía externa</h1>' }),
+      route.fulfill({
+        contentType: 'text/html; charset=utf-8',
+        body: '<h1 data-testid="external-resource">Guía externa</h1>',
+      }),
     )
 
     await page.goto(`/resources/${resource.id}`)
 
     await expect(page).toHaveURL(url)
-    await expect(page.getByRole('heading', { name: 'Guía externa' })).toBeVisible()
+    await expect(page.getByTestId('external-resource')).toBeVisible()
   })
 
   test('typing applies the search once 300 ms pass without keystrokes', async ({ page, seed }) => {
@@ -104,18 +113,19 @@ test.describe('resources', () => {
 
     await resources.searchFor(uniqueTitle('Ningún recurso'))
 
-    await expect(
-      resources.main.getByText('No hay recursos que coincidan con tu búsqueda.'),
-    ).toBeVisible()
-    await expect(resources.main.getByRole('heading', { level: 3 })).toHaveCount(0)
+    await expect(resources.main.getByTestId('resources-empty')).toHaveText(
+      t('pages.resources.noResults'),
+    )
+    await expect(resources.main.getByTestId('resource-card')).toHaveCount(0)
   })
 
   test('an unknown resource is not found', async ({ page }) => {
     await page.goto('/resources/00000000-0000-4000-8000-000000000000')
 
-    await expect(page.getByRole('main').getByText('No hemos encontrado ese recurso.')).toBeVisible()
-    await expect(
-      page.getByRole('main').getByRole('link', { name: 'Volver a recursos' }),
-    ).toBeVisible()
+    const main = page.getByTestId('page-resource-detail')
+    await expect(main.getByTestId('resource-detail-not-found')).toHaveText(
+      t('pages.resourceDetail.notFound'),
+    )
+    await expect(main.getByTestId('resource-detail-back')).toBeVisible()
   })
 })

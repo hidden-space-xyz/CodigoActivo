@@ -1,39 +1,47 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
-import { dialog, setSwitch } from '../../ui/element-plus'
+import { setSwitch } from '../../ui/element-plus'
 import { pickThumbnail, writeRichText } from '../../ui/forms'
 
 /**
  * A create or edit dialog of the content administration (news, partners, resources and catalogs):
- * labelled fields, rich text editors, the image field and the «Guardar» button.
+ * fields with test ids, rich text editors, the image field and the «Guardar» button.
  */
 export class FormDialog {
-  /** The dialog itself, found by its title. */
+  /** The dialog itself, found by its test id. */
   readonly root: Locator
 
-  /** The button that sends the form. */
+  /** The button that sends the form, whose test id is the dialog's followed by `-save`. */
   readonly saveButton: Locator
 
-  constructor(page: Page, title: string) {
-    this.root = dialog(page, title)
-    this.saveButton = this.root.getByRole('button', { name: 'Guardar', exact: true })
+  constructor(page: Page, testId: string) {
+    this.root = page.getByTestId(testId)
+    this.saveButton = this.root.getByTestId(`${testId}-save`)
   }
 
-  /** The control whose label is exactly `label`. */
-  field(label: string): Locator {
-    return this.root.getByLabel(label, { exact: true })
+  /** The control, or the message, of the dialog that carries the test id `testId`. */
+  field(testId: string): Locator {
+    return this.root.getByTestId(testId)
   }
 
-  /** Replaces the text of each labelled field with its value, in order. */
+  /**
+   * The text box inside the field that carries the test id `testId`: Element Plus date pickers and
+   * number inputs keep the test id on the element around it.
+   */
+  input(testId: string): Locator {
+    return this.field(testId).locator('input').first()
+  }
+
+  /** Replaces the text of each field, keyed by its test id, with its value, in order. */
   async fill(values: Readonly<Record<string, string>>): Promise<void> {
-    for (const [label, value] of Object.entries(values)) {
-      await this.field(label).fill(value)
+    for (const [testId, value] of Object.entries(values)) {
+      await this.field(testId).fill(value)
     }
   }
 
-  /** Replaces the content of the rich text editor labelled `label` with `text`. */
-  async write(label: string, text: string): Promise<void> {
-    await writeRichText(this.root, label, text)
+  /** Replaces the content of the rich text editor that carries the test id `testId` with `text`. */
+  async write(testId: string, text: string): Promise<void> {
+    await writeRichText(this.field(testId), text)
   }
 
   /** Picks the suite's image in the «Imagen» field. */
@@ -52,8 +60,8 @@ export class FormDialog {
     await expect(this.root).toBeHidden()
   }
 
-  /** Turns the only switch of the dialog on or off. */
-  async setSwitch(on: boolean): Promise<void> {
-    await setSwitch(this.root.getByRole('switch'), on)
+  /** Turns the switch that carries the test id `testId` on or off. */
+  async setSwitch(testId: string, on: boolean): Promise<void> {
+    await setSwitch(this.field(testId), on)
   }
 }

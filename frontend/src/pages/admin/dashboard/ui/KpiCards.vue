@@ -106,6 +106,7 @@ const tiles = computed(() => {
       v-for="tile in tiles"
       :key="tile.key"
       class="kpi-card"
+      data-testid="kpi-card"
       :style="{ '--accent': tile.trendColor }"
     >
       <div class="kpi-card__top">
@@ -120,8 +121,8 @@ const tiles = computed(() => {
         </span>
       </div>
       <div class="kpi-card__value">{{ formatNumber(tile.total) }}</div>
-      <div class="kpi-card__label">{{ tile.label }}</div>
-      <div class="kpi-card__foot">
+      <div class="kpi-card__label" data-testid="kpi-card-label">{{ tile.label }}</div>
+      <div class="kpi-card__foot" data-testid="kpi-card-period">
         {{
           tile.inRange > 0
             ? $t('pages.admin.dashboard.kpi.inRange', { n: formatNumber(tile.inRange) })

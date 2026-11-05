@@ -26,7 +26,8 @@
     "skipLibCheck": true,
 
     "paths": {
-      "@contract/*": ["../../frontend/src/shared/api/generated/models/*"]
+      "@contract/*": ["../../frontend/src/shared/api/generated/models/*"],
+      "@locales/*": ["../../frontend/src/shared/i18n/locales/*"]
     }
   },
   "include": ["eslint.config.js", "knip.config.ts", "playwright.config.ts", "support", "specs"]

@@ -70,6 +70,7 @@ function onSubmit(): void {
 <template>
   <el-dialog
     :model-value="visible"
+    data-testid="rating-dialog"
     :title="$t('pages.account.history.dialog.header')"
     width="min(90vw, 560px)"
     :close-on-click-modal="false"
@@ -84,7 +85,12 @@ function onSubmit(): void {
           $t('pages.account.history.dialog.score')
         }}</label>
         <div class="acc-rating__stars">
-          <el-rate id="rating-score" v-model="form.stars" :max="RATING_MAX_SCORE" />
+          <el-rate
+            id="rating-score"
+            v-model="form.stars"
+            :max="RATING_MAX_SCORE"
+            data-testid="rating-dialog-score"
+          />
           <BrandButton v-if="form.stars > 0" variant="link" type="button" @click="form.stars = 0">{{
             $t('pages.account.history.dialog.clearScore')
           }}</BrandButton>
@@ -98,6 +104,7 @@ function onSubmit(): void {
         <el-input
           id="rating-most"
           v-model="form.mostLiked"
+          data-testid="rating-dialog-most-liked"
           type="textarea"
           :maxlength="RATING_ANSWER_MAX_LENGTH"
           :autosize="{ minRows: 3, maxRows: 6 }"
@@ -111,6 +118,7 @@ function onSubmit(): void {
         <el-input
           id="rating-least"
           v-model="form.leastLiked"
+          data-testid="rating-dialog-least-liked"
           type="textarea"
           :maxlength="RATING_ANSWER_MAX_LENGTH"
           :autosize="{ minRows: 3, maxRows: 6 }"
@@ -124,6 +132,7 @@ function onSubmit(): void {
         <el-input
           id="rating-suggestions"
           v-model="form.suggestions"
+          data-testid="rating-dialog-suggestions"
           type="textarea"
           :maxlength="RATING_ANSWER_MAX_LENGTH"
           :autosize="{ minRows: 3, maxRows: 6 }"
@@ -138,6 +147,7 @@ function onSubmit(): void {
         <BrandButton
           v-if="rating"
           class="acc-rating__delete"
+          data-testid="rating-dialog-delete"
           variant="link"
           type="button"
           :loading="deleting"
@@ -148,7 +158,13 @@ function onSubmit(): void {
         <BrandButton variant="link" type="button" @click="emit('close')">
           {{ $t('common.cancel') }}
         </BrandButton>
-        <BrandButton variant="primary" type="submit" :disabled="empty" :loading="saving">
+        <BrandButton
+          variant="primary"
+          type="submit"
+          :disabled="empty"
+          :loading="saving"
+          :data-testid="rating ? 'rating-dialog-save' : 'rating-dialog-submit'"
+        >
           {{
             rating
               ? $t('pages.account.history.dialog.save')

@@ -17,6 +17,7 @@ defineProps<{
   <RouterLink
     :to="{ name: 'event-detail', params: { eventId: event.id } }"
     class="ca-list-card event-card"
+    data-testid="event-card"
   >
     <ListThumbnail :thumbnail-id="event.thumbnailId" :alt="event.title" />
 

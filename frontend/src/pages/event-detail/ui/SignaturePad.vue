@@ -75,6 +75,7 @@ onBeforeUnmount(() => {
   <div class="signature-pad">
     <canvas
       ref="canvas"
+      data-testid="signature-pad-canvas"
       class="signature-pad__canvas"
       :class="{ 'signature-pad__canvas--invalid': invalid }"
       role="img"
@@ -83,6 +84,7 @@ onBeforeUnmount(() => {
     <div class="signature-pad__footer">
       <span class="signature-pad__hint">{{ $t('pages.eventDetail.terms.signature.hint') }}</span>
       <ActionButton
+        data-testid="signature-pad-clear"
         :label="$t('pages.eventDetail.terms.signature.clear')"
         icon="undo"
         text

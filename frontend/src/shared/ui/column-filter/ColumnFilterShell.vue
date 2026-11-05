@@ -60,6 +60,7 @@ defineExpose({
           v-if="variant === 'toolbar'"
           type="button"
           class="column-filter__pill"
+          data-testid="column-filter-toggle"
           :class="{ 'column-filter__pill--active': active }"
           :aria-label="toggleLabel"
           @click.stop
@@ -71,6 +72,7 @@ defineExpose({
           v-else
           type="button"
           class="column-filter__toggle"
+          data-testid="column-filter-toggle"
           :class="{ 'column-filter__toggle--active': active }"
           :aria-label="toggleLabel"
           :title="toggleLabel"
@@ -83,6 +85,7 @@ defineExpose({
       <div
         ref="panelEl"
         class="column-filter__panel"
+        data-testid="column-filter-panel"
         :class="{ 'column-filter__panel--wide': wide }"
         @click.stop
         @keydown.stop

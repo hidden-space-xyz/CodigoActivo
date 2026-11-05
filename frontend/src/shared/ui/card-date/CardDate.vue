@@ -10,7 +10,7 @@ defineProps<{
 </script>
 
 <template>
-  <time v-if="value" class="card-date">
+  <time v-if="value" class="card-date" data-testid="card-date">
     <AppIcon name="calendar" class="card-date__icon" />
     <span class="card-date__label">{{ label }}:</span>
     <span class="card-date__value">{{ value }}</span>

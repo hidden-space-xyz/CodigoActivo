@@ -2,6 +2,7 @@ import { PublicEvents } from '../../support/api/public'
 import { uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
 import { cardDate, dayRangeText } from '../../support/data/formats'
+import { t } from '../../support/i18n'
 import { EventsPage } from '../../support/pages/public/events-page'
 
 test.describe('events page', () => {
@@ -23,13 +24,18 @@ test.describe('events page', () => {
 
     const card = await eventsPage.revealUpcoming(event.title)
 
-    await expect(card.getByRole('time')).toHaveText(
-      cardDate('Fecha', dayRangeText(event.eventStartsAt, event.eventEndsAt)),
+    await expect(card.getByTestId('card-date')).toHaveText(
+      cardDate(
+        t('entities.event.card.dateLabel'),
+        dayRangeText(event.eventStartsAt, event.eventEndsAt),
+      ),
     )
     await expect(card).toContainText(`«${event.subtitle}»`)
-    await expect(card).toContainText('Inscripción abierta')
+    await expect(card).toContainText(t('entities.event.status.signupOpen'))
     await expect(card).toContainText(category.name)
-    await expect(card.getByRole('img', { name: event.title })).toBeVisible()
+    const thumbnail = card.getByTestId('list-thumbnail-image')
+    await expect(thumbnail).toBeVisible()
+    await expect(thumbnail).toHaveAccessibleName(event.title)
     await card.click()
     await expect(page).toHaveURL(`/events/${event.id}`)
   })
@@ -59,18 +65,21 @@ test.describe('events page', () => {
     await expect(eventsPage.card(eventsPage.past, thisYear.title)).toBeVisible()
 
     await eventsPage.searchPast(lastYear.title)
-    await expect(
-      eventsPage.past.getByText('No hay eventos que coincidan con los filtros.'),
-    ).toBeVisible()
+    await expect(eventsPage.past.getByTestId('events-empty')).toHaveText(
+      t('pages.events.noResults'),
+    )
     await eventsPage.year(older).click()
 
     await expect(eventsPage.year(older)).toHaveAttribute('aria-pressed', 'true')
     await expect(eventsPage.year(newest)).toHaveAttribute('aria-pressed', 'false')
     const card = eventsPage.card(eventsPage.past, lastYear.title)
-    await expect(card.getByRole('time')).toHaveText(
-      cardDate('Fecha', dayRangeText(lastYear.eventStartsAt, lastYear.eventEndsAt)),
+    await expect(card.getByTestId('card-date')).toHaveText(
+      cardDate(
+        t('entities.event.card.dateLabel'),
+        dayRangeText(lastYear.eventStartsAt, lastYear.eventEndsAt),
+      ),
     )
-    await expect(card).toContainText('Finalizado')
+    await expect(card).toContainText(t('entities.event.status.finished'))
     await expect(card).toHaveAttribute('href', `/events/${lastYear.id}`)
   })
 
@@ -101,7 +110,7 @@ test.describe('events page', () => {
     await expect(eventsPage.card(eventsPage.past, workshop.title)).toBeVisible()
     await expect(eventsPage.card(eventsPage.past, robot.title)).toBeVisible()
 
-    await eventsPage.filterPastBy(robotics.name)
+    await eventsPage.filterPastBy(robotics.id)
 
     await expect(eventsPage.card(eventsPage.past, robot.title)).toBeVisible()
     await expect(eventsPage.card(eventsPage.past, workshop.title)).toBeHidden()
@@ -115,9 +124,9 @@ test.describe('events page', () => {
 
     await eventsPage.searchPast(uniqueTitle('Ningún evento'))
 
-    await expect(
-      eventsPage.past.getByText('No hay eventos que coincidan con los filtros.'),
-    ).toBeVisible()
-    await expect(eventsPage.past.getByRole('link')).toHaveCount(0)
+    await expect(eventsPage.past.getByTestId('events-empty')).toHaveText(
+      t('pages.events.noResults'),
+    )
+    await expect(eventsPage.past.getByTestId('event-card')).toHaveCount(0)
   })
 })

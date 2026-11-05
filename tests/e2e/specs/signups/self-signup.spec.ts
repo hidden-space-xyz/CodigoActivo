@@ -1,13 +1,13 @@
 import { signUp } from '../../support/api/signups'
 import { assignedActivities, eventOnFreeDay } from '../../support/api/signups-extra'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { SUBJECTS } from '../../support/mail/mailbox'
 import { EventDetailPage } from '../../support/pages/event-detail-page'
-import { ActivityCard } from '../../support/pages/signups/activity-card'
-import { confirm, dialog, notification } from '../../support/ui/element-plus'
+import { ActivityCard, ROLE_LABELS, STATUS_LABELS } from '../../support/pages/signups/activity-card'
+import { confirm, messageBox, notification } from '../../support/ui/element-plus'
 
-const SIGNUP_SENT = 'Hemos recibido tu solicitud. Te avisaremos por correo cuando se revise.'
-const HIGH_DEMAND = /Esta actividad está muy solicitada y es posible que se agoten las plazas/
+const SIGNUP_SENT = t('pages.eventDetail.toast.signupSuccess')
 
 test.describe('self signup', () => {
   test('a member chooses a role, signs up and withdraws', async ({ seed, member, pageAs }) => {
@@ -20,27 +20,31 @@ test.describe('self signup', () => {
     const card = new ActivityCard(eventPage.activity(activity.title))
 
     await expect(card.signUp).toBeDisabled()
-    await card.expectRoles(['Participante', 'Voluntario', 'Líder'])
-    await card.chooseRole('Voluntario')
+    await card.expectRoles(['participant', 'volunteer', 'leader'])
+    await card.chooseRole('volunteer')
     await expect(card.signUp).toBeEnabled()
     await card.signUp.click()
 
-    await expect(notification(page, SIGNUP_SENT)).toContainText('Inscripción enviada')
-    await expect(card.status).toHaveText('Solicitada')
-    await expect(card.root.getByText('Tu inscripción: Voluntario')).toBeVisible()
+    await expect(notification(page, SIGNUP_SENT)).toContainText(
+      t('pages.eventDetail.toast.signupSent'),
+    )
+    await expect(card.status).toHaveText(STATUS_LABELS.requested)
+    await expect(
+      card.note(t('pages.eventDetail.card.enrolledAs', { role: ROLE_LABELS.volunteer })),
+    ).toBeVisible()
     await expect(card.signUp).toBeHidden()
     expect(await assignedActivities(member.api, event.id)).toMatchObject([
       { activityId: activity.id, roleType: { name: 'Voluntario' }, status: { name: 'Solicitada' } },
     ])
 
     await card.withdraw.click()
-    await expect(dialog(page, 'Anular inscripción')).toContainText(
-      `¿Quieres anular tu inscripción en «${activity.title}»?`,
+    await expect(messageBox(page)).toContainText(
+      t('pages.eventDetail.unassignConfirm.self', { activity: activity.title }),
     )
-    await confirm(page, 'Anular inscripción', 'Anular inscripción')
+    await confirm(page)
 
-    await expect(notification(page, 'Se ha eliminado la inscripción.')).toContainText(
-      'Inscripción cancelada',
+    await expect(notification(page, t('pages.eventDetail.toast.unassignSuccess'))).toContainText(
+      t('pages.eventDetail.toast.unassignSummary'),
     )
     await expect(card.status).toBeHidden()
     await expect(card.signUp).toBeVisible()
@@ -56,12 +60,14 @@ test.describe('self signup', () => {
     await eventPage.openActivities()
     const card = new ActivityCard(eventPage.activity(activity.title))
 
-    await card.expectRoles(['Participante', 'Voluntario'])
-    await card.signUpAs('Participante')
+    await card.expectRoles(['participant', 'volunteer'])
+    await card.signUpAs('participant')
 
     await expect(notification(page, SIGNUP_SENT)).toBeVisible()
-    await expect(card.status).toHaveText('Solicitada')
-    await expect(card.root.getByText('Tu inscripción: Participante')).toBeVisible()
+    await expect(card.status).toHaveText(STATUS_LABELS.requested)
+    await expect(
+      card.note(t('pages.eventDetail.card.enrolledAs', { role: ROLE_LABELS.participant })),
+    ).toBeVisible()
     await expect(card.withdraw).toBeVisible()
     expect(await assignedActivities(participant.api, event.id)).toMatchObject([
       { activityId: activity.id, roleType: { name: 'Participante' } },
@@ -97,11 +103,11 @@ test.describe('self signup', () => {
     await eventPage.goto(event.id, event.title)
     await eventPage.openActivities()
     const card = new ActivityCard(eventPage.activity(second.title))
-    const overlap = dialog(page, 'Coincidencia de horario')
+    const overlap = page.getByTestId('overlap-dialog')
 
-    await card.signUpAs('Voluntario')
+    await card.signUpAs('volunteer')
     await expect(overlap).toContainText(first.title)
-    await overlap.getByRole('button', { name: 'Cancelar' }).click()
+    await overlap.getByTestId('overlap-dialog-cancel').click()
 
     await expect(overlap).toBeHidden()
     await expect(card.signUp).toBeVisible()
@@ -111,11 +117,13 @@ test.describe('self signup', () => {
 
     await card.signUp.click()
     await expect(overlap).toContainText(first.title)
-    await overlap.getByRole('button', { name: 'Apuntarme igualmente' }).click()
+    await overlap.getByTestId('overlap-dialog-confirm').click()
 
     await expect(notification(page, SIGNUP_SENT)).toBeVisible()
-    await expect(card.status).toHaveText('Solicitada')
-    await expect(card.root.getByText('Tu inscripción: Voluntario')).toBeVisible()
+    await expect(card.status).toHaveText(STATUS_LABELS.requested)
+    await expect(
+      card.note(t('pages.eventDetail.card.enrolledAs', { role: ROLE_LABELS.volunteer })),
+    ).toBeVisible()
     const signups = await assignedActivities(participant.api, event.id)
     expect(signups.map((signup) => signup.activityId).sort()).toStrictEqual(
       [first.id, second.id].sort(),
@@ -139,11 +147,13 @@ test.describe('self signup', () => {
     await eventPage.openActivities()
     const card = new ActivityCard(eventPage.activity(activity.title))
 
-    await card.chooseRole('Participante')
-    await expect(card.root.getByText(HIGH_DEMAND)).toBeVisible()
+    await card.chooseRole('participant')
+    await expect(card.root.getByTestId('activity-card-high-demand')).toHaveText(
+      t('pages.eventDetail.highDemandWarning'),
+    )
 
-    await card.chooseRole('Voluntario')
-    await expect(card.root.getByText(HIGH_DEMAND)).toBeHidden()
+    await card.chooseRole('volunteer')
+    await expect(card.root.getByTestId('activity-card-high-demand')).toBeHidden()
   })
 
   test('a confirmed signup shows as confirmed and the person is emailed', async ({
@@ -164,8 +174,10 @@ test.describe('self signup', () => {
     await eventPage.goto(event.id, event.title)
     await eventPage.openActivities()
     const card = new ActivityCard(eventPage.activity(activity.title))
-    await expect(card.status).toHaveText('Confirmada')
-    await expect(card.root.getByText('Tu inscripción: Participante')).toBeVisible()
+    await expect(card.status).toHaveText(STATUS_LABELS.confirmed)
+    await expect(
+      card.note(t('pages.eventDetail.card.enrolledAs', { role: ROLE_LABELS.participant })),
+    ).toBeVisible()
     const email = await mailbox.waitFor({
       to: participant.account.email,
       subject: SUBJECTS.signupConfirmed,
@@ -192,8 +204,10 @@ test.describe('self signup', () => {
     await eventPage.goto(event.id, event.title)
     await eventPage.openActivities()
     const card = new ActivityCard(eventPage.activity(activity.title))
-    await expect(card.status).toHaveText('Rechazada')
-    await expect(card.root.getByText('Tu inscripción: Voluntario')).toBeVisible()
+    await expect(card.status).toHaveText(STATUS_LABELS.denied)
+    await expect(
+      card.note(t('pages.eventDetail.card.enrolledAs', { role: ROLE_LABELS.volunteer })),
+    ).toBeVisible()
     const email = await mailbox.waitFor({
       to: member.account.email,
       subject: SUBJECTS.signupDenied,

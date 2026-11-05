@@ -16,6 +16,7 @@ defineProps<{
 
 <template>
   <ChartCard
+    data-testid="pending-signups-card"
     :title="$t('pages.admin.dashboard.pending.title')"
     :subtitle="$t('pages.admin.dashboard.pending.subtitle')"
   >
@@ -38,6 +39,7 @@ defineProps<{
           <RouterLink
             :to="{ name: 'admin-event-detail', params: { eventId: event.id } }"
             class="pending__link"
+            data-testid="pending-signups-card-event"
           >
             <span class="pending__info">
               <span class="pending__name" :title="event.title">{{ event.title }}</span>

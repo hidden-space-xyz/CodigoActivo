@@ -42,6 +42,7 @@ function save(): void {
 <template>
   <el-dialog
     v-model="visible"
+    data-testid="event-category-form-dialog"
     :title="
       category
         ? $t('pages.admin.catalogs.eventCategories.form.editHeader')
@@ -59,7 +60,13 @@ function save(): void {
     </form>
     <template #footer>
       <ActionButton :label="$t('common.cancel')" text :disabled="saving" @click="visible = false" />
-      <ActionButton :label="$t('common.save')" type="primary" :loading="saving" @click="save" />
+      <ActionButton
+        data-testid="event-category-form-dialog-save"
+        :label="$t('common.save')"
+        type="primary"
+        :loading="saving"
+        @click="save"
+      />
     </template>
   </el-dialog>
 </template>

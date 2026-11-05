@@ -1,8 +1,12 @@
 import { versionInForce } from '../../support/api/admin-content'
+import { dayText } from '../../support/data/formats'
 import { uniqueLetters } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { LegalPoliciesPage } from '../../support/pages/admin-content/legal-policies-page'
-import { confirm, dialog, notification } from '../../support/ui/element-plus'
+import { confirm, messageBox, notification } from '../../support/ui/element-plus'
+
+const LEGAL_TAX_ID = 'G00000000'
 
 test.describe('legal policies', () => {
   test.describe.configure({ mode: 'serial' })
@@ -17,7 +21,7 @@ test.describe('legal policies', () => {
     const page = await pageAs(admin)
     const policies = new LegalPoliciesPage(page)
     await policies.open()
-    const privacy = policies.policy('Política de privacidad')
+    const privacy = policies.policy('privacy')
     await expect(privacy.editor).toHaveText(inForce)
     await expect(privacy.unpublishedChanges).toBeHidden()
     await expect(privacy.publish).toBeDisabled()
@@ -37,14 +41,16 @@ test.describe('legal policies', () => {
     const page = await pageAs(admin)
     const policies = new LegalPoliciesPage(page)
     await policies.open()
-    const privacy = policies.policy('Política de privacidad')
+    const privacy = policies.policy('privacy')
 
     await privacy.clear()
     await expect(privacy.unpublishedChanges).toBeVisible()
     await privacy.publish.click()
 
-    await expect(privacy.root.getByText('Escribe el texto de la política.')).toBeVisible()
-    await expect(dialog(page, 'Publicar la política')).toBeHidden()
+    await expect(privacy.root.getByTestId('legal-policy-editor-error')).toHaveText(
+      t('pages.admin.legalPolicies.form.problems.contentRequired'),
+    )
+    await expect(messageBox(page)).toBeHidden()
   })
 
   test('publishing the privacy policy puts a new version in force on the public page', async ({
@@ -61,31 +67,36 @@ test.describe('legal policies', () => {
     const adminPage = await pageAs(admin)
     const policies = new LegalPoliciesPage(adminPage)
     await policies.open()
-    const privacy = policies.policy('Política de privacidad')
+    const privacy = policies.policy('privacy')
     await expect(privacy.status(current)).toBeVisible()
 
     await privacy.write(text)
     await privacy.publish.click()
-    await expect(dialog(adminPage, 'Publicar la política')).toContainText(
-      `Se publicará la versión ${next}`,
+    await expect(messageBox(adminPage)).toContainText(
+      t('pages.admin.legalPolicies.publish.message', { version: next }),
     )
-    await confirm(adminPage, 'Publicar la política', 'Publicar')
+    await confirm(adminPage)
 
-    await expect(notification(adminPage, 'Política publicada.')).toBeVisible()
+    await expect(
+      notification(adminPage, t('pages.admin.legalPolicies.toasts.published')),
+    ).toBeVisible()
     await expect(privacy.status(next)).toBeVisible()
     await expect(privacy.unpublishedChanges).toBeHidden()
-    await expect(privacy.version(next)).toContainText('En vigor')
-    await expect(privacy.version(current)).not.toContainText('En vigor')
+    const inForce = t('pages.admin.legalPolicies.versions.inForce')
+    await expect(privacy.version(next)).toContainText(inForce)
+    await expect(privacy.version(current)).not.toContainText(inForce)
 
     await page.goto('/privacy')
-    await expect(
-      page.getByRole('heading', { level: 1, name: 'Política de privacidad' }),
-    ).toBeVisible()
-    await expect(page.getByText(text)).toBeVisible()
-    await expect(
-      page.getByText(new RegExp(`^Última actualización: .+ \\(versión ${next}\\)$`)),
-    ).toBeVisible()
-    await expect(page.getByText('G00000000', { exact: true })).toBeVisible()
+    const policy = page.getByTestId('page-privacy-policy')
+    await expect(policy).toContainText(t('pages.privacyPolicy.title'))
+    await expect(policy).toContainText(text)
+    await expect(policy).toContainText(
+      t('entities.legalPolicy.updated', {
+        date: dayText(new Date().toISOString()),
+        version: next,
+      }),
+    )
+    await expect(policy).toContainText(LEGAL_TAX_ID)
   })
 
   test('an earlier version can be read and loaded back into the editor', async ({
@@ -101,12 +112,12 @@ test.describe('legal policies', () => {
     const page = await pageAs(admin)
     const policies = new LegalPoliciesPage(page)
     await policies.open()
-    const privacy = policies.policy('Política de privacidad')
+    const privacy = policies.policy('privacy')
 
-    await privacy.version(version).getByRole('button', { name: 'Ver', exact: true }).click()
-    const viewer = page.getByRole('dialog', { name: `Versión ${version}`, exact: true })
+    await privacy.version(version).getByTestId('legal-policy-editor-version-view').click()
+    const viewer = page.getByTestId('legal-policy-version-dialog')
     await expect(viewer).toContainText(earlier)
-    await viewer.getByRole('button', { name: 'Usar en el editor', exact: true }).click()
+    await viewer.getByTestId('legal-policy-version-dialog-restore').click()
 
     await expect(viewer).toBeHidden()
     await expect(privacy.editor).toHaveText(earlier)
@@ -126,21 +137,29 @@ test.describe('legal policies', () => {
     const adminPage = await pageAs(admin)
     const policies = new LegalPoliciesPage(adminPage)
     await policies.open()
-    await policies.tab('Política de cookies').click()
-    const cookies = policies.policy('Política de cookies')
+    await policies.tab('cookies').click()
+    const cookies = policies.policy('cookies')
 
     await cookies.write(text)
     await cookies.publish.click()
-    await confirm(adminPage, 'Publicar la política', 'Publicar')
+    await confirm(adminPage)
 
-    await expect(notification(adminPage, 'Política publicada.')).toBeVisible()
-    await expect(cookies.status(next)).toBeVisible()
-    await expect(cookies.version(next)).toContainText('En vigor')
-    await page.goto('/cookies')
-    await expect(page.getByRole('heading', { level: 1, name: 'Política de cookies' })).toBeVisible()
-    await expect(page.getByText(text)).toBeVisible()
     await expect(
-      page.getByText(new RegExp(`^Última actualización: .+ \\(versión ${next}\\)$`)),
+      notification(adminPage, t('pages.admin.legalPolicies.toasts.published')),
     ).toBeVisible()
+    await expect(cookies.status(next)).toBeVisible()
+    await expect(cookies.version(next)).toContainText(
+      t('pages.admin.legalPolicies.versions.inForce'),
+    )
+    await page.goto('/cookies')
+    const policy = page.getByTestId('page-cookie-policy')
+    await expect(policy).toContainText(t('pages.cookiePolicy.title'))
+    await expect(policy).toContainText(text)
+    await expect(policy).toContainText(
+      t('entities.legalPolicy.updated', {
+        date: dayText(new Date().toISOString()),
+        version: next,
+      }),
+    )
   })
 })

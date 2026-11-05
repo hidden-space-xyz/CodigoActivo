@@ -1,20 +1,17 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
+import { t } from '../../i18n'
 import { AdminShell } from '../admin-shell'
 
-/** A key figure of the dashboard. */
-export type KpiLabel =
-  | 'Usuarios'
-  | 'Socios'
-  | 'Inscripciones'
-  | 'Eventos'
-  | 'Actividades'
-  | 'Recursos'
-  | 'Novedades'
-  | 'Patrocinadores'
+/** A key figure of the dashboard, by the key of its tile. */
+export type KpiKey =
+  'users' | 'members' | 'inscriptions' | 'events' | 'activities' | 'resources' | 'news' | 'partners'
 
 /** A preset of the dashboard time range. */
-type RangeLabel = '30 días' | '90 días' | '12 meses'
+type RangePreset = '30d' | '90d' | '12m'
+
+/** A card of the dashboard, by its test id. */
+type DashboardCard = 'occupancy-card' | 'pending-signups-card'
 
 /** The «Métricas» dashboard, at `/admin/dashboard`: key figures, range filter and cards. */
 export class DashboardPage {
@@ -26,36 +23,38 @@ export class DashboardPage {
 
   constructor(private readonly page: Page) {
     this.shell = new AdminShell(page)
-    this.range = page.getByRole('group', { name: 'Rango de tiempo' })
+    this.range = page.getByTestId('range-filter')
   }
 
   /** Opens the dashboard and waits for its figures. */
   async open(): Promise<void> {
-    await this.shell.open('Métricas')
-    await expect(this.kpi('Usuarios')).toBeVisible()
+    await this.shell.open('admin-dashboard')
+    await expect(this.kpi('users')).toBeVisible()
   }
 
-  /** The card of the key figure `label`. */
-  kpi(label: KpiLabel): Locator {
-    return this.shell.main
-      .locator('article.kpi-card')
-      .filter({ has: this.page.locator('.kpi-card__label').getByText(label, { exact: true }) })
+  /** The card of the key figure `key`. */
+  kpi(key: KpiKey): Locator {
+    return this.shell.main.getByTestId('kpi-card').filter({
+      has: this.page
+        .getByTestId('kpi-card-label')
+        .filter({ hasText: t(`pages.admin.dashboard.kpi.${key}`) }),
+    })
   }
 
   /** The line under a key figure that tells how many were added in the period. */
-  kpiPeriod(label: KpiLabel): Locator {
-    return this.kpi(label).locator('.kpi-card__foot')
+  kpiPeriod(key: KpiKey): Locator {
+    return this.kpi(key).getByTestId('kpi-card-period')
   }
 
-  /** The preset button `label` of the range filter. */
-  rangeButton(label: RangeLabel): Locator {
-    return this.range.getByRole('button', { name: label, exact: true })
+  /** The button of the range filter for the preset `preset`. */
+  rangeButton(preset: RangePreset): Locator {
+    return this.range
+      .getByTestId('range-filter-preset')
+      .filter({ hasText: t(`pages.admin.dashboard.range.preset${preset}`) })
   }
 
-  /** The card under the heading `title`, such as «Solicitudes pendientes». */
-  card(title: string): Locator {
-    return this.shell.main
-      .locator('section.chart-card')
-      .filter({ has: this.page.getByRole('heading', { name: title, exact: true }) })
+  /** The card `name`, such as the pending signups. */
+  card(name: DashboardCard): Locator {
+    return this.shell.main.getByTestId(name)
   }
 }

@@ -91,6 +91,7 @@ function entryActions(entry: DiagnosticEntry): RowAction[] {
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('level').value"
+            data-testid="diagnostics-filter-level"
             :label="$t('pages.admin.diagnostics.columns.level')"
             :options="levelOptions"
             @apply="table.onFilter"

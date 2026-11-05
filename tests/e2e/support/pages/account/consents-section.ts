@@ -11,14 +11,12 @@ export class ConsentsSection {
   readonly empty: Locator
 
   constructor(account: AccountPage) {
-    this.root = account.section('Consentimientos')
-    this.empty = this.root.getByText(
-      'No hay consentimientos decididos para ti ni para los menores a tu cargo.',
-    )
+    this.root = account.section('consents')
+    this.empty = this.root.getByTestId('consents-empty')
   }
 
   /** The consent about the document `document` decided for the person `person`. */
   consent(document: string, person: string): Locator {
-    return this.root.locator('li.acc-consent').filter({ hasText: `${document} · ${person}` })
+    return this.root.getByTestId('consents-item').filter({ hasText: `${document} · ${person}` })
   }
 }

@@ -65,12 +65,20 @@ function onBlur(): void {
       @update:model-value="update"
       @blur="onBlur"
     />
-    <small v-if="visibleProblem === 'letter'" :id="`${id}-error`" class="ca-field__error">{{
-      $t('validation.nationalIdLetter')
-    }}</small>
-    <small v-else-if="visibleProblem === 'format'" :id="`${id}-error`" class="ca-field__error">{{
-      $t('validation.nationalIdFormat')
-    }}</small>
+    <small
+      v-if="visibleProblem === 'letter'"
+      :id="`${id}-error`"
+      class="ca-field__error"
+      data-testid="national-id-input-error"
+      >{{ $t('validation.nationalIdLetter') }}</small
+    >
+    <small
+      v-else-if="visibleProblem === 'format'"
+      :id="`${id}-error`"
+      class="ca-field__error"
+      data-testid="national-id-input-error"
+      >{{ $t('validation.nationalIdFormat') }}</small
+    >
   </div>
 </template>
 

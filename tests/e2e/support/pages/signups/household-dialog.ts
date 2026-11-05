@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
-import { chooseOption, dialog } from '../../ui/element-plus'
+import { CATALOG, type RoleName } from '../../api/catalogs'
+import { chooseOption } from '../../ui/element-plus'
 import { expectSelectOptions } from './activity-card'
 
 /**
@@ -8,36 +9,42 @@ import { expectSelectOptions } from './activity-card'
  * with a checkbox named after them and a role select, or a note when they are already signed up.
  */
 export class HouseholdDialog {
-  /** The dialog box, found by its title. */
+  /** The dialog box. */
   readonly root: Locator
 
   /** «Apuntar», which sends the signups of the ticked people. */
   readonly submit: Locator
 
   constructor(private readonly page: Page) {
-    this.root = dialog(page, '¿A quién quieres apuntar?')
-    this.submit = this.root.getByRole('button', { name: 'Apuntar', exact: true })
+    this.root = page.getByTestId('household-dialog')
+    this.submit = this.root.getByTestId('household-dialog-submit')
   }
 
   /** The checkbox of the person shown as `name`. */
   person(name: string): Locator {
-    return this.root.getByRole('checkbox', { name, exact: true })
+    return this.row(name).getByTestId('household-dialog-person')
   }
 
   /** The row of the person shown as `name`. */
   row(name: string): Locator {
-    return this.root
-      .getByRole('listitem')
-      .filter({ has: this.page.getByText(name, { exact: true }) })
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    const shownAs = new RegExp(`^\\s*${escaped}\\s*$`)
+    return this.root.getByTestId('household-dialog-row').filter({
+      has: this.page.getByTestId('household-dialog-member').filter({ hasText: shownAs }),
+    })
   }
 
   /** Picks `role` in the role select of the person shown as `name`. */
-  async chooseRole(name: string, role: string): Promise<void> {
-    await chooseOption(this.row(name).getByRole('combobox'), role)
+  async chooseRole(name: string, role: RoleName): Promise<void> {
+    await chooseOption(this.row(name).getByTestId('household-dialog-role'), CATALOG.roles[role])
   }
 
   /** Checks the role select of the person shown as `name` offers exactly `roles`. */
-  async expectRoles(name: string, roles: readonly string[]): Promise<void> {
-    await expectSelectOptions(this.page, this.row(name).getByRole('combobox'), roles)
+  async expectRoles(name: string, roles: readonly RoleName[]): Promise<void> {
+    await expectSelectOptions(
+      this.page,
+      this.row(name).getByTestId('household-dialog-role'),
+      roles.map((role) => CATALOG.roles[role]),
+    )
   }
 }

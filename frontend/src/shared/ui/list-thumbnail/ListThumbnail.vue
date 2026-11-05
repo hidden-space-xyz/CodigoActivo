@@ -40,6 +40,7 @@ watch(
       :src="url"
       :alt="alt"
       class="list-thumb__img"
+      data-testid="list-thumbnail-image"
       loading="lazy"
       decoding="async"
       @error="failed = true"

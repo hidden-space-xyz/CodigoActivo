@@ -1,8 +1,15 @@
 import { signUp } from '../../support/api/signups'
 import { uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { SUBJECTS } from '../../support/mail/mailbox'
-import { AttendeesTab, EventAdminPage } from '../../support/pages/admin-events/event-admin-page'
+import {
+  AttendeesTab,
+  EventAdminPage,
+  ROLE_LABELS,
+  STATUS_LABELS,
+  USER_TYPE_LABELS,
+} from '../../support/pages/admin-events/event-admin-page'
 import { firstDependent } from '../../support/api/accounts'
 import { fullName } from '../../support/data/people'
 import { confirm, notification, setChecked } from '../../support/ui/element-plus'
@@ -24,23 +31,28 @@ test.describe('event attendees admin', () => {
     const eventPage = new EventAdminPage(page)
     await eventPage.goto(event.id, event.title)
 
-    await eventPage.openTab('Asistentes')
+    await eventPage.openTab('attendees')
 
     const attendees = new AttendeesTab(page)
-    await expect(attendees.count).toHaveText('2 asistentes')
+    await expect(attendees.count).toHaveText(t('pages.admin.eventDetail.attendees.count', { n: 2 }))
     const adult = attendees.attendee(fullName(participant.account))
     await expect(adult).toContainText(participant.account.email)
-    await expect(adult).toContainText('Participante')
+    await expect(adult).toContainText(USER_TYPE_LABELS.participant)
     await expect(attendees.signup(fullName(participant.account), activity.title)).toContainText(
-      'Solicitada',
+      STATUS_LABELS.requested,
     )
     const child = attendees.attendee(fullName(minor))
-    await expect(child).toContainText(`Tutor/a: ${fullName(guardian.account)}`)
+    await expect(child).toContainText(
+      t('pages.admin.eventDetail.attendees.guardian', {
+        firstName: guardian.account.firstName,
+        lastName: guardian.account.lastName,
+      }),
+    )
     await expect(child).toContainText(guardian.account.email)
 
     await attendees.search.fill(participant.account.lastName)
 
-    await expect(attendees.count).toHaveText('1 asistente')
+    await expect(attendees.count).toHaveText(t('pages.admin.eventDetail.attendees.count', { n: 1 }))
     await expect(adult).toBeVisible()
     await expect(child).toBeHidden()
   })
@@ -58,16 +70,18 @@ test.describe('event attendees admin', () => {
     const page = await pageAs(admin)
     const eventPage = new EventAdminPage(page)
     await eventPage.goto(event.id, event.title)
-    await eventPage.openTab('Asistentes')
+    await eventPage.openTab('attendees')
     const attendees = new AttendeesTab(page)
     const name = fullName(participant.account)
     const sentAfter = new Date()
 
     await attendees.changeStatus(name, activity.title, 'confirmed')
 
-    await expect(notification(page, 'Estado actualizado.')).toBeVisible()
-    await expect(attendees.signup(name, activity.title)).toContainText('Confirmada')
-    await expect(eventPage.summaryValue('Participante')).toHaveText('1')
+    await expect(
+      notification(page, t('pages.admin.eventDetail.attendees.toast.statusUpdated')),
+    ).toBeVisible()
+    await expect(attendees.signup(name, activity.title)).toContainText(STATUS_LABELS.confirmed)
+    await expect(eventPage.summaryValue(ROLE_LABELS.participant)).toHaveText('1')
     const email = await mailbox.waitFor({
       to: participant.account.email,
       subject: SUBJECTS.signupConfirmed,
@@ -88,19 +102,21 @@ test.describe('event attendees admin', () => {
     const page = await pageAs(admin)
     const eventPage = new EventAdminPage(page)
     await eventPage.goto(event.id, event.title)
-    await eventPage.openTab('Asistentes')
+    await eventPage.openTab('attendees')
     const attendees = new AttendeesTab(page)
     const name = fullName(participant.account)
 
     await attendees.changeRole(name, activity.title, 'volunteer')
 
-    await expect(notification(page, 'Rol actualizado.')).toBeVisible()
-    await expect(attendees.signup(name, activity.title)).toContainText('Voluntario')
+    await expect(
+      notification(page, t('pages.admin.eventDetail.attendees.toast.roleUpdated')),
+    ).toBeVisible()
+    await expect(attendees.signup(name, activity.title)).toContainText(ROLE_LABELS.volunteer)
 
     await attendees.changeRole(name, activity.title, 'leader')
 
-    await expect(notification(page, 'Este rol no está permitido para este usuario.')).toBeVisible()
-    await expect(attendees.signup(name, activity.title)).toContainText('Voluntario')
+    await expect(notification(page, t('errors.ActivityRoleNotAllowed'))).toBeVisible()
+    await expect(attendees.signup(name, activity.title)).toContainText(ROLE_LABELS.volunteer)
   })
 
   test('the attendees are emailed a notice, skipping those without an address', async ({
@@ -121,23 +137,27 @@ test.describe('event attendees admin', () => {
     const page = await pageAs(admin)
     const eventPage = new EventAdminPage(page)
     await eventPage.goto(event.id, event.title)
-    await eventPage.openTab('Asistentes')
+    await eventPage.openTab('attendees')
     const attendees = new AttendeesTab(page)
-    await expect(attendees.count).toHaveText('3 asistentes')
+    await expect(attendees.count).toHaveText(t('pages.admin.eventDetail.attendees.count', { n: 3 }))
 
     await attendees.sendEmail.click()
-    const dialog = page.getByRole('dialog', { name: 'Enviar correo' })
-    await expect(dialog.getByText(/El mensaje llegará a 2 direcciones de correo/)).toBeVisible()
-    await setChecked(dialog.getByRole('radio', { name: 'Aviso' }), true)
-    await dialog.getByLabel('Asunto', { exact: true }).fill(subject)
-    await dialog.getByLabel('Mensaje', { exact: true }).fill('El taller pasa al aula 2.')
+    const dialog = page.getByTestId('send-email-dialog')
+    await expect(dialog.getByTestId('send-email-reach')).toHaveText(
+      t('features.sendEmail.recipients', { count: 2 }),
+    )
+    await setChecked(dialog.getByTestId('send-email-purpose-notice'), true)
+    await dialog.getByTestId('send-email-subject').fill(subject)
+    await dialog.getByTestId('send-email-body').fill('El taller pasa al aula 2.')
     const sentAfter = new Date()
-    await dialog.getByRole('button', { name: 'Enviar', exact: true }).click()
-    await confirm(page, '¿Enviar el correo?', 'Enviar')
+    await dialog.getByTestId('send-email-send').click()
+    await confirm(page)
 
-    await expect(notification(page, /2 correos en cola de envío/)).toBeVisible()
     await expect(
-      notification(page, '1 persona sin correo electrónico confirmado se ha omitido.'),
+      notification(page, t('features.sendEmail.toast.queued', { count: 2 })),
+    ).toBeVisible()
+    await expect(
+      notification(page, t('features.sendEmail.toast.skipped', { count: 1 })),
     ).toBeVisible()
     await expect(dialog).toBeHidden()
     for (const account of [participant.account, member.account]) {

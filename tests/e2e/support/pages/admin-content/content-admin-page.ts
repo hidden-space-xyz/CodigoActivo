@@ -5,13 +5,10 @@ import { AdminShell, type AdminSection } from '../admin-shell'
 import { FormDialog } from './form-dialog'
 
 /** An admin page that lists one kind of content in a table and edits it in dialogs. */
-export type ContentSection = Extract<AdminSection, 'Novedades' | 'Patrocinadores' | 'Recursos'>
-
-const PAGES: Readonly<Record<ContentSection, { newLabel: string; searchLabel: string }>> = {
-  Novedades: { newLabel: 'Añadir novedad', searchLabel: 'Buscar por título o subtítulo' },
-  Patrocinadores: { newLabel: 'Nuevo patrocinador', searchLabel: 'Buscar por nombre' },
-  Recursos: { newLabel: 'Nuevo recurso', searchLabel: 'Buscar por título o subtítulo' },
-}
+export type ContentSection = Extract<
+  AdminSection,
+  'admin-news' | 'admin-partners' | 'admin-resources'
+>
 
 /**
  * The news, partner or resource administration: the page header with its create button, the table
@@ -27,17 +24,13 @@ export class ContentAdminPage {
   /** The header button that opens the create dialog. */
   readonly newButton: Locator
 
-  private readonly searchLabel: string
-
   constructor(
     private readonly page: Page,
     private readonly section: ContentSection,
   ) {
-    const { newLabel, searchLabel } = PAGES[section]
     this.shell = new AdminShell(page)
     this.table = new DataTable(page)
-    this.newButton = this.shell.main.getByRole('button', { name: newLabel, exact: true })
-    this.searchLabel = searchLabel
+    this.newButton = this.shell.main.getByTestId(`${section}-new`)
   }
 
   /** Opens the page and waits for its table to load. */
@@ -46,21 +39,21 @@ export class ContentAdminPage {
     await this.table.expectSettled()
   }
 
-  /** The create or edit dialog titled `title`. */
-  form(title: string): FormDialog {
-    return new FormDialog(this.page, title)
+  /** The create or edit dialog that carries the test id `testId`. */
+  form(testId: string): FormDialog {
+    return new FormDialog(this.page, testId)
   }
 
-  /** Opens the create dialog, titled `title`, and waits for it. */
-  async startCreate(title: string): Promise<FormDialog> {
+  /** Opens the create dialog, which carries the test id `testId`, and waits for it. */
+  async startCreate(testId: string): Promise<FormDialog> {
     await this.newButton.click()
-    const form = this.form(title)
+    const form = this.form(testId)
     await expect(form.root).toBeVisible()
     return form
   }
 
   /** Narrows the table with the toolbar search box. */
   async search(text: string): Promise<void> {
-    await this.table.search(this.searchLabel, text)
+    await this.table.search(text)
   }
 }

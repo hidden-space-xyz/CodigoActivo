@@ -19,16 +19,19 @@ const declined = ref(false)
       </p>
       <p class="age-gate__question">{{ $t('pages.register.ageGate.question') }}</p>
       <div class="age-gate__actions">
-        <BrandButton variant="primary" @click="emit('confirm')">{{
-          $t('pages.register.ageGate.confirm')
-        }}</BrandButton>
-        <BrandButton variant="ghost" @click="declined = true">{{
+        <BrandButton
+          variant="primary"
+          data-testid="register-age-confirm"
+          @click="emit('confirm')"
+          >{{ $t('pages.register.ageGate.confirm') }}</BrandButton
+        >
+        <BrandButton variant="ghost" data-testid="register-age-decline" @click="declined = true">{{
           $t('pages.register.ageGate.decline')
         }}</BrandButton>
       </div>
     </template>
 
-    <div v-else class="age-gate__blocked">
+    <div v-else class="age-gate__blocked" data-testid="register-age-blocked">
       <div class="age-gate__blocked-icon" aria-hidden="true">🔒</div>
       <h2 class="age-gate__heading">{{ $t('pages.register.ageGate.blockedHeading') }}</h2>
       <p class="age-gate__lead">

@@ -18,6 +18,7 @@ const items = computed(() => data.value?.items ?? [])
     :view-all-label="$t('pages.home.events.viewAll')"
     :view-all-to="{ name: 'events' }"
     :loading="isLoading"
+    data-testid="home-events"
   >
     <template #featured>
       <FeaturedEventCard v-if="featured" :event="featured" />

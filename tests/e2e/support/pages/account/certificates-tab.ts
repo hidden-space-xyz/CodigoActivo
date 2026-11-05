@@ -6,17 +6,20 @@ export class CertificatesTab {
   readonly empty: Locator
 
   constructor(private readonly page: Page) {
-    this.empty = page.getByText('Todavía no tienes diplomas.')
+    this.empty = page.getByTestId('certificates-empty')
   }
 
-  /** The button that opens the diploma of the person `name` for the event `event`. */
+  /** The button of the tile `tile(name, event)` that opens its diploma. */
   open(name: string, event: string): Locator {
-    return this.page.getByRole('button', { name: `Ver el diploma de ${name} en ${event}` })
+    return this.tile(name, event).getByTestId('certificate-tile-open')
   }
 
-  /** The tile around the button `open(name, event)`, with the code and the download buttons. */
+  /** The tile of the diploma of the person `name` for the event `event`, with its code and downloads. */
   tile(name: string, event: string): Locator {
-    return this.page.locator('li.cert-tile').filter({ has: this.open(name, event) })
+    return this.page
+      .getByTestId('certificate-tile')
+      .filter({ hasText: name })
+      .filter({ hasText: event })
   }
 }
 
@@ -29,13 +32,15 @@ export class CertificateDialog {
   readonly downloadPng: Locator
 
   constructor(page: Page) {
-    this.root = page.getByRole('dialog', { name: 'Diploma de participación' })
-    this.downloadPng = this.root.getByRole('button', { name: 'Descargar PNG' })
+    this.root = page.getByTestId('certificate-dialog')
+    this.downloadPng = this.root.getByTestId('certificate-dialog-download-png')
   }
 
-  /** The canvas that draws the diploma, an image named after the event. */
+  /** The canvas that draws the diploma, an image labelled with the title of the event. */
   preview(event: string): Locator {
-    return this.root.getByRole('img', { name: event })
+    return this.root
+      .getByTestId('certificate-dialog-canvas')
+      .and(this.root.locator(`[aria-label=${JSON.stringify(event)}]`))
   }
 }
 

@@ -48,6 +48,7 @@ function partnerActions(partner: Partner): RowAction[] {
     >
       <template #actions>
         <ActionButton
+          data-testid="admin-partners-new"
           :label="$t('pages.admin.partners.newPartner')"
           icon="plus"
           type="primary"
@@ -87,11 +88,15 @@ function partnerActions(partner: Partner): RowAction[] {
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('tier').value"
+            data-testid="admin-partners-tier-search"
             :label="$t('pages.admin.partners.columns.tier')"
             :placeholder="$t('pages.admin.partners.columns.tier')"
             input-type="number"
             @apply="table.onFilter"
           />
+        </template>
+        <template #default="{ row }">
+          <span data-testid="admin-partners-tier">{{ row.tier }}</span>
         </template>
       </el-table-column>
       <el-table-column
@@ -109,7 +114,11 @@ function partnerActions(partner: Partner): RowAction[] {
           />
         </template>
         <template #default="{ row }">
-          <ExternalLink v-if="row.website" :href="row.website" />
+          <ExternalLink
+            v-if="row.website"
+            data-testid="admin-partners-website"
+            :href="row.website"
+          />
           <span v-else>—</span>
         </template>
       </el-table-column>

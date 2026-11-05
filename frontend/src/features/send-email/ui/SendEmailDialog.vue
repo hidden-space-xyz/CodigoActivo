@@ -133,6 +133,7 @@ function send(): void {
 <template>
   <el-dialog
     :model-value="visible"
+    data-testid="send-email-dialog"
     :title="$t('features.sendEmail.header')"
     width="min(92vw, 560px)"
     :show-close="!sending"
@@ -140,8 +141,10 @@ function send(): void {
     :close-on-click-modal="false"
     @update:model-value="close"
   >
-    <p class="target">{{ $t('features.sendEmail.target', { target }) }}</p>
-    <p v-if="reach !== null" class="target">
+    <p class="target" data-testid="send-email-target">
+      {{ $t('features.sendEmail.target', { target }) }}
+    </p>
+    <p v-if="reach !== null" class="target" data-testid="send-email-reach">
       {{
         news
           ? $t('features.sendEmail.newsRecipients', { count: reach }, reach)
@@ -152,6 +155,7 @@ function send(): void {
     <el-alert
       v-if="leftOut > 0"
       class="consent-note"
+      data-testid="send-email-without-consent"
       type="info"
       :closable="false"
       :title="$t('features.sendEmail.withoutConsent', { count: leftOut }, leftOut)"
@@ -169,16 +173,20 @@ function send(): void {
           :aria-invalid="invalid('purpose')"
           :aria-describedby="errors.purpose ? 'send-email-purpose-error' : undefined"
         >
-          <el-radio value="Notice">
+          <el-radio value="Notice" data-testid="send-email-purpose-notice">
             {{ $t('features.sendEmail.purpose.notice') }}
           </el-radio>
-          <el-radio value="News">
+          <el-radio value="News" data-testid="send-email-purpose-news">
             {{ $t('features.sendEmail.purpose.news') }}
           </el-radio>
         </el-radio-group>
-        <small v-if="errors.purpose" id="send-email-purpose-error" class="ca-field__error">{{
-          errors.purpose
-        }}</small>
+        <small
+          v-if="errors.purpose"
+          id="send-email-purpose-error"
+          class="ca-field__error"
+          data-testid="send-email-purpose-error"
+          >{{ errors.purpose }}</small
+        >
         <small v-else-if="draft.purpose" class="ca-field__hint">
           {{
             news
@@ -195,15 +203,20 @@ function send(): void {
         <el-input
           id="send-email-subject"
           v-model="draft.subject"
+          data-testid="send-email-subject"
           :maxlength="MANUAL_EMAIL_SUBJECT_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('subject') }"
           :aria-invalid="invalid('subject')"
           :aria-describedby="errors.subject ? 'send-email-subject-error' : undefined"
           :placeholder="$t('features.sendEmail.subjectPlaceholder')"
         />
-        <small v-if="errors.subject" id="send-email-subject-error" class="ca-field__error">{{
-          errors.subject
-        }}</small>
+        <small
+          v-if="errors.subject"
+          id="send-email-subject-error"
+          class="ca-field__error"
+          data-testid="send-email-subject-error"
+          >{{ errors.subject }}</small
+        >
       </div>
 
       <div class="ca-field">
@@ -213,6 +226,7 @@ function send(): void {
         <el-input
           id="send-email-body"
           v-model="draft.body"
+          data-testid="send-email-body"
           type="textarea"
           :maxlength="MANUAL_EMAIL_BODY_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('body') }"
@@ -221,9 +235,13 @@ function send(): void {
           :placeholder="$t('features.sendEmail.bodyPlaceholder')"
           :autosize="{ minRows: 6, maxRows: 12 }"
         />
-        <small v-if="errors.body" id="send-email-body-error" class="ca-field__error">{{
-          errors.body
-        }}</small>
+        <small
+          v-if="errors.body"
+          id="send-email-body-error"
+          class="ca-field__error"
+          data-testid="send-email-body-error"
+          >{{ errors.body }}</small
+        >
         <small v-else class="ca-field__hint">{{ $t('features.sendEmail.bodyHint') }}</small>
       </div>
 
@@ -260,12 +278,21 @@ function send(): void {
           type="file"
           multiple
           class="attachments__input"
+          data-testid="send-email-attachments-input"
           aria-hidden="true"
           tabindex="-1"
           @change="onFilesPicked"
         />
-        <ul v-if="draft.attachments.length > 0" class="attachments__list">
-          <li v-for="(file, index) in draft.attachments" :key="`${file.name}-${index}`">
+        <ul
+          v-if="draft.attachments.length > 0"
+          class="attachments__list"
+          data-testid="send-email-attachments"
+        >
+          <li
+            v-for="(file, index) in draft.attachments"
+            :key="`${file.name}-${index}`"
+            data-testid="send-email-attachment"
+          >
             <AppIcon name="file" />
             <span class="attachments__name">{{ file.name }}</span>
             <span class="attachments__size">{{ formatFileSize(file.size) }}</span>
@@ -290,6 +317,7 @@ function send(): void {
       <ActionButton :label="$t('common.cancel')" text :disabled="sending" @click="close" />
       <ActionButton
         :label="$t('features.sendEmail.send')"
+        data-testid="send-email-send"
         icon="send"
         type="primary"
         :loading="sending"

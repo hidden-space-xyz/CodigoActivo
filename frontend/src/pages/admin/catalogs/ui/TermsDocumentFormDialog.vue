@@ -40,6 +40,7 @@ function save(): void {
 <template>
   <el-dialog
     v-model="visible"
+    data-testid="terms-document-form-dialog"
     :title="
       termsDocument
         ? $t('pages.admin.catalogs.termsDocuments.form.editHeader')
@@ -49,7 +50,7 @@ function save(): void {
     append-to-body
   >
     <form class="form" @submit.prevent="save">
-      <p v-if="termsDocument" class="ca-field__hint">
+      <p v-if="termsDocument" class="ca-field__hint" data-testid="terms-document-form-version-hint">
         {{
           $t('pages.admin.catalogs.termsDocuments.form.versionHint', {
             version: termsDocument.version,
@@ -61,6 +62,7 @@ function save(): void {
         <el-input
           id="terms-document-name"
           v-model="draft.name"
+          data-testid="terms-document-form-name"
           :maxlength="CATALOG_NAME_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('name') }"
           :aria-invalid="invalid('name')"
@@ -72,20 +74,26 @@ function save(): void {
         </div>
         <RichTextEditor
           v-model="draft.description"
+          data-testid="terms-document-form-content"
           :label="$t('pages.admin.catalogs.termsDocuments.form.content')"
           :invalid="invalid('description')"
         />
-        <small v-if="errors.description" class="ca-field__error">{{ errors.description }}</small>
+        <small
+          v-if="errors.description"
+          data-testid="terms-document-form-content-error"
+          class="ca-field__error"
+          >{{ errors.description }}</small
+        >
       </div>
       <div class="ca-field">
         <div id="terms-document-kind-label" class="ca-field__label">
           {{ $t('pages.admin.catalogs.termsDocuments.form.kind') }}
         </div>
         <el-radio-group v-model="draft.kind" aria-labelledby="terms-document-kind-label">
-          <el-radio value="Conditions">
+          <el-radio value="Conditions" data-testid="terms-document-form-conditions">
             {{ $t('pages.admin.catalogs.termsDocuments.kinds.Conditions') }}
           </el-radio>
-          <el-radio value="Consent">
+          <el-radio value="Consent" data-testid="terms-document-form-consent">
             {{ $t('pages.admin.catalogs.termsDocuments.kinds.Consent') }}
           </el-radio>
         </el-radio-group>
@@ -101,6 +109,7 @@ function save(): void {
         <el-switch
           id="terms-document-requires-signature"
           v-model="draft.requiresSignature"
+          data-testid="terms-document-form-requires-signature"
           :active-text="$t('pages.admin.catalogs.termsDocuments.form.requiresSignature')"
         />
         <small class="ca-field__hint">
@@ -110,7 +119,13 @@ function save(): void {
     </form>
     <template #footer>
       <ActionButton :label="$t('common.cancel')" text :disabled="saving" @click="visible = false" />
-      <ActionButton :label="$t('common.save')" type="primary" :loading="saving" @click="save" />
+      <ActionButton
+        data-testid="terms-document-form-dialog-save"
+        :label="$t('common.save')"
+        type="primary"
+        :loading="saving"
+        @click="save"
+      />
     </template>
   </el-dialog>
 </template>

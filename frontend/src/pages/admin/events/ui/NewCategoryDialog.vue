@@ -31,6 +31,7 @@ watch(visible, (open) => {
     :title="$t('pages.admin.events.categoryDialog.header')"
     width="min(380px, 92vw)"
     append-to-body
+    data-testid="new-category-dialog"
   >
     <form class="form" @submit.prevent="create">
       <EventCategoryFields
@@ -51,6 +52,7 @@ watch(visible, (open) => {
         :label="$t('common.create')"
         type="primary"
         :loading="creating"
+        data-testid="new-category-dialog-create"
         @click="create"
       />
     </template>

@@ -34,9 +34,15 @@ onMounted(() => {
           state="success"
           :title="$t('pages.confirmEmail.successTitle')"
           :text="$t('pages.confirmEmail.successText')"
+          data-testid="confirm-email-success"
         >
           <template #actions>
-            <BrandButton v-if="session.isAuthenticated" :to="{ name: 'account' }" variant="primary">
+            <BrandButton
+              v-if="session.isAuthenticated"
+              :to="{ name: 'account' }"
+              variant="primary"
+              data-testid="confirm-email-account"
+            >
               {{ $t('common.myAccount') }}
             </BrandButton>
             <BrandButton v-else :to="{ name: 'login' }" variant="primary">
@@ -51,6 +57,7 @@ onMounted(() => {
           :title="$t('pages.confirmEmail.errorTitle')"
           :text="errorMessage"
           :hint="$t('pages.confirmEmail.hint')"
+          data-testid="confirm-email-error"
         >
           <template #actions>
             <BrandButton :to="{ name: 'home' }" variant="ghost">{{

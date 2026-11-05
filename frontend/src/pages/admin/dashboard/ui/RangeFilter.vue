@@ -62,12 +62,18 @@ function onSelect(value: unknown): void {
 </script>
 
 <template>
-  <div class="range-filter" role="group" :aria-label="$t('pages.admin.dashboard.range.aria')">
+  <div
+    class="range-filter"
+    data-testid="range-filter"
+    role="group"
+    :aria-label="$t('pages.admin.dashboard.range.aria')"
+  >
     <button
       v-for="option in RANGE_OPTIONS"
       :key="option.value"
       type="button"
       class="range-filter__pill"
+      data-testid="range-filter-preset"
       :class="{ 'range-filter__pill--active': preset === option.value }"
       :aria-pressed="preset === option.value"
       @click="emit('preset', option.value)"

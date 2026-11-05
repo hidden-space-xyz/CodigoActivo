@@ -1,6 +1,7 @@
 import { findUser } from '../../support/api/accounts'
 import { uniqueLetters, uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { linkIn } from '../../support/mail/mailbox'
 import { SendEmailDialog } from '../../support/pages/admin-people/send-email-dialog'
 import { fullName } from '../../support/data/people'
@@ -25,24 +26,32 @@ test.describe('emailing users from the admin list', () => {
     const users = new UsersAdminPage(page)
     await users.open()
     await users.find(person.lastName)
-    await users.act(person, 'Escribir un correo')
+    await users.act(person, 'sendEmail')
     const email = new SendEmailDialog(page)
-    await expect(email.root).toContainText(`Destinatarios: ${fullName(person)}`)
-    await expect(email.root).toContainText('El mensaje llegará a 1 dirección de correo.')
+    await expect(email.root).toContainText(
+      t('features.sendEmail.target', { target: fullName(person) }),
+    )
+    await expect(email.root).toContainText(t('features.sendEmail.recipients', { count: 1 }))
 
     await email.send.click()
-    await expect(email.root.getByText('Elige si el correo es un aviso o novedades.')).toBeVisible()
-    await expect(email.root.getByText('Escribe un asunto.')).toBeVisible()
-    await expect(email.root.getByText('Escribe un mensaje.')).toBeVisible()
+    await expect(email.root.getByTestId('send-email-purpose-error')).toHaveText(
+      t('features.sendEmail.form.problems.purposeRequired'),
+    )
+    await expect(email.root.getByTestId('send-email-subject-error')).toHaveText(
+      t('features.sendEmail.form.problems.subjectRequired'),
+    )
+    await expect(email.root.getByTestId('send-email-body-error')).toHaveText(
+      t('features.sendEmail.form.problems.bodyRequired'),
+    )
 
     const subject = uniqueTitle('Aviso')
     const body = `Mañana cambiamos de aula: ${uniqueLetters(10)}.`
-    await email.fill({ purpose: 'Aviso', subject, body, attachments: [ATTACHMENT] })
+    await email.fill({ purpose: 'notice', subject, body, attachments: [ATTACHMENT] })
     const sentAfter = new Date()
-    await email.sendConfirmed('El correo se enviará a 1 dirección.')
+    await email.sendConfirmed(t('features.sendEmail.confirm.messageCount', { count: 1 }))
 
     await expect(
-      notification(page, '1 correo en cola de envío. Se entregará en unos instantes.'),
+      notification(page, t('features.sendEmail.toast.queued', { count: 1 })),
     ).toBeVisible()
     await expect(email.root).toBeHidden()
     const message = await mailbox.waitFor({ to: person.email, subject, sentAfter })
@@ -61,20 +70,16 @@ test.describe('emailing users from the admin list', () => {
     const users = new UsersAdminPage(page)
     await users.open()
     await users.find(person.lastName)
-    await users.act(person, 'Escribir un correo')
+    await users.act(person, 'sendEmail')
     const email = new SendEmailDialog(page)
-    await expect(email.root).toContainText('El mensaje llegará a 1 dirección de correo.')
+    await expect(email.root).toContainText(t('features.sendEmail.recipients', { count: 1 }))
 
-    await email.choose('Novedades')
+    await email.choose('news')
 
-    await expect(email.root).toContainText(
-      'Nadie de esta selección ha aceptado recibir novedades, así que no se puede enviar este correo.',
+    await expect(email.root).toContainText(t('features.sendEmail.newsRecipients', { count: 0 }))
+    await expect(email.root.getByTestId('send-email-without-consent')).toContainText(
+      t('features.sendEmail.withoutConsent', { count: 1 }),
     )
-    await expect(
-      email.root.getByText(
-        '1 destinatario no ha aceptado recibir novedades y no recibirá este correo.',
-      ),
-    ).toBeVisible()
     await expect(email.send).toBeDisabled()
   })
 
@@ -90,38 +95,42 @@ test.describe('emailing users from the admin list', () => {
     const users = new UsersAdminPage(adminPage)
     await users.open()
     await users.find(account.lastName)
-    await users.act(account, 'Escribir un correo')
+    await users.act(account, 'sendEmail')
     const email = new SendEmailDialog(adminPage)
-    await email.choose('Novedades')
-    await expect(email.root).toContainText(
-      'El correo de novedades llegará a 1 dirección de correo.',
-    )
+    await email.choose('news')
+    await expect(email.root).toContainText(t('features.sendEmail.newsRecipients', { count: 1 }))
 
     const subject = uniqueTitle('Novedades')
-    await email.fill({ purpose: 'Novedades', subject, body: 'Abrimos un taller de robótica.' })
+    await email.fill({ purpose: 'news', subject, body: 'Abrimos un taller de robótica.' })
     const sentAfter = new Date()
-    await email.sendConfirmed('El correo se enviará a 1 dirección.')
+    await email.sendConfirmed(t('features.sendEmail.confirm.messageCount', { count: 1 }))
     await expect(
-      notification(adminPage, '1 correo en cola de envío. Se entregará en unos instantes.'),
+      notification(adminPage, t('features.sendEmail.toast.queued', { count: 1 })),
     ).toBeVisible()
 
     const message = await mailbox.waitFor({ to: account.email, subject, sentAfter })
     await page.goto(linkIn(message, '/unsubscribe'))
 
-    await expect(page.getByRole('heading', { name: 'Te has dado de baja' })).toBeVisible()
-    await expect(
-      page.getByText('Ya no te enviaremos novedades sobre las actividades de la asociación.'),
-    ).toBeVisible()
+    const unsubscribe = page.getByTestId('page-unsubscribe')
+    await expect(unsubscribe.getByTestId('status-panel-title')).toHaveText(
+      t('pages.unsubscribe.successTitle'),
+    )
+    await expect(unsubscribe.getByTestId('status-panel-text')).toHaveText(
+      t('pages.unsubscribe.successText'),
+    )
     expect((await findUser(admin.api, account.email))?.newsConsent).toBe(false)
   })
 
   test('an unsubscribe link without its token is refused', async ({ page }) => {
     await page.goto('/unsubscribe')
 
-    await expect(page.getByRole('heading', { name: 'No hemos podido darte de baja' })).toBeVisible()
-    await expect(
-      page.getByText('El enlace para darte de baja no es válido o está incompleto.'),
-    ).toBeVisible()
+    const unsubscribe = page.getByTestId('page-unsubscribe')
+    await expect(unsubscribe.getByTestId('status-panel-title')).toHaveText(
+      t('pages.unsubscribe.errorTitle'),
+    )
+    await expect(unsubscribe.getByTestId('status-panel-text')).toHaveText(
+      t('pages.unsubscribe.incompleteLink'),
+    )
   })
 
   test('the toolbar emails every user the filters leave in the list', async ({
@@ -135,23 +144,25 @@ test.describe('emailing users from the admin list', () => {
     const page = await pageAs(admin)
     const users = new UsersAdminPage(page)
     await users.open()
-    await users.table.searchColumn('Correo', `e2e-${label}-`)
-    await expect(users.table.count).toHaveText('2 resultados')
+    await users.table.searchColumn('users-filter-email', `e2e-${label}-`)
+    await expect(users.table.count).toHaveText(t('table.results', { n: 2 }))
 
     await users.bulkEmail.click()
     const email = new SendEmailDialog(page)
     await expect(email.root).toContainText(
-      'Destinatarios: los 2 usuarios que coinciden con los filtros actuales',
+      t('features.sendEmail.target', {
+        target: t('pages.admin.users.email.targetFiltered', { n: 2 }),
+      }),
     )
-    await expect(email.root).toContainText('El mensaje llegará a 2 direcciones de correo')
+    await expect(email.root).toContainText(t('features.sendEmail.recipients', { count: 2 }))
     const subject = uniqueTitle('Aviso masivo')
     const body = 'La sede estará cerrada el viernes.'
-    await email.fill({ purpose: 'Aviso', subject, body })
+    await email.fill({ purpose: 'notice', subject, body })
     const sentAfter = new Date()
-    await email.sendConfirmed('El correo se enviará a 2 direcciones.')
+    await email.sendConfirmed(t('features.sendEmail.confirm.messageCount', { count: 2 }))
 
     await expect(
-      notification(page, '2 correos en cola de envío. Se entregarán en unos instantes.'),
+      notification(page, t('features.sendEmail.toast.queued', { count: 2 })),
     ).toBeVisible()
     for (const recipient of recipients) {
       const message = await mailbox.waitFor({ to: recipient.email, subject, sentAfter })

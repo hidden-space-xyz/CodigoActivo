@@ -105,24 +105,24 @@ function confirmDelete(): void {
 </script>
 
 <template>
-  <section class="acc-pane">
+  <section class="acc-pane" data-testid="minors-section">
     <div class="acc-pane__head">
       <div class="acc-pane__heading">
         <h2 class="acc-pane__title">{{ $t('pages.account.minors.title') }}</h2>
         <p class="acc-pane__lead">{{ $t('pages.account.minors.lead') }}</p>
       </div>
-      <BrandButton variant="primary" @click="openAdd">{{
+      <BrandButton variant="primary" data-testid="minors-add" @click="openAdd">{{
         $t('pages.account.minors.add')
       }}</BrandButton>
     </div>
 
     <p v-if="children.isLoading.value" class="acc-pane__state">{{ $t('common.loading') }}</p>
-    <p v-else-if="items.length === 0" class="acc-pane__state">
+    <p v-else-if="items.length === 0" class="acc-pane__state" data-testid="minors-empty">
       {{ $t('pages.account.minors.empty') }}
     </p>
 
     <ul v-else class="acc-minors">
-      <li v-for="child in items" :key="child.id" class="acc-minor">
+      <li v-for="child in items" :key="child.id" class="acc-minor" data-testid="minors-item">
         <div class="acc-minor__info">
           <span class="acc-minor__name">{{ fullName(child) }}</span>
           <span class="acc-minor__meta">
@@ -130,18 +130,22 @@ function confirmDelete(): void {
           </span>
         </div>
         <div class="acc-minor__actions">
-          <BrandButton variant="ghost" @click="openEdit(child)">{{
+          <BrandButton variant="ghost" data-testid="minors-item-edit" @click="openEdit(child)">{{
             $t('common.edit')
           }}</BrandButton>
-          <BrandButton variant="link" @click="deleteTarget = child">{{
-            $t('common.delete')
-          }}</BrandButton>
+          <BrandButton
+            variant="link"
+            data-testid="minors-item-delete"
+            @click="deleteTarget = child"
+            >{{ $t('common.delete') }}</BrandButton
+          >
         </div>
       </li>
     </ul>
 
     <el-dialog
       v-model="dialogVisible"
+      :data-testid="`minor-dialog-${mode}`"
       :title="
         mode === 'add'
           ? $t('pages.account.minors.addHeader')
@@ -157,6 +161,7 @@ function confirmDelete(): void {
             <el-input
               id="m-firstname"
               v-model="draft.firstName"
+              data-testid="minor-dialog-first-name"
               :maxlength="PERSON_NAME_MAX_LENGTH"
               :class="{ 'ca-invalid': errors.firstName }"
               :aria-invalid="!!errors.firstName"
@@ -172,6 +177,7 @@ function confirmDelete(): void {
             <el-input
               id="m-lastname"
               v-model="draft.lastName"
+              data-testid="minor-dialog-last-name"
               :maxlength="PERSON_NAME_MAX_LENGTH"
               :class="{ 'ca-invalid': errors.lastName }"
               :aria-invalid="!!errors.lastName"
@@ -187,6 +193,7 @@ function confirmDelete(): void {
             <input
               id="m-dob"
               v-model="draft.birthDate"
+              data-testid="minor-dialog-birth-date"
               type="date"
               class="acc-date"
               :class="{ 'acc-date--invalid': errors.birthDate }"
@@ -205,6 +212,7 @@ function confirmDelete(): void {
             <el-select
               id="m-gender"
               v-model="draft.gender"
+              data-testid="minor-dialog-gender"
               :class="{ 'ca-invalid': errors.gender }"
             >
               <el-option
@@ -212,27 +220,37 @@ function confirmDelete(): void {
                 :key="gender"
                 :label="$t(genderLabelKey(gender))"
                 :value="gender"
+                :data-testid="`option-${gender}`"
               />
             </el-select>
             <small v-if="errors.gender" class="ca-field__error">{{ errors.gender }}</small>
           </div>
         </div>
-        <p v-if="mode === 'add'" class="acc-form__declaration">
+        <p
+          v-if="mode === 'add'"
+          class="acc-form__declaration"
+          data-testid="minor-dialog-declaration"
+        >
           {{ $t('pages.account.minors.declaration') }}
         </p>
         <div class="acc-form__actions">
           <BrandButton variant="link" type="button" @click="dialogVisible = false">
             {{ $t('common.cancel') }}
           </BrandButton>
-          <BrandButton variant="primary" type="submit" :loading="saving">{{
-            $t('common.save')
-          }}</BrandButton>
+          <BrandButton
+            variant="primary"
+            type="submit"
+            :loading="saving"
+            data-testid="minor-dialog-save"
+            >{{ $t('common.save') }}</BrandButton
+          >
         </div>
       </form>
     </el-dialog>
 
     <el-dialog
       :model-value="deleteTarget !== null"
+      data-testid="minor-delete-dialog"
       :title="$t('pages.account.minors.deleteHeader')"
       width="min(90vw, 420px)"
       :close-on-click-modal="false"
@@ -250,6 +268,7 @@ function confirmDelete(): void {
         <BrandButton
           variant="primary"
           :loading="deleteChild.isPending.value"
+          data-testid="minor-delete-dialog-confirm"
           @click="confirmDelete"
         >
           {{ $t('common.delete') }}

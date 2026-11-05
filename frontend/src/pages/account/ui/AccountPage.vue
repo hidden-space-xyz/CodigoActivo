@@ -51,7 +51,7 @@ const tab = computed<AccountTab>({
           <el-tabs v-model="tab" class="account-tabs">
             <el-tab-pane name="profile" lazy>
               <template #label>
-                <span class="account-tabs__label">
+                <span class="account-tabs__label" data-testid="account-tab-profile">
                   <AppIcon class="account-tabs__icon" name="user" />
                   <span>{{ $t('pages.account.tabs.profile') }}</span>
                 </span>
@@ -71,7 +71,7 @@ const tab = computed<AccountTab>({
 
             <el-tab-pane name="history" lazy>
               <template #label>
-                <span class="account-tabs__label">
+                <span class="account-tabs__label" data-testid="account-tab-history">
                   <AppIcon class="account-tabs__icon" name="clock" />
                   <span>{{ $t('pages.account.tabs.history') }}</span>
                 </span>
@@ -81,7 +81,7 @@ const tab = computed<AccountTab>({
 
             <el-tab-pane name="certificates" lazy>
               <template #label>
-                <span class="account-tabs__label">
+                <span class="account-tabs__label" data-testid="account-tab-certificates">
                   <AppIcon class="account-tabs__icon" name="id-card" />
                   <span>{{ $t('pages.account.tabs.certificates') }}</span>
                 </span>

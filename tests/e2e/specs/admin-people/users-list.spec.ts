@@ -1,9 +1,15 @@
 import { firstDependent } from '../../support/api/accounts'
+import { CATALOG } from '../../support/api/catalogs'
 import { environment } from '../../support/config/environment'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { fullName } from '../../support/data/people'
 import { UsersAdminPage } from '../../support/pages/admin-people/users-admin-page'
 import { SiteHeader } from '../../support/pages/site-header'
+
+const ACTIVE_STATUS = 'Activo'
+const PARTICIPANT_TYPE = 'Participante'
+const MEMBER_TYPE = 'Socio'
 
 test.describe('admin user list', () => {
   test('an administrator finds a new account by its name and by its email', async ({
@@ -17,17 +23,19 @@ test.describe('admin user list', () => {
 
     await users.find(account.lastName)
 
-    await expect(users.table.count).toHaveText('1 resultado')
+    await expect(users.table.count).toHaveText(t('table.results', { n: 1 }))
     await expect(users.row(account)).toContainText(account.email)
-    await expect(users.row(account)).toContainText('Activo')
-    await expect(users.row(account)).toContainText('Participante')
+    await expect(users.row(account)).toContainText(ACTIVE_STATUS)
+    await expect(users.row(account)).toContainText(PARTICIPANT_TYPE)
 
-    await users.table.root.getByRole('button', { name: 'Limpiar filtros' }).click()
-    await users.table.searchColumn('Correo', account.email)
+    await users.table.clear.click()
+    await users.table.searchColumn('users-filter-email', account.email)
 
-    await expect(users.table.chips.getByText(`Correo: ${account.email}`)).toBeVisible()
+    await expect(
+      users.table.chip(t('table.filterChip', { label: t('common.email'), value: account.email })),
+    ).toBeVisible()
     await expect(users.row(account)).toBeVisible()
-    await expect(users.table.count).toHaveText('1 resultado')
+    await expect(users.table.count).toHaveText(t('table.results', { n: 1 }))
   })
 
   test('pressing Enter in a column search applies it and closes its panel', async ({
@@ -39,9 +47,11 @@ test.describe('admin user list', () => {
     const users = new UsersAdminPage(await pageAs(admin))
     await users.open()
 
-    const panel = await users.table.enterColumnSearch('Correo', account.email)
+    const panel = await users.table.enterColumnSearch('users-filter-email', account.email)
 
-    await expect(users.table.chips.getByText(`Correo: ${account.email}`)).toBeVisible()
+    await expect(
+      users.table.chip(t('table.filterChip', { label: t('common.email'), value: account.email })),
+    ).toBeVisible()
     await expect(panel).toBeHidden()
   })
 
@@ -56,34 +66,39 @@ test.describe('admin user list', () => {
     await users.find(person.lastName)
     await expect(users.row(person)).toBeVisible()
 
-    await users.table.filterBy('Tipo', 'Participante')
-    await expect(
-      users.table.root.getByText('Ningún resultado coincide con los filtros.'),
-    ).toBeVisible()
-    await users.table.filterBy('Tipo', 'Socio')
-    await users.table.filterBy('Estado', 'Activo')
-    await users.table.filterBy('Cargo', 'Sin cargo')
-    await users.table.filterBy('Novedades', 'Sí')
-    await users.table.searchColumn('DNI/NIE', person.nationalId)
+    await users.table.filterBy('users-filter-type', CATALOG.userTypes.participant)
+    await expect(users.table.root.getByTestId('data-table-empty')).toHaveText(t('table.noMatches'))
+    await users.table.filterBy('users-filter-type', CATALOG.userTypes.member)
+    await users.table.filterBy('users-filter-status', CATALOG.userStatuses.active)
+    await users.table.filterBy('users-filter-staff-role', 'None')
+    await users.table.filterBy('users-filter-news-consent', 'true')
+    await users.table.searchColumn('users-filter-national-id', person.nationalId)
 
     await expect(users.row(person)).toBeVisible()
-    await expect(users.table.count).toHaveText('1 resultado')
+    await expect(users.table.count).toHaveText(t('table.results', { n: 1 }))
     for (const chip of [
-      'Tipo: Socio',
-      'Estado: Activo',
-      'Cargo: Sin cargo',
-      'Novedades: Sí',
-      `DNI/NIE: ${person.nationalId}`,
+      t('table.filterChip', { label: t('pages.admin.users.columns.type'), value: MEMBER_TYPE }),
+      t('table.filterChip', { label: t('common.status'), value: ACTIVE_STATUS }),
+      t('table.filterChip', {
+        label: t('pages.admin.users.columns.staffRole'),
+        value: t('entities.user.staffRole.None'),
+      }),
+      t('table.filterChip', {
+        label: t('pages.admin.users.columns.newsConsent'),
+        value: t('common.yes'),
+      }),
+      t('table.filterChip', {
+        label: t('pages.admin.users.columns.nationalId'),
+        value: person.nationalId,
+      }),
     ]) {
-      await expect(users.table.chips.getByText(chip, { exact: true })).toBeVisible()
+      await expect(users.table.chip(chip)).toBeVisible()
     }
 
-    await users.table.root.getByRole('button', { name: 'Limpiar filtros' }).click()
+    await users.table.clear.click()
 
     await expect(users.table.chips).toBeHidden()
-    await expect(users.table.root.getByRole('textbox', { name: 'Buscar por nombre' })).toHaveValue(
-      '',
-    )
+    await expect(users.table.root.getByTestId('data-table-search')).toHaveValue('')
   })
 
   test('the scopes split guardians from their dependents and link them to each other', async ({
@@ -96,54 +111,49 @@ test.describe('admin user list', () => {
     await users.open()
     await users.find(parent.lastName)
 
-    await expect(
-      users.scopes.getByRole('radio', { name: 'Independientes', exact: true }),
-    ).toBeChecked()
-    await expect(users.table.count).toHaveText('1 resultado')
-    await expect(users.table.root.getByRole('button', { name: 'Filtrar por Cargo' })).toBeVisible()
+    await expect(users.scope('independent')).toBeChecked()
+    await expect(users.table.count).toHaveText(t('table.results', { n: 1 }))
+    await expect(users.table.root.getByTestId('users-filter-staff-role')).toBeVisible()
 
-    await users.showScope('Todos')
-    await expect(users.table.count).toHaveText('3 resultados')
+    await users.showScope('all')
+    await expect(users.table.count).toHaveText(t('table.results', { n: 3 }))
 
-    await users.showScope('Dependientes')
-    await expect(users.table.count).toHaveText('2 resultados')
-    await expect(
-      users.table.root.getByRole('button', { name: 'Filtrar por Nacimiento' }),
-    ).toBeVisible()
-    await expect(users.table.root.getByRole('button', { name: 'Filtrar por Cargo' })).toBeHidden()
-    await expect(users.table.root.getByRole('button', { name: 'Buscar por Correo' })).toBeHidden()
+    await users.showScope('dependent')
+    await expect(users.table.count).toHaveText(t('table.results', { n: 2 }))
+    await expect(users.table.root.getByTestId('users-filter-birth-date')).toBeVisible()
+    await expect(users.table.root.getByTestId('users-filter-staff-role')).toBeHidden()
+    await expect(users.table.root.getByTestId('users-filter-email')).toBeHidden()
     for (const dependent of parent.dependents) {
       const row = users.row(dependent)
-      await expect(row.getByText('Tutor:', { exact: true })).toBeVisible()
-      await expect(row.getByRole('button', { name: fullName(parent) })).toBeVisible()
+      await expect(row.getByTestId('users-guardian-prefix')).toHaveText(
+        t('pages.admin.users.guardianPrefix'),
+      )
+      await expect(row.getByTestId('users-guardian')).toHaveText(fullName(parent))
     }
 
-    await users.showScope('Independientes')
-    await users.row(parent).getByRole('button', { name: 'Dependientes: 2' }).click()
+    await users.showScope('independent')
+    const dependents = users.row(parent).getByTestId('users-dependents')
+    await expect(dependents).toHaveText(t('pages.admin.users.dependentsLabel', { count: 2 }))
+    await dependents.click()
 
-    const dependentsChip = `Dependientes de ${fullName(parent)}`
-    await expect(users.table.chips.getByText(dependentsChip, { exact: true })).toBeVisible()
-    await expect(
-      users.scopes.getByRole('radio', { name: 'Dependientes', exact: true }),
-    ).toBeChecked()
-    await expect(users.table.count).toHaveText('2 resultados')
+    const dependentsChip = t('pages.admin.users.relation.dependentsOf', {
+      fullName: fullName(parent),
+    })
+    await expect(users.table.chip(dependentsChip)).toBeVisible()
+    await expect(users.scope('dependent')).toBeChecked()
+    await expect(users.table.count).toHaveText(t('table.results', { n: 2 }))
 
     const dependent = firstDependent(parent)
-    await users
-      .row(dependent)
-      .getByRole('button', { name: fullName(parent) })
-      .click()
+    await users.row(dependent).getByTestId('users-guardian').click()
 
-    const tutorChip = `Tutor de ${fullName(dependent)}`
-    await expect(users.table.chips.getByText(tutorChip, { exact: true })).toBeVisible()
-    await expect(users.table.chips.getByText(dependentsChip)).toBeHidden()
-    await expect(
-      users.scopes.getByRole('radio', { name: 'Independientes', exact: true }),
-    ).toBeChecked()
-    await expect(users.table.count).toHaveText('1 resultado')
+    const tutorChip = t('pages.admin.users.relation.tutorOf', { fullName: fullName(dependent) })
+    await expect(users.table.chip(tutorChip)).toBeVisible()
+    await expect(users.table.chip(dependentsChip)).toBeHidden()
+    await expect(users.scope('independent')).toBeChecked()
+    await expect(users.table.count).toHaveText(t('table.results', { n: 1 }))
     await expect(users.row(parent)).toBeVisible()
 
-    await users.table.chips.getByRole('button', { name: `Quitar el filtro «${tutorChip}»` }).click()
+    await users.table.chip(tutorChip).getByTestId('data-table-chip-remove').click()
 
     await expect(users.table.chips).toBeHidden()
   })
@@ -157,17 +167,19 @@ test.describe('admin user list', () => {
     await users.open()
     await users.find(self.lastName)
 
-    await expect(users.row(self).getByText('Tú', { exact: true })).toBeVisible()
-    await expect(users.row(self).getByText('Administrador', { exact: true })).toBeVisible()
+    await expect(users.row(self).getByTestId('users-you')).toBeVisible()
+    await expect(users.row(self).getByTestId('users-staff-role')).toHaveText(
+      t('entities.user.staffRole.Administrator'),
+    )
     await users.openMenu(self)
 
-    await expect(users.menuItem('Cambiar tipo')).toHaveAccessibleName(
-      /Debe cambiarlo otro administrador/,
+    await expect(users.menuItem('changeType')).toHaveAccessibleName(
+      new RegExp(t('pages.admin.users.blocked.selfRole')),
     )
-    await expect(users.menuItem('Cambiar tipo')).toHaveAttribute('aria-disabled', 'true')
-    await expect(users.menuItem('Cambiar cargo')).toHaveCount(0)
-    await expect(users.menuItem('Eliminar')).toHaveCount(0)
-    await expect(users.menuItem('Escribir un correo')).not.toHaveAttribute('aria-disabled', 'true')
+    await expect(users.menuItem('changeType')).toHaveAttribute('aria-disabled', 'true')
+    await expect(users.menuItem('staffRole')).toHaveCount(0)
+    await expect(users.menuItem('delete')).toHaveCount(0)
+    await expect(users.menuItem('sendEmail')).not.toHaveAttribute('aria-disabled', 'true')
   })
 
   test('the superadministrator keeps its own cargo and account out of reach', async ({
@@ -176,20 +188,21 @@ test.describe('admin user list', () => {
   }) => {
     const users = new UsersAdminPage(await pageAs(initialAdmin))
     await users.open()
-    await users.table.searchColumn('Correo', environment.initialAdminEmail)
+    await users.table.searchColumn('users-filter-email', environment.initialAdminEmail)
 
     const owner = initialAdmin.account
-    await expect(users.row(owner).getByText('Superadministrador', { exact: true })).toBeVisible()
-    await expect(users.row(owner).getByText('Tú', { exact: true })).toBeVisible()
+    await expect(users.row(owner).getByTestId('users-staff-role')).toHaveText(
+      t('pages.admin.users.staffRole.superAdmin'),
+    )
+    await expect(users.row(owner).getByTestId('users-you')).toBeVisible()
     await users.openMenu(owner)
 
-    await expect(users.menuItem('Cambiar cargo')).toHaveCount(0)
-    await expect(users.menuItem('Eliminar')).toHaveAccessibleName(/Cuenta del superadministrador/)
-    await expect(users.menuItem('Eliminar')).toHaveAttribute('aria-disabled', 'true')
-    await expect(users.menuItem('Designar responsable de protección de datos')).not.toHaveAttribute(
-      'aria-disabled',
-      'true',
+    await expect(users.menuItem('staffRole')).toHaveCount(0)
+    await expect(users.menuItem('delete')).toHaveAccessibleName(
+      new RegExp(t('pages.admin.users.blocked.initialAdmin')),
     )
+    await expect(users.menuItem('delete')).toHaveAttribute('aria-disabled', 'true')
+    await expect(users.menuItem('privacyOfficer')).not.toHaveAttribute('aria-disabled', 'true')
   })
 
   test('the privacy officer is marked in the list', async ({ pageAs, admin, privacyOfficer }) => {
@@ -198,7 +211,7 @@ test.describe('admin user list', () => {
     await users.find(privacyOfficer.account.lastName)
 
     await expect(
-      users.row(privacyOfficer.account).getByText('Protección de datos', { exact: true }),
+      users.row(privacyOfficer.account).getByTestId('users-privacy-officer'),
     ).toBeVisible()
   })
 

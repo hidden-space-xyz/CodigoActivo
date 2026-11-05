@@ -37,6 +37,7 @@ function rowActions(category: EventCategory): RowAction[] {
 
 <template>
   <CatalogSection
+    data-testid="event-categories-section"
     :title="$t('pages.admin.catalogs.eventCategories.title')"
     :new-label="$t('pages.admin.catalogs.eventCategories.newButton')"
     @create="openCreate"

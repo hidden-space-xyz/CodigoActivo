@@ -1,5 +1,6 @@
 import { rateEvent, signUp } from '../../support/api/signups'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import {
   EventAdminPage,
   OpinionsTab,
@@ -20,32 +21,37 @@ test.describe('event opinions and terms admin', () => {
     const activity = await seed.activity(signedUp)
     await seed.enrol(member.api, activity, member.account.id)
     const event = await seed.moveToPast(signedUp, [activity], 1)
-    await rateEvent(member.api, event.id, {
+    const answers = {
       score: 4,
       mostLiked: 'Programar el robot con mi grupo.',
       suggestions: 'Más tiempo para el último reto.',
-    })
+    }
+    await rateEvent(member.api, event.id, answers)
     const page = await pageAs(admin)
     const eventPage = new EventAdminPage(page)
     await eventPage.goto(event.id, event.title)
 
-    await expect(eventPage.summaryValue('Media de 1 puntuación')).toHaveText(/^4\s*\/5$/)
+    await expect(
+      eventPage.summaryValue(t('pages.admin.eventDetail.summary.ratings', { count: 1 })),
+    ).toHaveText(/^4\s*\/5$/)
 
-    await eventPage.openTab('Opiniones')
+    await eventPage.openTab('opinions')
 
     const opinions = new OpinionsTab(page)
-    await expect(opinions.root.getByText('1 valoración', { exact: true })).toBeVisible()
+    await expect(opinions.count).toHaveText(
+      t('pages.admin.eventDetail.opinions.count', { count: 1 }),
+    )
     await expect(opinions.ratings).toHaveCount(1)
     const rating = opinions.ratings
-    await expect(rating).toContainText('Valoración de un asistente')
+    await expect(rating).toContainText(t('pages.admin.eventDetail.opinions.author'))
     await expect(rating).toContainText('4/5')
-    await expect(rating.getByRole('term')).toHaveText([
-      '¿Qué fue lo que MÁS te gustó?',
-      '¿Tienes alguna sugerencia para eventos FUTUROS?',
+    await expect(rating.getByTestId('event-opinion-question')).toHaveText([
+      t('entities.event.ratingQuestions.mostLiked'),
+      t('entities.event.ratingQuestions.suggestions'),
     ])
-    await expect(rating.getByRole('definition')).toHaveText([
-      'Programar el robot con mi grupo.',
-      'Más tiempo para el último reto.',
+    await expect(rating.getByTestId('event-opinion-answer')).toHaveText([
+      answers.mostLiked,
+      answers.suggestions,
     ])
   })
 
@@ -55,12 +61,14 @@ test.describe('event opinions and terms admin', () => {
     const eventPage = new EventAdminPage(page)
     await eventPage.goto(event.id, event.title)
 
-    await eventPage.openTab('Opiniones')
+    await eventPage.openTab('opinions')
 
+    await expect(new OpinionsTab(page).empty).toHaveText(
+      t('pages.admin.eventDetail.opinions.empty'),
+    )
     await expect(
-      new OpinionsTab(page).root.getByText('Este evento todavía no tiene valoraciones.'),
-    ).toBeVisible()
-    await expect(eventPage.summaryValue('Sin puntuaciones')).toHaveText('—')
+      eventPage.summaryValue(t('pages.admin.eventDetail.summary.ratings', { count: 0 })),
+    ).toHaveText('—')
   })
 
   test('the terms tab lists who decided each document and shows the signatures', async ({
@@ -86,25 +94,33 @@ test.describe('event opinions and terms admin', () => {
     const eventPage = new EventAdminPage(page)
     await eventPage.goto(event.id, event.title)
 
-    await eventPage.openTab('Términos')
+    await eventPage.openTab('terms')
 
     const terms = new TermsTab(page)
     const memberName = fullName(member.account)
     const minorName = fullName(minor)
     const own = terms.decision(memberName, conditions.name)
-    await expect(own).toContainText('La propia persona')
-    await expect(own).toContainText('Aceptado')
-    await expect(terms.decision(memberName, consent.name)).toContainText('Sin firma')
+    await expect(own).toContainText(t('pages.admin.eventDetail.terms.decidedBySelf'))
+    await expect(own).toContainText(t('pages.admin.eventDetail.terms.accepted'))
+    await expect(terms.decision(memberName, consent.name)).toContainText(
+      t('pages.admin.eventDetail.terms.noSignature'),
+    )
     const minorConditions = terms.decision(minorName, conditions.name)
     await expect(minorConditions).toContainText(fullName(guardian.account))
-    await expect(minorConditions).toContainText('Aceptado')
+    await expect(minorConditions).toContainText(t('pages.admin.eventDetail.terms.accepted'))
 
-    await own.getByRole('button', { name: `Ver la firma de ${memberName}` }).click()
+    await own.getByTestId('event-terms-signature-open').click()
 
-    const signature = page.getByRole('dialog', { name: `Firma de ${memberName}` })
-    await expect(
-      signature.getByRole('img', { name: `Firma de ${memberName} para ${conditions.name}` }),
-    ).toBeVisible()
+    const signature = page
+      .getByTestId('event-terms-signature-dialog')
+      .getByTestId('event-terms-signature-image')
+    await expect(signature).toBeVisible()
+    await expect(signature).toHaveAccessibleName(
+      t('pages.admin.eventDetail.terms.signatureAlt', {
+        name: memberName,
+        document: conditions.name,
+      }),
+    )
   })
 
   test('an administrator records the withdrawal of a consent', async ({
@@ -120,16 +136,16 @@ test.describe('event opinions and terms admin', () => {
     const page = await pageAs(admin)
     const eventPage = new EventAdminPage(page)
     await eventPage.goto(event.id, event.title)
-    await eventPage.openTab('Términos')
+    await eventPage.openTab('terms')
     const terms = new TermsTab(page)
     const decision = terms.decision(fullName(member.account), consent.name)
-    await expect(decision).toContainText('Aceptado')
+    await expect(decision).toContainText(t('pages.admin.eventDetail.terms.accepted'))
 
-    await decision.getByRole('button', { name: 'Registrar retirada', exact: true }).click()
-    await confirm(page, 'Registrar la retirada de un consentimiento', 'Registrar retirada')
+    await decision.getByTestId('row-action-withdraw').click()
+    await confirm(page)
 
-    await expect(notification(page, 'Retirada registrada.')).toBeVisible()
-    await expect(decision).toContainText('Retirado')
-    await expect(decision.getByRole('button', { name: 'Registrar retirada' })).toBeHidden()
+    await expect(notification(page, t('pages.admin.eventDetail.terms.withdraw.done'))).toBeVisible()
+    await expect(decision).toContainText(t('pages.admin.eventDetail.terms.withdrawn'))
+    await expect(decision.getByTestId('row-action-withdraw')).toBeHidden()
   })
 })

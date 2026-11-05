@@ -68,6 +68,7 @@ function confirm(): void {
         <el-input
           :id="inputId"
           v-model="draft.password"
+          data-testid="admin-password-input"
           type="password"
           show-password
           autocomplete="current-password"
@@ -76,18 +77,32 @@ function confirm(): void {
           :aria-invalid="invalid('password') || !!error"
           :aria-describedby="errors.password || error ? `${inputId}-error` : undefined"
         />
-        <small v-if="errors.password" :id="`${inputId}-error`" class="ca-field__error">{{
-          errors.password
-        }}</small>
-        <small v-else-if="error" :id="`${inputId}-error`" class="ca-field__error">{{
-          error
-        }}</small>
+        <small
+          v-if="errors.password"
+          :id="`${inputId}-error`"
+          class="ca-field__error"
+          data-testid="admin-password-error"
+          >{{ errors.password }}</small
+        >
+        <small
+          v-else-if="error"
+          :id="`${inputId}-error`"
+          class="ca-field__error"
+          data-testid="admin-password-error"
+          >{{ error }}</small
+        >
       </div>
     </form>
 
     <template #footer>
       <ActionButton :label="$t('common.cancel')" text :disabled="saving" @click="visible = false" />
-      <ActionButton :label="confirmLabel" type="primary" :loading="saving" @click="confirm" />
+      <ActionButton
+        :label="confirmLabel"
+        data-testid="admin-password-confirm"
+        type="primary"
+        :loading="saving"
+        @click="confirm"
+      />
     </template>
   </el-dialog>
 </template>

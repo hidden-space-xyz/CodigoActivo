@@ -1,17 +1,20 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
+import { t } from '../../i18n'
 import { writeRichText } from '../../ui/forms'
 import { AdminShell } from '../admin-shell'
 
+const ANY_DATE = '\n'
+
 /** A tab of the «Políticas» page, named after its policy. */
-export type PolicyTab = 'Política de privacidad' | 'Política de cookies'
+export type PolicyTab = 'privacy' | 'cookies'
 
 /** The editor of one policy: its status line, rich text editor, actions and list of versions. */
 export class PolicyEditor {
   /** The tab panel of the policy. */
   readonly root: Locator
 
-  /** The rich text editor, named after the policy. */
+  /** The editable area of the rich text editor of the policy. */
   readonly editor: Locator
 
   /** The note shown while the draft differs from the version in force. */
@@ -26,33 +29,43 @@ export class PolicyEditor {
   /** The list of published versions, newest first. */
   readonly versions: Locator
 
+  private readonly field: Locator
+
   constructor(
     private readonly page: Page,
-    private readonly name: PolicyTab,
+    name: PolicyTab,
   ) {
-    this.root = page.getByRole('tabpanel', { name, exact: true })
-    this.editor = this.root.locator('.ProseMirror')
-    this.unpublishedChanges = this.root.getByText('Hay cambios sin publicar.')
-    this.discard = this.root.getByRole('button', { name: 'Descartar cambios', exact: true })
-    this.publish = this.root.getByRole('button', { name: 'Publicar versión nueva', exact: true })
-    this.versions = this.root.getByRole('region', { name: 'Versiones', exact: true })
+    this.root = page.getByTestId(`legal-policies-${name}`)
+    this.field = this.root.getByTestId('legal-policy-editor-text')
+    this.editor = this.field.locator('.ProseMirror')
+    this.unpublishedChanges = this.root.getByTestId('legal-policy-editor-dirty')
+    this.discard = this.root.getByTestId('legal-policy-editor-discard')
+    this.publish = this.root.getByTestId('legal-policy-editor-publish')
+    this.versions = this.root.getByTestId('legal-policy-editor-versions')
   }
 
   /** The status line, «Versión {version} en vigor, publicada el …». */
   status(version: number): Locator {
-    return this.root.getByText(new RegExp(`^Versión ${version} en vigor, publicada el `))
+    const [inForce = ''] = t('pages.admin.legalPolicies.status.published', {
+      version,
+      date: ANY_DATE,
+    }).split(ANY_DATE)
+    return this.root.getByTestId('legal-policy-editor-status').filter({ hasText: inForce })
   }
 
   /** The entry of the version `version` in the list of versions. */
   version(version: number): Locator {
-    return this.versions
-      .getByRole('listitem')
-      .filter({ has: this.page.getByText(`Versión ${version}`, { exact: true }) })
+    const number = t('pages.admin.legalPolicies.versions.number', { version })
+    return this.versions.getByTestId('legal-policy-editor-version').filter({
+      has: this.page
+        .getByTestId('legal-policy-editor-version-number')
+        .filter({ hasText: new RegExp(`^\\s*${number}\\s*$`) }),
+    })
   }
 
   /** Replaces the draft with `text`. */
   async write(text: string): Promise<void> {
-    await writeRichText(this.root, this.name, text)
+    await writeRichText(this.field, text)
   }
 
   /** Empties the draft. */
@@ -75,13 +88,13 @@ export class LegalPoliciesPage {
 
   /** Opens the page on its first tab and waits for the privacy policy to load. */
   async open(): Promise<void> {
-    await this.shell.open('Políticas')
-    await expect(this.policy('Política de privacidad').editor).toBeVisible()
+    await this.shell.open('admin-legal-policies')
+    await expect(this.policy('privacy').editor).toBeVisible()
   }
 
   /** The tab of the policy `name`. */
   tab(name: PolicyTab): Locator {
-    return this.page.getByRole('tab', { name, exact: true })
+    return this.page.getByTestId(`legal-policies-${name}-tab`)
   }
 
   /** The editor of the policy `name`. */

@@ -42,6 +42,7 @@ function confirm(currentPassword: string): void {
 <template>
   <AdminPasswordDialog
     v-model:visible="visible"
+    data-testid="staff-role-dialog"
     :title="$t('pages.admin.users.staffRole.header')"
     :message="$t('pages.admin.users.staffRole.message', { fullName: fullName(user ?? {}) })"
     :confirm-label="$t('pages.admin.users.staffRole.confirm')"
@@ -56,12 +57,13 @@ function confirm(currentPassword: string): void {
       <label class="ca-field__label" for="staff-role">{{
         $t('pages.admin.users.staffRole.label')
       }}</label>
-      <el-select id="staff-role" v-model="staffRole">
+      <el-select id="staff-role" v-model="staffRole" data-testid="staff-role-dialog-role">
         <el-option
           v-for="role in STAFF_ROLES"
           :key="role"
           :label="$t(staffRoleLabelKey(role))"
           :value="role"
+          :data-testid="`option-${role}`"
         />
       </el-select>
     </div>

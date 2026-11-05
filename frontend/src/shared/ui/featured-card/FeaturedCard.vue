@@ -40,12 +40,12 @@ const posterUrl = computed(() => fileContentUrl(props.thumbnailId))
 </script>
 
 <template>
-  <div class="featured">
+  <div class="featured" data-testid="featured-card">
     <div class="featured__grid">
       <div class="featured__body">
         <span class="featured__badge">{{ badge }}</span>
 
-        <h2 class="featured__title">{{ title }}</h2>
+        <h2 class="featured__title" data-testid="featured-card-title">{{ title }}</h2>
         <div v-if="subtitle" class="featured__slogan">{{ subtitle }}</div>
 
         <div v-if="tags.length" class="featured__cats">
@@ -59,11 +59,23 @@ const posterUrl = computed(() => fileContentUrl(props.thumbnailId))
           </div>
         </div>
 
-        <BrandButton :to="to" variant="light" class="featured__cta">{{ ctaLabel }}</BrandButton>
+        <BrandButton
+          :to="to"
+          variant="light"
+          class="featured__cta"
+          data-testid="featured-card-cta"
+          >{{ ctaLabel }}</BrandButton
+        >
       </div>
 
       <div class="featured__poster">
-        <img v-if="posterUrl" :src="posterUrl" :alt="title" class="featured__poster-img" />
+        <img
+          v-if="posterUrl"
+          :src="posterUrl"
+          :alt="title"
+          class="featured__poster-img"
+          data-testid="featured-card-poster"
+        />
       </div>
     </div>
   </div>

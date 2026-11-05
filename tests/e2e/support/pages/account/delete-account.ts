@@ -17,11 +17,9 @@ export class DeleteAccountSection {
   readonly initialAdminNote: Locator
 
   constructor(account: AccountPage) {
-    this.root = account.section('Eliminar mi cuenta')
-    this.open = this.root.getByRole('button', { name: 'Eliminar mi cuenta' })
-    this.initialAdminNote = this.root.getByText(
-      'Esta es la cuenta del superadministrador, así que no se puede eliminar.',
-    )
+    this.root = account.section('delete-account')
+    this.open = this.root.getByTestId('delete-account-open')
+    this.initialAdminNote = this.root.getByTestId('delete-account-initial-admin-note')
   }
 }
 
@@ -52,15 +50,13 @@ export class DeleteAccountDialog {
   readonly error: Locator
 
   constructor(page: Page) {
-    this.root = page.getByRole('dialog', { name: 'Eliminar mi cuenta' })
-    this.password = this.root.getByLabel('Tu contraseña')
-    this.sendCode = this.root.getByRole('button', { name: 'Enviar código' })
-    this.code = this.root.getByLabel('Código de confirmación')
-    this.irreversible = this.root.getByRole('checkbox', {
-      name: /Entiendo que esta acción es irreversible/,
-    })
-    this.submit = this.root.getByRole('button', { name: 'Eliminar definitivamente' })
-    this.error = this.root.getByRole('alert')
+    this.root = page.getByTestId('delete-account-dialog')
+    this.password = this.root.getByTestId('delete-account-password')
+    this.sendCode = this.root.getByTestId('delete-account-send-code')
+    this.code = this.root.getByTestId('delete-account-code')
+    this.irreversible = this.root.getByTestId('delete-account-irreversible')
+    this.submit = this.root.getByTestId('delete-account-submit')
+    this.error = this.root.getByTestId('delete-account-error')
   }
 
   /** Sends the password step and waits for the code it emails to `credentials.email`. */

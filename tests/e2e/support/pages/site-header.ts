@@ -1,5 +1,10 @@
 import type { Locator, Page } from '@playwright/test'
 
+import { t } from '../i18n'
+
+/** A section of the main navigation, by the name of its route. */
+export type SiteSection = 'home' | 'news' | 'events' | 'resources' | 'about'
+
 /** The public site header: main navigation, session links and the theme toggle. */
 export class SiteHeader {
   /** The header landmark. */
@@ -30,19 +35,26 @@ export class SiteHeader {
   readonly menuButton: Locator
 
   constructor(page: Page) {
-    this.root = page.getByRole('banner')
-    this.navigation = this.root.getByRole('navigation', { name: 'Principal' })
-    this.login = this.root.getByRole('link', { name: 'Iniciar sesión' })
-    this.register = this.root.getByRole('link', { name: 'Regístrate' })
-    this.account = this.root.getByRole('link', { name: 'Mi cuenta' })
-    this.admin = this.root.getByRole('link', { name: 'Administración' })
-    this.logout = this.root.getByRole('button', { name: 'Cerrar sesión' })
-    this.themeToggle = this.root.getByRole('button', { name: /Cambiar a tema/ })
-    this.menuButton = this.root.getByRole('button', { name: 'Abrir menú' })
+    this.root = page.getByTestId('site-header')
+    this.navigation = this.root.getByTestId('site-nav')
+    this.login = this.root.getByTestId('site-header-login')
+    this.register = this.root.getByTestId('site-header-register')
+    this.account = this.root.getByTestId('site-header-account')
+    this.admin = this.root.getByTestId('site-header-admin')
+    this.logout = this.root.getByTestId('site-header-logout')
+    this.themeToggle = this.root.getByTestId('site-header-theme')
+    this.menuButton = this.root.getByTestId('site-header-menu')
+  }
+
+  /** The navigation link to `section`. */
+  link(section: SiteSection): Locator {
+    return this.navigation.getByTestId(`nav-${section}`)
   }
 
   /** The greeting «Hola, {name}». */
   greeting(firstName: string): Locator {
-    return this.root.getByText(`Hola, ${firstName}`)
+    return this.root
+      .getByTestId('site-header-greeting')
+      .filter({ hasText: t('common.greeting', { name: firstName }) })
   }
 }

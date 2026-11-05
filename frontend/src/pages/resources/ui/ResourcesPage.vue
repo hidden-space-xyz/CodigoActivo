@@ -38,11 +38,14 @@ const isEmpty = computed(() => !isLoading.value && resources.value.length === 0)
             v-model="search"
             class="resources-filters__search"
             :label="$t('common.searchByTitleOrSubtitle')"
+            data-testid="resources-search"
           />
         </div>
 
-        <p v-if="isLoading" class="resources-loading">{{ $t('common.loading') }}</p>
-        <p v-else-if="isEmpty" class="resources-loading">
+        <p v-if="isLoading" class="resources-loading" data-testid="resources-loading">
+          {{ $t('common.loading') }}
+        </p>
+        <p v-else-if="isEmpty" class="resources-loading" data-testid="resources-empty">
           {{ search ? $t('pages.resources.noResults') : $t('pages.resources.empty') }}
         </p>
         <div v-else class="resources-grid">

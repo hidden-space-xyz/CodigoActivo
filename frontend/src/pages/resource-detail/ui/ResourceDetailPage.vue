@@ -49,7 +49,7 @@ watchEffect(() => {
   <div>
     <section class="detail-back">
       <div class="ca-container--narrow">
-        <BrandButton variant="back" :to="{ name: 'resources' }">
+        <BrandButton variant="back" :to="{ name: 'resources' }" data-testid="resource-detail-back">
           {{ $t('pages.resourceDetail.back') }}
         </BrandButton>
       </div>
@@ -57,7 +57,11 @@ watchEffect(() => {
 
     <p v-if="isLoading" class="detail-state ca-container--narrow">{{ $t('common.loading') }}</p>
 
-    <p v-else-if="!resource" class="detail-state ca-container--narrow">
+    <p
+      v-else-if="!resource"
+      class="detail-state ca-container--narrow"
+      data-testid="resource-detail-not-found"
+    >
       {{ $t('pages.resourceDetail.notFound') }}
     </p>
 
@@ -66,16 +70,25 @@ watchEffect(() => {
     </p>
 
     <template v-else>
-      <article class="detail ca-container--narrow">
-        <h1 class="detail__title">{{ resource.title }}</h1>
-        <p v-if="resource.subtitle" class="detail__subtitle">{{ resource.subtitle }}</p>
+      <article class="detail ca-container--narrow" data-testid="resource-detail-article">
+        <h1 class="detail__title" data-testid="resource-detail-title">{{ resource.title }}</h1>
+        <p v-if="resource.subtitle" class="detail__subtitle" data-testid="resource-detail-subtitle">
+          {{ resource.subtitle }}
+        </p>
 
-        <img v-if="posterUrl" :src="posterUrl" :alt="resource.title" class="detail__poster" />
+        <img
+          v-if="posterUrl"
+          :src="posterUrl"
+          :alt="resource.title"
+          class="detail__poster"
+          data-testid="resource-detail-poster"
+        />
 
         <RichTextContent
           v-if="hasDescription"
           :content="resource.description"
           class="detail__body"
+          data-testid="resource-detail-body"
         />
         <p v-else class="detail__body detail__body--muted">
           {{ $t('pages.resourceDetail.noDescription') }}

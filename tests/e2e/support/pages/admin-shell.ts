@@ -1,37 +1,40 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
-/** An entry of the administration sidebar. */
+/** An entry of the administration sidebar, by the name of its route. */
 export type AdminSection =
-  | 'Métricas'
-  | 'Eventos'
-  | 'Novedades'
-  | 'Patrocinadores'
-  | 'Recursos'
-  | 'Usuarios'
-  | 'Diagnóstico'
-  | 'Auditoría'
-  | 'Archivo legal'
-  | 'Políticas'
-  | 'Catálogos'
+  | 'admin-dashboard'
+  | 'admin-events'
+  | 'admin-news'
+  | 'admin-partners'
+  | 'admin-resources'
+  | 'admin-users'
+  | 'admin-diagnostics'
+  | 'admin-audit'
+  | 'admin-blocked-data'
+  | 'admin-legal-policies'
+  | 'admin-catalogs'
 
 const PATHS: Readonly<Record<AdminSection, string>> = {
-  Métricas: '/admin/dashboard',
-  Eventos: '/admin/events',
-  Novedades: '/admin/news',
-  Patrocinadores: '/admin/partners',
-  Recursos: '/admin/resources',
-  Usuarios: '/admin/users',
-  Diagnóstico: '/admin/diagnostics',
-  Auditoría: '/admin/audit',
-  'Archivo legal': '/admin/blocked-data',
-  Políticas: '/admin/legal',
-  Catálogos: '/admin/catalogs',
+  'admin-dashboard': '/admin/dashboard',
+  'admin-events': '/admin/events',
+  'admin-news': '/admin/news',
+  'admin-partners': '/admin/partners',
+  'admin-resources': '/admin/resources',
+  'admin-users': '/admin/users',
+  'admin-diagnostics': '/admin/diagnostics',
+  'admin-audit': '/admin/audit',
+  'admin-blocked-data': '/admin/blocked-data',
+  'admin-legal-policies': '/admin/legal',
+  'admin-catalogs': '/admin/catalogs',
 }
 
 /** The administration layout: the sidebar, the top bar and the page header. */
 export class AdminShell {
   /** The sidebar navigation. */
   readonly sidebar: Locator
+
+  /** The sidebar links, in display order. */
+  readonly links: Locator
 
   /** The main landmark of the current admin page. */
   readonly main: Locator
@@ -40,25 +43,33 @@ export class AdminShell {
   readonly logout: Locator
 
   constructor(private readonly page: Page) {
-    this.sidebar = page.getByRole('complementary').getByRole('navigation')
-    this.main = page.getByRole('main')
-    this.logout = page.getByRole('button', { name: 'Cerrar sesión' })
+    this.sidebar = page.getByTestId('admin-nav')
+    this.links = this.sidebar.locator('[data-testid^="nav-"]')
+    this.main = page.locator('main')
+    this.logout = page.getByTestId('admin-shell-logout')
   }
 
-  /** Opens the admin page of `section` directly and waits for its heading. */
-  async open(section: AdminSection, heading: string = section): Promise<void> {
+  /** Opens the admin page of `section` directly and waits for it. */
+  async open(section: AdminSection): Promise<void> {
     await this.page.goto(PATHS[section])
-    await expect(this.heading(heading)).toBeVisible()
+    await expect(this.view(section)).toBeVisible()
   }
 
-  /** The `h1` of the current admin page. */
-  heading(name: string): Locator {
-    return this.main.getByRole('heading', { level: 1, name, exact: true })
+  /** The content of the admin page of `section`, shown only while it is the current page. */
+  view(section: AdminSection): Locator {
+    return this.page.getByTestId(`page-${section}`)
   }
 
   /** The sidebar link to `section`. */
   link(section: AdminSection): Locator {
-    return this.sidebar.getByRole('link', { name: section, exact: true })
+    return this.sidebar.getByTestId(`nav-${section}`)
+  }
+
+  /** The sections of the sidebar, in display order. */
+  sections(): Promise<string[]> {
+    return this.links.evaluateAll((links) =>
+      links.map((link) => (link.getAttribute('data-testid') ?? '').replace(/^nav-/, '')),
+    )
   }
 
   /** The path of the admin page of `section`. */

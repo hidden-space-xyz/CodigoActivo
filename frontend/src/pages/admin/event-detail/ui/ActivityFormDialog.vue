@@ -103,6 +103,7 @@ async function save(): Promise<void> {
         : $t('pages.admin.eventDetail.activities.form.newHeader')
     "
     width="min(560px, 92vw)"
+    data-testid="activity-form-dialog"
   >
     <form class="form" @submit.prevent="save">
       <div class="ca-field">
@@ -115,6 +116,7 @@ async function save(): Promise<void> {
           :maxlength="TITLE_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('title') }"
           :aria-invalid="invalid('title')"
+          data-testid="activity-form-title"
         />
       </div>
       <div class="ca-field">
@@ -129,6 +131,7 @@ async function save(): Promise<void> {
           :autosize="{ minRows: 3 }"
           :class="{ 'ca-invalid': invalid('description') }"
           :aria-invalid="invalid('description')"
+          data-testid="activity-form-description"
         />
       </div>
       <div class="ca-form-grid">
@@ -141,15 +144,22 @@ async function save(): Promise<void> {
             v-model="draft.modalityId"
             :placeholder="$t('pages.admin.eventDetail.activities.form.modalityPlaceholder')"
             :class="{ 'ca-invalid': invalid('modalityId') }"
+            data-testid="activity-form-modality"
           >
             <el-option
               v-for="modality in modalities"
               :key="modality.id"
               :label="modality.name"
               :value="modality.id"
+              :data-testid="`option-${modality.id}`"
             />
           </el-select>
-          <small v-if="errors.modalityId" class="ca-field__error">{{ errors.modalityId }}</small>
+          <small
+            v-if="errors.modalityId"
+            class="ca-field__error"
+            data-testid="activity-form-modality-error"
+            >{{ errors.modalityId }}</small
+          >
         </div>
         <div class="ca-field">
           <label class="ca-field__label" for="activity-location">{{
@@ -162,14 +172,19 @@ async function save(): Promise<void> {
             :class="{ 'ca-invalid': invalid('location') }"
             :aria-invalid="invalid('location')"
             :aria-describedby="errors.location ? 'activity-location-error' : undefined"
+            data-testid="activity-form-location"
           />
-          <small v-if="errors.location" id="activity-location-error" class="ca-field__error">{{
-            errors.location
-          }}</small>
+          <small
+            v-if="errors.location"
+            id="activity-location-error"
+            class="ca-field__error"
+            data-testid="activity-form-location-error"
+            >{{ errors.location }}</small
+          >
         </div>
       </div>
       <div class="ca-form-grid">
-        <div class="ca-field">
+        <div class="ca-field" data-testid="activity-form-start">
           <label class="ca-field__label" for="activity-start">{{
             $t('pages.admin.eventDetail.activities.form.fields.start')
           }}</label>
@@ -181,9 +196,14 @@ async function save(): Promise<void> {
             :disabled-date="outsideEvent"
             :class="{ 'ca-invalid': invalid('startsAt') }"
           />
-          <small v-if="errors.startsAt" class="ca-field__error">{{ errors.startsAt }}</small>
+          <small
+            v-if="errors.startsAt"
+            class="ca-field__error"
+            data-testid="activity-form-start-error"
+            >{{ errors.startsAt }}</small
+          >
         </div>
-        <div class="ca-field">
+        <div class="ca-field" data-testid="activity-form-end">
           <label class="ca-field__label" for="activity-end">{{
             $t('pages.admin.eventDetail.activities.form.fields.end')
           }}</label>
@@ -195,7 +215,12 @@ async function save(): Promise<void> {
             :disabled-date="beforeStartOrOutsideEvent"
             :class="{ 'ca-invalid': invalid('endsAt') }"
           />
-          <small v-if="errors.endsAt" class="ca-field__error">{{ errors.endsAt }}</small>
+          <small
+            v-if="errors.endsAt"
+            class="ca-field__error"
+            data-testid="activity-form-end-error"
+            >{{ errors.endsAt }}</small
+          >
         </div>
       </div>
       <small v-if="errors.schedule" class="ca-field__error">{{ errors.schedule }}</small>
@@ -204,7 +229,12 @@ async function save(): Promise<void> {
           {{ $t('pages.admin.eventDetail.activities.form.fields.desiredCounts') }}
         </div>
         <div class="form__capacities" role="group" aria-labelledby="activity-capacities-label">
-          <div v-for="role in roles" :key="role.id" class="form__capacity">
+          <div
+            v-for="role in roles"
+            :key="role.id"
+            class="form__capacity"
+            data-testid="activity-form-capacity"
+          >
             <span class="form__capacity-name">{{ role.name }}</span>
             <el-input-number
               v-model="draft.desiredCounts[role.id]"
@@ -245,6 +275,7 @@ async function save(): Promise<void> {
         :label="$t('common.save')"
         type="primary"
         :loading="saving || uploading"
+        data-testid="activity-form-save"
         @click="save"
       />
     </template>

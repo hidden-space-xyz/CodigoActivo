@@ -18,12 +18,10 @@ export class TwoFactorSection {
   readonly useEmail: Locator
 
   constructor(account: AccountPage) {
-    this.root = account.section('Verificación en dos pasos')
+    this.root = account.section('two-factor')
     this.method = this.root.getByTestId('two-factor-method')
-    this.useAuthenticator = this.root.getByRole('button', {
-      name: 'Usar una aplicación de autenticación',
-    })
-    this.useEmail = this.root.getByRole('button', { name: 'Volver al código por correo' })
+    this.useAuthenticator = this.root.getByTestId('two-factor-use-authenticator')
+    this.useEmail = this.root.getByTestId('two-factor-use-email')
   }
 }
 
@@ -54,13 +52,13 @@ export class AuthenticatorSetupDialog {
   readonly error: Locator
 
   constructor(page: Page) {
-    this.root = page.getByRole('dialog', { name: 'Configurar aplicación de autenticación' })
-    this.password = this.root.getByLabel('Tu contraseña')
-    this.continue = this.root.getByRole('button', { name: 'Continuar' })
+    this.root = page.getByTestId('two-factor-setup-dialog')
+    this.password = this.root.getByTestId('two-factor-setup-password')
+    this.continue = this.root.getByTestId('two-factor-setup-continue')
     this.sharedKey = this.root.getByTestId('two-factor-shared-key')
-    this.code = this.root.getByLabel('Código de la aplicación')
-    this.activate = this.root.getByRole('button', { name: 'Activar' })
-    this.error = this.root.getByRole('alert')
+    this.code = this.root.getByTestId('two-factor-setup-code')
+    this.activate = this.root.getByTestId('two-factor-setup-activate')
+    this.error = this.root.getByTestId('two-factor-setup-error')
   }
 
   /** Sends the password step and enrolls an application with the key the dialog then shows. */
@@ -90,10 +88,10 @@ export class DisableAuthenticatorDialog {
   readonly error: Locator
 
   constructor(page: Page) {
-    this.root = page.getByRole('dialog', { name: 'Volver al código por correo' })
-    this.password = this.root.getByLabel('Tu contraseña')
-    this.code = this.root.getByLabel('Código de la aplicación')
-    this.submit = this.root.getByRole('button', { name: 'Volver al código por correo' })
-    this.error = this.root.getByRole('alert')
+    this.root = page.getByTestId('two-factor-disable-dialog')
+    this.password = this.root.getByTestId('two-factor-disable-password')
+    this.code = this.root.getByTestId('two-factor-disable-code')
+    this.submit = this.root.getByTestId('two-factor-disable-submit')
+    this.error = this.root.getByTestId('two-factor-disable-error')
   }
 }

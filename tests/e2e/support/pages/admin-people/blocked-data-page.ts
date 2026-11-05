@@ -47,29 +47,29 @@ export class BlockedDataPage {
 
   constructor(private readonly page: Page) {
     this.consultations = new DataTable(page)
-    this.openConsultation = page.getByRole('button', { name: 'Abrir consulta', exact: true })
-    this.dialog = page.getByRole('dialog', { name: 'Abrir una consulta de datos bloqueados' })
-    this.panel = page.getByRole('region', { name: 'Consulta abierta' })
-    this.candidates = this.panel.getByRole('radiogroup', { name: 'Cuentas encontradas' })
+    this.openConsultation = page.getByTestId('blocked-data-open')
+    this.dialog = page.getByTestId('blocked-data-dialog')
+    this.panel = page.getByTestId('blocked-data-panel')
+    this.candidates = this.panel.getByTestId('blocked-data-panel-candidates')
   }
 
   /** Opens the page and waits for the list of consultations. */
   async open(): Promise<void> {
-    await new AdminShell(this.page).open('Archivo legal')
+    await new AdminShell(this.page).open('admin-blocked-data')
     await this.consultations.expectSettled()
   }
 
   /** Looks `text` up in the open consultation. */
   async search(text: string): Promise<void> {
-    await this.panel.getByLabel('Buscar una cuenta').fill(text)
-    await this.panel.getByRole('button', { name: 'Buscar', exact: true }).click()
+    await this.panel.getByTestId('blocked-data-panel-query').fill(text)
+    await this.panel.getByTestId('blocked-data-panel-search').click()
   }
 
   /** Downloads the extract about the picked account and reads it. */
   async downloadExtract(): Promise<DownloadedExtract> {
     const [download] = await Promise.all([
       this.page.waitForEvent('download'),
-      this.panel.getByRole('button', { name: 'Descargar extracto' }).click(),
+      this.panel.getByTestId('blocked-data-panel-download').click(),
     ])
     const extract = JSON.parse(await readFile(await download.path(), 'utf8')) as Extract
     return { fileName: download.suggestedFilename(), extract }

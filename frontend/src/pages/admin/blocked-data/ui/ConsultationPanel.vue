@@ -63,7 +63,11 @@ function summary(candidate: Candidate): string {
 </script>
 
 <template>
-  <section class="panel" :aria-label="$t('pages.admin.blockedData.consultation.title')">
+  <section
+    class="panel"
+    data-testid="blocked-data-panel"
+    :aria-label="$t('pages.admin.blockedData.consultation.title')"
+  >
     <header class="panel__header">
       <div>
         <h2 class="panel__title">{{ $t('pages.admin.blockedData.consultation.title') }}</h2>
@@ -92,6 +96,7 @@ function summary(candidate: Candidate): string {
         <el-input
           id="blocked-query"
           v-model="query"
+          data-testid="blocked-data-panel-query"
           :maxlength="MAX_SEARCH_LENGTH"
           :placeholder="$t('pages.admin.blockedData.consultation.searchPlaceholder')"
           aria-describedby="blocked-query-hint"
@@ -104,6 +109,7 @@ function summary(candidate: Candidate): string {
       </div>
       <ActionButton
         :label="$t('pages.admin.blockedData.consultation.searchAction')"
+        data-testid="blocked-data-panel-search"
         type="primary"
         native-type="submit"
         :loading="searching"
@@ -119,6 +125,7 @@ function summary(candidate: Candidate): string {
       v-if="candidates.length > 0"
       v-model="accountId"
       class="panel__candidates"
+      data-testid="blocked-data-panel-candidates"
       :aria-label="$t('pages.admin.blockedData.consultation.candidates')"
     >
       <el-radio
@@ -126,6 +133,7 @@ function summary(candidate: Candidate): string {
         :key="candidate.accountId"
         :value="candidate.accountId"
         class="panel__candidate"
+        data-testid="blocked-data-panel-candidate"
       >
         <span class="panel__name">{{ candidate.name }}</span>
         <span class="panel__state">
@@ -183,6 +191,7 @@ function summary(candidate: Candidate): string {
       </div>
       <ActionButton
         :label="$t('pages.admin.blockedData.consultation.download')"
+        data-testid="blocked-data-panel-download"
         type="primary"
         icon="download"
         :loading="extracting"

@@ -78,6 +78,7 @@ function confirm(): void {
 <template>
   <el-dialog
     v-model="visible"
+    data-testid="blocked-data-dialog"
     :title="$t('pages.admin.blockedData.open.title')"
     width="520px"
     :close-on-click-modal="false"
@@ -93,6 +94,7 @@ function confirm(): void {
           <el-select
             id="blocked-authority"
             v-model="draft.authority"
+            data-testid="blocked-data-dialog-authority"
             :placeholder="$t('pages.admin.blockedData.open.authorityPlaceholder')"
             :class="{ 'ca-invalid': invalid('authority') }"
             :aria-invalid="invalid('authority')"
@@ -103,6 +105,7 @@ function confirm(): void {
               :key="option.value"
               :label="option.label"
               :value="option.value"
+              :data-testid="`option-${option.value}`"
             />
           </el-select>
           <small v-if="errors.authority" id="blocked-authority-error" class="ca-field__error">{{
@@ -117,6 +120,7 @@ function confirm(): void {
           <el-input
             id="blocked-reference"
             v-model="draft.reference"
+            data-testid="blocked-data-dialog-reference"
             :maxlength="BLOCKED_DATA_REFERENCE_MAX_LENGTH"
             :class="{ 'ca-invalid': invalid('reference') }"
             :aria-invalid="invalid('reference')"
@@ -134,6 +138,7 @@ function confirm(): void {
           <el-input
             id="blocked-password"
             v-model="draft.password"
+            data-testid="blocked-data-dialog-password"
             type="password"
             show-password
             autocomplete="current-password"
@@ -164,6 +169,7 @@ function confirm(): void {
           <el-input
             id="blocked-code"
             v-model="codeDraft.code"
+            data-testid="blocked-data-dialog-code"
             inputmode="numeric"
             autocomplete="one-time-code"
             :maxlength="TWO_FACTOR_CODE_MAX_LENGTH"
@@ -188,7 +194,9 @@ function confirm(): void {
         </p>
       </template>
 
-      <p v-if="error" class="ca-form-alert" role="alert">{{ error }}</p>
+      <p v-if="error" class="ca-form-alert" role="alert" data-testid="blocked-data-dialog-error">
+        {{ error }}
+      </p>
     </form>
 
     <template #footer>
@@ -200,6 +208,7 @@ function confirm(): void {
             ? $t('pages.admin.blockedData.open.continue')
             : $t('pages.admin.blockedData.open.sendCode')
         "
+        data-testid="blocked-data-dialog-continue"
         type="primary"
         :loading="sendingCode"
         @click="confirm"
@@ -207,6 +216,7 @@ function confirm(): void {
       <ActionButton
         v-else
         :label="$t('pages.admin.blockedData.open.confirm')"
+        data-testid="blocked-data-dialog-confirm"
         type="primary"
         :loading="saving"
         @click="confirm"

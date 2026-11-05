@@ -17,14 +17,24 @@ const tab = ref<LegalPolicyKind>('Privacy')
     />
 
     <el-tabs v-model="tab">
-      <el-tab-pane :label="$t('pages.admin.legalPolicies.tabs.Privacy')" name="Privacy">
+      <el-tab-pane name="Privacy" data-testid="legal-policies-privacy">
+        <template #label>
+          <span data-testid="legal-policies-privacy-tab">{{
+            $t('pages.admin.legalPolicies.tabs.Privacy')
+          }}</span>
+        </template>
         <LegalPolicyEditor
           kind="Privacy"
           :label="$t('pages.admin.legalPolicies.tabs.Privacy')"
           :hint="$t('pages.admin.legalPolicies.privacyHint')"
         />
       </el-tab-pane>
-      <el-tab-pane :label="$t('pages.admin.legalPolicies.tabs.Cookies')" name="Cookies">
+      <el-tab-pane name="Cookies" data-testid="legal-policies-cookies">
+        <template #label>
+          <span data-testid="legal-policies-cookies-tab">{{
+            $t('pages.admin.legalPolicies.tabs.Cookies')
+          }}</span>
+        </template>
         <LegalPolicyEditor kind="Cookies" :label="$t('pages.admin.legalPolicies.tabs.Cookies')" />
       </el-tab-pane>
     </el-tabs>

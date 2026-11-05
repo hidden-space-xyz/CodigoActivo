@@ -2,7 +2,10 @@ import { findUser } from '../../support/api/accounts'
 import { PASSWORD } from '../../support/config/environment'
 import { newMinor, newPerson } from '../../support/data/people'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { linkIn, SUBJECTS } from '../../support/mail/mailbox'
+import { AccountPage } from '../../support/pages/account/account-page'
+import { MinorsSection } from '../../support/pages/account/minors-section'
 import { LoginPage, signInThroughPages } from '../../support/pages/login-page'
 import { RegistrationPage } from '../../support/pages/registration-page'
 
@@ -13,9 +16,7 @@ test.describe('registration', () => {
 
     await registration.declineAdult.click()
 
-    await expect(
-      page.getByRole('heading', { name: 'Necesitas a tu padre, madre o tutor legal' }),
-    ).toBeVisible()
+    await expect(page.getByTestId('register-age-blocked')).toBeVisible()
     await expect(registration.submit).toBeHidden()
   })
 
@@ -35,22 +36,25 @@ test.describe('registration', () => {
     await registration.submit.click()
 
     await expect(registration.success).toBeVisible()
-    await expect(page.getByText(person.email)).toBeVisible()
-    await expect(page.getByText(/2 menores/)).toBeVisible()
+    await expect(registration.success).toContainText(person.email)
+    await expect(registration.success).toContainText(
+      t('pages.register.success.minorsEnrolled', { n: minors.length }),
+    )
     const email = await mailbox.waitFor({
       to: person.email,
       subject: SUBJECTS.verification,
       sentAfter,
     })
     await page.goto(linkIn(email, '/verify-account'))
-    await expect(page.getByRole('heading', { name: '¡Cuenta verificada!' })).toBeVisible()
+    await expect(page.getByTestId('verify-account-success')).toBeVisible()
 
-    await page.getByRole('main').getByRole('link', { name: 'Iniciar sesión' }).click()
+    await page.getByTestId('verify-account-login').click()
     await expect(new LoginPage(page).heading).toBeVisible()
     await signInThroughPages(page, mailbox, { email: person.email, password: PASSWORD })
     await page.goto('/account')
+    const household = new MinorsSection(new AccountPage(page))
     for (const minor of minors) {
-      await expect(page.getByText(`${minor.firstName} ${minor.lastName}`)).toBeVisible()
+      await expect(household.minor(`${minor.firstName} ${minor.lastName}`)).toBeVisible()
     }
     const user = await findUser(initialAdmin.api, person.email)
     expect(user?.newsConsent).toBe(true)
@@ -68,9 +72,13 @@ test.describe('registration', () => {
 
     await registration.submit.click()
 
-    const access = registration.section('Acceso a tu cuenta')
-    await expect(access.getByText('La contraseña debe tener al menos 12 caracteres.')).toBeVisible()
-    await expect(access.getByText('Las contraseñas no coinciden.')).toBeVisible()
+    const access = registration.section('access')
+    await expect(registration.fieldError(access, 'password')).toHaveText(
+      t('validation.passwordMin', { min: 12 }),
+    )
+    await expect(registration.fieldError(access, 'password-confirm')).toHaveText(
+      t('validation.passwordsMismatch'),
+    )
     await expect(registration.success).toBeHidden()
   })
 
@@ -79,8 +87,6 @@ test.describe('registration', () => {
       '/verify-account#userId=00000000-0000-4000-8000-000000000000&code=not-a-real-code',
     )
 
-    await expect(
-      page.getByRole('heading', { name: 'No hemos podido verificar tu cuenta' }),
-    ).toBeVisible()
+    await expect(page.getByTestId('verify-account-error')).toBeVisible()
   })
 })

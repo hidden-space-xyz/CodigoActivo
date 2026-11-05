@@ -22,7 +22,7 @@ const stats = [
         <div class="hero__badge">
           ● {{ $t('pages.home.hero.badge', { year: ORGANIZATION.foundingYear }) }}
         </div>
-        <h1 class="hero__title">
+        <h1 class="hero__title" data-testid="home-hero-title">
           {{ $t('pages.home.hero.titleLine1') }}<br />{{ $t('pages.home.hero.titleLine2') }}
           <span style="color: var(--ca-orange)">{{ $t('pages.home.hero.titleHighlight') }}</span
           >.
@@ -30,13 +30,23 @@ const stats = [
         <p class="hero__subtitle">{{ $t('pages.home.hero.subtitle') }}</p>
 
         <div class="hero__actions">
-          <BrandButton v-if="session.isAuthenticated" :to="{ name: 'events' }" variant="primary">
+          <BrandButton
+            v-if="session.isAuthenticated"
+            :to="{ name: 'events' }"
+            variant="primary"
+            data-testid="home-hero-events"
+          >
             {{ $t('pages.home.hero.eventsCta') }}
           </BrandButton>
-          <BrandButton v-else :to="{ name: 'register' }" variant="primary">
+          <BrandButton
+            v-else
+            :to="{ name: 'register' }"
+            variant="primary"
+            data-testid="home-hero-register"
+          >
             {{ $t('common.register') }}
           </BrandButton>
-          <BrandButton :to="{ name: 'about' }" variant="ghost">
+          <BrandButton :to="{ name: 'about' }" variant="ghost" data-testid="home-hero-about">
             {{ $t('pages.home.hero.aboutCta') }}
           </BrandButton>
         </div>

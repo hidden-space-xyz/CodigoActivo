@@ -36,7 +36,7 @@ watch(activities, () => void paginate(), { immediate: true })
 </script>
 
 <template>
-  <div class="roster">
+  <div class="roster" data-testid="page-admin-event-roster">
     <PrintToolbar
       :back="{ name: 'admin-event-detail', params: { eventId } }"
       :back-label="$t('pages.admin.eventRoster.back')"
@@ -49,6 +49,7 @@ watch(activities, () => void paginate(), { immediate: true })
       :error="report.isError.value"
       :empty="activities.length === 0"
       :empty-text="$t('pages.admin.eventRoster.emptyText')"
+      data-testid="event-roster-state"
     />
 
     <div v-for="(sheet, sheetIndex) in sheets" :key="sheetIndex" class="sheet">

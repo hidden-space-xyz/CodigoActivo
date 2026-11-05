@@ -19,20 +19,20 @@ test.describe('account page', () => {
     await account.goto()
     await expect(page).toHaveURL('/account')
 
-    await account.tab('Historial').click()
+    await account.tab('history').click()
     await expect(page).toHaveURL('/account?tab=history')
-    await expect(page.getByText('Todas las inscripciones de tu unidad familiar')).toBeVisible()
+    await expect(page.getByTestId('history-section')).toBeVisible()
 
-    await account.tab('Diplomas').click()
+    await account.tab('certificates').click()
     await expect(page).toHaveURL('/account?tab=certificates')
-    await expect(page.getByText('Al terminar un evento se emite un diploma')).toBeVisible()
+    await expect(page.getByTestId('certificates-section')).toBeVisible()
 
-    await account.tab('Perfil').click()
+    await account.tab('profile').click()
     await expect(page).toHaveURL('/account')
     await expect(account.editData).toBeVisible()
 
-    await account.goto('Historial')
-    await expect(account.tab('Perfil')).toHaveAttribute('aria-selected', 'false')
+    await account.goto('history')
+    await expect(account.tab('profile')).toHaveAttribute('aria-selected', 'false')
   })
 
   test('a new account has no minors, consents, history or diplomas yet', async ({
@@ -47,10 +47,10 @@ test.describe('account page', () => {
     await expect(new MinorsSection(account).empty).toBeVisible()
     await expect(new ConsentsSection(account).empty).toBeVisible()
 
-    await account.tab('Historial').click()
-    await expect(page.getByText('Todavía no tienes inscripciones en ningún evento.')).toBeVisible()
+    await account.tab('history').click()
+    await expect(page.getByTestId('history-empty')).toBeVisible()
 
-    await account.tab('Diplomas').click()
+    await account.tab('certificates').click()
     await expect(new CertificatesTab(page).empty).toBeVisible()
   })
 })

@@ -35,7 +35,7 @@ watch(
 </script>
 
 <template>
-  <div ref="rootEl" class="badges">
+  <div ref="rootEl" class="badges" data-testid="page-admin-event-badges">
     <PrintToolbar
       :back="{ name: 'admin-event-detail', params: { eventId } }"
       :back-label="$t('pages.admin.eventBadges.back')"
@@ -49,6 +49,7 @@ watch(
       :error="report.isError.value"
       :empty="badges.length === 0"
       :empty-text="$t('pages.admin.eventBadges.emptyText')"
+      data-testid="event-badges-state"
     />
 
     <div v-for="(sheet, sheetIndex) in sheets" :key="sheetIndex" class="sheet">
@@ -56,6 +57,7 @@ watch(
         v-for="badge in sheet"
         :key="badge.userId"
         class="badge"
+        data-testid="event-badge"
         :style="{ '--accent': accentColor(badge) }"
       >
         <header class="badge__band">
@@ -67,7 +69,7 @@ watch(
         </header>
 
         <div class="badge__body">
-          <h2 class="badge__name">{{ fullName(badge) }}</h2>
+          <h2 class="badge__name" data-testid="event-badge-name">{{ fullName(badge) }}</h2>
 
           <ul v-if="badge.activities.length" class="badge__activities">
             <li

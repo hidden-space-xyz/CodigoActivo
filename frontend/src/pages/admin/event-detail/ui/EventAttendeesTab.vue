@@ -111,6 +111,7 @@ function hasConflicts(attendee: EventAttendee): boolean {
         :maxlength="MAX_SEARCH_LENGTH"
         :placeholder="$t('pages.admin.eventDetail.attendees.search.placeholder')"
         class="toolbar__search"
+        data-testid="event-attendees-search"
       />
       <el-select
         v-model="userTypeFilter"
@@ -123,6 +124,7 @@ function hasConflicts(attendee: EventAttendee): boolean {
           :key="option.value"
           :label="option.label"
           :value="option.value"
+          :data-testid="`option-${option.value}`"
         />
       </el-select>
       <el-select
@@ -136,6 +138,7 @@ function hasConflicts(attendee: EventAttendee): boolean {
           :key="gender"
           :label="$t(genderLabelKey(gender))"
           :value="gender"
+          :data-testid="`option-${gender}`"
         />
       </el-select>
       <el-select
@@ -149,6 +152,7 @@ function hasConflicts(attendee: EventAttendee): boolean {
           :key="option.value"
           :label="option.label"
           :value="option.value"
+          :data-testid="`option-${option.value}`"
         />
       </el-select>
       <el-select
@@ -162,6 +166,7 @@ function hasConflicts(attendee: EventAttendee): boolean {
           :key="option.value"
           :label="option.label"
           :value="option.value"
+          :data-testid="`option-${option.value}`"
         />
       </el-select>
       <el-select
@@ -175,6 +180,7 @@ function hasConflicts(attendee: EventAttendee): boolean {
           :key="option.value"
           :label="option.label"
           :value="option.value"
+          :data-testid="`option-${option.value}`"
         />
       </el-select>
       <ActionButton
@@ -182,6 +188,7 @@ function hasConflicts(attendee: EventAttendee): boolean {
         :tooltip="$t('pages.admin.eventDetail.attendees.email.bulkTooltip')"
         icon="envelope"
         :disabled="table.total.value === 0"
+        data-testid="event-attendees-send-email"
         @click="openEmail(null)"
       />
       <div class="toolbar__sort">
@@ -195,6 +202,7 @@ function hasConflicts(attendee: EventAttendee): boolean {
             :key="option.value"
             :label="option.label"
             :value="option.value"
+            :data-testid="`option-${option.value}`"
           />
         </el-select>
         <ActionButton
@@ -223,7 +231,7 @@ function hasConflicts(attendee: EventAttendee): boolean {
           : $t('pages.admin.eventDetail.attendees.empty.none')
       "
     >
-      <p class="count">
+      <p class="count" data-testid="event-attendees-count">
         {{ $t('pages.admin.eventDetail.attendees.count', table.total.value) }}
       </p>
 
@@ -232,11 +240,14 @@ function hasConflicts(attendee: EventAttendee): boolean {
           v-for="attendee in table.items.value"
           :key="attendee.userId"
           class="attendee"
+          data-testid="event-attendee"
           :style="attendeeVars(attendee)"
         >
           <div class="attendee__head">
             <div class="attendee__identity">
-              <span class="attendee__name">{{ fullName(attendee) }}</span>
+              <span class="attendee__name" data-testid="event-attendee-name">{{
+                fullName(attendee)
+              }}</span>
               <span v-if="ageFrom(attendee.birthDate) !== null" class="attendee__age">
                 {{
                   $t('pages.admin.eventDetail.attendees.age', { age: ageFrom(attendee.birthDate) })
@@ -309,6 +320,7 @@ function hasConflicts(attendee: EventAttendee): boolean {
               v-for="assignment in attendee.assignments"
               :key="assignment.activityId"
               class="assignment"
+              data-testid="event-attendee-signup"
             >
               <span class="assignment__title">{{ assignment.activityTitle }}</span>
               <span class="assignment__role">{{ assignment.roleName || '—' }}</span>
@@ -336,6 +348,7 @@ function hasConflicts(attendee: EventAttendee): boolean {
                   circle
                   size="small"
                   :aria-label="$t('pages.admin.eventDetail.attendees.changeRole')"
+                  data-testid="event-attendee-change-role"
                   @click="openRole(attendee, assignment)"
                 />
                 <ActionButton
@@ -344,6 +357,7 @@ function hasConflicts(attendee: EventAttendee): boolean {
                   circle
                   size="small"
                   :aria-label="$t('pages.admin.eventDetail.attendees.changeStatus')"
+                  data-testid="event-attendee-change-status"
                   @click="openStatus(attendee, assignment)"
                 />
               </div>
@@ -382,6 +396,7 @@ function hasConflicts(attendee: EventAttendee): boolean {
       :options="roleOptions"
       :unavailable-text="$t('pages.admin.eventDetail.attendees.rolesLoadError')"
       :applying="changingRole"
+      data-testid="event-attendees-role-dialog"
       @apply="applyRole"
     />
 
@@ -396,6 +411,7 @@ function hasConflicts(attendee: EventAttendee): boolean {
       :placeholder="$t('pages.admin.eventDetail.attendees.selectStatus')"
       :options="statusOptions"
       :applying="changingStatus"
+      data-testid="event-attendees-status-dialog"
       @apply="applyStatus"
     />
   </div>

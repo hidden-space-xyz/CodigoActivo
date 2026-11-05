@@ -106,34 +106,46 @@ function openRoster(): void {
         <ActionButton
           :label="$t('pages.admin.eventDetail.printBadges')"
           icon="print"
+          data-testid="event-detail-print-badges"
           @click="openBadges"
         />
         <ActionButton
           :label="$t('pages.admin.eventDetail.printRoster')"
           icon="list"
+          data-testid="event-detail-print-roster"
           @click="openRoster"
         />
       </template>
     </AdminPageHeader>
 
     <div v-if="isAdmin" class="summary">
-      <div v-for="card in summaryCards" :key="card.label" class="summary__card">
-        <div class="summary__value">{{ card.value }}</div>
-        <div class="summary__label">{{ card.label }}</div>
+      <div
+        v-for="card in summaryCards"
+        :key="card.label"
+        class="summary__card"
+        data-testid="event-detail-summary-card"
+      >
+        <div class="summary__value" data-testid="event-detail-summary-value">{{ card.value }}</div>
+        <div class="summary__label" data-testid="event-detail-summary-label">{{ card.label }}</div>
       </div>
-      <div class="summary__card">
-        <div class="summary__value">
+      <div class="summary__card" data-testid="event-detail-summary-card">
+        <div class="summary__value" data-testid="event-detail-summary-value">
           {{ ratingsAverage }}
           <span v-if="scoredRatingsCount > 0" class="summary__unit">/5</span>
         </div>
-        <div class="summary__label">
+        <div class="summary__label" data-testid="event-detail-summary-label">
           {{ $t('pages.admin.eventDetail.summary.ratings', scoredRatingsCount) }}
         </div>
       </div>
     </div>
 
     <el-tabs v-model="activeTab" class="tabs">
-      <el-tab-pane :label="$t('pages.admin.eventDetail.tabs.activities')" name="activities">
+      <el-tab-pane name="activities" data-testid="event-detail-panel-activities">
+        <template #label>
+          <span data-testid="event-detail-tab-activities">{{
+            $t('pages.admin.eventDetail.tabs.activities')
+          }}</span>
+        </template>
         <DataTable
           :table="table"
           :empty-text="$t('pages.admin.eventDetail.empty.none')"
@@ -146,6 +158,7 @@ function openRoster(): void {
               icon="plus"
               size="small"
               :disabled="loading"
+              data-testid="event-detail-new-activity"
               @click="openCreate"
             />
           </template>
@@ -198,6 +211,7 @@ function openRoster(): void {
                 v-model="table.columnFilter('modality').value"
                 :label="$t('pages.admin.eventDetail.columns.modality')"
                 :options="modalityOptions"
+                data-testid="event-detail-modality-filter"
                 @apply="table.onFilter"
               />
             </template>
@@ -210,21 +224,28 @@ function openRoster(): void {
           </el-table-column>
         </DataTable>
       </el-tab-pane>
-      <el-tab-pane
-        v-if="isAdmin"
-        :label="$t('pages.admin.eventDetail.tabs.attendees')"
-        name="attendees"
-      >
+      <el-tab-pane v-if="isAdmin" name="attendees" data-testid="event-detail-panel-attendees">
+        <template #label>
+          <span data-testid="event-detail-tab-attendees">{{
+            $t('pages.admin.eventDetail.tabs.attendees')
+          }}</span>
+        </template>
         <EventAttendeesTab :event-id="eventId" :active="activeTab === 'attendees'" />
       </el-tab-pane>
-      <el-tab-pane
-        v-if="isAdmin"
-        :label="$t('pages.admin.eventDetail.tabs.opinions')"
-        name="opinions"
-      >
+      <el-tab-pane v-if="isAdmin" name="opinions" data-testid="event-detail-panel-opinions">
+        <template #label>
+          <span data-testid="event-detail-tab-opinions">{{
+            $t('pages.admin.eventDetail.tabs.opinions')
+          }}</span>
+        </template>
         <EventOpinionsTab :event-id="eventId" :active="activeTab === 'opinions'" />
       </el-tab-pane>
-      <el-tab-pane v-if="isAdmin" :label="$t('pages.admin.eventDetail.tabs.terms')" name="terms">
+      <el-tab-pane v-if="isAdmin" name="terms" data-testid="event-detail-panel-terms">
+        <template #label>
+          <span data-testid="event-detail-tab-terms">{{
+            $t('pages.admin.eventDetail.tabs.terms')
+          }}</span>
+        </template>
         <EventTermsTab
           :event-id="eventId"
           :documents="event.data.value?.terms ?? []"

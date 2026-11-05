@@ -32,7 +32,7 @@ function isActive(section: NavSection): boolean {
 </script>
 
 <template>
-  <header class="header">
+  <header class="header" data-testid="site-header">
     <div class="header__inner">
       <RouterLink
         :to="{ name: 'home' }"
@@ -44,40 +44,67 @@ function isActive(section: NavSection): boolean {
 
       <div class="header__spacer" />
 
-      <nav class="header__nav" :aria-label="$t('widgets.siteHeader.navAria')">
+      <nav
+        class="header__nav"
+        data-testid="site-nav"
+        :aria-label="$t('widgets.siteHeader.navAria')"
+      >
         <RouterLink
           v-for="item in PRIMARY_NAV"
           :key="item.routeName"
           :to="{ name: item.routeName }"
           class="header__link"
+          :data-testid="`nav-${item.routeName}`"
           :class="{ 'header__link--active': isActive(item.section) }"
         >
           {{ $t(item.labelKey) }}
         </RouterLink>
 
         <template v-if="isAuthenticated">
-          <RouterLink v-if="opensAdmin" :to="{ name: 'admin' }" class="header__link">{{
-            $t('common.admin')
-          }}</RouterLink>
+          <RouterLink
+            v-if="opensAdmin"
+            :to="{ name: 'admin' }"
+            class="header__link"
+            data-testid="site-header-admin"
+            >{{ $t('common.admin') }}</RouterLink
+          >
           <RouterLink
             :to="{ name: 'account' }"
             class="header__link"
+            data-testid="site-header-account"
             :class="{ 'header__link--active': isActive('account') }"
           >
             {{ $t('common.myAccount') }}
           </RouterLink>
-          <span class="header__greeting">{{ $t('common.greeting', { name: displayName }) }}</span>
-          <ThemeToggle class="header__theme" />
-          <BrandButton variant="ghost" class="header__cta" @click="logout()">
+          <span class="header__greeting" data-testid="site-header-greeting">{{
+            $t('common.greeting', { name: displayName })
+          }}</span>
+          <ThemeToggle class="header__theme" data-testid="site-header-theme" />
+          <BrandButton
+            variant="ghost"
+            class="header__cta"
+            data-testid="site-header-logout"
+            @click="logout()"
+          >
             {{ $t('common.logout') }}
           </BrandButton>
         </template>
         <template v-else>
-          <ThemeToggle class="header__theme" />
-          <BrandButton :to="{ name: 'login' }" variant="link" class="header__login">
+          <ThemeToggle class="header__theme" data-testid="site-header-theme" />
+          <BrandButton
+            :to="{ name: 'login' }"
+            variant="link"
+            class="header__login"
+            data-testid="site-header-login"
+          >
             {{ $t('common.login') }}
           </BrandButton>
-          <BrandButton :to="{ name: 'register' }" variant="primary" class="header__cta">
+          <BrandButton
+            :to="{ name: 'register' }"
+            variant="primary"
+            class="header__cta"
+            data-testid="site-header-register"
+          >
             {{ $t('common.register') }}
           </BrandButton>
         </template>
@@ -86,6 +113,7 @@ function isActive(section: NavSection): boolean {
       <button
         type="button"
         class="header__burger"
+        data-testid="site-header-menu"
         :aria-label="$t('common.openMenu')"
         :aria-expanded="menuOpen"
         @click="menuOpen = true"
@@ -100,11 +128,12 @@ function isActive(section: NavSection): boolean {
       direction="rtl"
       size="min(320px, 86vw)"
       class="header__drawer"
+      data-testid="site-menu"
       :title="$t('widgets.siteHeader.menuTitle')"
       :aria-label="$t('widgets.siteHeader.menuTitle')"
     >
       <nav class="menu" :aria-label="$t('widgets.siteHeader.navAria')">
-        <p v-if="isAuthenticated" class="menu__greeting">
+        <p v-if="isAuthenticated" class="menu__greeting" data-testid="site-menu-greeting">
           {{ $t('common.greeting', { name: displayName }) }}
         </p>
 
@@ -113,6 +142,7 @@ function isActive(section: NavSection): boolean {
           :key="item.routeName"
           :to="{ name: item.routeName }"
           class="menu__link"
+          :data-testid="`nav-${item.routeName}`"
           :class="{ 'menu__link--active': isActive(item.section) }"
           @click="menuOpen = false"
         >
@@ -124,6 +154,7 @@ function isActive(section: NavSection): boolean {
             v-if="opensAdmin"
             :to="{ name: 'admin' }"
             class="menu__link"
+            data-testid="site-menu-admin"
             @click="menuOpen = false"
           >
             {{ $t('common.admin') }}
@@ -131,6 +162,7 @@ function isActive(section: NavSection): boolean {
           <RouterLink
             :to="{ name: 'account' }"
             class="menu__link"
+            data-testid="site-menu-account"
             :class="{ 'menu__link--active': isActive('account') }"
             @click="menuOpen = false"
           >
@@ -140,15 +172,25 @@ function isActive(section: NavSection): boolean {
 
         <div class="menu__actions">
           <template v-if="isAuthenticated">
-            <BrandButton variant="ghost" block @click="logout()">
+            <BrandButton variant="ghost" block data-testid="site-menu-logout" @click="logout()">
               {{ $t('common.logout') }}
             </BrandButton>
           </template>
           <template v-else>
-            <BrandButton :to="{ name: 'register' }" variant="primary" block>
+            <BrandButton
+              :to="{ name: 'register' }"
+              variant="primary"
+              block
+              data-testid="site-menu-register"
+            >
               {{ $t('common.register') }}
             </BrandButton>
-            <BrandButton :to="{ name: 'login' }" variant="ghost" block>
+            <BrandButton
+              :to="{ name: 'login' }"
+              variant="ghost"
+              block
+              data-testid="site-menu-login"
+            >
               {{ $t('common.login') }}
             </BrandButton>
           </template>

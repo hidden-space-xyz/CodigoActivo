@@ -37,7 +37,7 @@ function telHref(phone: string): string {
 
 <template>
   <div class="leader-roster">
-    <div class="leader-roster__notice" role="note">
+    <div data-testid="leader-roster-notice" class="leader-roster__notice" role="note">
       <AppIcon name="info-circle" />
       <div>
         <p class="leader-roster__notice-title">
@@ -56,7 +56,12 @@ function telHref(phone: string): string {
       :error-text="t('pages.eventDetail.leaderRoster.loadError')"
       :empty-text="t('pages.eventDetail.leaderRoster.empty')"
     >
-      <article v-for="activity in activities" :key="activity.id" class="lr-activity">
+      <article
+        v-for="activity in activities"
+        :key="activity.id"
+        data-testid="leader-roster-activity"
+        class="lr-activity"
+      >
         <header class="lr-activity__head">
           <div class="lr-activity__heading">
             <h2 class="lr-activity__title">{{ activity.title }}</h2>
@@ -71,15 +76,20 @@ function telHref(phone: string): string {
               </span>
             </p>
           </div>
-          <span class="lr-activity__count">
+          <span data-testid="leader-roster-count" class="lr-activity__count">
             {{ t('pages.eventDetail.leaderRoster.attendeesCount', attendeesCount(activity)) }}
           </span>
         </header>
 
-        <section v-for="role in activity.roles" :key="role.id" class="lr-role">
+        <section
+          v-for="role in activity.roles"
+          :key="role.id"
+          data-testid="leader-roster-role"
+          class="lr-role"
+        >
           <h3 class="lr-role__title">
-            <span>{{ role.name }}</span>
-            <span class="lr-role__count">
+            <span data-testid="leader-roster-role-name">{{ role.name }}</span>
+            <span data-testid="leader-roster-role-count" class="lr-role__count">
               {{
                 t(
                   'pages.eventDetail.leaderRoster.peopleCount',
@@ -89,7 +99,11 @@ function telHref(phone: string): string {
             </span>
           </h3>
 
-          <div v-if="role.users.length" class="lr-group lr-group--users">
+          <div
+            v-if="role.users.length"
+            data-testid="leader-roster-users"
+            class="lr-group lr-group--users"
+          >
             <p class="lr-group__label">
               <AppIcon name="user" />
               <span class="lr-group__name">{{
@@ -108,7 +122,12 @@ function telHref(phone: string): string {
               <span>{{ t('pages.eventDetail.leaderRoster.columns.signedUpAt') }}</span>
             </div>
             <ul class="lr-list">
-              <li v-for="(user, index) in role.users" :key="index" class="lr-person">
+              <li
+                v-for="(user, index) in role.users"
+                :key="index"
+                data-testid="leader-roster-person"
+                class="lr-person"
+              >
                 <dl class="lr-cols lr-cols--users">
                   <div class="lr-field lr-field--name">
                     <dt>{{ t('pages.eventDetail.leaderRoster.columns.firstName') }}</dt>
@@ -127,14 +146,24 @@ function telHref(phone: string): string {
                   <div class="lr-field lr-field--contact">
                     <dt>{{ t('pages.eventDetail.leaderRoster.columns.email') }}</dt>
                     <dd>
-                      <a v-if="user.email" :href="mailHref(user.email)">{{ user.email }}</a>
+                      <a
+                        v-if="user.email"
+                        data-testid="leader-roster-email"
+                        :href="mailHref(user.email)"
+                        >{{ user.email }}</a
+                      >
                       <template v-else>—</template>
                     </dd>
                   </div>
                   <div class="lr-field lr-field--contact">
                     <dt>{{ t('pages.eventDetail.leaderRoster.columns.phone') }}</dt>
                     <dd>
-                      <a v-if="user.phone" :href="telHref(user.phone)">{{ user.phone }}</a>
+                      <a
+                        v-if="user.phone"
+                        data-testid="leader-roster-phone"
+                        :href="telHref(user.phone)"
+                        >{{ user.phone }}</a
+                      >
                       <template v-else>—</template>
                     </dd>
                   </div>
@@ -151,7 +180,11 @@ function telHref(phone: string): string {
             </ul>
           </div>
 
-          <div v-if="role.dependents.length" class="lr-group lr-group--dependents">
+          <div
+            v-if="role.dependents.length"
+            data-testid="leader-roster-dependents"
+            class="lr-group lr-group--dependents"
+          >
             <p class="lr-group__label">
               <AppIcon name="id-card" />
               <span class="lr-group__name">{{
@@ -171,7 +204,12 @@ function telHref(phone: string): string {
               <span>{{ t('pages.eventDetail.leaderRoster.columns.signedUpAt') }}</span>
             </div>
             <ul class="lr-list">
-              <li v-for="(dependent, index) in role.dependents" :key="index" class="lr-person">
+              <li
+                v-for="(dependent, index) in role.dependents"
+                :key="index"
+                data-testid="leader-roster-person"
+                class="lr-person"
+              >
                 <dl class="lr-cols lr-cols--dependents">
                   <div class="lr-field lr-field--name">
                     <dt>{{ t('pages.eventDetail.leaderRoster.columns.firstName') }}</dt>
@@ -194,7 +232,11 @@ function telHref(phone: string): string {
                   <div class="lr-field lr-field--contact">
                     <dt>{{ t('pages.eventDetail.leaderRoster.columns.guardianEmail') }}</dt>
                     <dd>
-                      <a v-if="dependent.guardian.email" :href="mailHref(dependent.guardian.email)">
+                      <a
+                        v-if="dependent.guardian.email"
+                        data-testid="leader-roster-guardian-email"
+                        :href="mailHref(dependent.guardian.email)"
+                      >
                         {{ dependent.guardian.email }}
                       </a>
                       <template v-else>—</template>
@@ -203,7 +245,11 @@ function telHref(phone: string): string {
                   <div class="lr-field lr-field--contact">
                     <dt>{{ t('pages.eventDetail.leaderRoster.columns.guardianPhone') }}</dt>
                     <dd>
-                      <a v-if="dependent.guardian.phone" :href="telHref(dependent.guardian.phone)">
+                      <a
+                        v-if="dependent.guardian.phone"
+                        data-testid="leader-roster-guardian-phone"
+                        :href="telHref(dependent.guardian.phone)"
+                      >
                         {{ dependent.guardian.phone }}
                       </a>
                       <template v-else>—</template>

@@ -48,6 +48,7 @@ async function save(): Promise<void> {
 <template>
   <el-dialog
     v-model="visible"
+    data-testid="news-form-dialog"
     :title="newsItem ? $t('pages.admin.news.form.editHeader') : $t('pages.admin.news.newLabel')"
     width="min(920px, 94vw)"
   >
@@ -59,6 +60,7 @@ async function save(): Promise<void> {
         <el-input
           id="news-title"
           v-model="draft.title"
+          data-testid="news-form-title"
           :maxlength="TITLE_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('title') }"
           :aria-invalid="invalid('title')"
@@ -71,6 +73,7 @@ async function save(): Promise<void> {
         <el-input
           id="news-subtitle"
           v-model="draft.subtitle"
+          data-testid="news-form-subtitle"
           :maxlength="SUBTITLE_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('subtitle') }"
           :aria-invalid="invalid('subtitle')"
@@ -80,6 +83,7 @@ async function save(): Promise<void> {
         <div class="ca-field__label">{{ $t('pages.admin.news.form.description') }}</div>
         <RichTextEditor
           v-model="draft.description"
+          data-testid="news-form-description"
           :label="$t('pages.admin.news.form.description')"
           :upload="uploadFileRequest"
           :invalid="!!errors.description"
@@ -107,6 +111,7 @@ async function save(): Promise<void> {
         @click="visible = false"
       />
       <ActionButton
+        data-testid="news-form-dialog-save"
         :label="$t('common.save')"
         type="primary"
         :loading="saving || uploading"

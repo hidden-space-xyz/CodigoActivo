@@ -11,8 +11,8 @@ defineProps<{
   <li class="legal-entry">
     <dl class="legal-entry__facts">
       <template v-for="fact in facts" :key="fact.label">
-        <dt class="legal-entry__label">{{ fact.label }}</dt>
-        <dd class="legal-entry__value">{{ fact.value }}</dd>
+        <dt class="legal-entry__label" data-testid="legal-entry-label">{{ fact.label }}</dt>
+        <dd class="legal-entry__value" data-testid="legal-entry-value">{{ fact.value }}</dd>
       </template>
     </dl>
   </li>

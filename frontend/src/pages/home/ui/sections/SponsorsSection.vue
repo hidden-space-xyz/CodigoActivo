@@ -31,9 +31,11 @@ function distanceOf(offset: number): number {
 </script>
 
 <template>
-  <section class="sponsors">
+  <section class="sponsors" data-testid="home-sponsors">
     <div class="ca-container">
-      <div class="sponsors__heading">{{ $t('pages.home.sponsors.heading') }}</div>
+      <div class="sponsors__heading" data-testid="home-sponsors-heading">
+        {{ $t('pages.home.sponsors.heading') }}
+      </div>
 
       <div
         class="sponsors__carousel"
@@ -46,6 +48,7 @@ function distanceOf(offset: number): number {
           class="sponsors__arrow"
           :aria-label="$t('pages.home.sponsors.prev')"
           :title="$t('pages.home.sponsors.prev')"
+          data-testid="home-sponsors-previous"
           @click="prev"
         >
           ‹
@@ -64,6 +67,7 @@ function distanceOf(offset: number): number {
               :class="`sponsor--d${distanceOf(card.offset)}`"
               :style="{ '--offset': String(card.offset) }"
               :aria-hidden="distanceOf(card.offset) === 3 ? 'true' : undefined"
+              data-testid="home-sponsor"
               @mouseenter="pause"
               @mouseleave="resume"
               @focusin="pause"
@@ -79,12 +83,13 @@ function distanceOf(offset: number): number {
                   :src="fileThumbnailUrl(card.sponsor.thumbnailId)"
                   :alt="card.sponsor.name"
                   class="sponsor__logo-img"
+                  data-testid="home-sponsor-logo"
                   loading="lazy"
                   decoding="async"
                 />
                 <span v-else>{{ initials(card.sponsor.name).toUpperCase() }}</span>
               </div>
-              <div v-if="card.offset === 0" class="sponsor__name">
+              <div v-if="card.offset === 0" class="sponsor__name" data-testid="home-sponsor-name">
                 {{ card.sponsor.name }}
               </div>
             </component>
@@ -96,6 +101,7 @@ function distanceOf(offset: number): number {
           class="sponsors__arrow"
           :aria-label="$t('pages.home.sponsors.next')"
           :title="$t('pages.home.sponsors.next')"
+          data-testid="home-sponsors-next"
           @click="next"
         >
           ›

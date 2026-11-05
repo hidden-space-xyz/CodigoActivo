@@ -1,4 +1,5 @@
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { EventDetailPage } from '../../support/pages/event-detail-page'
 import { LoginPage, signInThroughPages } from '../../support/pages/login-page'
 import {
@@ -8,31 +9,41 @@ import {
   timeRangeText,
 } from '../../support/data/formats'
 
-const SIGNUP_CLOSED = 'La inscripción no está abierta para este evento.'
-const EARLY_SIGNUP_ONLY =
-  'Este evento está en periodo de inscripción anticipada, reservado a socios y patrocinadores. La inscripción general abrirá más adelante.'
+const SIGNUP_CLOSED = t('pages.eventDetail.activities.signupClosed')
+const EARLY_SIGNUP_ONLY = t('pages.eventDetail.activities.earlySignupOnly')
+const DESCRIPTION = 'Una jornada de talleres de programación.'
 
 test.describe('event page', () => {
   test('the information tab describes the event and its signup', async ({ page, seed }) => {
     const category = await seed.category()
-    const event = await seed.event({ categories: [category] })
+    const event = await seed.event({ categories: [category], description: DESCRIPTION })
     const detail = new EventDetailPage(page)
 
     await detail.goto(event.id, event.title)
 
-    await expect(detail.main.getByText(`«${event.subtitle}»`)).toBeVisible()
-    await expect(detail.main.getByText(category.name, { exact: true })).toBeVisible()
-    await expect(detail.main.getByRole('img', { name: event.title })).toBeVisible()
+    await expect(detail.main.getByTestId('event-detail-slogan')).toHaveText(
+      t('pages.eventDetail.slogan', { subtitle: event.subtitle }),
+    )
     await expect(
-      detail.main.getByRole('heading', { level: 2, name: 'Sobre el evento' }),
+      detail.main.getByTestId('event-detail-category').filter({ hasText: category.name }),
     ).toBeVisible()
-    await expect(detail.main.getByText('Una jornada de talleres de programación.')).toBeVisible()
-    const panel = detail.main.getByRole('complementary')
-    await expect(panel.getByRole('term')).toHaveText(['Fecha', 'Inscripción', 'Estado'])
-    await expect(panel.getByRole('definition')).toHaveText([
+    const poster = detail.main.getByTestId('event-detail-poster')
+    await expect(poster).toBeVisible()
+    await expect(poster).toHaveAccessibleName(event.title)
+    await expect(detail.main.getByTestId('event-detail-about')).toHaveText(
+      t('pages.eventDetail.aboutEvent'),
+    )
+    await expect(detail.main.getByTestId('event-detail-description')).toHaveText(DESCRIPTION)
+    const panel = detail.main.getByTestId('event-detail-info')
+    await expect(panel.getByTestId('event-detail-info-label')).toHaveText([
+      t('pages.eventDetail.info.date'),
+      t('pages.eventDetail.info.signup'),
+      t('common.status'),
+    ])
+    await expect(panel.getByTestId('event-detail-info-value')).toHaveText([
       dayRangeText(event.eventStartsAt, event.eventEndsAt),
       momentRangeText(event.signupStartsAt, event.signupEndsAt),
-      'Inscripción abierta',
+      t('entities.event.status.signupOpen'),
     ])
   })
 
@@ -42,18 +53,18 @@ test.describe('event page', () => {
 
     await detail.goto(event.id, event.title)
 
-    const panel = detail.main.getByRole('complementary')
-    await expect(panel.getByRole('term')).toHaveText([
-      'Fecha',
-      'Inscripción anticipada',
-      'Inscripción',
-      'Estado',
+    const panel = detail.main.getByTestId('event-detail-info')
+    await expect(panel.getByTestId('event-detail-info-label')).toHaveText([
+      t('pages.eventDetail.info.date'),
+      t('pages.eventDetail.info.earlySignup'),
+      t('pages.eventDetail.info.signup'),
+      t('common.status'),
     ])
-    await expect(panel.getByRole('definition')).toHaveText([
+    await expect(panel.getByTestId('event-detail-info-value')).toHaveText([
       dayRangeText(event.eventStartsAt, event.eventEndsAt),
       momentText(event.earlySignupStartsAt),
       momentRangeText(event.signupStartsAt, event.signupEndsAt),
-      'Inscripción anticipada',
+      t('entities.event.status.earlySignupOpen'),
     ])
   })
 
@@ -63,12 +74,12 @@ test.describe('event page', () => {
     const detail = new EventDetailPage(page)
     await detail.goto(event.id, event.title)
 
-    await detail.main.getByRole('button', { name: 'Ver actividades', exact: true }).click()
+    await detail.main.getByTestId('event-detail-view-activities').click()
 
     await expect(detail.activity(activity.title)).toBeVisible()
-    await expect(detail.main.getByRole('heading', { name: 'Sobre el evento' })).toBeHidden()
-    await detail.tab('Información').click()
-    await expect(detail.main.getByRole('heading', { name: 'Sobre el evento' })).toBeVisible()
+    await expect(detail.main.getByTestId('event-detail-about')).toBeHidden()
+    await detail.tab('info').click()
+    await expect(detail.main.getByTestId('event-detail-about')).toBeVisible()
     await expect(detail.activity(activity.title)).toBeHidden()
   })
 
@@ -87,20 +98,21 @@ test.describe('event page', () => {
 
     await detail.openActivities()
 
-    await expect(detail.main.getByText(momentText(onSite.activityStartsAt))).toBeVisible()
-    await expect(detail.main.getByText(momentText(online.activityStartsAt))).toBeVisible()
+    const times = detail.main.getByTestId('event-activities-time')
+    await expect(times.filter({ hasText: momentText(onSite.activityStartsAt) })).toBeVisible()
+    await expect(times.filter({ hasText: momentText(online.activityStartsAt) })).toBeVisible()
     const onSiteCard = detail.activity(onSite.title)
     await expect(onSiteCard).toContainText(
       timeRangeText(onSite.activityStartsAt, onSite.activityEndsAt),
     )
-    await expect(onSiteCard).toContainText('Presencial · Biblioteca de León')
-    await expect(onSiteCard).toContainText('Taller práctico de la suite e2e.')
+    await expect(onSiteCard).toContainText(`${onSite.modalityName} · ${onSite.location}`)
+    await expect(onSiteCard).toContainText(onSite.description)
     const onlineCard = detail.activity(online.title)
     await expect(onlineCard).toContainText(
       timeRangeText(online.activityStartsAt, online.activityEndsAt),
     )
-    await expect(onlineCard).toContainText('Online · Videollamada')
-    await expect(onlineCard).toContainText('Sesión en directo para toda la familia.')
+    await expect(onlineCard).toContainText(`${online.modalityName} · ${online.location}`)
+    await expect(onlineCard).toContainText(online.description)
   })
 
   test('a visitor is asked to sign in and comes back to the event', async ({
@@ -116,38 +128,33 @@ test.describe('event page', () => {
     await detail.goto(event.id, event.title)
     await detail.openActivities()
 
-    await detail
-      .activity(activity.title)
-      .getByRole('button', { name: 'Inicia sesión para apuntarte' })
-      .click()
+    await detail.activity(activity.title).getByTestId('activity-card-login').click()
 
     await expect(page).toHaveURL(`/login?redirect=/events/${event.id}`)
     await expect(new LoginPage(page).heading).toBeVisible()
     await signInThroughPages(page, mailbox, account)
     await expect(page).toHaveURL(`/events/${event.id}`)
-    await expect(detail.main.getByRole('heading', { level: 1, name: event.title })).toBeVisible()
+    await expect(detail.main.getByTestId('event-detail-title')).toHaveText(event.title)
     await detail.openActivities()
-    await expect(
-      detail.activity(activity.title).getByRole('button', { name: 'Inicia sesión para apuntarte' }),
-    ).toBeHidden()
+    await expect(detail.activity(activity.title).getByTestId('activity-card-login')).toBeHidden()
   })
 
   test('a signup that has closed or has not opened yet is announced', async ({ page, seed }) => {
     const detail = new EventDetailPage(page)
     for (const [signup, status] of [
-      ['closed', 'Inscripción cerrada'],
-      ['upcoming', 'Próximamente'],
+      ['closed', t('entities.event.status.signupClosed')],
+      ['upcoming', t('entities.event.status.upcoming')],
     ] as const) {
       const event = await seed.event({ signup })
       await seed.activity(event)
       await detail.goto(event.id, event.title)
       await expect(
-        detail.main.getByRole('complementary').getByRole('definition').last(),
+        detail.main.getByTestId('event-detail-info').getByTestId('event-detail-info-value').last(),
       ).toHaveText(status)
 
       await detail.openActivities()
 
-      await expect(detail.main.getByText(SIGNUP_CLOSED)).toBeVisible()
+      await expect(detail.main.getByTestId('event-activities-closed')).toHaveText(SIGNUP_CLOSED)
     }
   })
 
@@ -162,15 +169,17 @@ test.describe('event page', () => {
     const visitor = new EventDetailPage(page)
     await visitor.goto(event.id, event.title)
     await visitor.openActivities()
-    await expect(visitor.main.getByText(EARLY_SIGNUP_ONLY)).toBeVisible()
+    await expect(visitor.main.getByTestId('event-activities-closed')).toHaveText(EARLY_SIGNUP_ONLY)
 
     const asParticipant = new EventDetailPage(await pageAs(participant))
     await asParticipant.goto(event.id, event.title)
     await asParticipant.openActivities()
 
-    await expect(asParticipant.main.getByText(EARLY_SIGNUP_ONLY)).toBeVisible()
+    await expect(asParticipant.main.getByTestId('event-activities-closed')).toHaveText(
+      EARLY_SIGNUP_ONLY,
+    )
     await expect(asParticipant.activity(activity.title)).toContainText(
-      'Solo socios y patrocinadores por ahora.',
+      t('pages.eventDetail.card.earlySignupOnly'),
     )
   })
 
@@ -183,19 +192,19 @@ test.describe('event page', () => {
     await detail.openActivities()
 
     await expect(detail.activity(activity.title)).toBeVisible()
-    await expect(detail.main.getByText(EARLY_SIGNUP_ONLY)).toBeHidden()
-    await expect(detail.main.getByText(SIGNUP_CLOSED)).toBeHidden()
-    await expect(
-      detail.activity(activity.title).getByRole('button', { name: 'Apuntarme' }),
-    ).toBeVisible()
+    await expect(detail.main.getByTestId('event-activities-closed')).toBeHidden()
+    await expect(detail.activity(activity.title).getByTestId('activity-card-sign-up')).toBeVisible()
   })
 
   test('an unknown event is not found', async ({ page }) => {
     await page.goto('/events/00000000-0000-4000-8000-000000000000')
 
-    await expect(page.getByRole('main').getByText('No hemos encontrado ese evento.')).toBeVisible()
-    await expect(
-      page.getByRole('main').getByRole('link', { name: 'Volver a eventos' }),
-    ).toBeVisible()
+    const main = page.getByTestId('page-event-detail')
+    await expect(main.getByTestId('event-detail-not-found')).toHaveText(
+      t('pages.eventDetail.notFound'),
+    )
+    await expect(main.getByTestId('event-detail-back')).toHaveText(
+      t('pages.eventDetail.backToEvents'),
+    )
   })
 })

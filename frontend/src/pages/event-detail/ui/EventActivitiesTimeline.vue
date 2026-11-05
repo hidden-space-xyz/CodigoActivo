@@ -74,7 +74,11 @@ const clusters = computed(() => toTimeline(items.value))
 
 <template>
   <div class="activities">
-    <p v-if="activities.isLoading.value" class="activities__state">
+    <p
+      v-if="activities.isLoading.value"
+      data-testid="event-activities-loading"
+      class="activities__state"
+    >
       {{ $t('pages.eventDetail.activities.loading') }}
     </p>
     <p v-else-if="activities.isError.value" class="activities__state">
@@ -85,7 +89,7 @@ const clusters = computed(() => toTimeline(items.value))
     </p>
 
     <template v-else>
-      <p v-if="!signupOpen" class="signup-closed">
+      <p v-if="!signupOpen" data-testid="event-activities-closed" class="signup-closed">
         <AppIcon name="info-circle" />
         {{
           earlyOnly
@@ -111,7 +115,7 @@ const clusters = computed(() => toTimeline(items.value))
             <span class="tl-dot" />
           </div>
           <div class="tl-content">
-            <div class="tl-time">
+            <div data-testid="event-activities-time" class="tl-time">
               {{ formatDateTime(cluster.start.toISOString()) }}
               <span v-if="cluster.items.length > 1" class="tl-simul">
                 · {{ $t('pages.eventDetail.simultaneous', cluster.items.length) }}
@@ -145,6 +149,7 @@ const clusters = computed(() => toTimeline(items.value))
 
     <el-dialog
       v-model="householdDialog.visible"
+      data-testid="household-dialog"
       :title="$t('pages.eventDetail.household.header')"
       width="90vw"
       class="household-dialog"
@@ -155,12 +160,18 @@ const clusters = computed(() => toTimeline(items.value))
         {{ $t('pages.eventDetail.household.leadAfter') }}
       </p>
       <ul class="household__list">
-        <li v-for="row in householdDialog.rows" :key="row.userId" class="household__row">
-          <div class="household__member">
+        <li
+          v-for="row in householdDialog.rows"
+          :key="row.userId"
+          data-testid="household-dialog-row"
+          class="household__row"
+        >
+          <div data-testid="household-dialog-member" class="household__member">
             <el-checkbox
               v-if="!row.alreadyAssigned"
               :id="`hh-${row.userId}`"
               v-model="row.include"
+              data-testid="household-dialog-person"
               class="ca-checkbox-text household__name"
             >
               {{ row.name }}
@@ -173,6 +184,7 @@ const clusters = computed(() => toTimeline(items.value))
           <el-select
             v-else
             v-model="row.roleId"
+            data-testid="household-dialog-role"
             :placeholder="$t('pages.eventDetail.chooseRole')"
             :disabled="!row.include"
             class="household__role"
@@ -180,6 +192,7 @@ const clusters = computed(() => toTimeline(items.value))
             <el-option
               v-for="role in rolesFor(row.userId)"
               :key="role.id"
+              :data-testid="`option-${role.id}`"
               :label="role.name"
               :value="role.id"
             />
@@ -196,6 +209,7 @@ const clusters = computed(() => toTimeline(items.value))
       <template #footer>
         <ActionButton :label="$t('common.cancel')" text @click="householdDialog.visible = false" />
         <ActionButton
+          data-testid="household-dialog-submit"
           :label="$t('pages.eventDetail.household.enroll')"
           type="primary"
           :disabled="householdSelectable.length === 0"
@@ -206,6 +220,7 @@ const clusters = computed(() => toTimeline(items.value))
 
     <el-dialog
       v-model="overlapDialog.visible"
+      data-testid="overlap-dialog"
       :title="$t('pages.eventDetail.overlap.header')"
       width="90vw"
       class="overlap-dialog"
@@ -223,8 +238,14 @@ const clusters = computed(() => toTimeline(items.value))
       </ul>
       <p class="overlap__q">{{ $t('pages.eventDetail.overlap.question') }}</p>
       <template #footer>
-        <ActionButton :label="$t('common.cancel')" text @click="overlapDialog.visible = false" />
         <ActionButton
+          data-testid="overlap-dialog-cancel"
+          :label="$t('common.cancel')"
+          text
+          @click="overlapDialog.visible = false"
+        />
+        <ActionButton
+          data-testid="overlap-dialog-confirm"
           :label="$t('pages.eventDetail.overlap.enrollAnyway')"
           type="primary"
           @click="confirmOverlapSignup"

@@ -36,6 +36,7 @@ const visible = computed({
 <template>
   <el-dialog
     v-model="visible"
+    data-testid="legal-policy-version-dialog"
     :title="
       version === null ? '' : $t('pages.admin.legalPolicies.versions.dialogTitle', { version })
     "
@@ -57,6 +58,7 @@ const visible = computed({
     <template #footer>
       <ActionButton :label="$t('common.close')" text @click="emit('close')" />
       <ActionButton
+        data-testid="legal-policy-version-dialog-restore"
         :label="$t('pages.admin.legalPolicies.versions.restore')"
         type="primary"
         :disabled="!policy"

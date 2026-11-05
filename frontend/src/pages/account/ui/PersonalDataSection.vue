@@ -7,13 +7,18 @@ const { download, isDownloading } = usePersonalDataDownload()
 </script>
 
 <template>
-  <section class="acc-pane">
+  <section class="acc-pane" data-testid="personal-data-section">
     <div class="acc-pane__head">
       <div class="acc-pane__heading">
         <h2 class="acc-pane__title">{{ $t('pages.account.personalData.title') }}</h2>
         <p class="acc-pane__lead">{{ $t('pages.account.personalData.lead') }}</p>
       </div>
-      <BrandButton variant="ghost" :loading="isDownloading" @click="download">
+      <BrandButton
+        variant="ghost"
+        :loading="isDownloading"
+        data-testid="personal-data-download"
+        @click="download"
+      >
         {{ $t('pages.account.personalData.download') }}
       </BrandButton>
     </div>

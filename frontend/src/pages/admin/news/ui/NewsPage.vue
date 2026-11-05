@@ -62,6 +62,7 @@ function newsActions(newsItem: NewsSummary): RowAction[] {
     >
       <template #actions>
         <ActionButton
+          data-testid="admin-news-new"
           :label="$t('pages.admin.news.newLabel')"
           icon="plus"
           type="primary"
@@ -90,7 +91,12 @@ function newsActions(newsItem: NewsSummary): RowAction[] {
               <ListThumbnail size="table" :thumbnail-id="row.thumbnailId" />
             </template>
             <template v-if="row.featured" #badges>
-              <el-tag type="warning" size="small" disable-transitions>
+              <el-tag
+                type="warning"
+                size="small"
+                disable-transitions
+                data-testid="admin-news-featured"
+              >
                 {{ $t('pages.admin.news.featured') }}
               </el-tag>
             </template>

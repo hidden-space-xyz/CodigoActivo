@@ -25,6 +25,7 @@ const { form, submit, isSubmitting, errorMessage } = useLogin()
             <el-input
               id="login-identifier"
               v-model="form.identifier"
+              data-testid="login-email"
               type="email"
               autocomplete="username"
               :maxlength="EMAIL_ADDRESS_MAX_LENGTH"
@@ -39,6 +40,7 @@ const { form, submit, isSubmitting, errorMessage } = useLogin()
             <el-input
               id="login-password"
               v-model="form.password"
+              data-testid="login-password"
               type="password"
               show-password
               autocomplete="current-password"
@@ -47,7 +49,11 @@ const { form, submit, isSubmitting, errorMessage } = useLogin()
             />
           </div>
 
-          <RouterLink :to="{ name: 'forgot-password' }" class="login-forgot">
+          <RouterLink
+            :to="{ name: 'forgot-password' }"
+            class="login-forgot"
+            data-testid="login-forgot-password"
+          >
             {{ $t('pages.login.forgotLink') }}
           </RouterLink>
 
@@ -55,17 +61,24 @@ const { form, submit, isSubmitting, errorMessage } = useLogin()
             <el-checkbox
               id="login-keep-signed-in"
               v-model="form.keepSignedIn"
+              data-testid="login-keep-signed-in"
               class="ca-checkbox-text login-keep__label"
             >
               {{ $t('pages.login.keepSignedIn') }}
             </el-checkbox>
           </div>
 
-          <p v-if="errorMessage" class="ca-form-alert" role="alert">
+          <p v-if="errorMessage" class="ca-form-alert" role="alert" data-testid="login-error">
             {{ errorMessage }}
           </p>
 
-          <BrandButton type="submit" variant="primary" block :loading="isSubmitting">
+          <BrandButton
+            type="submit"
+            variant="primary"
+            block
+            :loading="isSubmitting"
+            data-testid="login-submit"
+          >
             {{ $t('common.login') }}
           </BrandButton>
         </form>

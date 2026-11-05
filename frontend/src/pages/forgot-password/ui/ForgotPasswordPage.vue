@@ -27,6 +27,7 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
             <el-input
               id="forgot-email"
               v-model="form.email"
+              data-testid="forgot-password-email"
               type="email"
               inputmode="email"
               autocomplete="email"
@@ -42,7 +43,13 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
             {{ $t('pages.forgotPassword.error') }}
           </p>
 
-          <BrandButton type="submit" variant="primary" block :loading="isSubmitting">
+          <BrandButton
+            type="submit"
+            variant="primary"
+            block
+            :loading="isSubmitting"
+            data-testid="forgot-password-submit"
+          >
             {{ $t('pages.forgotPassword.submit') }}
           </BrandButton>
         </form>
@@ -51,6 +58,7 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
           v-else
           state="success"
           aria-live="polite"
+          data-testid="forgot-password-sent"
           :title="$t('pages.forgotPassword.sentTitle')"
           :text="$t('pages.forgotPassword.sentBody')"
           :hint="$t('pages.forgotPassword.sentExpiry', { minutes: ONE_TIME_CODE_LIFETIME_MINUTES })"

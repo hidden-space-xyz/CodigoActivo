@@ -90,6 +90,7 @@ async function save(): Promise<void> {
     "
     width="min(920px, 94vw)"
     append-to-body
+    data-testid="event-form-dialog"
   >
     <form class="form form--scroll" @submit.prevent="save">
       <div class="ca-field">
@@ -102,6 +103,7 @@ async function save(): Promise<void> {
           :maxlength="TITLE_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('title') }"
           :aria-invalid="invalid('title')"
+          data-testid="event-form-title"
         />
       </div>
       <div class="ca-field">
@@ -114,6 +116,7 @@ async function save(): Promise<void> {
           :maxlength="SUBTITLE_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('subtitle') }"
           :aria-invalid="invalid('subtitle')"
+          data-testid="event-form-subtitle"
         />
       </div>
       <div class="ca-field">
@@ -131,12 +134,14 @@ async function save(): Promise<void> {
             :placeholder="$t('pages.admin.events.form.categoriesPlaceholder')"
             class="form__cats-select"
             :class="{ 'ca-invalid': invalid('categoryIds') }"
+            data-testid="event-form-categories"
           >
             <el-option
               v-for="category in categoryOptions"
               :key="category.id"
               :label="category.name"
               :value="category.id"
+              :data-testid="`option-${category.id}`"
             />
           </el-select>
           <ActionButton
@@ -145,10 +150,16 @@ async function save(): Promise<void> {
             type="primary"
             text
             size="small"
+            data-testid="event-form-new-category"
             @click="categoryDialogVisible = true"
           />
         </div>
-        <small v-if="errors.categoryIds" class="ca-field__error">{{ errors.categoryIds }}</small>
+        <small
+          v-if="errors.categoryIds"
+          class="ca-field__error"
+          data-testid="event-form-categories-error"
+          >{{ errors.categoryIds }}</small
+        >
       </div>
       <div class="ca-field">
         <label class="ca-field__label" for="event-terms-documents">{{
@@ -162,19 +173,26 @@ async function save(): Promise<void> {
           collapse-tags
           collapse-tags-tooltip
           :placeholder="$t('pages.admin.events.form.termsPlaceholder')"
+          data-testid="event-form-terms"
         >
           <el-option
             v-for="document in termsOptions"
             :key="document.id"
             :label="document.name"
             :value="document.id"
+            :data-testid="`option-${document.id}`"
           />
         </el-select>
         <small class="ca-field__hint">{{
           $t('pages.admin.events.form.hints.termsDocuments')
         }}</small>
         <ul v-if="draft.termsDocumentIds.length" class="form__terms-list">
-          <li v-for="id in draft.termsDocumentIds" :key="id" class="form__terms-row">
+          <li
+            v-for="id in draft.termsDocumentIds"
+            :key="id"
+            class="form__terms-row"
+            data-testid="event-form-terms-row"
+          >
             <span class="form__terms-name">{{ termsName(id) }}</span>
             <span v-if="consentIds.has(id)" class="form__terms-consent">{{
               $t('pages.admin.events.form.termsConsentOptional')
@@ -183,6 +201,7 @@ async function save(): Promise<void> {
               v-else
               :model-value="draft.termsRequired[id] ?? true"
               :active-text="$t('pages.admin.events.form.termsRequired')"
+              data-testid="event-form-terms-required"
               @update:model-value="
                 (value: string | number | boolean) => setTermsRequired(id, value)
               "
@@ -197,11 +216,12 @@ async function save(): Promise<void> {
           :label="$t('pages.admin.events.form.fields.description')"
           :upload="uploadFileRequest"
           :invalid="!!errors.description"
+          data-testid="event-form-description"
         />
         <small v-if="errors.description" class="ca-field__error">{{ errors.description }}</small>
       </div>
       <div class="ca-form-grid">
-        <div class="ca-field">
+        <div class="ca-field" data-testid="event-form-starts-on">
           <label class="ca-field__label" for="event-start">{{
             $t('pages.admin.events.form.fields.eventStart')
           }}</label>
@@ -212,9 +232,14 @@ async function save(): Promise<void> {
             :format="DATE_FORMAT"
             :class="{ 'ca-invalid': invalid('startsAt') }"
           />
-          <small v-if="errors.startsAt" class="ca-field__error">{{ errors.startsAt }}</small>
+          <small
+            v-if="errors.startsAt"
+            class="ca-field__error"
+            data-testid="event-form-starts-on-error"
+            >{{ errors.startsAt }}</small
+          >
         </div>
-        <div class="ca-field">
+        <div class="ca-field" data-testid="event-form-ends-on">
           <label class="ca-field__label" for="event-end">{{
             $t('pages.admin.events.form.fields.eventEnd')
           }}</label>
@@ -226,10 +251,15 @@ async function save(): Promise<void> {
             :disabled-date="(date: Date) => isDayBefore(date, draft.startsAt)"
             :class="{ 'ca-invalid': invalid('endsAt') }"
           />
-          <small v-if="errors.endsAt" class="ca-field__error">{{ errors.endsAt }}</small>
+          <small
+            v-if="errors.endsAt"
+            class="ca-field__error"
+            data-testid="event-form-ends-on-error"
+            >{{ errors.endsAt }}</small
+          >
         </div>
       </div>
-      <div class="ca-field">
+      <div class="ca-field" data-testid="event-form-early-signup-from">
         <label class="ca-field__label" for="event-early-signup-start">{{
           $t('pages.admin.events.form.fields.earlySignupStart')
         }}</label>
@@ -242,15 +272,18 @@ async function save(): Promise<void> {
           :disabled-date="(date: Date) => isDayAfter(date, draft.signupStartsAt)"
           :class="{ 'ca-invalid': invalid('earlySignupStartsAt') }"
         />
-        <small v-if="errors.earlySignupStartsAt" class="ca-field__error">{{
-          errors.earlySignupStartsAt
-        }}</small>
+        <small
+          v-if="errors.earlySignupStartsAt"
+          class="ca-field__error"
+          data-testid="event-form-early-signup-from-error"
+          >{{ errors.earlySignupStartsAt }}</small
+        >
         <small v-else class="ca-field__hint">{{
           $t('pages.admin.events.form.hints.earlySignupStart')
         }}</small>
       </div>
       <div class="ca-form-grid">
-        <div class="ca-field">
+        <div class="ca-field" data-testid="event-form-signup-from">
           <label class="ca-field__label" for="event-signup-start">{{
             $t('pages.admin.events.form.fields.signupStart')
           }}</label>
@@ -261,11 +294,14 @@ async function save(): Promise<void> {
             :format="DATE_TIME_FORMAT"
             :class="{ 'ca-invalid': invalid('signupStartsAt') }"
           />
-          <small v-if="errors.signupStartsAt" class="ca-field__error">{{
-            errors.signupStartsAt
-          }}</small>
+          <small
+            v-if="errors.signupStartsAt"
+            class="ca-field__error"
+            data-testid="event-form-signup-from-error"
+            >{{ errors.signupStartsAt }}</small
+          >
         </div>
-        <div class="ca-field">
+        <div class="ca-field" data-testid="event-form-signup-until">
           <label class="ca-field__label" for="event-signup-end">{{
             $t('pages.admin.events.form.fields.signupEnd')
           }}</label>
@@ -280,9 +316,12 @@ async function save(): Promise<void> {
             "
             :class="{ 'ca-invalid': invalid('signupEndsAt') }"
           />
-          <small v-if="errors.signupEndsAt" class="ca-field__error">{{
-            errors.signupEndsAt
-          }}</small>
+          <small
+            v-if="errors.signupEndsAt"
+            class="ca-field__error"
+            data-testid="event-form-signup-until-error"
+            >{{ errors.signupEndsAt }}</small
+          >
         </div>
       </div>
       <div class="ca-field">
@@ -309,6 +348,7 @@ async function save(): Promise<void> {
         :label="$t('common.save')"
         type="primary"
         :loading="saving || uploading"
+        data-testid="event-form-save"
         @click="save"
       />
     </template>

@@ -131,6 +131,7 @@ watch(
   <div
     ref="rootRef"
     class="data-table"
+    data-testid="data-table"
     :class="{ 'data-table--flush': variant === 'flush', 'data-table--refreshing': refreshing }"
     tabindex="-1"
     :aria-busy="table.loading.value"
@@ -138,6 +139,7 @@ watch(
     <div class="data-table__toolbar">
       <SearchInput
         v-if="search"
+        data-testid="data-table-search"
         class="data-table__search"
         size="small"
         :model-value="searchText(search.key)"
@@ -148,7 +150,9 @@ watch(
         <slot name="filters" />
       </div>
       <div class="data-table__end">
-        <span class="data-table__count" aria-live="polite">{{ resultCount }}</span>
+        <span class="data-table__count" data-testid="data-table-count" aria-live="polite">{{
+          resultCount
+        }}</span>
         <slot name="actions" />
       </div>
     </div>
@@ -158,6 +162,7 @@ watch(
         v-if="chips.length > 0"
         ref="chipListRef"
         class="data-table__chip-list"
+        data-testid="data-table-chips"
         :aria-label="$t('table.activeFilters')"
       >
         <FilterChip
@@ -172,6 +177,7 @@ watch(
         text
         size="small"
         class="data-table__clear"
+        data-testid="data-table-clear"
         :label="$t('table.clearFilters')"
         @click="clearAllAndRefocus"
       />
@@ -196,7 +202,7 @@ watch(
         </el-skeleton>
         <div v-else class="data-table__empty" :role="table.isError.value ? 'alert' : undefined">
           <AppIcon :name="emptyState.icon" class="data-table__empty-icon" />
-          <p class="data-table__empty-text">{{ emptyState.text }}</p>
+          <p class="data-table__empty-text" data-testid="data-table-empty">{{ emptyState.text }}</p>
           <ActionButton
             v-if="table.isError.value"
             icon="refresh"

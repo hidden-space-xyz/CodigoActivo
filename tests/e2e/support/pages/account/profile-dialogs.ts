@@ -19,6 +19,9 @@ export class ProfileDialog {
   /** The DNI/NIE field. */
   readonly nationalId: Locator
 
+  /** The error the DNI/NIE field shows for a value it refuses. */
+  readonly nationalIdError: Locator
+
   /** The gender select. */
   readonly gender: Locator
 
@@ -34,6 +37,9 @@ export class ProfileDialog {
   /** «Tu contraseña actual», asked only when the email or a phone changes. */
   readonly currentPassword: Locator
 
+  /** The error of «Tu contraseña actual», for a missing or refused password. */
+  readonly currentPasswordError: Locator
+
   /** The save button. */
   readonly save: Locator
 
@@ -41,19 +47,20 @@ export class ProfileDialog {
   readonly cancel: Locator
 
   constructor(page: Page) {
-    this.root = page.getByRole('dialog', { name: 'Editar mis datos' })
-    this.firstName = this.root.getByLabel('Nombre', { exact: true })
-    this.lastName = this.root.getByLabel('Apellidos', { exact: true })
-    this.nationalId = this.root.getByLabel('DNI/NIE')
-    this.gender = this.root.getByLabel('Género')
-    this.phone = this.root.getByLabel('Teléfono', { exact: true })
-    this.email = this.root.getByLabel('Correo', { exact: true })
-    this.newsConsent = this.root.getByRole('checkbox', {
-      name: /Quiero recibir por email novedades/,
-    })
-    this.currentPassword = this.root.getByLabel('Tu contraseña actual')
-    this.save = this.root.getByRole('button', { name: 'Guardar', exact: true })
-    this.cancel = this.root.getByRole('button', { name: 'Cancelar', exact: true })
+    this.root = page.getByTestId('profile-dialog')
+    this.firstName = this.root.getByTestId('profile-dialog-first-name')
+    this.lastName = this.root.getByTestId('profile-dialog-last-name')
+    const nationalIdField = this.root.getByTestId('profile-dialog-national-id')
+    this.nationalId = nationalIdField.locator('input')
+    this.nationalIdError = nationalIdField.getByTestId('national-id-input-error')
+    this.gender = this.root.getByTestId('profile-dialog-gender')
+    this.phone = this.root.getByTestId('profile-dialog-phone')
+    this.email = this.root.getByTestId('profile-dialog-email')
+    this.newsConsent = this.root.getByTestId('profile-dialog-news-consent')
+    this.currentPassword = this.root.getByTestId('profile-dialog-current-password')
+    this.currentPasswordError = this.root.getByTestId('profile-dialog-current-password-error')
+    this.save = this.root.getByTestId('profile-dialog-save')
+    this.cancel = this.root.getByTestId('profile-dialog-cancel')
   }
 }
 
@@ -78,12 +85,12 @@ export class PasswordDialog {
   readonly save: Locator
 
   constructor(page: Page) {
-    this.root = page.getByRole('dialog', { name: 'Cambiar contraseña' })
-    this.current = this.root.getByLabel('Contraseña actual')
-    this.next = this.root.getByLabel('Nueva contraseña', { exact: true })
-    this.confirmation = this.root.getByLabel('Repite la nueva contraseña')
-    this.error = this.root.getByRole('alert')
-    this.save = this.root.getByRole('button', { name: 'Guardar', exact: true })
+    this.root = page.getByTestId('password-dialog')
+    this.current = this.root.getByTestId('password-dialog-current')
+    this.next = this.root.getByTestId('password-dialog-new')
+    this.confirmation = this.root.getByTestId('password-dialog-confirm')
+    this.error = this.root.getByTestId('password-dialog-error')
+    this.save = this.root.getByTestId('password-dialog-save')
   }
 
   /** Fills in the three fields and sends the form. */

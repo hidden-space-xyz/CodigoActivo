@@ -31,6 +31,7 @@ const triggerLabel = computed(() => props.menuLabel ?? t('table.moreActions'))
       circle
       size="small"
       class="row-actions__button"
+      :data-testid="`row-action-${action.key}`"
       :class="{ 'row-actions__button--danger': action.danger }"
       :aria-label="action.label"
       :disabled="action.disabled"
@@ -43,7 +44,14 @@ const triggerLabel = computed(() => props.menuLabel ?? t('table.moreActions'))
       :persistent="false"
       popper-class="row-actions__menu"
     >
-      <el-button class="row-actions__more" text circle size="small" :aria-label="triggerLabel">
+      <el-button
+        class="row-actions__more"
+        data-testid="row-actions-menu"
+        text
+        circle
+        size="small"
+        :aria-label="triggerLabel"
+      >
         <AppIcon name="more" />
       </el-button>
       <template #dropdown>
@@ -54,6 +62,7 @@ const triggerLabel = computed(() => props.menuLabel ?? t('table.moreActions'))
             :disabled="action.disabled"
             :divided="action.divided"
             :class="{ 'row-actions__item--danger': action.danger }"
+            :data-testid="`row-action-${action.key}`"
             @click="action.run()"
           >
             <AppIcon :name="action.icon" class="row-actions__item-icon" />

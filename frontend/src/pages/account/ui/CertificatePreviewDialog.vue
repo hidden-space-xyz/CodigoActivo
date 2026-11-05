@@ -54,6 +54,7 @@ watch(
 <template>
   <el-dialog
     :model-value="certificate !== null"
+    data-testid="certificate-dialog"
     :title="$t('pages.account.certificates.dialog.header')"
     width="min(94vw, 1080px)"
     align-center
@@ -65,6 +66,7 @@ watch(
         <canvas
           ref="canvasEl"
           class="cert-preview__canvas"
+          data-testid="certificate-dialog-canvas"
           role="img"
           :aria-label="certificate.eventTitle"
         />
@@ -92,6 +94,7 @@ watch(
         </BrandButton>
         <BrandButton
           :loading="busyPng"
+          data-testid="certificate-dialog-download-png"
           @click="certificate && emit('download', certificate, 'png')"
         >
           <AppIcon v-if="!busyPng" name="download" />

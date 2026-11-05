@@ -115,6 +115,7 @@ function eventActions(event: EventListing): RowAction[] {
           icon="plus"
           type="primary"
           :disabled="loading"
+          data-testid="admin-events-new"
           @click="openCreate"
         />
       </template>
@@ -132,8 +133,13 @@ function eventActions(event: EventListing): RowAction[] {
           :aria-label="$t('pages.admin.events.scope.label')"
           :options="scopeOptions"
           :model-value="scope"
+          data-testid="admin-events-scope"
           @change="setScope"
-        />
+        >
+          <template #default="{ item }">
+            <span :data-testid="`option-${item.value}`">{{ item.label }}</span>
+          </template>
+        </el-segmented>
       </template>
 
       <el-table-column
@@ -149,7 +155,12 @@ function eventActions(event: EventListing): RowAction[] {
               <ListThumbnail size="table" :thumbnail-id="row.thumbnailId" />
             </template>
             <template v-if="row.featured" #badges>
-              <el-tag type="warning" size="small" disable-transitions>
+              <el-tag
+                type="warning"
+                size="small"
+                disable-transitions
+                data-testid="admin-events-featured"
+              >
                 {{ $t('pages.admin.events.tag.featured') }}
               </el-tag>
             </template>
@@ -167,6 +178,7 @@ function eventActions(event: EventListing): RowAction[] {
             v-model="table.columnFilter('category').value"
             :label="$t('pages.admin.events.columns.categories')"
             :options="categoryOptions"
+            data-testid="admin-events-category-filter"
             @apply="table.onFilter"
           />
         </template>

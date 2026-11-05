@@ -124,6 +124,7 @@ function entryActions(entry: AuditEntry): RowAction[] {
               type="button"
               class="pin"
               :aria-label="$t('pages.admin.audit.filterActor', { actor: actorLabel(row, t) })"
+              data-testid="audit-actor"
               @click="filterByActor(row)"
             >
               {{ actorLabel(row, t) }}
@@ -140,6 +141,7 @@ function entryActions(entry: AuditEntry): RowAction[] {
             type="button"
             class="pin mono"
             :aria-label="$t('pages.admin.audit.filterIp', { ip: row.clientIp })"
+            data-testid="audit-ip"
             @click="filterByIp(row.clientIp)"
           >
             {{ row.clientIp }}
@@ -182,6 +184,7 @@ function entryActions(entry: AuditEntry): RowAction[] {
                 :aria-label="
                   $t('pages.admin.audit.filterEntity', { entity: entityLabel(row.entity, t) })
                 "
+                data-testid="audit-entity"
                 @click="filterByEntity(row.entity)"
               >
                 {{ entityLabel(row.entity, t) }}
@@ -200,6 +203,7 @@ function entryActions(entry: AuditEntry): RowAction[] {
                 :aria-label="
                   $t('pages.admin.audit.filterEntity', { entity: relatedLabel(related, t) })
                 "
+                data-testid="audit-related"
                 @click="filterByEntity(related)"
               >
                 {{ relatedLabel(related, t) }}
@@ -212,6 +216,7 @@ function entryActions(entry: AuditEntry): RowAction[] {
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('outcome').value"
+            data-testid="audit-filter-outcome"
             :label="$t('pages.admin.audit.columns.outcome')"
             :options="outcomeOptions"
             @apply="table.onFilter"
@@ -236,6 +241,7 @@ function entryActions(entry: AuditEntry): RowAction[] {
             class="pin mono trace"
             :title="row.traceId"
             :aria-label="$t('pages.admin.audit.filterTrace', { trace: row.traceId })"
+            data-testid="audit-trace"
             @click="filterByTrace(row.traceId)"
           >
             {{ shortTrace(row.traceId) }}

@@ -107,6 +107,7 @@ services:
       context: .
       additional_contexts:
         contract: ../../frontend/src/shared/api/generated/models
+        locales: ../../frontend/src/shared/i18n/locales
     depends_on:
       web:
         condition: service_healthy

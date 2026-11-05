@@ -2,9 +2,10 @@ import { consentsFor } from '../../support/api/account'
 import { firstDependent } from '../../support/api/accounts'
 import { signUp } from '../../support/api/signups'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { AccountPage } from '../../support/pages/account/account-page'
 import { ConsentsSection } from '../../support/pages/account/consents-section'
-import { confirm, dialog, notification } from '../../support/ui/element-plus'
+import { confirm, messageBox, notification } from '../../support/ui/element-plus'
 
 test.describe('consents', () => {
   test('a guardian withdraws the consents given for themselves and for a minor', async ({
@@ -28,27 +29,36 @@ test.describe('consents', () => {
     const consents = new ConsentsSection(account)
     const own = consents.consent(document.name, guardianName)
     const minors = consents.consent(document.name, minorName)
-    await expect(own).toContainText('Dado')
+    await expect(own).toContainText(t('pages.account.consents.given'))
     await expect(own).toContainText(event.title)
-    await expect(own).toContainText(`Decidió ${guardianName} el`)
-    await expect(minors).toContainText('Dado')
-
-    await own.getByRole('button', { name: 'Retirar' }).click()
-    await expect(dialog(page, 'Retirar un consentimiento')).toContainText(
-      `Vas a retirar tu consentimiento «${document.name}» para el evento «${event.title}».`,
+    await expect(own).toContainText(
+      t('pages.account.consents.decided', { name: guardianName, date: '' }),
     )
-    await confirm(page, 'Retirar un consentimiento', 'Retirar')
-    await expect(notification(page, 'Consentimiento retirado.')).toBeVisible()
-    await expect(own).toContainText('Retirado')
-    await expect(own.getByRole('button', { name: 'Retirar' })).toBeHidden()
-    await expect(minors).toContainText('Dado')
+    await expect(minors).toContainText(t('pages.account.consents.given'))
 
-    await minors.getByRole('button', { name: 'Retirar' }).click()
-    await expect(dialog(page, 'Retirar un consentimiento')).toContainText(
-      `Si ${minorName} tiene 14 años o más, esta decisión es suya`,
+    await own.getByTestId('consents-item-withdraw').click()
+    await expect(messageBox(page)).toContainText(
+      t('pages.account.consents.withdraw.messageSelf', {
+        document: document.name,
+        event: event.title,
+      }),
     )
-    await confirm(page, 'Retirar un consentimiento', 'Retirar')
-    await expect(minors).toContainText('Retirado')
+    await confirm(page)
+    await expect(notification(page, t('pages.account.consents.withdraw.done'))).toBeVisible()
+    await expect(own).toContainText(t('pages.account.consents.withdrawn'))
+    await expect(own.getByTestId('consents-item-withdraw')).toBeHidden()
+    await expect(minors).toContainText(t('pages.account.consents.given'))
+
+    await minors.getByTestId('consents-item-withdraw').click()
+    await expect(messageBox(page)).toContainText(
+      t('pages.account.consents.withdraw.messageMinor', {
+        document: document.name,
+        person: minorName,
+        event: event.title,
+      }),
+    )
+    await confirm(page)
+    await expect(minors).toContainText(t('pages.account.consents.withdrawn'))
 
     const stored = await consentsFor(actor.api, document.id)
     expect(stored).toHaveLength(2)

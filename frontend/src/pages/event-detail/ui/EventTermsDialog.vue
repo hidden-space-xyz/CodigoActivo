@@ -124,6 +124,7 @@ function confirm(): void {
 
 <template>
   <el-dialog
+    data-testid="terms-dialog"
     :model-value="visible"
     :title="t('pages.eventDetail.terms.header')"
     width="min(680px, 94vw)"
@@ -150,12 +151,14 @@ function confirm(): void {
           <li
             v-for="{ document, decider } in group.items"
             :key="document.id"
+            data-testid="terms-dialog-row"
             class="terms-dialog__row"
           >
             <div class="terms-dialog__decision">
               <el-checkbox
                 :id="`terms-${draftKey(section.personId, document.id)}`"
                 v-model="checked[draftKey(section.personId, document.id)]"
+                data-testid="terms-dialog-accept"
                 :aria-label="
                   section.self || group.decider === 'person'
                     ? t('pages.eventDetail.terms.checkboxLabel', { name: document.name })
@@ -167,6 +170,7 @@ function confirm(): void {
               />
               <div class="terms-dialog__info">
                 <button
+                  data-testid="terms-dialog-document"
                   type="button"
                   class="terms-dialog__link"
                   :title="t('pages.eventDetail.terms.openDocument', { name: document.name })"
@@ -205,20 +209,36 @@ function confirm(): void {
         </ul>
       </div>
     </section>
-    <p v-if="attempted && reading.missingRequired" class="terms-dialog__warning" role="alert">
+    <p
+      v-if="attempted && reading.missingRequired"
+      data-testid="terms-dialog-missing-required"
+      class="terms-dialog__warning"
+      role="alert"
+    >
       {{ t('pages.eventDetail.terms.missingRequired') }}
     </p>
-    <p v-if="attempted && reading.missingSignature" class="terms-dialog__warning" role="alert">
+    <p
+      v-if="attempted && reading.missingSignature"
+      data-testid="terms-dialog-missing-signature"
+      class="terms-dialog__warning"
+      role="alert"
+    >
       {{ t('pages.eventDetail.terms.signature.missing') }}
     </p>
     <template #footer>
       <ActionButton :label="t('common.cancel')" text @click="close" />
-      <ActionButton :label="t('pages.eventDetail.terms.confirm')" type="primary" @click="confirm" />
+      <ActionButton
+        data-testid="terms-dialog-confirm"
+        :label="t('pages.eventDetail.terms.confirm')"
+        type="primary"
+        @click="confirm"
+      />
     </template>
   </el-dialog>
 
   <el-dialog
     v-model="preview.visible"
+    data-testid="terms-dialog-preview"
     :title="preview.document?.name"
     :aria-label="`${t('pages.eventDetail.terms.documentHeader')}: ${preview.document?.name ?? ''}`"
     width="min(680px, 94vw)"
@@ -234,11 +254,13 @@ function confirm(): void {
         @click="preview.visible = false"
       />
       <ActionButton
+        data-testid="terms-dialog-preview-reject"
         :label="t('pages.eventDetail.terms.reject')"
         type="danger"
         @click="rejectFromPreview"
       />
       <ActionButton
+        data-testid="terms-dialog-preview-accept"
         :label="t('pages.eventDetail.terms.accept')"
         type="primary"
         @click="acceptFromPreview"

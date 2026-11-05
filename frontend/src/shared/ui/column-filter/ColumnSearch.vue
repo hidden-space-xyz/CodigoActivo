@@ -107,6 +107,7 @@ onBeforeUnmount(() => {
     <el-input
       ref="input"
       v-model="draft"
+      data-testid="column-filter-search"
       :type="inputType"
       :maxlength="MAX_SEARCH_LENGTH"
       :placeholder="placeholder || $t('table.searchBy', { label })"

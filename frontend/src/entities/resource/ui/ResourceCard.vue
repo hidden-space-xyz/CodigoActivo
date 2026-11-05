@@ -25,6 +25,7 @@ const linkAttrs = computed(() =>
     :is="resource.url ? 'a' : RouterLink"
     v-bind="linkAttrs"
     class="ca-list-card resource-card"
+    data-testid="resource-card"
   >
     <ListThumbnail :thumbnail-id="resource.thumbnailId" :alt="resource.title" />
 

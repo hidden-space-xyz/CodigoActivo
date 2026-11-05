@@ -36,6 +36,7 @@ function apply(): void {
 <template>
   <el-dialog
     v-model="visible"
+    data-testid="user-type-dialog"
     :title="$t('pages.admin.users.typeDialog.header')"
     width="min(92vw, 420px)"
   >
@@ -49,6 +50,7 @@ function apply(): void {
       <el-select
         id="user-type"
         v-model="userTypeId"
+        data-testid="user-type-dialog-type"
         :placeholder="$t('pages.admin.users.typeDialog.placeholder')"
       >
         <el-option
@@ -56,6 +58,7 @@ function apply(): void {
           :key="option.value"
           :label="option.label"
           :value="option.value"
+          :data-testid="`option-${option.value}`"
         />
       </el-select>
     </div>
@@ -63,6 +66,7 @@ function apply(): void {
       <ActionButton :label="$t('common.cancel')" text :disabled="saving" @click="visible = false" />
       <ActionButton
         :label="$t('common.apply')"
+        data-testid="user-type-dialog-apply"
         type="primary"
         :loading="saving"
         :disabled="!userTypeId"

@@ -62,6 +62,7 @@ async function save(): Promise<void> {
 <template>
   <el-dialog
     v-model="visible"
+    data-testid="resource-form-dialog"
     :title="
       resource
         ? $t('pages.admin.resources.form.editHeader')
@@ -77,6 +78,7 @@ async function save(): Promise<void> {
         <el-input
           id="resource-title"
           v-model="draft.title"
+          data-testid="resource-form-title"
           :maxlength="TITLE_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('title') }"
           :aria-invalid="invalid('title')"
@@ -89,6 +91,7 @@ async function save(): Promise<void> {
         <el-input
           id="resource-subtitle"
           v-model="draft.subtitle"
+          data-testid="resource-form-subtitle"
           :maxlength="SUBTITLE_MAX_LENGTH"
           :class="{ 'ca-invalid': invalid('subtitle') }"
           :aria-invalid="invalid('subtitle')"
@@ -101,11 +104,18 @@ async function save(): Promise<void> {
         <el-select
           id="resource-type"
           v-model="draft.resourceTypeId"
+          data-testid="resource-form-type"
           :placeholder="$t('pages.admin.resources.form.typePlaceholder')"
           :loading="typesLoading"
           :class="{ 'ca-invalid': errors.resourceTypeId }"
         >
-          <el-option v-for="type in types" :key="type.id" :label="type.name" :value="type.id" />
+          <el-option
+            v-for="type in types"
+            :key="type.id"
+            :label="type.name"
+            :value="type.id"
+            :data-testid="`option-${type.id}`"
+          />
         </el-select>
         <small v-if="typesFailed" class="ca-field__error">{{
           $t('pages.admin.resources.form.typesLoadError')
@@ -118,11 +128,17 @@ async function save(): Promise<void> {
         <div class="ca-field__label">{{ $t('pages.admin.resources.form.description') }}</div>
         <RichTextEditor
           v-model="draft.description"
+          data-testid="resource-form-description"
           :label="$t('pages.admin.resources.form.description')"
           :upload="uploadFileRequest"
           :invalid="!!errors.description"
         />
-        <small v-if="errors.description" class="ca-field__error">{{ errors.description }}</small>
+        <small
+          v-if="errors.description"
+          data-testid="resource-form-description-error"
+          class="ca-field__error"
+          >{{ errors.description }}</small
+        >
       </div>
       <div v-if="selectedType?.isExternal" class="ca-field">
         <label class="ca-field__label" for="resource-url">{{
@@ -131,15 +147,20 @@ async function save(): Promise<void> {
         <el-input
           id="resource-url"
           v-model="draft.url"
+          data-testid="resource-form-url"
           :maxlength="URL_MAX_LENGTH"
           :placeholder="$t('pages.admin.resources.form.urlPlaceholder')"
           :class="{ 'ca-invalid': errors.url }"
           :aria-invalid="!!errors.url"
           :aria-describedby="errors.url ? 'resource-url-error' : undefined"
         />
-        <small v-if="errors.url" id="resource-url-error" class="ca-field__error">{{
-          errors.url
-        }}</small>
+        <small
+          v-if="errors.url"
+          id="resource-url-error"
+          data-testid="resource-form-url-error"
+          class="ca-field__error"
+          >{{ errors.url }}</small
+        >
       </div>
       <div class="ca-field">
         <div id="resource-image-label" class="ca-field__label">{{ $t('common.image') }}</div>
@@ -162,6 +183,7 @@ async function save(): Promise<void> {
         @click="visible = false"
       />
       <ActionButton
+        data-testid="resource-form-dialog-save"
         :label="$t('common.save')"
         type="primary"
         :loading="saving || uploading"

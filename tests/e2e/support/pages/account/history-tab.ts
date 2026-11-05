@@ -1,36 +1,32 @@
 import type { Locator, Page } from '@playwright/test'
 
-/** A group of the history tab. */
-export type HistoryGroup = 'Próximos eventos' | 'Eventos anteriores'
+/** A group of the history tab: the upcoming or the past events. */
+export type HistoryGroup = 'upcoming' | 'past'
 
 /** The tab «Historial»: the household's events grouped into upcoming and past ones. */
 export class HistoryTab {
   constructor(private readonly page: Page) {}
 
-  /** The group under the heading `label`. */
-  group(label: HistoryGroup): Locator {
-    return this.page
-      .locator('.acc-history__group')
-      .filter({ has: this.page.getByRole('heading', { level: 3, name: label, exact: true }) })
+  /** The group `name`. */
+  group(name: HistoryGroup): Locator {
+    return this.page.getByTestId(`history-group-${name}`)
   }
 
   /** The entry of the event titled `title` within `group`. */
   event(group: HistoryGroup, title: string): Locator {
     return this.group(group)
-      .locator('li.acc-history__event')
-      .filter({ has: this.page.getByText(title, { exact: true }) })
+      .getByTestId('history-event')
+      .filter({ has: this.page.getByTestId('history-event-title').filter({ hasText: title }) })
   }
 
   /** The button that shows or hides the activities of an entry. */
   toggle(entry: Locator): Locator {
-    return entry.locator('button.acc-history__toggle')
+    return entry.getByTestId('history-event-toggle')
   }
 
   /** The signup to the activity titled `title` of an expanded entry. */
   activity(entry: Locator, title: string): Locator {
-    return entry
-      .locator('li.acc-history__activity')
-      .filter({ has: this.page.getByText(title, { exact: true }) })
+    return entry.getByTestId('history-activity').filter({ hasText: title })
   }
 }
 
@@ -63,14 +59,14 @@ export class RatingDialog {
   private readonly stars: Locator
 
   constructor(page: Page) {
-    this.root = page.getByRole('dialog', { name: 'Valorar evento' })
-    this.mostLiked = this.root.getByLabel('¿Qué fue lo que MÁS te gustó?')
-    this.leastLiked = this.root.getByLabel('¿Qué fue lo que MENOS te gustó?')
-    this.suggestions = this.root.getByLabel('¿Tienes alguna sugerencia para eventos FUTUROS?')
-    this.submit = this.root.getByRole('button', { name: 'Enviar valoración' })
-    this.saveChanges = this.root.getByRole('button', { name: 'Guardar cambios' })
-    this.remove = this.root.getByRole('button', { name: 'Borrar valoración' })
-    this.score = this.root.locator('.el-rate')
+    this.root = page.getByTestId('rating-dialog')
+    this.mostLiked = this.root.getByTestId('rating-dialog-most-liked')
+    this.leastLiked = this.root.getByTestId('rating-dialog-least-liked')
+    this.suggestions = this.root.getByTestId('rating-dialog-suggestions')
+    this.submit = this.root.getByTestId('rating-dialog-submit')
+    this.saveChanges = this.root.getByTestId('rating-dialog-save')
+    this.remove = this.root.getByTestId('rating-dialog-delete')
+    this.score = this.root.getByTestId('rating-dialog-score')
     this.stars = this.score.locator('.el-rate__item')
   }
 

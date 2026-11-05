@@ -6,14 +6,14 @@ import {
 } from '../../support/api/signups-extra'
 import { hoursFromNow } from '../../support/data/time'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { EventDetailPage } from '../../support/pages/event-detail-page'
-import { ActivityCard } from '../../support/pages/signups/activity-card'
+import { ActivityCard, ROLE_LABELS, STATUS_LABELS } from '../../support/pages/signups/activity-card'
 import { notification } from '../../support/ui/element-plus'
 
-const SIGNUP_SENT = 'Hemos recibido tu solicitud. Te avisaremos por correo cuando se revise.'
-const CLOSED_BANNER = 'La inscripción no está abierta para este evento.'
-const EARLY_BANNER =
-  'Este evento está en periodo de inscripción anticipada, reservado a socios y patrocinadores. La inscripción general abrirá más adelante.'
+const SIGNUP_SENT = t('pages.eventDetail.toast.signupSuccess')
+const CLOSED_BANNER = t('pages.eventDetail.activities.signupClosed')
+const EARLY_BANNER = t('pages.eventDetail.activities.earlySignupOnly')
 
 test.describe('signup windows', () => {
   test('nobody can sign up once the signup period has closed', async ({
@@ -30,8 +30,8 @@ test.describe('signup windows', () => {
     await eventPage.openActivities()
 
     const card = new ActivityCard(eventPage.activity(activity.title))
-    await expect(eventPage.main.getByText(CLOSED_BANNER)).toBeVisible()
-    await expect(card.root.getByText('La inscripción no está abierta.')).toBeVisible()
+    await expect(eventPage.main.getByTestId('event-activities-closed')).toHaveText(CLOSED_BANNER)
+    await expect(card.note(t('pages.eventDetail.card.signupClosed'))).toBeVisible()
     await expect(card.role).toHaveCount(0)
     await expect(card.signUp).toBeHidden()
   })
@@ -50,8 +50,8 @@ test.describe('signup windows', () => {
     await eventPage.openActivities()
 
     const card = new ActivityCard(eventPage.activity(activity.title))
-    await expect(eventPage.main.getByText(CLOSED_BANNER)).toBeVisible()
-    await expect(card.root.getByText('La inscripción no está abierta.')).toBeVisible()
+    await expect(eventPage.main.getByTestId('event-activities-closed')).toHaveText(CLOSED_BANNER)
+    await expect(card.note(t('pages.eventDetail.card.signupClosed'))).toBeVisible()
     await expect(card.signUp).toBeHidden()
   })
 
@@ -65,8 +65,8 @@ test.describe('signup windows', () => {
     await eventPage.openActivities()
 
     const card = new ActivityCard(eventPage.activity(activity.title))
-    await expect(eventPage.main.getByText(EARLY_BANNER)).toBeVisible()
-    await expect(card.root.getByText('Solo socios y patrocinadores por ahora.')).toBeVisible()
+    await expect(eventPage.main.getByTestId('event-activities-closed')).toHaveText(EARLY_BANNER)
+    await expect(card.note(t('pages.eventDetail.card.earlySignupOnly'))).toBeVisible()
     await expect(card.signUp).toBeHidden()
   })
 
@@ -79,12 +79,14 @@ test.describe('signup windows', () => {
     await eventPage.openActivities()
     const card = new ActivityCard(eventPage.activity(activity.title))
 
-    await card.signUpAs('Líder')
+    await card.signUpAs('leader')
 
     await expect(notification(page, SIGNUP_SENT)).toBeVisible()
-    await expect(eventPage.main.getByText(EARLY_BANNER)).toBeHidden()
-    await expect(card.status).toHaveText('Solicitada')
-    await expect(card.root.getByText('Tu inscripción: Líder')).toBeVisible()
+    await expect(eventPage.main.getByTestId('event-activities-closed')).toBeHidden()
+    await expect(card.status).toHaveText(STATUS_LABELS.requested)
+    await expect(
+      card.note(t('pages.eventDetail.card.enrolledAs', { role: ROLE_LABELS.leader })),
+    ).toBeVisible()
   })
 
   test('a sponsor signs up during early signup', async ({ seed, accounts, pageAs }) => {
@@ -97,11 +99,11 @@ test.describe('signup windows', () => {
     await eventPage.openActivities()
     const card = new ActivityCard(eventPage.activity(activity.title))
 
-    await card.expectRoles(['Participante', 'Voluntario'])
-    await card.signUpAs('Voluntario')
+    await card.expectRoles(['participant', 'volunteer'])
+    await card.signUpAs('volunteer')
 
     await expect(notification(page, SIGNUP_SENT)).toBeVisible()
-    await expect(card.status).toHaveText('Solicitada')
+    await expect(card.status).toHaveText(STATUS_LABELS.requested)
     expect(await assignedActivities(sponsor.api, event.id)).toMatchObject([
       { activityId: activity.id, roleType: { name: 'Voluntario' } },
     ])
@@ -125,16 +127,18 @@ test.describe('signup windows', () => {
 
     await eventPage.openActivities()
 
-    await expect(eventPage.main.getByText(CLOSED_BANNER)).toBeHidden()
+    await expect(eventPage.main.getByTestId('event-activities-closed')).toBeHidden()
     const joinedCard = new ActivityCard(eventPage.activity(joined.title))
-    await expect(joinedCard.root.getByText('Tu inscripción: Participante')).toBeVisible()
-    await expect(joinedCard.root.getByText('Esta actividad ya ha empezado.')).toBeVisible()
+    await expect(
+      joinedCard.note(t('pages.eventDetail.card.enrolledAs', { role: ROLE_LABELS.participant })),
+    ).toBeVisible()
+    await expect(joinedCard.note(t('pages.eventDetail.card.activityStarted'))).toBeVisible()
     await expect(joinedCard.withdraw).toBeHidden()
     const missedCard = new ActivityCard(eventPage.activity(missed.title))
-    await expect(missedCard.root.getByText('Esta actividad ya ha empezado.')).toBeVisible()
+    await expect(missedCard.note(t('pages.eventDetail.card.activityStarted'))).toBeVisible()
     await expect(missedCard.signUp).toBeHidden()
     const laterCard = new ActivityCard(eventPage.activity(later.title))
     await expect(laterCard.signUp).toBeVisible()
-    await expect(laterCard.root.getByText('Esta actividad ya ha empezado.')).toBeHidden()
+    await expect(laterCard.note(t('pages.eventDetail.card.activityStarted'))).toBeHidden()
   })
 })

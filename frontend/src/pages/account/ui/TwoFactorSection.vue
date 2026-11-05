@@ -40,17 +40,27 @@ const {
 </script>
 
 <template>
-  <section class="acc-pane">
+  <section class="acc-pane" data-testid="two-factor-section">
     <div class="acc-pane__head">
       <div class="acc-pane__heading">
         <h2 class="acc-pane__title">{{ $t('pages.account.twoFactor.title') }}</h2>
         <p class="acc-pane__lead">{{ $t('pages.account.twoFactor.lead') }}</p>
       </div>
       <div class="acc-pane__actions">
-        <BrandButton v-if="isAuthenticator" variant="ghost" @click="openDisable">
+        <BrandButton
+          v-if="isAuthenticator"
+          variant="ghost"
+          data-testid="two-factor-use-email"
+          @click="openDisable"
+        >
           {{ $t('pages.account.twoFactor.useEmail') }}
         </BrandButton>
-        <BrandButton v-else variant="primary" @click="openSetup">
+        <BrandButton
+          v-else
+          variant="primary"
+          data-testid="two-factor-use-authenticator"
+          @click="openSetup"
+        >
           {{ $t('pages.account.twoFactor.useAuthenticator') }}
         </BrandButton>
       </div>
@@ -75,6 +85,7 @@ const {
 
     <el-dialog
       :model-value="setupVisible"
+      data-testid="two-factor-setup-dialog"
       :title="$t('pages.account.twoFactor.setupHeader')"
       width="min(90vw, 520px)"
       :close-on-click-modal="false"
@@ -90,6 +101,7 @@ const {
             <el-input
               id="tf-setup-password"
               v-model="setupPassword.password"
+              data-testid="two-factor-setup-password"
               type="password"
               show-password
               autocomplete="current-password"
@@ -103,6 +115,7 @@ const {
               v-if="setupPasswordErrors.password"
               id="tf-setup-password-error"
               class="ca-field__error"
+              data-testid="two-factor-setup-password-error"
               >{{ setupPasswordErrors.password }}</small
             >
           </div>
@@ -136,29 +149,46 @@ const {
             <el-input
               id="tf-setup-code"
               v-model="setupCode.code"
+              data-testid="two-factor-setup-code"
               inputmode="numeric"
               autocomplete="one-time-code"
               :maxlength="TWO_FACTOR_CODE_MAX_LENGTH"
               :aria-invalid="!!setupCodeErrors.code"
               :aria-describedby="setupCodeErrors.code ? 'tf-setup-code-error' : undefined"
             />
-            <small v-if="setupCodeErrors.code" id="tf-setup-code-error" class="ca-field__error">{{
-              setupCodeErrors.code
-            }}</small>
+            <small
+              v-if="setupCodeErrors.code"
+              id="tf-setup-code-error"
+              class="ca-field__error"
+              data-testid="two-factor-setup-code-error"
+              >{{ setupCodeErrors.code }}</small
+            >
           </div>
         </template>
 
-        <p v-if="errorMessage" class="ca-form-alert acc-form__alert" role="alert">
+        <p
+          v-if="errorMessage"
+          class="ca-form-alert acc-form__alert"
+          role="alert"
+          data-testid="two-factor-setup-error"
+        >
           {{ errorMessage }}
         </p>
         <div class="acc-form__actions">
-          <BrandButton variant="link" type="button" @click="closeSetup">{{
-            $t('common.cancel')
-          }}</BrandButton>
+          <BrandButton
+            variant="link"
+            type="button"
+            data-testid="two-factor-setup-cancel"
+            @click="closeSetup"
+            >{{ $t('common.cancel') }}</BrandButton
+          >
           <BrandButton
             variant="primary"
             type="submit"
             :loading="beginSetup.isPending.value || confirmSetup.isPending.value"
+            :data-testid="
+              setupStep === 'password' ? 'two-factor-setup-continue' : 'two-factor-setup-activate'
+            "
           >
             {{
               setupStep === 'password'
@@ -172,6 +202,7 @@ const {
 
     <el-dialog
       :model-value="disableVisible"
+      data-testid="two-factor-disable-dialog"
       :title="$t('pages.account.twoFactor.disableHeader')"
       width="min(90vw, 460px)"
       :close-on-click-modal="false"
@@ -186,6 +217,7 @@ const {
           <el-input
             id="tf-disable-password"
             v-model="disableDraft.password"
+            data-testid="two-factor-disable-password"
             type="password"
             show-password
             autocomplete="current-password"
@@ -197,6 +229,7 @@ const {
             v-if="disableErrors.password"
             id="tf-disable-password-error"
             class="ca-field__error"
+            data-testid="two-factor-disable-password-error"
             >{{ disableErrors.password }}</small
           >
         </div>
@@ -207,24 +240,39 @@ const {
           <el-input
             id="tf-disable-code"
             v-model="disableDraft.code"
+            data-testid="two-factor-disable-code"
             inputmode="numeric"
             autocomplete="one-time-code"
             :maxlength="TWO_FACTOR_CODE_MAX_LENGTH"
             :aria-invalid="!!disableErrors.code"
             :aria-describedby="disableErrors.code ? 'tf-disable-code-error' : undefined"
           />
-          <small v-if="disableErrors.code" id="tf-disable-code-error" class="ca-field__error">{{
-            disableErrors.code
-          }}</small>
+          <small
+            v-if="disableErrors.code"
+            id="tf-disable-code-error"
+            class="ca-field__error"
+            data-testid="two-factor-disable-code-error"
+            >{{ disableErrors.code }}</small
+          >
         </div>
-        <p v-if="errorMessage" class="ca-form-alert acc-form__alert" role="alert">
+        <p
+          v-if="errorMessage"
+          class="ca-form-alert acc-form__alert"
+          role="alert"
+          data-testid="two-factor-disable-error"
+        >
           {{ errorMessage }}
         </p>
         <div class="acc-form__actions">
           <BrandButton variant="link" type="button" @click="closeDisable">{{
             $t('common.cancel')
           }}</BrandButton>
-          <BrandButton variant="primary" type="submit" :loading="disable.isPending.value">
+          <BrandButton
+            variant="primary"
+            type="submit"
+            :loading="disable.isPending.value"
+            data-testid="two-factor-disable-submit"
+          >
             {{ $t('pages.account.twoFactor.useEmail') }}
           </BrandButton>
         </div>

@@ -25,6 +25,11 @@ conventions that this file leaves out, and each failure names the rule it guards
 - Admin tables: bind each `useServerTable` column filter to the `DataTable` `search` box or to a
   `ColumnSearch`, `ColumnFilterSelect` or `ColumnFilterDate` inside it, and pass page-owned filters as
   `extraFilters`; build row actions with `RowActions` (no per-action colours).
+- Elements the end-to-end suite drives carry a literal kebab-case `data-testid` named after their component
+  (`login-submit`), the same on every item of a list. Keyed ones: `page-<route>` (set on `main` by the
+  layouts), `nav-<route>` on navigation links, `option-<value>` on `el-option` and `row-action-<key>` from
+  `RowActions`. On an Element Plus date picker it goes on the field around it, since the picker hands it to
+  its teleported panel. Rename one only together with `tests/e2e`.
 
 ## Tests
 

@@ -1,27 +1,38 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
 /**
- * Opens an Element Plus select, given its combobox, and picks the option with exactly that name.
- * The click goes to the box around the combobox, since its placeholder covers the input.
+ * Opens an Element Plus select, given the element that carries its test id, and picks the option
+ * whose test id is `option-{value}`. The option list is teleported, so it is searched in the page.
  */
-export async function chooseOption(select: Locator, option: string): Promise<void> {
-  await select.locator('xpath=ancestor::div[contains(@class, "el-select__wrapper")][1]').click()
-  await select.page().getByRole('option', { name: option, exact: true }).click()
+export async function chooseOption(select: Locator, value: string): Promise<void> {
+  await select.click()
+  await select.page().getByTestId(`option-${value}`).filter({ visible: true }).click()
 }
 
 /**
- * Ticks or unticks an Element Plus checkbox. Its native input is hidden, so the click goes to the
- * label that wraps it, the way a person toggles it.
+ * Ticks or unticks an Element Plus checkbox or radio, given the element that carries its test id.
+ * Its native input is hidden, so the click goes to that element, the way a person toggles it.
  */
 export async function setChecked(checkbox: Locator, checked: boolean): Promise<void> {
-  if ((await checkbox.isChecked()) !== checked) {
-    await checkbox.locator('xpath=ancestor::label[1]').click()
+  const input = checkbox.locator('input')
+  if ((await input.isChecked()) !== checked) {
+    await checkbox.click()
   }
-  await (checked ? expect(checkbox).toBeChecked() : expect(checkbox).not.toBeChecked())
+  await (checked ? expect(input).toBeChecked() : expect(input).not.toBeChecked())
 }
 
-/** Types a `DD/MM/YYYY` date or `DD/MM/YYYY HH:mm` moment into an Element Plus picker. */
-export async function fillPicker(input: Locator, value: string): Promise<void> {
+/** Expects the Element Plus checkbox or radio that carries a test id to be ticked or not. */
+export async function expectChecked(checkbox: Locator, checked: boolean): Promise<void> {
+  const input = checkbox.locator('input')
+  await (checked ? expect(input).toBeChecked() : expect(input).not.toBeChecked())
+}
+
+/**
+ * Types a `DD/MM/YYYY` date or `DD/MM/YYYY HH:mm` moment into an Element Plus picker, given the
+ * field that holds it: a test id on the picker itself would land on its teleported panel.
+ */
+export async function fillPicker(field: Locator, value: string): Promise<void> {
+  const input = field.locator('input').first()
   await input.fill(value)
   await input.press('Enter')
 }
@@ -34,25 +45,26 @@ export function notification(page: Page, message: string | RegExp): Locator {
   return page.locator('.el-notification[role="alert"]').filter({ hasText: message }).last()
 }
 
-/** The confirmation box or dialog titled `title`. */
-export function dialog(page: Page, title: string | RegExp): Locator {
-  return page.getByRole('dialog', { name: title })
+/** The open confirmation box (`useActionConfirm` or `useDeleteConfirm`). */
+export function messageBox(page: Page): Locator {
+  return page.locator('.el-message-box').filter({ visible: true })
 }
 
-/** Confirms the confirmation box titled `title` with its `confirm` button. */
-export async function confirm(page: Page, title: string, confirm: string): Promise<void> {
-  const box = dialog(page, title)
-  await box.getByRole('button', { name: confirm, exact: true }).click()
+/** Accepts the open confirmation box with its confirm button and waits for it to close. */
+export async function confirm(page: Page): Promise<void> {
+  const box = messageBox(page)
+  await box.locator('.el-message-box__btns .el-button--primary').click()
   await expect(box).toBeHidden()
 }
 
 /**
- * Turns an Element Plus switch on or off. Its native input is hidden and often unnamed, so the
- * click goes to the box around it, the way a person flips it.
+ * Turns an Element Plus switch on or off, given the element that carries its test id. Its native
+ * input is hidden, so the click goes to that element, the way a person flips it.
  */
 export async function setSwitch(toggle: Locator, on: boolean): Promise<void> {
-  if ((await toggle.getAttribute('aria-checked')) !== String(on)) {
-    await toggle.locator('xpath=ancestor::div[contains(@class, "el-switch")][1]').click()
+  const input = toggle.locator('input')
+  if ((await input.getAttribute('aria-checked')) !== String(on)) {
+    await toggle.click()
   }
-  await expect(toggle).toHaveAttribute('aria-checked', String(on))
+  await expect(input).toHaveAttribute('aria-checked', String(on))
 }

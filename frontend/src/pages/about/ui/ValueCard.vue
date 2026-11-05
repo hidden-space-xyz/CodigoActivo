@@ -8,10 +8,12 @@ defineProps<{
 </script>
 
 <template>
-  <div class="value-card">
+  <div class="value-card" data-testid="value-card">
     <div class="value-card__icon" :style="{ background: value.soft }">{{ value.icon }}</div>
-    <div class="value-card__title">{{ $t(value.titleKey) }}</div>
-    <div class="value-card__desc">{{ $t(value.descriptionKey) }}</div>
+    <div class="value-card__title" data-testid="value-card-title">{{ $t(value.titleKey) }}</div>
+    <div class="value-card__desc" data-testid="value-card-description">
+      {{ $t(value.descriptionKey) }}
+    </div>
   </div>
 </template>
 

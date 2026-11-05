@@ -1,6 +1,7 @@
 import { registerUnverified } from '../../support/api/accounts'
 import { PASSWORD } from '../../support/config/environment'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { LoginPage, signInThroughPages, TwoFactorPage } from '../../support/pages/login-page'
 import { SiteHeader } from '../../support/pages/site-header'
 
@@ -36,7 +37,7 @@ test.describe('login', () => {
     await signInThroughPages(page, mailbox, account)
 
     await expect(page).toHaveURL('/account')
-    await expect(page.getByRole('heading', { name: 'Mi área de usuario' })).toBeVisible()
+    await expect(page.getByTestId('page-account')).toBeVisible()
   })
 
   test('a wrong password is refused without telling whether the account exists', async ({
@@ -49,7 +50,7 @@ test.describe('login', () => {
 
     await login.submitPassword({ email: account.email, password: `${PASSWORD}-wrong` })
 
-    await expect(login.error).toContainText('No hemos podido iniciar sesión')
+    await expect(login.error).toHaveText(t('pages.login.error'))
     await expect(page).toHaveURL('/login')
   })
 
@@ -60,7 +61,7 @@ test.describe('login', () => {
 
     await login.submitPassword({ email: person.email, password: PASSWORD })
 
-    await expect(login.error).toHaveText('Tu cuenta aún no ha sido verificada.')
+    await expect(login.error).toHaveText(t('errors.UserAccountPendingVerification'))
   })
 
   test('a wrong code keeps the person on the second step', async ({ page, accounts }) => {
@@ -71,10 +72,12 @@ test.describe('login', () => {
 
     const twoFactor = new TwoFactorPage(page)
     await expect(twoFactor.heading).toBeVisible()
-    await expect(page.getByText(/Te hemos enviado un código de 6 dígitos a/)).toBeVisible()
+    await expect(page.getByTestId('login-two-factor-intro')).toContainText(
+      t('pages.loginTwoFactor.emailIntroBefore'),
+    )
     await twoFactor.enter('000000')
 
-    await expect(twoFactor.error).toHaveText('El código no es válido o ha caducado.')
+    await expect(twoFactor.error).toHaveText(t('errors.TwoFactorCodeInvalid'))
     await expect(page).toHaveURL('/login/verify')
   })
 

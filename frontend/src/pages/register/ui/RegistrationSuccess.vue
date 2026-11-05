@@ -20,7 +20,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div class="reg-success">
+  <div class="reg-success" data-testid="register-success">
     <div class="reg-success__check" aria-hidden="true">✓</div>
     <h2 class="reg-success__title">{{ $t('pages.register.success.title') }}</h2>
     <p v-if="minorCount > 0" class="reg-success__role">

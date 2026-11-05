@@ -25,13 +25,19 @@ const table = useEventRatings(
       :error="table.isError.value"
       :empty="table.total.value === 0 && !table.loading.value"
       :empty-text="$t('pages.admin.eventDetail.opinions.empty')"
+      data-testid="event-opinions-state"
     >
-      <p class="count">
+      <p class="count" data-testid="event-opinions-count">
         {{ $t('pages.admin.eventDetail.opinions.count', table.total.value) }}
       </p>
 
       <ul class="opinions">
-        <li v-for="rating in table.items.value" :key="rating.id" class="opinion">
+        <li
+          v-for="rating in table.items.value"
+          :key="rating.id"
+          class="opinion"
+          data-testid="event-opinion"
+        >
           <div class="opinion__head">
             <span class="opinion__author">{{ $t('pages.admin.eventDetail.opinions.author') }}</span>
             <template v-if="rating.score !== null">
@@ -50,8 +56,8 @@ const table = useEventRatings(
 
           <dl v-if="ratingAnswers(rating).length > 0" class="opinion__answers">
             <template v-for="answer in ratingAnswers(rating)" :key="answer.labelKey">
-              <dt>{{ $t(answer.labelKey) }}</dt>
-              <dd>{{ answer.value }}</dd>
+              <dt data-testid="event-opinion-question">{{ $t(answer.labelKey) }}</dt>
+              <dd data-testid="event-opinion-answer">{{ answer.value }}</dd>
             </template>
           </dl>
           <p v-else class="opinion__no-answers">

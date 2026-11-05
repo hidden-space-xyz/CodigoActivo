@@ -2,7 +2,10 @@ import { PublicEvents } from '../../support/api/public'
 import { uniqueLetters } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
 import { cardDate, dayRangeText, dayText } from '../../support/data/formats'
+import { t } from '../../support/i18n'
 import { HomePage } from '../../support/pages/public/home-page'
+
+const SLOGAN = `${t('pages.home.hero.titleLine2')} ${t('pages.home.hero.titleHighlight')}`
 
 test.describe('home page', () => {
   let events: PublicEvents
@@ -19,12 +22,12 @@ test.describe('home page', () => {
     const home = new HomePage(page)
     await home.goto()
 
-    await expect(home.title).toContainText('para tod@s')
-    await expect(home.main.getByRole('link', { name: 'Ver eventos' })).toBeHidden()
-    await home.main.getByRole('link', { name: 'Regístrate', exact: true }).click()
+    await expect(home.title).toContainText(SLOGAN)
+    await expect(home.main.getByTestId('home-hero-events')).toBeHidden()
+    await home.main.getByTestId('home-hero-register').click()
     await expect(page).toHaveURL('/register')
     await home.goto()
-    await home.main.getByRole('link', { name: 'Conócenos', exact: true }).click()
+    await home.main.getByTestId('home-hero-about').click()
     await expect(page).toHaveURL('/about')
   })
 
@@ -33,9 +36,9 @@ test.describe('home page', () => {
     const home = new HomePage(page)
     await home.goto()
 
-    await expect(home.title).toContainText('para tod@s')
-    await expect(home.main.getByRole('link', { name: 'Regístrate' })).toBeHidden()
-    await home.main.getByRole('link', { name: 'Ver eventos', exact: true }).click()
+    await expect(home.title).toContainText(SLOGAN)
+    await expect(home.main.getByTestId('home-hero-register')).toBeHidden()
+    await home.main.getByTestId('home-hero-events').click()
     await expect(page).toHaveURL('/events')
   })
 
@@ -48,9 +51,13 @@ test.describe('home page', () => {
     await home.goto()
 
     const card = home.news.card(item.title)
-    await expect(card.getByRole('time')).toHaveText(cardDate('Publicada', dayText(item.createdAt)))
+    await expect(card.getByTestId('card-date')).toHaveText(
+      cardDate(t('entities.newsItem.card.dateLabel'), dayText(item.createdAt)),
+    )
     await expect(card).toContainText(item.subtitle)
-    await expect(card.getByRole('img', { name: item.title })).toBeVisible()
+    const thumbnail = card.getByTestId('list-thumbnail-image')
+    await expect(thumbnail).toBeVisible()
+    await expect(thumbnail).toHaveAccessibleName(item.title)
     await card.click()
     await expect(page).toHaveURL(`/news/${item.id}`)
     await home.goto()
@@ -70,14 +77,17 @@ test.describe('home page', () => {
     await home.goto()
 
     for (const [event, status] of [
-      [open, 'Inscripción abierta'],
-      [soon, 'Próximamente'],
-      [early, 'Inscripción anticipada'],
+      [open, t('entities.event.status.signupOpen')],
+      [soon, t('entities.event.status.upcoming')],
+      [early, t('entities.event.status.earlySignupOpen')],
     ] as const) {
       const card = home.events.card(event.title)
       await expect(card).toHaveAttribute('href', `/events/${event.id}`)
-      await expect(card.getByRole('time')).toHaveText(
-        cardDate('Fecha', dayRangeText(event.eventStartsAt, event.eventEndsAt)),
+      await expect(card.getByTestId('card-date')).toHaveText(
+        cardDate(
+          t('entities.event.card.dateLabel'),
+          dayRangeText(event.eventStartsAt, event.eventEndsAt),
+        ),
       )
       await expect(card).toContainText(status)
       await expect(card).toContainText(category.name)

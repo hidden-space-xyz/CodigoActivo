@@ -98,7 +98,7 @@ onBeforeUnmount(revokeObjectUrl)
 </script>
 
 <template>
-  <div class="thumb">
+  <div class="thumb" data-testid="thumbnail-field">
     <div class="thumb__preview" :class="{ 'thumb__preview--invalid': invalid }">
       <img
         v-if="previewUrl"
@@ -125,7 +125,9 @@ onBeforeUnmount(revokeObjectUrl)
         size="small"
         @click="clearSelection"
       />
-      <span v-if="fileName" class="thumb__name">{{ fileName }}</span>
+      <span v-if="fileName" class="thumb__name" data-testid="thumbnail-file-name">{{
+        fileName
+      }}</span>
     </div>
 
     <small v-if="sizeError" class="ca-field__error">{{ sizeError }}</small>
@@ -137,6 +139,7 @@ onBeforeUnmount(revokeObjectUrl)
       type="file"
       :accept="IMAGE_UPLOAD_ACCEPT"
       class="thumb__input"
+      data-testid="thumbnail-input"
       aria-hidden="true"
       tabindex="-1"
       @change="onChange"

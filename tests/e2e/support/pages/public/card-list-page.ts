@@ -3,10 +3,15 @@ import { expect, type Locator, type Page, type Request } from '@playwright/test'
 /** A public list of cards with a search box: the news archive or the resources. */
 type CardListPath = '/news' | '/resources'
 
+const CARDS: Readonly<Record<CardListPath, string>> = {
+  '/news': 'news-card',
+  '/resources': 'resource-card',
+}
+
 /**
  * The news archive (`/news`) or the resources (`/resources`): a search box, the year pills of the
- * news and a grid of cards, each a link holding the title as a level-3 heading. It records the
- * search terms the page sends to the API, so a test can tell when a search was applied.
+ * news and a grid of cards, each a link that shows the title. It records the search terms the page
+ * sends to the API, so a test can tell when a search was applied.
  */
 export class CardListPage {
   /** The main landmark of the page. */
@@ -21,13 +26,16 @@ export class CardListPage {
   /** The search terms sent to the API so far, in order. */
   readonly searches: string[] = []
 
+  private readonly name: string
+
   constructor(
     private readonly page: Page,
     private readonly path: CardListPath,
   ) {
-    this.main = page.getByRole('main')
-    this.search = this.main.getByRole('textbox', { name: 'Buscar por título o subtítulo' })
-    this.years = this.main.getByRole('group', { name: 'Filtrar por año' })
+    this.name = path.slice(1)
+    this.main = page.getByTestId(`page-${this.name}`)
+    this.search = this.main.getByTestId(`${this.name}-search`)
+    this.years = this.main.getByTestId('year-filter')
     page.on('request', (request) => {
       this.record(request)
     })
@@ -36,19 +44,18 @@ export class CardListPage {
   /** Opens the page and waits for the list. */
   async goto(): Promise<void> {
     await this.page.goto(this.path)
-    await expect(this.main.getByText('Cargando…')).toBeHidden()
+    await expect(this.main).toBeVisible()
+    await expect(this.main.getByTestId(`${this.name}-loading`)).toBeHidden()
   }
 
   /** The card of the item titled `title`. */
   card(title: string): Locator {
-    return this.main
-      .getByRole('link')
-      .filter({ has: this.page.getByRole('heading', { level: 3, name: title, exact: true }) })
+    return this.main.getByTestId(CARDS[this.path]).filter({ hasText: title })
   }
 
   /** The pill of `year`. */
   year(year: string): Locator {
-    return this.years.getByRole('button', { name: year, exact: true })
+    return this.years.getByTestId('year-filter-pill').filter({ hasText: year })
   }
 
   /** Types `text` into the search box and applies it with Enter. */

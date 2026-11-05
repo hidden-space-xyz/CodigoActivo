@@ -98,11 +98,16 @@ function onSignup(): void {
 </script>
 
 <template>
-  <article class="act" :class="{ 'act--mine': activity.assignment || activity.household.length }">
+  <article
+    data-testid="activity-card"
+    class="act"
+    :class="{ 'act--mine': activity.assignment || activity.household.length }"
+  >
     <div class="act__head">
       <h4 class="act__title">{{ activity.title }}</h4>
       <el-tag
         v-if="!hasHousehold && activity.assignment"
+        data-testid="activity-card-status"
         :type="signupStatusTagType(activity.assignment.status)"
       >
         {{ activity.assignment.status }}
@@ -119,7 +124,12 @@ function onSignup(): void {
     <p class="act__desc">{{ activity.description }}</p>
 
     <ul v-if="hasHousehold && activity.household.length" class="act__members">
-      <li v-for="member in activity.household" :key="member.userId" class="act__member">
+      <li
+        v-for="member in activity.household"
+        :key="member.userId"
+        data-testid="activity-card-member"
+        class="act__member"
+      >
         <span class="act__member-info">
           <b>{{ member.name }}</b> · {{ member.roleName }}
           <el-tag :type="signupStatusTagType(member.status)" class="act__member-tag">
@@ -128,6 +138,7 @@ function onSignup(): void {
         </span>
         <button
           v-if="open"
+          data-testid="activity-card-member-withdraw"
           type="button"
           class="act__member-remove"
           :aria-label="$t('pages.eventDetail.card.unassignMember')"
@@ -140,29 +151,34 @@ function onSignup(): void {
       </li>
     </ul>
 
-    <p v-if="selectedRoleHighDemand" class="act__demand">
+    <p v-if="selectedRoleHighDemand" data-testid="activity-card-high-demand" class="act__demand">
       <AppIcon name="exclamation-triangle" />
       <span>{{ $t('pages.eventDetail.highDemandWarning') }}</span>
     </p>
 
     <div class="act__actions">
       <template v-if="!authenticated">
-        <BrandButton variant="ghost" @click="emit('login')">
+        <BrandButton data-testid="activity-card-login" variant="ghost" @click="emit('login')">
           {{ $t('pages.eventDetail.card.loginToSignup') }}
         </BrandButton>
       </template>
 
       <template v-else-if="hasHousehold">
         <template v-if="!open">
-          <span v-if="!activity.household.length || activity.started" class="act__note">
+          <span
+            v-if="!activity.household.length || activity.started"
+            data-testid="activity-card-note"
+            class="act__note"
+          >
             {{ closedMessage }}
           </span>
         </template>
-        <span v-else-if="householdComplete" class="act__note">
+        <span v-else-if="householdComplete" data-testid="activity-card-note" class="act__note">
           {{ $t('pages.eventDetail.household.allInscribed') }}
         </span>
         <ActionButton
           v-else
+          data-testid="activity-card-household"
           :label="
             activity.household.length
               ? $t('pages.eventDetail.card.enrollAnother')
@@ -176,38 +192,47 @@ function onSignup(): void {
       </template>
 
       <template v-else-if="activity.assignment">
-        <span class="act__note">
+        <span data-testid="activity-card-note" class="act__note">
           {{ $t('pages.eventDetail.card.enrolledAs', { role: activity.assignment.roleName }) }}
         </span>
         <ActionButton
           v-if="open"
+          data-testid="activity-card-withdraw"
           :label="$t('pages.eventDetail.card.unassignSelf')"
           size="small"
           :loading="busy"
           @click="emit('unassign')"
         />
-        <span v-else class="act__note">{{ lockedMessage }}</span>
+        <span v-else data-testid="activity-card-note" class="act__note">{{ lockedMessage }}</span>
       </template>
       <template v-else-if="!open">
-        <span class="act__note">{{ closedMessage }}</span>
+        <span data-testid="activity-card-note" class="act__note">{{ closedMessage }}</span>
       </template>
       <template v-else>
-        <span v-if="rolesLoading" class="act__note">{{
+        <span v-if="rolesLoading" data-testid="activity-card-note" class="act__note">{{
           $t('pages.eventDetail.card.loadingRoles')
         }}</span>
-        <span v-else-if="roles.length === 0" class="act__note">
+        <span v-else-if="roles.length === 0" data-testid="activity-card-note" class="act__note">
           {{ $t('pages.eventDetail.activities.rolesLoadError') }}
         </span>
         <template v-else>
           <el-select
             v-if="roles.length > 1"
             v-model="selectedRoleId"
+            data-testid="activity-card-role"
             :placeholder="$t('pages.eventDetail.chooseRole')"
             class="act__role-select"
           >
-            <el-option v-for="role in roles" :key="role.id" :label="role.name" :value="role.id" />
+            <el-option
+              v-for="role in roles"
+              :key="role.id"
+              :data-testid="`option-${role.id}`"
+              :label="role.name"
+              :value="role.id"
+            />
           </el-select>
           <ActionButton
+            data-testid="activity-card-sign-up"
             :label="$t('pages.eventDetail.card.enrollSelf')"
             type="primary"
             size="small"

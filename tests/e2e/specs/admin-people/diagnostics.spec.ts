@@ -1,9 +1,12 @@
 import { diagnosticsOfTrace, lockOutWithWrongPasswords } from '../../support/api/admin-people'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { AdminShell } from '../../support/pages/admin-shell'
 import { DataTable } from '../../support/ui/data-table'
 
 const LOCKOUT_MESSAGE = 'An account was locked after 5 wrong passwords'
+const LOCKOUT_EVENT = 'AccountLockoutLog'
+const LOCKOUT_CATEGORY = `CodigoActivo.Application.Accounts.${LOCKOUT_EVENT}`
 
 test.describe('diagnostic log', () => {
   test('a password lockout is logged as a warning with its detail and its trace', async ({
@@ -20,34 +23,48 @@ test.describe('diagnostic log', () => {
     await page.goto(`/admin/diagnostics?traceId=${traceId}`)
 
     const shell = new AdminShell(page)
-    await expect(shell.heading('Diagnóstico')).toBeVisible()
+    await expect(shell.view('admin-diagnostics')).toBeVisible()
     const log = new DataTable(page)
-    await expect(log.chips.getByText(`Traza: ${traceId}`, { exact: true })).toBeVisible()
+    await expect(
+      log.chip(t('pages.admin.diagnostics.filters.trace', { trace: traceId })),
+    ).toBeVisible()
+    const warning = t('pages.admin.diagnostics.levels.Warning')
     const lockout = log.row(LOCKOUT_MESSAGE)
-    await expect(lockout).toContainText('Aviso')
-    await expect(lockout).toContainText('AccountLockoutLog')
+    await expect(lockout).toContainText(warning)
+    await expect(lockout).toContainText(LOCKOUT_EVENT)
 
-    await log.filterBy('Nivel', 'Error')
-    await expect(log.root.getByText('Ningún resultado coincide con los filtros.')).toBeVisible()
-    await log.filterBy('Nivel', 'Aviso')
-    await expect(log.chips.getByText('Nivel: Aviso', { exact: true })).toBeVisible()
+    await log.filterBy('diagnostics-filter-level', 'Error')
+    await expect(log.root.getByTestId('data-table-empty')).toHaveText(t('table.noMatches'))
+    await log.filterBy('diagnostics-filter-level', 'Warning')
+    await expect(
+      log.chip(
+        t('table.filterChip', {
+          label: t('pages.admin.diagnostics.columns.level'),
+          value: warning,
+        }),
+      ),
+    ).toBeVisible()
 
-    await lockout.getByRole('button', { name: 'Ver detalle' }).click()
+    await lockout.getByTestId('row-action-detail').click()
 
-    const detail = page.getByRole('dialog', { name: 'Detalle de la entrada' })
+    const detail = page.getByTestId('diagnostic-detail-dialog')
     await expect(detail).toContainText(LOCKOUT_MESSAGE)
     await expect(detail).toContainText(traceId)
-    await expect(detail).toContainText('CodigoActivo.Application.Accounts.AccountLockoutLog')
-    await expect(detail.getByText('Esta entrada no tiene excepción.')).toBeVisible()
+    await expect(detail).toContainText(LOCKOUT_CATEGORY)
+    await expect(detail.getByTestId('diagnostic-detail-exception')).toHaveText(
+      t('pages.admin.diagnostics.detail.noException'),
+    )
     await page.keyboard.press('Escape')
     await expect(detail).toBeHidden()
 
-    await lockout.getByRole('button', { name: 'Ver la auditoría de esta traza' }).click()
+    await lockout.getByTestId('row-action-audit').click()
 
     await expect(page).toHaveURL(`/admin/audit?traceId=${traceId}`)
     const audit = new DataTable(page)
-    await expect(audit.chips.getByText(`Traza: ${traceId}`, { exact: true })).toBeVisible()
-    await expect(audit.row('Iniciar sesión')).toContainText('Rechazado')
+    await expect(audit.chip(t('pages.admin.audit.filters.trace', { trace: traceId }))).toBeVisible()
+    await expect(audit.row(t('pages.admin.audit.actions.Login'))).toContainText(
+      t('pages.admin.audit.outcomes.Rejected'),
+    )
   })
 
   test('the trace filter lives in the address and its chip removes it', async ({
@@ -58,14 +75,14 @@ test.describe('diagnostic log', () => {
     const page = await pageAs(admin)
     await page.goto(`/admin/diagnostics?traceId=${traceId.toUpperCase()}`)
     const log = new DataTable(page)
-    const chip = `Traza: ${traceId}`
-    await expect(log.chips.getByText(chip, { exact: true })).toBeVisible()
-    await expect(log.root.getByText('Ningún resultado coincide con los filtros.')).toBeVisible()
+    const chip = t('pages.admin.diagnostics.filters.trace', { trace: traceId })
+    await expect(log.chip(chip)).toHaveText(chip)
+    await expect(log.root.getByTestId('data-table-empty')).toHaveText(t('table.noMatches'))
 
-    await log.chips.getByRole('button', { name: `Quitar el filtro «${chip}»` }).click()
+    await log.chip(chip).getByTestId('data-table-chip-remove').click()
 
     await expect(page).toHaveURL('/admin/diagnostics')
     await expect(log.chips).toBeHidden()
-    await expect(log.root.getByRole('button', { name: 'Filtrar por Nivel' })).toBeVisible()
+    await expect(log.root.getByTestId('diagnostics-filter-level')).toBeVisible()
   })
 })

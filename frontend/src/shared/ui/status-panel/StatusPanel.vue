@@ -26,15 +26,16 @@ defineProps<{
     >
       {{ state === 'success' ? '✓' : '!' }}
     </div>
-    <h2 v-if="title" class="status-panel__title">{{ title }}</h2>
+    <h2 v-if="title" class="status-panel__title" data-testid="status-panel-title">{{ title }}</h2>
     <p
       class="status-panel__text"
       :role="state === 'error' ? 'alert' : undefined"
       :aria-live="state === 'pending' ? 'polite' : undefined"
+      data-testid="status-panel-text"
     >
       {{ text }}
     </p>
-    <p v-if="hint" class="status-panel__hint">{{ hint }}</p>
+    <p v-if="hint" class="status-panel__hint" data-testid="status-panel-hint">{{ hint }}</p>
     <slot />
     <div v-if="$slots.actions" class="status-panel__actions">
       <slot name="actions" />

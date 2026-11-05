@@ -1,8 +1,12 @@
+import { CATALOG } from '../../support/api/catalogs'
 import { uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import {
   ActivityFormDialog,
   EventAdminPage,
+  MODALITY_LABELS,
+  ROLE_LABELS,
 } from '../../support/pages/admin-events/event-admin-page'
 import { pickerMoment } from '../../support/data/formats'
 import { dayFromToday } from '../../support/data/time'
@@ -29,12 +33,16 @@ test.describe('event activities admin', () => {
 
     await eventPage.goto(event.id, event.title)
 
-    await expect(eventPage.main.getByText(event.subtitle, { exact: true })).toBeVisible()
-    await expect(eventPage.summaryValue('Actividades')).toHaveText('2')
-    await expect(eventPage.summaryValue('Líder')).toHaveText('1')
-    await expect(eventPage.summaryValue('Participante')).toHaveText('0')
-    await expect(eventPage.summaryValue('Voluntario')).toHaveText('0')
-    await expect(eventPage.summaryValue('Sin puntuaciones')).toHaveText('—')
+    await expect(eventPage.subtitle).toHaveText(event.subtitle)
+    await expect(eventPage.summaryValue(t('pages.admin.eventDetail.tabs.activities'))).toHaveText(
+      '2',
+    )
+    await expect(eventPage.summaryValue(ROLE_LABELS.leader)).toHaveText('1')
+    await expect(eventPage.summaryValue(ROLE_LABELS.participant)).toHaveText('0')
+    await expect(eventPage.summaryValue(ROLE_LABELS.volunteer)).toHaveText('0')
+    await expect(
+      eventPage.summaryValue(t('pages.admin.eventDetail.summary.ratings', { count: 0 })),
+    ).toHaveText('—')
     await expect(eventPage.activities.row(activity.title)).toBeVisible()
   })
 
@@ -45,16 +53,17 @@ test.describe('event activities admin', () => {
   }) => {
     const event = await seed.event({ startsIn: EVENT_DAY })
     const title = uniqueTitle('Taller')
+    const location = 'Aula Magna'
     const page = await pageAs(admin)
     const eventPage = new EventAdminPage(page)
     await eventPage.goto(event.id, event.title)
 
     await eventPage.newActivity.click()
-    const dialog = new ActivityFormDialog(page, 'Nueva actividad')
+    const dialog = new ActivityFormDialog(page)
     await dialog.title.fill(title)
     await dialog.description.fill('Construimos un robot seguidor de líneas.')
-    await dialog.chooseModality('Presencial')
-    await dialog.location.fill('Aula Magna')
+    await dialog.chooseModality('onSite')
+    await dialog.location.fill(location)
     await fillPicker(dialog.startsAt, pickerMoment(dayFromToday(EVENT_DAY), 10))
     await fillPicker(dialog.endsAt, pickerMoment(dayFromToday(EVENT_DAY), 12, 30))
     await dialog.capacity('leader').fill('2')
@@ -63,15 +72,19 @@ test.describe('event activities admin', () => {
     await pickThumbnail(dialog.root)
     await dialog.save.click()
 
-    await expect(notification(page, 'Actividad creada.')).toBeVisible()
+    await expect(
+      notification(page, t('pages.admin.eventDetail.toast.activityCreated')),
+    ).toBeVisible()
     await expect(dialog.root).toBeHidden()
     const row = eventPage.activities.row(title)
-    await expect(row).toContainText('Aula Magna')
-    await expect(row).toContainText('Presencial')
-    await expect(eventPage.summaryValue('Actividades')).toHaveText('1')
+    await expect(row).toContainText(location)
+    await expect(row).toContainText(MODALITY_LABELS.onSite)
+    await expect(eventPage.summaryValue(t('pages.admin.eventDetail.tabs.activities'))).toHaveText(
+      '1',
+    )
 
-    await eventPage.activities.rowAction(title, 'Editar')
-    const saved = new ActivityFormDialog(page, 'Editar actividad')
+    await eventPage.activities.rowAction(title, 'edit')
+    const saved = new ActivityFormDialog(page)
     await expect(saved.capacity('leader')).toHaveValue('2')
     await expect(saved.capacity('participant')).toHaveValue('15')
     await expect(saved.capacity('volunteer')).toHaveValue('4')
@@ -83,19 +96,23 @@ test.describe('event activities admin', () => {
     const eventPage = new EventAdminPage(page)
     await eventPage.goto(event.id, event.title)
     await eventPage.newActivity.click()
-    const dialog = new ActivityFormDialog(page, 'Nueva actividad')
+    const dialog = new ActivityFormDialog(page)
 
     await dialog.save.click()
 
-    for (const message of [
-      'La modalidad es obligatoria.',
-      'La ubicación es obligatoria.',
-      'La fecha y hora de inicio son obligatorias.',
-      'La fecha y hora de fin son obligatorias.',
-      'La imagen es obligatoria.',
-    ]) {
-      await expect(dialog.root.getByText(message, { exact: true })).toBeVisible()
+    for (const [error, message] of [
+      ['activity-form-modality-error', 'modalityRequired'],
+      ['activity-form-location-error', 'locationRequired'],
+      ['activity-form-start-error', 'startRequired'],
+      ['activity-form-end-error', 'endRequired'],
+    ] as const) {
+      await expect(dialog.root.getByTestId(error)).toHaveText(
+        t(`pages.admin.eventDetail.activities.form.problems.${message}`),
+      )
     }
+    await expect(dialog.root.getByTestId('thumbnail-field')).toContainText(
+      t('common.imageRequired'),
+    )
     await expect(dialog.title).toHaveAttribute('aria-invalid', 'true')
     await expect(dialog.description).toHaveAttribute('aria-invalid', 'true')
     await expect(dialog.root).toBeVisible()
@@ -105,21 +122,24 @@ test.describe('event activities admin', () => {
     const event = await seed.event({ startsIn: EVENT_DAY })
     const activity = await seed.activity(event, { location: 'León' })
     const renamed = uniqueTitle('Taller renombrado')
+    const moved = 'Biblioteca municipal'
     const page = await pageAs(admin)
     const eventPage = new EventAdminPage(page)
     await eventPage.goto(event.id, event.title)
 
-    await eventPage.activities.rowAction(activity.title, 'Editar')
-    const dialog = new ActivityFormDialog(page, 'Editar actividad')
+    await eventPage.activities.rowAction(activity.title, 'edit')
+    const dialog = new ActivityFormDialog(page)
     await expect(dialog.title).toHaveValue(activity.title)
     await expect(dialog.capacity('participant')).toHaveValue('10')
     await dialog.title.fill(renamed)
-    await dialog.location.fill('Biblioteca municipal')
+    await dialog.location.fill(moved)
     await dialog.save.click()
 
-    await expect(notification(page, 'Actividad actualizada.')).toBeVisible()
+    await expect(
+      notification(page, t('pages.admin.eventDetail.toast.activityUpdated')),
+    ).toBeVisible()
     await expect(dialog.root).toBeHidden()
-    await expect(eventPage.activities.row(renamed)).toContainText('Biblioteca municipal')
+    await expect(eventPage.activities.row(renamed)).toContainText(moved)
     await expect(eventPage.activities.row(activity.title)).toBeHidden()
   })
 
@@ -130,15 +150,17 @@ test.describe('event activities admin', () => {
     const eventPage = new EventAdminPage(page)
     await eventPage.goto(event.id, event.title)
 
-    await eventPage.activities.rowAction(activity.title, 'Eliminar')
-    await confirm(page, 'Eliminar actividad', 'Eliminar')
+    await eventPage.activities.rowAction(activity.title, 'delete')
+    await confirm(page)
 
-    await expect(notification(page, 'Actividad eliminada.')).toBeVisible()
-    await expect(eventPage.activities.row(activity.title)).toBeHidden()
     await expect(
-      eventPage.panel('Actividades').getByText('Este evento aún no tiene actividades.'),
+      notification(page, t('pages.admin.eventDetail.toast.activityDeleted')),
     ).toBeVisible()
-    await expect(eventPage.summaryValue('Actividades')).toHaveText('0')
+    await expect(eventPage.activities.row(activity.title)).toBeHidden()
+    await expect(eventPage.activities.root).toContainText(t('pages.admin.eventDetail.empty.none'))
+    await expect(eventPage.summaryValue(t('pages.admin.eventDetail.tabs.activities'))).toHaveText(
+      '0',
+    )
   })
 
   test('the modality filter keeps only the online activities', async ({ pageAs, admin, seed }) => {
@@ -150,10 +172,10 @@ test.describe('event activities admin', () => {
     await eventPage.goto(event.id, event.title)
     await expect(eventPage.activities.row(onSite.title)).toBeVisible()
 
-    await eventPage.activities.filterBy('Modalidad', 'Online')
+    await eventPage.activities.filterBy('event-detail-modality-filter', CATALOG.modalities.online)
 
     await expect(eventPage.activities.row(online.title)).toBeVisible()
     await expect(eventPage.activities.row(onSite.title)).toBeHidden()
-    await expect(eventPage.activities.count).toHaveText('1 resultado')
+    await expect(eventPage.activities.count).toHaveText(t('table.results', { n: 1 }))
   })
 })

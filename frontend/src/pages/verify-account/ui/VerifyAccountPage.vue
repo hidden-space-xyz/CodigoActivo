@@ -36,11 +36,15 @@ onMounted(() => {
           state="success"
           :title="$t('pages.verifyAccount.successTitle')"
           :text="$t('pages.verifyAccount.successText')"
+          data-testid="verify-account-success"
         >
           <template #actions>
-            <BrandButton :to="{ name: 'login' }" variant="primary">{{
-              $t('common.login')
-            }}</BrandButton>
+            <BrandButton
+              :to="{ name: 'login' }"
+              variant="primary"
+              data-testid="verify-account-login"
+              >{{ $t('common.login') }}</BrandButton
+            >
           </template>
         </StatusPanel>
 
@@ -50,6 +54,7 @@ onMounted(() => {
           :title="$t('pages.verifyAccount.errorTitle')"
           :text="errorMessage ?? $t('pages.verifyAccount.defaultError')"
           :hint="$t('pages.verifyAccount.hint')"
+          data-testid="verify-account-error"
         >
           <form class="verify-resend" @submit.prevent="resend">
             <label class="ca-field__label" for="verify-resend-email">{{

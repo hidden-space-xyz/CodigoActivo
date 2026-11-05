@@ -29,32 +29,31 @@ export class EventsPage {
   readonly category: Locator
 
   constructor(private readonly page: Page) {
-    const main = page.getByRole('main')
-    this.upcoming = this.section(main, 'Próximos eventos')
-    this.upcomingCards = this.upcoming.locator('.board').getByRole('link')
-    this.loadMore = this.upcoming.getByRole('button', { name: 'Cargar más' })
-    this.past = this.section(main, 'Eventos anteriores')
-    this.years = this.past.getByRole('group', { name: 'Filtrar por año' })
-    this.search = this.past.getByRole('textbox', { name: 'Buscar por título o subtítulo' })
-    this.category = this.past.getByRole('combobox', { name: 'Filtrar por categoría' })
+    const main = page.getByTestId('page-events')
+    this.upcoming = main.getByTestId('events-upcoming')
+    this.upcomingCards = this.upcoming.getByTestId('event-card')
+    this.loadMore = this.upcoming.getByTestId('events-more')
+    this.past = main.getByTestId('events-past')
+    this.years = this.past.getByTestId('year-filter')
+    this.search = this.past.getByTestId('events-search')
+    this.category = this.past.getByTestId('event-category-filter')
   }
 
   /** Opens the page and waits for the upcoming events. */
   async goto(): Promise<void> {
     await this.page.goto('/events')
-    await expect(this.upcoming.getByText('Cargando…')).toBeHidden()
+    await expect(this.upcoming).toBeVisible()
+    await expect(this.upcoming.getByTestId('events-loading')).toBeHidden()
   }
 
   /** The card of the event titled `title` inside `section`. */
   card(section: Locator, title: string): Locator {
-    return section
-      .getByRole('link')
-      .filter({ has: this.page.getByRole('heading', { level: 3, name: title, exact: true }) })
+    return section.getByTestId('event-card').filter({ hasText: title })
   }
 
   /** The pill of `year` among the past events. */
   year(year: string | number): Locator {
-    return this.years.getByRole('button', { name: String(year), exact: true })
+    return this.years.getByTestId('year-filter-pill').filter({ hasText: String(year) })
   }
 
   /** Loads more upcoming events, as a visitor scrolling down would, until `title` is listed. */
@@ -74,14 +73,8 @@ export class EventsPage {
     await this.search.press('Enter')
   }
 
-  /** Picks the category `name` in the past events filter. */
-  async filterPastBy(name: string): Promise<void> {
-    await chooseOption(this.category, name)
-  }
-
-  private section(main: Locator, title: string): Locator {
-    return main
-      .locator('section')
-      .filter({ has: this.page.getByRole('heading', { level: 2, name: title, exact: true }) })
+  /** Picks the category with the identifier `categoryId` in the past events filter. */
+  async filterPastBy(categoryId: string): Promise<void> {
+    await chooseOption(this.category, categoryId)
   }
 }

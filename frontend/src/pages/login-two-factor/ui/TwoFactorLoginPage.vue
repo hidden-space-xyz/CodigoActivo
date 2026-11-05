@@ -50,7 +50,7 @@ const {
         </StatusPanel>
 
         <form v-else class="two-factor-form" @submit.prevent="submit">
-          <p class="two-factor-form__intro">
+          <p class="two-factor-form__intro" data-testid="login-two-factor-intro">
             <template v-if="method === 'Authenticator'">
               {{ $t('pages.loginTwoFactor.authenticatorIntro') }}
             </template>
@@ -68,6 +68,7 @@ const {
             <el-input
               id="two-factor-code"
               v-model="form.code"
+              data-testid="login-two-factor-code"
               class="two-factor-input"
               inputmode="numeric"
               autocomplete="one-time-code"
@@ -79,11 +80,22 @@ const {
             />
           </div>
 
-          <p v-if="errorMessage" class="ca-form-alert" role="alert">
+          <p
+            v-if="errorMessage"
+            class="ca-form-alert"
+            role="alert"
+            data-testid="login-two-factor-error"
+          >
             {{ errorMessage }}
           </p>
 
-          <BrandButton type="submit" variant="primary" block :loading="isSubmitting">
+          <BrandButton
+            type="submit"
+            variant="primary"
+            block
+            :loading="isSubmitting"
+            data-testid="login-two-factor-submit"
+          >
             {{ $t('pages.loginTwoFactor.submit') }}
           </BrandButton>
 
@@ -92,6 +104,7 @@ const {
             <BrandButton
               variant="link"
               class="two-factor-resend__button"
+              data-testid="login-two-factor-resend"
               :disabled="resendCooldown > 0 || isResending"
               :loading="isResending"
               @click="resendCode"

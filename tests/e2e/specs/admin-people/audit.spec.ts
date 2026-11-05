@@ -1,6 +1,7 @@
 import { auditEntry } from '../../support/api/admin-people'
 import { PASSWORD } from '../../support/config/environment'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { AdminShell } from '../../support/pages/admin-shell'
 import { fullName } from '../../support/data/people'
 import { DataTable } from '../../support/ui/data-table'
@@ -20,30 +21,34 @@ test.describe('audit log', () => {
       (entry) => entry.entityId === person.account.id,
     )
     const page = await pageAs(initialAdmin)
-    await new AdminShell(page).open('Auditoría')
+    await new AdminShell(page).open('admin-audit')
     const log = new DataTable(page)
 
-    await log.search('Buscar por nombre o email', person.account.email)
+    await log.search(person.account.email)
 
-    await expect(log.count).toHaveText('4 resultados')
-    for (const action of ['Registrarse', 'Verificar la cuenta', 'Iniciar sesión']) {
+    await expect(log.count).toHaveText(t('table.results', { n: 4 }))
+    for (const action of [
+      t('pages.admin.audit.actions.Register'),
+      t('pages.admin.audit.actions.VerifyUser'),
+      t('pages.admin.audit.actions.Login'),
+    ]) {
       await expect(log.row(action)).toContainText(name)
     }
-    const login = log.row('Completar el inicio de sesión')
-    await expect(login).toContainText('Anónimo')
+    const login = log.row(t('pages.admin.audit.actions.CompleteLogin'))
+    await expect(login).toContainText(t('pages.admin.audit.actorTypes.Anonymous'))
     await expect(login).toContainText(clientAddress)
-    await expect(login).toContainText('Correcto')
+    await expect(login).toContainText(t('pages.admin.audit.outcomes.Succeeded'))
 
-    await login.getByRole('button', { name: `Filtrar por ${name}`, exact: true }).click()
-    await log.search('Buscar por nombre o email', '')
+    await login.getByTestId('audit-entity').click()
+    await log.search('')
 
-    await expect(log.chips.getByText(`Entidad: ${name}`, { exact: true })).toBeVisible()
-    await expect(log.count).toHaveText('4 resultados')
+    await expect(log.chip(t('pages.admin.audit.filters.entity', { entity: name }))).toBeVisible()
+    await expect(log.count).toHaveText(t('table.results', { n: 4 }))
 
-    await login.getByRole('button', { name: `Filtrar por la IP ${clientAddress}` }).click()
+    await login.getByTestId('audit-ip').click()
 
-    await expect(log.chips.getByText(`IP: ${clientAddress}`, { exact: true })).toBeVisible()
-    await expect(log.count).toHaveText('4 resultados')
+    await expect(log.chip(t('pages.admin.audit.filters.ip', { ip: clientAddress }))).toBeVisible()
+    await expect(log.count).toHaveText(t('table.results', { n: 4 }))
   })
 
   test('pinning an actor, an entity and a trace narrows the log and leads to the diagnostics', async ({
@@ -61,34 +66,38 @@ test.describe('audit log', () => {
     const traceId = entry.traceId ?? ''
     const actor = fullName(admin.account)
     const page = await pageAs(initialAdmin)
-    await new AdminShell(page).open('Auditoría')
+    await new AdminShell(page).open('admin-audit')
     const log = new DataTable(page)
-    await log.search('Buscar por nombre o email', admin.account.email)
+    await log.search(admin.account.email)
     const created = log.row(item.title)
-    await expect(created).toContainText('Crear una novedad')
-    await expect(created).toContainText('Correcto')
+    await expect(created).toContainText(t('pages.admin.audit.actions.CreateNewsItem'))
+    await expect(created).toContainText(t('pages.admin.audit.outcomes.Succeeded'))
     await expect(created).toContainText(admin.account.email)
 
-    await created.getByRole('button', { name: `Filtrar por ${actor}`, exact: true }).click()
-    await log.search('Buscar por nombre o email', '')
+    await created.getByTestId('audit-actor').click()
+    await log.search('')
 
-    await expect(log.chips.getByText(`Quién: ${actor}`, { exact: true })).toBeVisible()
+    await expect(log.chip(t('pages.admin.audit.filters.actor', { actor }))).toBeVisible()
     await expect(created).toBeVisible()
 
-    await created.getByRole('button', { name: `Filtrar por ${item.title}`, exact: true }).click()
+    await created.getByTestId('audit-entity').click()
 
-    await expect(log.chips.getByText(`Entidad: ${item.title}`, { exact: true })).toBeVisible()
-    await expect(log.count).toHaveText('1 resultado')
-    await created.getByRole('button', { name: `Filtrar por la traza ${traceId}` }).click()
+    await expect(
+      log.chip(t('pages.admin.audit.filters.entity', { entity: item.title })),
+    ).toBeVisible()
+    await expect(log.count).toHaveText(t('table.results', { n: 1 }))
+    await created.getByTestId('audit-trace').click()
 
-    await expect(log.chips.getByText(`Traza: ${traceId}`, { exact: true })).toBeVisible()
+    await expect(log.chip(t('pages.admin.audit.filters.trace', { trace: traceId }))).toBeVisible()
     await expect(page).toHaveURL(`/admin/audit?traceId=${traceId}`)
 
-    await created.getByRole('button', { name: 'Ver el diagnóstico de esta traza' }).click()
+    await created.getByTestId('row-action-diagnostics').click()
 
     await expect(page).toHaveURL(`/admin/diagnostics?traceId=${traceId}`)
-    await expect(new AdminShell(page).heading('Diagnóstico')).toBeVisible()
-    await expect(new DataTable(page).chips.getByText(`Traza: ${traceId}`)).toBeVisible()
+    await expect(new AdminShell(page).view('admin-diagnostics')).toBeVisible()
+    await expect(
+      new DataTable(page).chip(t('pages.admin.diagnostics.filters.trace', { trace: traceId })),
+    ).toBeVisible()
   })
 
   test('a wrong superadministrator password is logged as rejected with its reason', async ({
@@ -109,18 +118,23 @@ test.describe('audit log', () => {
       (entry) => entry.actorId === initialAdmin.account.id,
     )
     const page = await pageAs(initialAdmin)
-    await new AdminShell(page).open('Auditoría')
+    await new AdminShell(page).open('admin-audit')
     const log = new DataTable(page)
-    await log.search('Buscar por nombre o email', target.email)
+    await log.search(target.email)
 
-    await log.filterBy('Resultado', 'Rechazado')
+    await log.filterBy('audit-filter-outcome', 'Rejected')
 
-    const refused = log.row('Cambiar el cargo de un usuario').filter({
+    const rejected = t('pages.admin.audit.outcomes.Rejected')
+    const refused = log.row(t('pages.admin.audit.actions.SetStaffRole')).filter({
       hasText: fullName(initialAdmin.account),
     })
-    await expect(refused).toContainText('Rechazado')
-    await expect(refused).toContainText('La contraseña actual no es correcta.')
+    await expect(refused).toContainText(rejected)
+    await expect(refused).toContainText(t('errors.UserCurrentPasswordIncorrect'))
     await expect(refused).toContainText(fullName(target))
-    await expect(log.chips.getByText('Resultado: Rechazado', { exact: true })).toBeVisible()
+    await expect(
+      log.chip(
+        t('table.filterChip', { label: t('pages.admin.audit.columns.outcome'), value: rejected }),
+      ),
+    ).toBeVisible()
   })
 })

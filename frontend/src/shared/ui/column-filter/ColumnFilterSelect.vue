@@ -67,6 +67,7 @@ useTableFilterRegistration(() => {
   >
     <template #default="{ panel }">
       <el-select
+        data-testid="column-filter-select"
         :model-value="modelValue"
         :placeholder="$t('table.filterBy', { label })"
         clearable
@@ -80,6 +81,7 @@ useTableFilterRegistration(() => {
           :key="String(option.value)"
           :label="option.label"
           :value="option.value"
+          :data-testid="`option-${option.value}`"
         />
       </el-select>
     </template>

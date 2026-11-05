@@ -55,6 +55,7 @@ async function save(): Promise<void> {
 <template>
   <el-dialog
     v-model="visible"
+    data-testid="partner-form-dialog"
     :title="
       partner
         ? $t('pages.admin.partners.form.editHeader')
@@ -68,17 +69,22 @@ async function save(): Promise<void> {
         <el-input
           id="partner-name"
           v-model="draft.name"
+          data-testid="partner-form-name"
           :maxlength="PARTNER_NAME_MAX_LENGTH"
           :class="{ 'ca-invalid': errors.name }"
           :aria-invalid="!!errors.name"
           :aria-describedby="errors.name ? 'partner-name-error' : undefined"
         />
-        <small v-if="errors.name" id="partner-name-error" class="ca-field__error">{{
-          errors.name
-        }}</small>
+        <small
+          v-if="errors.name"
+          id="partner-name-error"
+          data-testid="partner-form-name-error"
+          class="ca-field__error"
+          >{{ errors.name }}</small
+        >
       </div>
 
-      <div class="ca-field">
+      <div class="ca-field" data-testid="partner-form-from-date">
         <label class="ca-field__label" for="partner-from">{{
           $t('pages.admin.partners.form.fromDate')
         }}</label>
@@ -90,7 +96,12 @@ async function save(): Promise<void> {
           :disabled-date="(date: Date) => isDayAfter(date, new Date())"
           :class="{ 'ca-invalid': errors.fromDate }"
         />
-        <small v-if="errors.fromDate" class="ca-field__error">{{ errors.fromDate }}</small>
+        <small
+          v-if="errors.fromDate"
+          data-testid="partner-form-from-date-error"
+          class="ca-field__error"
+          >{{ errors.fromDate }}</small
+        >
       </div>
 
       <div class="ca-field">
@@ -100,6 +111,7 @@ async function save(): Promise<void> {
         <el-input-number
           id="partner-tier"
           v-model="draft.tier"
+          data-testid="partner-form-tier"
           :min="PARTNER_MIN_TIER"
           :max="PARTNER_MAX_TIER"
           :precision="0"
@@ -114,6 +126,7 @@ async function save(): Promise<void> {
         <el-input
           id="partner-website"
           v-model="draft.website"
+          data-testid="partner-form-website"
           type="url"
           :maxlength="URL_MAX_LENGTH"
           :placeholder="$t('pages.admin.partners.form.urlPlaceholder')"
@@ -121,9 +134,13 @@ async function save(): Promise<void> {
           :aria-invalid="!!errors.website"
           :aria-describedby="errors.website ? 'partner-website-error' : undefined"
         />
-        <small v-if="errors.website" id="partner-website-error" class="ca-field__error">{{
-          errors.website
-        }}</small>
+        <small
+          v-if="errors.website"
+          id="partner-website-error"
+          data-testid="partner-form-website-error"
+          class="ca-field__error"
+          >{{ errors.website }}</small
+        >
       </div>
 
       <div class="ca-field">
@@ -147,6 +164,7 @@ async function save(): Promise<void> {
         @click="visible = false"
       />
       <ActionButton
+        data-testid="partner-form-dialog-save"
         :label="$t('common.save')"
         type="primary"
         :loading="saving || uploading"

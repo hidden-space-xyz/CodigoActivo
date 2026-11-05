@@ -22,7 +22,12 @@ defineProps<{
     <div class="ca-container">
       <div class="home-section__head">
         <h2 class="home-section__title">{{ title }}</h2>
-        <BrandButton variant="link" class="home-section__view-all" :to="viewAllTo">
+        <BrandButton
+          variant="link"
+          class="home-section__view-all"
+          :to="viewAllTo"
+          data-testid="home-section-view-all"
+        >
           {{ viewAllLabel }}
         </BrandButton>
       </div>

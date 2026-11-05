@@ -62,6 +62,7 @@ function rowActions(resource: LearningResourceSummary): RowAction[] {
     >
       <template #actions>
         <ActionButton
+          data-testid="admin-resources-new"
           :label="$t('pages.admin.resources.newResource')"
           icon="plus"
           type="primary"
@@ -101,6 +102,7 @@ function rowActions(resource: LearningResourceSummary): RowAction[] {
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('type').value"
+            data-testid="admin-resources-type-filter"
             :label="$t('pages.admin.resources.columns.type')"
             :options="typeOptions"
             @apply="table.onFilter"
@@ -131,7 +133,7 @@ function rowActions(resource: LearningResourceSummary): RowAction[] {
           />
         </template>
         <template #default="{ row }">
-          <ExternalLink v-if="row.url" :href="row.url" />
+          <ExternalLink v-if="row.url" data-testid="admin-resources-url" :href="row.url" />
           <span v-else>—</span>
         </template>
       </el-table-column>

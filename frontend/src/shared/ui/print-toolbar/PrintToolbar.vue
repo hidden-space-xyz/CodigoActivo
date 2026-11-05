@@ -26,10 +26,20 @@ function print(): void {
 
 <template>
   <div class="print-toolbar">
-    <BrandButton variant="back" :to="back" class="print-toolbar__back">
+    <BrandButton
+      variant="back"
+      :to="back"
+      class="print-toolbar__back"
+      data-testid="print-toolbar-back"
+    >
       {{ backLabel }}
     </BrandButton>
-    <button type="button" class="print-toolbar__print" @click="print">
+    <button
+      type="button"
+      class="print-toolbar__print"
+      data-testid="print-toolbar-print"
+      @click="print"
+    >
       <AppIcon name="print" />
       <span>{{ printLabel }}</span>
     </button>

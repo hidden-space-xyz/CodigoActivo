@@ -21,6 +21,7 @@ defineProps<{
 <template>
   <el-dialog
     v-model="visible"
+    data-testid="diagnostic-detail-dialog"
     :title="$t('pages.admin.diagnostics.detail.title')"
     width="min(860px, 94vw)"
     append-to-body
@@ -58,8 +59,12 @@ defineProps<{
         <pre class="block">{{ entry.properties }}</pre>
       </template>
       <h3 class="section">{{ $t('pages.admin.diagnostics.detail.exception') }}</h3>
-      <pre v-if="entry?.exception" class="block">{{ entry.exception }}</pre>
-      <p v-else class="none">{{ $t('pages.admin.diagnostics.detail.noException') }}</p>
+      <pre v-if="entry?.exception" class="block" data-testid="diagnostic-detail-exception">{{
+        entry.exception
+      }}</pre>
+      <p v-else class="none" data-testid="diagnostic-detail-exception">
+        {{ $t('pages.admin.diagnostics.detail.noException') }}
+      </p>
     </DataState>
   </el-dialog>
 </template>

@@ -19,6 +19,7 @@ const recent = computed(() => data.value?.items ?? [])
     :view-all-to="{ name: 'news' }"
     :loading="isLoading"
     compact
+    data-testid="home-news"
   >
     <template #featured>
       <FeaturedNewsCard v-if="featured" :news-item="featured" />

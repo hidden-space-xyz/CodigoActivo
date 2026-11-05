@@ -71,7 +71,7 @@ const groups = computed(() => [
 </script>
 
 <template>
-  <section class="acc-pane">
+  <section class="acc-pane" data-testid="history-section">
     <div class="acc-pane__head">
       <p class="acc-pane__lead">{{ $t('pages.account.history.lead') }}</p>
     </div>
@@ -80,21 +80,32 @@ const groups = computed(() => [
     <p v-else-if="history.isError.value" class="acc-pane__state">
       {{ $t('pages.account.history.error') }}
     </p>
-    <p v-else-if="entries.length === 0" class="acc-pane__state">
+    <p v-else-if="entries.length === 0" class="acc-pane__state" data-testid="history-empty">
       {{ $t('pages.account.history.empty') }}
     </p>
 
     <template v-else>
-      <div v-for="group in groups" :key="group.key" class="acc-history__group">
+      <div
+        v-for="group in groups"
+        :key="group.key"
+        class="acc-history__group"
+        :data-testid="`history-group-${group.key}`"
+      >
         <template v-if="group.items.length > 0">
           <h3 class="acc-history__group-title">{{ group.label }}</h3>
 
           <ul class="acc-history__events">
-            <li v-for="entry in group.items" :key="entry.eventId" class="acc-history__event">
+            <li
+              v-for="entry in group.items"
+              :key="entry.eventId"
+              class="acc-history__event"
+              data-testid="history-event"
+            >
               <div class="acc-history__head">
                 <button
                   type="button"
                   class="acc-history__toggle"
+                  data-testid="history-event-toggle"
                   :aria-expanded="isExpanded(entry.eventId)"
                   @click="toggle(entry.eventId)"
                 >
@@ -103,7 +114,9 @@ const groups = computed(() => [
                     :name="isExpanded(entry.eventId) ? 'chevron-down' : 'chevron-right'"
                   />
                   <span class="acc-history__info">
-                    <span class="acc-history__name">{{ entry.title }}</span>
+                    <span class="acc-history__name" data-testid="history-event-title">{{
+                      entry.title
+                    }}</span>
                     <span class="acc-history__meta">
                       {{ formatDateRange(entry.startsAt, entry.endsAt) }} ·
                       {{ $t('pages.account.history.activityCount', activityCount(entry)) }}
@@ -112,7 +125,11 @@ const groups = computed(() => [
                 </button>
 
                 <div v-if="entry.canRate" class="acc-history__actions">
-                  <BrandButton variant="ghost" @click="openRating(entry)">
+                  <BrandButton
+                    variant="ghost"
+                    data-testid="history-event-rate"
+                    @click="openRating(entry)"
+                  >
                     {{
                       entry.rating
                         ? $t('pages.account.history.editRating')
@@ -127,6 +144,7 @@ const groups = computed(() => [
                   v-for="activity in entry.activities"
                   :key="`${activity.activityId}-${activity.participantId}`"
                   class="acc-history__activity"
+                  data-testid="history-activity"
                 >
                   <span class="acc-history__activity-title">{{ activity.title }}</span>
                   <span class="acc-history__activity-meta">

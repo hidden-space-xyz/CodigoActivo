@@ -10,8 +10,10 @@ defineProps<{
 <template>
   <div class="page-header">
     <div class="page-header__text">
-      <h1 class="page-header__title">{{ title }}</h1>
-      <p v-if="subtitle" class="page-header__subtitle">{{ subtitle }}</p>
+      <h1 class="page-header__title" data-testid="admin-page-header-title">{{ title }}</h1>
+      <p v-if="subtitle" class="page-header__subtitle" data-testid="admin-page-header-subtitle">
+        {{ subtitle }}
+      </p>
     </div>
     <div class="page-header__actions">
       <slot name="actions" />

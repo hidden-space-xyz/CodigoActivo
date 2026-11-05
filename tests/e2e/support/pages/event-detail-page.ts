@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
 /** A tab of the public event page. */
-export type EventTab = 'Información' | 'Actividades' | 'Asistentes'
+export type EventTab = 'info' | 'activities' | 'attendees'
 
 /** The public page of an event, at `/events/{id}`: information, activities and the leader roster. */
 export class EventDetailPage {
@@ -9,13 +9,13 @@ export class EventDetailPage {
   readonly main: Locator
 
   constructor(private readonly page: Page) {
-    this.main = page.getByRole('main')
+    this.main = page.getByTestId('page-event-detail')
   }
 
   /** Opens the page of the event `eventId` and waits for its title. */
   async goto(eventId: string, title: string): Promise<void> {
     await this.page.goto(`/events/${eventId}`)
-    await expect(this.main.getByRole('heading', { level: 1, name: title })).toBeVisible()
+    await expect(this.main.getByTestId('event-detail-title')).toHaveText(title)
   }
 
   /**
@@ -34,19 +34,17 @@ export class EventDetailPage {
 
   /** The button that opens the tab `name`. */
   tab(name: EventTab): Locator {
-    return this.main.getByRole('button', { name, exact: true })
+    return this.main.getByTestId(`event-detail-tab-${name}`)
   }
 
   /** Opens the activities tab and waits for the timeline. */
   async openActivities(): Promise<void> {
-    await this.tab('Actividades').click()
-    await expect(this.main.getByText('Cargando actividades…')).toBeHidden()
+    await this.tab('activities').click()
+    await expect(this.main.getByTestId('event-activities-loading')).toBeHidden()
   }
 
   /** The card of the activity titled `title` in the activities tab. */
   activity(title: string): Locator {
-    return this.main
-      .locator('article.act')
-      .filter({ has: this.page.getByRole('heading', { name: title, exact: true }) })
+    return this.main.getByTestId('activity-card').filter({ hasText: title })
   }
 }

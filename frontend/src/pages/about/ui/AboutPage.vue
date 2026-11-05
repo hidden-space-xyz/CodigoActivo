@@ -19,7 +19,7 @@ const { data: legalEntity } = useQuery(legalEntityQueries.detail())
     <section class="about-hero">
       <div class="about-hero__glow" aria-hidden="true" />
       <div class="about-hero__inner">
-        <h1 class="about-hero__title">
+        <h1 class="about-hero__title" data-testid="about-hero-title">
           {{ $t('pages.about.hero.titleLine1') }}<br />{{ $t('pages.about.hero.titleLine2') }}
           <span style="color: var(--ca-orange)">{{ $t('pages.about.hero.titleHighlight') }}</span>
         </h1>
@@ -60,7 +60,7 @@ const { data: legalEntity } = useQuery(legalEntityQueries.detail())
           {{ $t('pages.about.cta.text') }}
         </p>
         <div class="about-cta__actions">
-          <BrandButton variant="primary" @click="joinVisible = true">
+          <BrandButton variant="primary" data-testid="about-join" @click="joinVisible = true">
             {{ $t('pages.about.cta.join') }}
           </BrandButton>
         </div>
@@ -72,6 +72,7 @@ const { data: legalEntity } = useQuery(legalEntityQueries.detail())
       :title="$t('pages.about.cta.dialog.header')"
       width="90vw"
       :style="{ maxWidth: '480px' }"
+      data-testid="about-join-dialog"
     >
       <p class="join__lead">{{ $t('pages.about.cta.dialog.lead') }}</p>
 
@@ -79,12 +80,21 @@ const { data: legalEntity } = useQuery(legalEntityQueries.detail())
         <li v-if="legalEntity?.email" class="join__item">
           <AppIcon name="envelope" />
           <span class="join__label">{{ $t('common.emailLong') }}</span>
-          <a :href="`mailto:${legalEntity.email}`" class="join__value">{{ legalEntity.email }}</a>
+          <a
+            :href="`mailto:${legalEntity.email}`"
+            class="join__value"
+            data-testid="about-join-email"
+            >{{ legalEntity.email }}</a
+          >
         </li>
         <li v-if="legalEntity?.phone" class="join__item">
           <AppIcon name="phone" />
           <span class="join__label">{{ $t('common.phone') }}</span>
-          <a :href="`tel:${legalEntity.phone.dialable}`" class="join__value">
+          <a
+            :href="`tel:${legalEntity.phone.dialable}`"
+            class="join__value"
+            data-testid="about-join-phone"
+          >
             {{ legalEntity.phone.text }}
           </a>
         </li>

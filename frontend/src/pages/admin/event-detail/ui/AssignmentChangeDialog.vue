@@ -37,7 +37,7 @@ const emit = defineEmits<{
 
 <template>
   <el-dialog v-model="visible" :title="title" width="min(92vw, 400px)" append-to-body>
-    <p class="dialog-context">
+    <p class="dialog-context" data-testid="assignment-change-dialog-context">
       {{
         $t('pages.admin.eventDetail.attendees.dialogContext', {
           name: attendeeName,
@@ -47,12 +47,18 @@ const emit = defineEmits<{
     </p>
     <div class="ca-field">
       <label class="ca-field__label" :for="inputId">{{ label }}</label>
-      <el-select :id="inputId" v-model="selected" :placeholder="placeholder">
+      <el-select
+        :id="inputId"
+        v-model="selected"
+        :placeholder="placeholder"
+        data-testid="assignment-change-dialog-select"
+      >
         <el-option
           v-for="option in options"
           :key="option.value"
           :label="option.label"
           :value="option.value"
+          :data-testid="`option-${option.value}`"
         />
       </el-select>
       <small v-if="unavailableText && options.length === 0" class="ca-field__error">
@@ -71,6 +77,7 @@ const emit = defineEmits<{
         type="primary"
         :loading="applying"
         :disabled="!selected || options.length === 0"
+        data-testid="assignment-change-dialog-apply"
         @click="emit('apply')"
       />
     </template>

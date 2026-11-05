@@ -41,12 +41,15 @@ const isEmpty = computed(() => !isLoading.value && news.value.length === 0)
             class="news-filters__search"
             :model-value="search"
             :label="$t('common.searchByTitleOrSubtitle')"
+            data-testid="news-search"
             @update:model-value="setSearch"
           />
         </div>
 
-        <p v-if="isLoading" class="news-loading">{{ $t('common.loading') }}</p>
-        <p v-else-if="isEmpty" class="news-loading">
+        <p v-if="isLoading" class="news-loading" data-testid="news-loading">
+          {{ $t('common.loading') }}
+        </p>
+        <p v-else-if="isEmpty" class="news-loading" data-testid="news-empty">
           {{ search ? $t('pages.news.noResults') : $t('pages.news.empty') }}
         </p>
         <div v-else class="news-list">

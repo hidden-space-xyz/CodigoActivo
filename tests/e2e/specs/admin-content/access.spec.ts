@@ -2,11 +2,11 @@ import { expect, test } from '../../support/fixtures/test'
 import { AdminShell, type AdminSection } from '../../support/pages/admin-shell'
 
 const SECTIONS: readonly AdminSection[] = [
-  'Novedades',
-  'Patrocinadores',
-  'Recursos',
-  'Catálogos',
-  'Políticas',
+  'admin-news',
+  'admin-partners',
+  'admin-resources',
+  'admin-catalogs',
+  'admin-legal-policies',
 ]
 
 test.describe('content administration access', () => {
@@ -16,12 +16,12 @@ test.describe('content administration access', () => {
   }) => {
     const page = await pageAs(admin)
     const shell = new AdminShell(page)
-    await shell.open('Métricas')
+    await shell.open('admin-dashboard')
 
     for (const section of SECTIONS) {
       await shell.link(section).click()
       await expect(page).toHaveURL(AdminShell.path(section))
-      await expect(shell.heading(section)).toBeVisible()
+      await expect(shell.view(section)).toBeVisible()
     }
   })
 
@@ -37,7 +37,7 @@ test.describe('content administration access', () => {
       await page.goto(path)
 
       await expect(page).toHaveURL('/')
-      await expect(new AdminShell(page).heading(section)).toBeHidden()
+      await expect(new AdminShell(page).view(section)).toBeHidden()
     })
 
     test(`a visitor opening ${path} is asked to log in first`, async ({ page }) => {

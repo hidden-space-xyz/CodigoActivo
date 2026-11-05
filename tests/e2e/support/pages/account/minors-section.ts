@@ -2,7 +2,6 @@ import type { Locator, Page } from '@playwright/test'
 
 import type { Minor } from '../../data/people'
 import { chooseOption } from '../../ui/element-plus'
-import { GENDER_NAMES } from '../registration-page'
 import type { AccountPage } from './account-page'
 
 /** The section «Menores a mi cargo» of the profile tab. */
@@ -17,18 +16,18 @@ export class MinorsSection {
   readonly empty: Locator
 
   constructor(account: AccountPage) {
-    this.root = account.section('Menores a mi cargo')
-    this.add = this.root.getByRole('button', { name: '+ Añadir menor' })
-    this.empty = this.root.getByText('No tienes menores a tu cargo.')
+    this.root = account.section('minors')
+    this.add = this.root.getByTestId('minors-add')
+    this.empty = this.root.getByTestId('minors-empty')
   }
 
   /** The list item of the minor whose full name is `name`. */
   minor(name: string): Locator {
-    return this.root.locator('li.acc-minor').filter({ hasText: name })
+    return this.root.getByTestId('minors-item').filter({ hasText: name })
   }
 }
 
-/** The dialog that adds a minor («Añadir menor») or edits one («Editar menor»). */
+/** The dialog that adds a minor (`add`, «Añadir menor») or edits one (`edit`, «Editar menor»). */
 export class MinorDialog {
   /** The dialog itself. */
   readonly root: Locator
@@ -39,7 +38,7 @@ export class MinorDialog {
   /** The last name field. */
   readonly lastName: Locator
 
-  /** The native date input `m-dob`. */
+  /** The native date input of the birth date. */
   readonly birthDate: Locator
 
   /** The birth date input while its value falls outside its `min`/`max` range. */
@@ -51,14 +50,14 @@ export class MinorDialog {
   /** The save button. */
   readonly save: Locator
 
-  constructor(page: Page, title: 'Añadir menor' | 'Editar menor') {
-    this.root = page.getByRole('dialog', { name: title })
-    this.firstName = this.root.getByLabel('Nombre', { exact: true })
-    this.lastName = this.root.getByLabel('Apellidos', { exact: true })
-    this.birthDate = this.root.getByLabel('Fecha de nacimiento')
-    this.birthDateOutOfRange = this.root.locator('input#m-dob:out-of-range')
-    this.gender = this.root.getByLabel('Género')
-    this.save = this.root.getByRole('button', { name: 'Guardar', exact: true })
+  constructor(page: Page, mode: 'add' | 'edit') {
+    this.root = page.getByTestId(`minor-dialog-${mode}`)
+    this.firstName = this.root.getByTestId('minor-dialog-first-name')
+    this.lastName = this.root.getByTestId('minor-dialog-last-name')
+    this.birthDate = this.root.getByTestId('minor-dialog-birth-date')
+    this.birthDateOutOfRange = this.birthDate.and(page.locator(':out-of-range'))
+    this.gender = this.root.getByTestId('minor-dialog-gender')
+    this.save = this.root.getByTestId('minor-dialog-save')
   }
 
   /** Fills in every field with `minor`. */
@@ -66,6 +65,6 @@ export class MinorDialog {
     await this.firstName.fill(minor.firstName)
     await this.lastName.fill(minor.lastName)
     await this.birthDate.fill(minor.birthDate)
-    await chooseOption(this.gender, GENDER_NAMES[minor.gender])
+    await chooseOption(this.gender, minor.gender)
   }
 }

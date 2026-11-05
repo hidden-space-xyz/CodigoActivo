@@ -1,14 +1,18 @@
 <script setup lang="ts">
+import { useRoute } from 'vue-router'
+
 import { SiteFooter } from '@/widgets/site-footer'
 import { SiteHeader } from '@/widgets/site-header'
 import { AppBackground } from '@/shared/ui/app-background'
+
+const route = useRoute()
 </script>
 
 <template>
   <div class="layout">
     <AppBackground />
     <SiteHeader />
-    <main class="layout__main">
+    <main class="layout__main" :data-testid="`page-${String(route.name)}`">
       <slot />
     </main>
     <SiteFooter />

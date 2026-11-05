@@ -8,14 +8,13 @@ import {
 } from '../../support/api/signups-extra'
 import { uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { EventDetailPage } from '../../support/pages/event-detail-page'
-import { ActivityCard } from '../../support/pages/signups/activity-card'
+import { ActivityCard, STATUS_LABELS } from '../../support/pages/signups/activity-card'
 import { TermsDialog } from '../../support/pages/signups/terms-dialog'
-import { notification, setChecked } from '../../support/ui/element-plus'
+import { expectChecked, notification, setChecked } from '../../support/ui/element-plus'
 
-const SIGNUP_SENT = 'Hemos recibido tu solicitud. Te avisaremos por correo cuando se revise.'
-const MISSING_REQUIRED = 'Debes marcar todos los documentos obligatorios para continuar.'
-const MISSING_SIGNATURE = 'Firma los documentos marcados que lo requieren para continuar.'
+const SIGNUP_SENT = t('pages.eventDetail.toast.signupSuccess')
 const CONSENT_TEXT = 'Autorizo el uso de mi imagen en las fotos de la jornada.'
 
 test.describe('event terms', () => {
@@ -44,40 +43,44 @@ test.describe('event terms', () => {
     const card = new ActivityCard(eventPage.activity(activity.title))
     const terms = new TermsDialog(page)
 
-    await card.signUpAs('Participante')
+    await card.signUpAs('participant')
     await expect(terms.root).toBeVisible()
-    await expect(terms.accept(conditions.name)).not.toBeChecked()
-    await expect(terms.accept(consent.name)).not.toBeChecked()
+    await expectChecked(terms.accept(conditions.name), false)
+    await expectChecked(terms.accept(consent.name), false)
     await expect(terms.signature(conditions.name)).toBeHidden()
     await terms.confirm.click()
-    await expect(terms.root.getByText(MISSING_REQUIRED)).toBeVisible()
+    await expect(terms.root.getByTestId('terms-dialog-missing-required')).toHaveText(
+      t('pages.eventDetail.terms.missingRequired'),
+    )
 
     await setChecked(terms.accept(conditions.name), true)
-    await expect(terms.root.getByText(MISSING_REQUIRED)).toBeHidden()
+    await expect(terms.root.getByTestId('terms-dialog-missing-required')).toBeHidden()
     await expect(terms.signature(conditions.name)).toBeVisible()
     await expect(terms.clearSignature(conditions.name)).toBeDisabled()
     await terms.confirm.click()
-    await expect(terms.root.getByText(MISSING_SIGNATURE)).toBeVisible()
+    await expect(terms.root.getByTestId('terms-dialog-missing-signature')).toHaveText(
+      t('pages.eventDetail.terms.signature.missing'),
+    )
 
     await terms.sign(conditions.name)
     await expect(terms.clearSignature(conditions.name)).toBeEnabled()
-    await expect(terms.root.getByText(MISSING_SIGNATURE)).toBeHidden()
+    await expect(terms.root.getByTestId('terms-dialog-missing-signature')).toBeHidden()
 
     await terms.open(consent.name).click()
     const preview = terms.preview(consent.name)
-    await expect(preview.getByText(CONSENT_TEXT)).toBeVisible()
-    await preview.getByRole('button', { name: 'Aceptar' }).click()
+    await expect(preview).toContainText(CONSENT_TEXT)
+    await preview.getByTestId('terms-dialog-preview-accept').click()
     await expect(preview).toBeHidden()
-    await expect(terms.accept(consent.name)).toBeChecked()
+    await expectChecked(terms.accept(consent.name), true)
     await terms.open(consent.name).click()
-    await preview.getByRole('button', { name: 'Rechazar' }).click()
+    await preview.getByTestId('terms-dialog-preview-reject').click()
     await expect(preview).toBeHidden()
-    await expect(terms.accept(consent.name)).not.toBeChecked()
+    await expectChecked(terms.accept(consent.name), false)
     await terms.confirm.click()
 
     await expect(terms.root).toBeHidden()
     await expect(notification(page, SIGNUP_SENT)).toBeVisible()
-    await expect(card.status).toHaveText('Solicitada')
+    await expect(card.status).toHaveText(STATUS_LABELS.requested)
     expect(
       decisionsOf(await termsState(participant.api, event.id), participant.account.id),
     ).toStrictEqual({
@@ -112,17 +115,17 @@ test.describe('event terms', () => {
     const card = new ActivityCard(eventPage.activity(second.title))
     const terms = new TermsDialog(page)
 
-    await card.signUpAs('Voluntario')
+    await card.signUpAs('volunteer')
 
     await expect(terms.open(consent.name)).toBeVisible()
-    await expect(terms.accept(consent.name)).not.toBeChecked()
+    await expectChecked(terms.accept(consent.name), false)
     await expect(terms.open(conditions.name)).toBeHidden()
     await expect(terms.accept(conditions.name)).toHaveCount(0)
     await setChecked(terms.accept(consent.name), true)
     await terms.confirm.click()
     await expect(terms.root).toBeHidden()
     await expect(notification(page, SIGNUP_SENT)).toBeVisible()
-    await expect(card.status).toHaveText('Solicitada')
+    await expect(card.status).toHaveText(STATUS_LABELS.requested)
     expect(decisionsOf(await termsState(member.api, event.id), member.account.id)).toStrictEqual({
       [conditions.id]: true,
       [consent.id]: true,
@@ -145,11 +148,11 @@ test.describe('event terms', () => {
     await eventPage.openActivities()
     const card = new ActivityCard(eventPage.activity(second.title))
 
-    await card.signUpAs('Participante')
+    await card.signUpAs('participant')
 
     await expect(notification(page, SIGNUP_SENT)).toBeVisible()
     await expect(new TermsDialog(page).root).toBeHidden()
-    await expect(card.status).toHaveText('Solicitada')
+    await expect(card.status).toHaveText(STATUS_LABELS.requested)
     const signups = await assignedActivities(participant.api, event.id)
     expect(signups.map((signup) => signup.activityId).sort()).toStrictEqual(
       [first.id, second.id].sort(),

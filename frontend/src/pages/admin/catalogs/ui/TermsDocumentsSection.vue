@@ -37,6 +37,7 @@ function rowActions(termsDocument: TermsDocument): RowAction[] {
 
 <template>
   <CatalogSection
+    data-testid="terms-documents-section"
     :title="$t('pages.admin.catalogs.termsDocuments.title')"
     :new-label="$t('pages.admin.catalogs.termsDocuments.newButton')"
     @create="openCreate"
@@ -58,17 +59,28 @@ function rowActions(termsDocument: TermsDocument): RowAction[] {
         <template #default="{ row }">
           <TablePrimaryCell :title="row.name">
             <template #badges>
-              <el-tag size="small" disable-transitions>{{
+              <el-tag size="small" disable-transitions data-testid="terms-documents-kind">{{
                 row.kind === 'Consent'
                   ? $t('pages.admin.catalogs.termsDocuments.kinds.Consent')
                   : $t('pages.admin.catalogs.termsDocuments.kinds.Conditions')
               }}</el-tag>
-              <el-tag v-if="row.requiresSignature" type="info" size="small" disable-transitions>{{
-                $t('pages.admin.catalogs.termsDocuments.requiresSignature')
-              }}</el-tag>
-              <el-tag type="info" size="small" disable-transitions>{{
-                $t('pages.admin.catalogs.termsDocuments.version', { version: row.version })
-              }}</el-tag>
+              <el-tag
+                v-if="row.requiresSignature"
+                type="info"
+                size="small"
+                disable-transitions
+                data-testid="terms-documents-requires-signature"
+                >{{ $t('pages.admin.catalogs.termsDocuments.requiresSignature') }}</el-tag
+              >
+              <el-tag
+                type="info"
+                size="small"
+                disable-transitions
+                data-testid="terms-documents-version"
+                >{{
+                  $t('pages.admin.catalogs.termsDocuments.version', { version: row.version })
+                }}</el-tag
+              >
             </template>
           </TablePrimaryCell>
         </template>

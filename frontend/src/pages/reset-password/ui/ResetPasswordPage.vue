@@ -26,9 +26,14 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
           state="error"
           :title="$t('pages.resetPassword.invalidTitle')"
           :text="$t('pages.resetPassword.invalidText')"
+          data-testid="reset-password-invalid"
         >
           <template #actions>
-            <BrandButton :to="{ name: 'forgot-password' }" variant="primary">
+            <BrandButton
+              :to="{ name: 'forgot-password' }"
+              variant="primary"
+              data-testid="reset-password-request-link"
+            >
               {{ $t('pages.resetPassword.requestNewLink') }}
             </BrandButton>
             <BrandButton :to="{ name: 'home' }" variant="ghost">{{
@@ -42,6 +47,7 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
           state="success"
           :title="$t('pages.resetPassword.successTitle')"
           :text="$t('pages.resetPassword.successText')"
+          data-testid="reset-password-success"
         >
           <template #actions>
             <BrandButton :to="{ name: 'login' }" variant="primary">{{
@@ -58,6 +64,7 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
             <el-input
               id="reset-password"
               v-model="form.password"
+              data-testid="reset-password-new"
               type="password"
               show-password
               autocomplete="new-password"
@@ -72,6 +79,7 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
             <el-input
               id="reset-password-confirm"
               v-model="form.confirmPassword"
+              data-testid="reset-password-confirm"
               type="password"
               show-password
               autocomplete="new-password"
@@ -89,7 +97,13 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
             {{ $t('pages.resetPassword.requestNewLink') }}
           </RouterLink>
 
-          <BrandButton type="submit" variant="primary" block :loading="isSubmitting">
+          <BrandButton
+            type="submit"
+            variant="primary"
+            block
+            :loading="isSubmitting"
+            data-testid="reset-password-submit"
+          >
             {{ $t('pages.resetPassword.submit') }}
           </BrandButton>
         </form>

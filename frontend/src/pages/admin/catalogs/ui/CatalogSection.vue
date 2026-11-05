@@ -23,6 +23,7 @@ const titleId = useId()
     <div class="catalog__head">
       <h2 :id="titleId" class="catalog__title">{{ title }}</h2>
       <ActionButton
+        data-testid="catalog-section-new"
         :label="newLabel"
         icon="plus"
         type="primary"

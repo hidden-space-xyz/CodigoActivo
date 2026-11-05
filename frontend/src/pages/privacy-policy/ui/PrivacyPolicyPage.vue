@@ -33,7 +33,11 @@ const controller = computed(() => {
     :loading="isLoading"
     :error="isError"
   >
-    <LegalSection id="privacy-controller" :title="$t('pages.privacyPolicy.controller.title')">
+    <LegalSection
+      id="privacy-controller"
+      :title="$t('pages.privacyPolicy.controller.title')"
+      data-testid="privacy-controller"
+    >
       <LegalEntryList>
         <LegalEntry :facts="controller" />
       </LegalEntryList>

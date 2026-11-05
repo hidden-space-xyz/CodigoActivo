@@ -62,7 +62,7 @@ useSeo(seo)
   <div>
     <section class="detail-back">
       <div class="ca-container--narrow">
-        <BrandButton variant="back" :to="{ name: 'news' }">
+        <BrandButton variant="back" :to="{ name: 'news' }" data-testid="news-detail-back">
           {{ $t('pages.newsDetail.back') }}
         </BrandButton>
       </div>
@@ -70,22 +70,37 @@ useSeo(seo)
 
     <p v-if="isLoading" class="detail-state ca-container--narrow">{{ $t('common.loading') }}</p>
 
-    <p v-else-if="!newsItem" class="detail-state ca-container--narrow">
+    <p
+      v-else-if="!newsItem"
+      class="detail-state ca-container--narrow"
+      data-testid="news-detail-not-found"
+    >
       {{ $t('pages.newsDetail.notFound') }}
     </p>
 
     <template v-else>
-      <article class="detail ca-container--narrow">
-        <time class="detail__date">{{ formatDate(newsItem.createdAt) }}</time>
-        <h1 class="detail__title">{{ newsItem.title }}</h1>
-        <p v-if="newsItem.subtitle" class="detail__subtitle">{{ newsItem.subtitle }}</p>
+      <article class="detail ca-container--narrow" data-testid="news-detail-article">
+        <time class="detail__date" data-testid="news-detail-date">{{
+          formatDate(newsItem.createdAt)
+        }}</time>
+        <h1 class="detail__title" data-testid="news-detail-title">{{ newsItem.title }}</h1>
+        <p v-if="newsItem.subtitle" class="detail__subtitle" data-testid="news-detail-subtitle">
+          {{ newsItem.subtitle }}
+        </p>
 
-        <img v-if="posterUrl" :src="posterUrl" :alt="newsItem.title" class="detail__poster" />
+        <img
+          v-if="posterUrl"
+          :src="posterUrl"
+          :alt="newsItem.title"
+          class="detail__poster"
+          data-testid="news-detail-poster"
+        />
 
         <RichTextContent
           v-if="hasDescription"
           :content="newsItem.description"
           class="detail__body"
+          data-testid="news-detail-body"
         />
       </article>
     </template>

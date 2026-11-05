@@ -1,6 +1,22 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
+import { CATALOG, type RoleName, type SignupStatusName } from '../../api/catalogs'
+import { t } from '../../i18n'
 import { chooseOption } from '../../ui/element-plus'
+
+/** How the API names each activity role, which the event page shows as it comes. */
+export const ROLE_LABELS: Readonly<Record<RoleName, string>> = {
+  leader: 'Líder',
+  volunteer: 'Voluntario',
+  participant: 'Participante',
+}
+
+/** How the API names each signup status, which the event page shows as it comes. */
+export const STATUS_LABELS: Readonly<Record<SignupStatusName, string>> = {
+  requested: 'Solicitada',
+  confirmed: 'Confirmada',
+  denied: 'Rechazada',
+}
 
 /**
  * The card of one activity in the activities tab of the event page: its signup status, the role
@@ -32,52 +48,68 @@ export class ActivityCard {
 
   constructor(readonly root: Locator) {
     this.page = root.page()
-    this.status = root.locator('.act__head .el-tag')
-    this.role = root.getByRole('combobox')
-    this.signUp = root.getByRole('button', { name: 'Apuntarme', exact: true })
-    this.withdraw = root.getByRole('button', { name: 'Desapuntarme', exact: true })
-    this.signUpFamily = root.getByRole('button', { name: 'Apuntar a mi familia' })
-    this.signUpAnother = root.getByRole('button', { name: 'Apuntar a otro miembro' })
-    this.login = root.getByRole('button', { name: 'Inicia sesión para apuntarte' })
+    this.status = root.getByTestId('activity-card-status')
+    this.role = root.getByTestId('activity-card-role')
+    this.signUp = root.getByTestId('activity-card-sign-up')
+    this.withdraw = root.getByTestId('activity-card-withdraw')
+    const household = root.getByTestId('activity-card-household')
+    this.signUpFamily = household.filter({ hasText: t('pages.eventDetail.card.enrollFamily') })
+    this.signUpAnother = household.filter({ hasText: t('pages.eventDetail.card.enrollAnother') })
+    this.login = root.getByTestId('activity-card-login')
   }
 
   /** Picks `role` in the role select. */
-  async chooseRole(role: string): Promise<void> {
-    await chooseOption(this.role, role)
+  async chooseRole(role: RoleName): Promise<void> {
+    await chooseOption(this.role, CATALOG.roles[role])
   }
 
   /** Picks `role` and presses «Apuntarme». */
-  async signUpAs(role: string): Promise<void> {
+  async signUpAs(role: RoleName): Promise<void> {
     await this.chooseRole(role)
     await this.signUp.click()
   }
 
   /** Opens the role select, checks it offers exactly `roles` in that order and closes it. */
-  async expectRoles(roles: readonly string[]): Promise<void> {
-    await expectSelectOptions(this.page, this.role, roles)
+  async expectRoles(roles: readonly RoleName[]): Promise<void> {
+    await expectSelectOptions(
+      this.page,
+      this.role,
+      roles.map((role) => CATALOG.roles[role]),
+    )
+  }
+
+  /** The note beside the actions that reads `text`, such as «Tu inscripción: Voluntario». */
+  note(text: string): Locator {
+    return this.root.getByTestId('activity-card-note').filter({ hasText: text })
   }
 
   /** The line «{name} · {role}» of a household member's signup. */
-  member(name: string, role: string): Locator {
-    return this.root.getByRole('listitem').filter({ hasText: `${name} · ${role}` })
+  member(name: string, role: RoleName): Locator {
+    return this.root
+      .getByTestId('activity-card-member')
+      .filter({ hasText: `${name} · ${ROLE_LABELS[role]}` })
   }
 
   /** The «Desapuntar» button of a household member's signup. */
-  withdrawMember(name: string, role: string): Locator {
-    return this.member(name, role).getByRole('button', { name: 'Desapuntar', exact: true })
+  withdrawMember(name: string, role: RoleName): Locator {
+    return this.member(name, role).getByTestId('activity-card-member-withdraw')
   }
 }
 
-/** Opens an Element Plus select, checks it offers exactly `options` in order and closes it. */
+/**
+ * Opens an Element Plus select, given the element that carries its test id, checks it offers
+ * exactly the options whose values are `values`, in that order, and closes it.
+ */
 export async function expectSelectOptions(
   page: Page,
   select: Locator,
-  options: readonly string[],
+  values: readonly string[],
 ): Promise<void> {
-  const shown = page.getByRole('option').filter({ visible: true })
-  const box = select.locator('xpath=ancestor::div[contains(@class, "el-select__wrapper")][1]')
-  await box.click()
-  await expect(shown).toHaveText(options)
-  await box.click()
+  const shown = page.getByTestId(/^option-/).filter({ visible: true })
+  await select.click()
+  await expect
+    .poll(() => shown.evaluateAll((options) => options.map((option) => option.dataset.testid)))
+    .toStrictEqual(values.map((value) => `option-${value}`))
+  await select.click()
   await expect(shown).toHaveCount(0)
 }

@@ -1,18 +1,25 @@
 import { signUp } from '../../support/api/signups'
 import { expect, test } from '../../support/fixtures/test'
-import { DashboardPage, type KpiLabel } from '../../support/pages/admin-events/dashboard-page'
+import { t } from '../../support/i18n'
+import { DashboardPage, type KpiKey } from '../../support/pages/admin-events/dashboard-page'
 import { EventAdminPage } from '../../support/pages/admin-events/event-admin-page'
 
-const KPIS: readonly KpiLabel[] = [
-  'Usuarios',
-  'Socios',
-  'Inscripciones',
-  'Eventos',
-  'Actividades',
-  'Recursos',
-  'Novedades',
-  'Patrocinadores',
+const KPIS: readonly KpiKey[] = [
+  'users',
+  'members',
+  'inscriptions',
+  'events',
+  'activities',
+  'resources',
+  'news',
+  'partners',
 ]
+
+const IN_PERIOD = new RegExp(
+  `^${t('pages.admin.dashboard.kpi.inRange', { n: '#' })
+    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    .replace('#', '[\\d.]+')}$`,
+)
 
 test.describe('admin dashboard', () => {
   test('the metrics show every key figure and switch between time ranges', async ({
@@ -23,22 +30,22 @@ test.describe('admin dashboard', () => {
     const dashboard = new DashboardPage(page)
     await dashboard.open()
 
-    for (const label of KPIS) {
-      await expect(dashboard.kpi(label)).toBeVisible()
+    for (const key of KPIS) {
+      await expect(dashboard.kpi(key)).toBeVisible()
     }
-    await expect(dashboard.rangeButton('12 meses')).toHaveAttribute('aria-pressed', 'true')
-    await expect(dashboard.kpiPeriod('Usuarios')).toHaveText(/^\+[\d.]+ en el periodo$/)
+    await expect(dashboard.rangeButton('12m')).toHaveAttribute('aria-pressed', 'true')
+    await expect(dashboard.kpiPeriod('users')).toHaveText(IN_PERIOD)
 
-    await dashboard.rangeButton('30 días').click()
+    await dashboard.rangeButton('30d').click()
 
-    await expect(dashboard.rangeButton('30 días')).toHaveAttribute('aria-pressed', 'true')
-    await expect(dashboard.rangeButton('12 meses')).toHaveAttribute('aria-pressed', 'false')
-    await expect(dashboard.kpiPeriod('Usuarios')).toHaveText(/^\+[\d.]+ en el periodo$/)
+    await expect(dashboard.rangeButton('30d')).toHaveAttribute('aria-pressed', 'true')
+    await expect(dashboard.rangeButton('12m')).toHaveAttribute('aria-pressed', 'false')
+    await expect(dashboard.kpiPeriod('users')).toHaveText(IN_PERIOD)
 
-    await dashboard.rangeButton('90 días').click()
+    await dashboard.rangeButton('90d').click()
 
-    await expect(dashboard.rangeButton('90 días')).toHaveAttribute('aria-pressed', 'true')
-    await expect(dashboard.rangeButton('30 días')).toHaveAttribute('aria-pressed', 'false')
+    await expect(dashboard.rangeButton('90d')).toHaveAttribute('aria-pressed', 'true')
+    await expect(dashboard.rangeButton('30d')).toHaveAttribute('aria-pressed', 'false')
   })
 
   test('an upcoming event with requested signups is pending and its occupancy listed', async ({
@@ -54,14 +61,17 @@ test.describe('admin dashboard', () => {
     const dashboard = new DashboardPage(page)
     await dashboard.open()
 
-    const occupancy = dashboard.card('Ocupación de próximas actividades')
-    await occupancy.getByRole('button', { name: event.title }).click()
-    await expect(occupancy.getByText(activity.title, { exact: true })).toBeVisible()
+    const occupancy = dashboard.card('occupancy-card')
+    await occupancy.getByTestId('occupancy-card-event').filter({ hasText: event.title }).click()
+    await expect(
+      occupancy.getByTestId('occupancy-card-activity').filter({ hasText: activity.title }),
+    ).toBeVisible()
     const pending = dashboard
-      .card('Solicitudes pendientes')
-      .getByRole('link', { name: event.title })
+      .card('pending-signups-card')
+      .getByTestId('pending-signups-card-event')
+      .filter({ hasText: event.title })
     await expect(pending).toHaveAttribute('href', EventAdminPage.path(event.id))
-    await expect(pending).toContainText('1 pendiente')
+    await expect(pending).toContainText(t('pages.admin.dashboard.pending.count', { n: 1 }))
 
     await pending.click()
 

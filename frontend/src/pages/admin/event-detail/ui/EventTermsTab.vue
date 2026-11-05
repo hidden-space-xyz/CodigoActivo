@@ -135,6 +135,7 @@ function decisionActions(decision: EventTermsDecision): RowAction[] {
             v-if="row.signatureUrl"
             type="button"
             class="signature-thumb"
+            data-testid="event-terms-signature-open"
             :aria-label="$t('pages.admin.eventDetail.terms.openSignature', { name: fullName(row) })"
             @click="openSignature(row)"
           >
@@ -170,9 +171,11 @@ function decisionActions(decision: EventTermsDecision): RowAction[] {
       "
       width="min(680px, 94vw)"
       append-to-body
+      data-testid="event-terms-signature-dialog"
     >
       <figure v-if="signature.decision" class="signature">
         <img
+          data-testid="event-terms-signature-image"
           :src="signature.decision.signatureUrl"
           :alt="
             $t('pages.admin.eventDetail.terms.signatureAlt', {

@@ -1,11 +1,16 @@
 import { findUser } from '../../support/api/accounts'
 import { signupRoleNames } from '../../support/api/admin-people'
+import { CATALOG } from '../../support/api/catalogs'
 import { PASSWORD } from '../../support/config/environment'
+import { fullName } from '../../support/data/people'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { UsersAdminPage } from '../../support/pages/admin-people/users-admin-page'
 import { LoginPage } from '../../support/pages/login-page'
 import { SiteHeader } from '../../support/pages/site-header'
-import { chooseOption, confirm, notification } from '../../support/ui/element-plus'
+import { chooseOption, confirm, messageBox, notification } from '../../support/ui/element-plus'
+
+const MEMBER_TYPE = 'Socio'
 
 test.describe('admin user actions', () => {
   test('a participant made a member may then lead activities', async ({
@@ -20,14 +25,14 @@ test.describe('admin user actions', () => {
     await users.open()
     await users.find(person.account.lastName)
 
-    await users.act(person.account, 'Cambiar tipo')
-    const dialog = page.getByRole('dialog', { name: 'Cambiar tipo de usuario' })
-    await chooseOption(dialog.getByLabel('Tipo de usuario'), 'Socio')
-    await dialog.getByRole('button', { name: 'Aplicar' }).click()
+    await users.act(person.account, 'changeType')
+    const dialog = page.getByTestId('user-type-dialog')
+    await chooseOption(dialog.getByTestId('user-type-dialog-type'), CATALOG.userTypes.member)
+    await dialog.getByTestId('user-type-dialog-apply').click()
 
-    await expect(notification(page, 'Tipo de usuario actualizado.')).toBeVisible()
+    await expect(notification(page, t('pages.admin.users.toasts.typeUpdated'))).toBeVisible()
     await expect(dialog).toBeHidden()
-    await expect(users.row(person.account)).toContainText('Socio')
+    await expect(users.row(person.account)).toContainText(MEMBER_TYPE)
     expect(await signupRoleNames(person.api, person.account.id)).toContain('Líder')
   })
 
@@ -42,24 +47,26 @@ test.describe('admin user actions', () => {
     await users.open()
     await users.find(person.account.lastName)
 
-    await users.act(person.account, 'Cambiar cargo')
-    const dialog = page.getByRole('dialog', { name: 'Cambiar cargo' })
-    await chooseOption(dialog.getByLabel('Cargo'), 'Administrador')
-    const password = dialog.getByLabel('Tu contraseña')
+    await users.act(person.account, 'staffRole')
+    const dialog = page.getByTestId('staff-role-dialog')
+    await chooseOption(dialog.getByTestId('staff-role-dialog-role'), 'Administrator')
+    const password = dialog.getByTestId('admin-password-input')
     await password.fill(`${PASSWORD}-wrong`)
-    await dialog.getByRole('button', { name: 'Cambiar cargo' }).click()
+    await dialog.getByTestId('admin-password-confirm').click()
 
-    await expect(dialog.getByText('La contraseña actual no es correcta.')).toBeVisible()
+    await expect(dialog.getByTestId('admin-password-error')).toHaveText(
+      t('errors.UserCurrentPasswordIncorrect'),
+    )
     await expect(password).toHaveAttribute('aria-invalid', 'true')
 
     await password.fill(PASSWORD)
-    await dialog.getByRole('button', { name: 'Cambiar cargo' }).click()
+    await dialog.getByTestId('admin-password-confirm').click()
 
-    await expect(notification(page, 'Cargo actualizado.')).toBeVisible()
+    await expect(notification(page, t('pages.admin.users.toasts.staffRoleChanged'))).toBeVisible()
     await expect(dialog).toBeHidden()
-    await expect(
-      users.row(person.account).getByText('Administrador', { exact: true }),
-    ).toBeVisible()
+    await expect(users.row(person.account).getByTestId('users-staff-role')).toHaveText(
+      t('entities.user.staffRole.Administrator'),
+    )
     const personPage = await pageAs(person)
     await personPage.goto('/')
     await expect(new SiteHeader(personPage).admin).toBeVisible()
@@ -72,14 +79,16 @@ test.describe('admin user actions', () => {
     await users.open()
     await users.find(account.lastName)
 
-    await users.act(account, 'Cambiar cargo')
-    const dialog = page.getByRole('dialog', { name: 'Cambiar cargo' })
-    await chooseOption(dialog.getByLabel('Cargo'), 'Editor')
-    await dialog.getByLabel('Tu contraseña').fill(PASSWORD)
-    await dialog.getByRole('button', { name: 'Cambiar cargo' }).click()
+    await users.act(account, 'staffRole')
+    const dialog = page.getByTestId('staff-role-dialog')
+    await chooseOption(dialog.getByTestId('staff-role-dialog-role'), 'Editor')
+    await dialog.getByTestId('admin-password-input').fill(PASSWORD)
+    await dialog.getByTestId('admin-password-confirm').click()
 
-    await expect(notification(page, /Solo un socio puede tener un cargo/)).toBeVisible()
-    await expect(users.row(account).getByText('Editor', { exact: true })).toBeHidden()
+    await expect(notification(page, t('errors.UserStaffRoleRequiresMember'))).toBeVisible()
+    await expect(users.row(account).getByTestId('users-staff-role')).not.toHaveText(
+      t('entities.user.staffRole.Editor'),
+    )
   })
 
   test('leaving an account without a cargo closes the administration to that person', async ({
@@ -88,20 +97,21 @@ test.describe('admin user actions', () => {
     accounts,
   }) => {
     const person = await accounts.actor({ label: 'revoked', type: 'member', editor: true })
+    const editor = t('entities.user.staffRole.Editor')
     const page = await pageAs(initialAdmin)
     const users = new UsersAdminPage(page)
     await users.open()
     await users.find(person.account.lastName)
-    await expect(users.row(person.account).getByText('Editor', { exact: true })).toBeVisible()
+    await expect(users.row(person.account).getByTestId('users-staff-role')).toHaveText(editor)
 
-    await users.act(person.account, 'Cambiar cargo')
-    const dialog = page.getByRole('dialog', { name: 'Cambiar cargo' })
-    await chooseOption(dialog.getByLabel('Cargo'), 'Sin cargo')
-    await expect(dialog.getByLabel('Tu contraseña')).toBeHidden()
-    await dialog.getByRole('button', { name: 'Cambiar cargo' }).click()
+    await users.act(person.account, 'staffRole')
+    const dialog = page.getByTestId('staff-role-dialog')
+    await chooseOption(dialog.getByTestId('staff-role-dialog-role'), 'None')
+    await expect(dialog.getByTestId('admin-password-input')).toBeHidden()
+    await dialog.getByTestId('admin-password-confirm').click()
 
-    await expect(notification(page, 'Cargo actualizado.')).toBeVisible()
-    await expect(users.row(person.account).getByText('Editor', { exact: true })).toBeHidden()
+    await expect(notification(page, t('pages.admin.users.toasts.staffRoleChanged'))).toBeVisible()
+    await expect(users.row(person.account).getByTestId('users-staff-role')).not.toHaveText(editor)
     const personPage = await pageAs(person)
     await personPage.goto('/admin/events')
     await expect(personPage).toHaveURL('/')
@@ -119,10 +129,10 @@ test.describe('admin user actions', () => {
 
     await users.openMenu(member.account)
 
-    await expect(users.menuItem('Cambiar tipo')).toBeVisible()
-    await expect(users.menuItem('Cambiar cargo')).toHaveCount(0)
-    await expect(users.menuItem('Designar responsable de protección de datos')).toHaveCount(0)
-    await expect(users.menuItem('Eliminar')).toHaveCount(0)
+    await expect(users.menuItem('changeType')).toBeVisible()
+    await expect(users.menuItem('staffRole')).toHaveCount(0)
+    await expect(users.menuItem('privacyOfficer')).toHaveCount(0)
+    await expect(users.menuItem('delete')).toHaveCount(0)
   })
 
   test('resetting the second factor needs the administrator password', async ({
@@ -136,21 +146,20 @@ test.describe('admin user actions', () => {
     await users.open()
     await users.find(account.lastName)
 
-    await users.act(account, 'Restablecer la verificación en dos pasos')
-    const dialog = page.getByRole('dialog', { name: 'Restablecer la verificación en dos pasos' })
-    await expect(dialog).toContainText('ya recibe los códigos por correo')
-    await dialog.getByRole('button', { name: 'Restablecer' }).click()
-    await expect(dialog.getByText('Introduce tu contraseña.')).toBeVisible()
+    await users.act(account, 'resetTwoFactor')
+    const dialog = page.getByTestId('reset-two-factor-dialog')
+    await expect(dialog).toContainText(
+      t('pages.admin.users.resetTwoFactor.messageEmail', { fullName: fullName(account) }),
+    )
+    await dialog.getByTestId('admin-password-confirm').click()
+    await expect(dialog.getByTestId('admin-password-error')).toHaveText(
+      t('pages.admin.users.adminPassword.form.problems.passwordRequired'),
+    )
 
-    await dialog.getByLabel('Tu contraseña').fill(PASSWORD)
-    await dialog.getByRole('button', { name: 'Restablecer' }).click()
+    await dialog.getByTestId('admin-password-input').fill(PASSWORD)
+    await dialog.getByTestId('admin-password-confirm').click()
 
-    await expect(
-      notification(
-        page,
-        'Verificación en dos pasos restablecida: volverá a recibir el código por correo.',
-      ),
-    ).toBeVisible()
+    await expect(notification(page, t('pages.admin.users.toasts.twoFactorReset'))).toBeVisible()
     await expect(dialog).toBeHidden()
   })
 
@@ -166,21 +175,17 @@ test.describe('admin user actions', () => {
     await users.open()
     await users.find(account.lastName)
 
-    await users.act(account, 'Eliminar')
-    await expect(adminPage.getByRole('dialog', { name: 'Eliminar usuario' })).toContainText(
-      account.lastName,
-    )
-    await confirm(adminPage, 'Eliminar usuario', 'Eliminar')
+    await users.act(account, 'delete')
+    await expect(messageBox(adminPage)).toContainText(account.lastName)
+    await confirm(adminPage)
 
-    await expect(notification(adminPage, 'Usuario eliminado.')).toBeVisible()
+    await expect(notification(adminPage, t('pages.admin.users.toasts.deleted'))).toBeVisible()
     await expect(users.row(account)).toBeHidden()
-    await expect(
-      users.table.root.getByText('Ningún resultado coincide con los filtros.'),
-    ).toBeVisible()
+    await expect(users.table.root.getByTestId('data-table-empty')).toHaveText(t('table.noMatches'))
     expect(await findUser(initialAdmin.api, account.email)).toBeUndefined()
     const login = new LoginPage(page)
     await login.goto()
     await login.submitPassword(account)
-    await expect(login.error).toContainText('No hemos podido iniciar sesión')
+    await expect(login.error).toContainText(t('pages.login.error'))
   })
 })

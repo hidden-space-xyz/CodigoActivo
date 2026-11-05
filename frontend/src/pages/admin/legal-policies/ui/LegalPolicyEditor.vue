@@ -53,7 +53,7 @@ const versionsTitleId = useId()
         :empty="false"
         :error-text="$t('pages.admin.legalPolicies.loadError')"
       >
-        <p class="legal-policy-editor__status">
+        <p class="legal-policy-editor__status" data-testid="legal-policy-editor-status">
           {{
             policy
               ? $t('pages.admin.legalPolicies.status.published', {
@@ -65,19 +65,35 @@ const versionsTitleId = useId()
         </p>
         <p v-if="hint" class="ca-field__hint">{{ hint }}</p>
         <form class="legal-policy-editor__form" @submit.prevent="publish">
-          <RichTextEditor v-model="draft.content" :label="label" :invalid="invalid('content')" />
-          <small v-if="errors.content" class="ca-field__error">{{ errors.content }}</small>
+          <RichTextEditor
+            v-model="draft.content"
+            data-testid="legal-policy-editor-text"
+            :label="label"
+            :invalid="invalid('content')"
+          />
+          <small
+            v-if="errors.content"
+            data-testid="legal-policy-editor-error"
+            class="ca-field__error"
+            >{{ errors.content }}</small
+          >
           <div class="legal-policy-editor__actions">
-            <span v-if="dirty" class="legal-policy-editor__dirty">
+            <span
+              v-if="dirty"
+              class="legal-policy-editor__dirty"
+              data-testid="legal-policy-editor-dirty"
+            >
               {{ $t('pages.admin.legalPolicies.unpublishedChanges') }}
             </span>
             <ActionButton
+              data-testid="legal-policy-editor-discard"
               :label="$t('pages.admin.legalPolicies.discard')"
               text
               :disabled="!dirty || publishing"
               @click="discard"
             />
             <ActionButton
+              data-testid="legal-policy-editor-publish"
               :label="$t('pages.admin.legalPolicies.publish.button')"
               type="primary"
               :disabled="!dirty"
@@ -89,7 +105,11 @@ const versionsTitleId = useId()
       </DataState>
     </section>
 
-    <section class="legal-policy-editor__versions" :aria-labelledby="versionsTitleId">
+    <section
+      class="legal-policy-editor__versions"
+      data-testid="legal-policy-editor-versions"
+      :aria-labelledby="versionsTitleId"
+    >
       <h2 :id="versionsTitleId" class="legal-policy-editor__versions-title">
         {{ $t('pages.admin.legalPolicies.versions.title') }}
       </h2>
@@ -104,9 +124,13 @@ const versionsTitleId = useId()
             v-for="(entry, index) in versions"
             :key="entry.version"
             class="legal-policy-editor__version"
+            data-testid="legal-policy-editor-version"
           >
             <div class="legal-policy-editor__version-text">
-              <span class="legal-policy-editor__version-number">
+              <span
+                class="legal-policy-editor__version-number"
+                data-testid="legal-policy-editor-version-number"
+              >
                 {{ $t('pages.admin.legalPolicies.versions.number', { version: entry.version }) }}
               </span>
               <el-tag v-if="index === 0" size="small" type="success" disable-transitions>
@@ -117,6 +141,7 @@ const versionsTitleId = useId()
               </span>
             </div>
             <ActionButton
+              data-testid="legal-policy-editor-version-view"
               :label="$t('pages.admin.legalPolicies.versions.view')"
               size="small"
               text

@@ -48,6 +48,7 @@ const {
       <template v-if="isOfficer" #actions>
         <ActionButton
           :label="$t('pages.admin.blockedData.open.action')"
+          data-testid="blocked-data-open"
           type="primary"
           icon="lock"
           :disabled="consultation !== null"

@@ -15,11 +15,12 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <li class="filter-chip">
+  <li class="filter-chip" data-testid="data-table-chip">
     <span class="filter-chip__label" :title="label">{{ label }}</span>
     <button
       type="button"
       class="filter-chip__remove"
+      data-testid="data-table-chip-remove"
       :aria-label="removeLabel"
       @click="emit('remove')"
     >

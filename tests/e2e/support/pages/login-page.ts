@@ -5,7 +5,7 @@ import { codeIn, SUBJECTS, type Mailbox } from '../mail/mailbox'
 
 /** The password step of the login, at `/login`. */
 export class LoginPage {
-  /** «Bienvenido de nuevo», shown once the page has loaded. */
+  /** The content of the login page, shown only while it is the current page. */
   readonly heading: Locator
 
   /** The email field. */
@@ -24,12 +24,12 @@ export class LoginPage {
   readonly error: Locator
 
   constructor(private readonly page: Page) {
-    this.heading = page.getByRole('heading', { name: 'Bienvenido de nuevo' })
-    this.email = page.getByLabel('Correo electrónico')
-    this.password = page.getByLabel('Contraseña', { exact: true })
-    this.keepSignedIn = page.getByRole('checkbox', { name: /Mantener la sesión iniciada/ })
-    this.submit = page.locator('form').getByRole('button', { name: 'Iniciar sesión' })
-    this.error = page.locator('form').getByRole('alert')
+    this.heading = page.getByTestId('page-login')
+    this.email = page.getByTestId('login-email')
+    this.password = page.getByTestId('login-password')
+    this.keepSignedIn = page.getByTestId('login-keep-signed-in')
+    this.submit = page.getByTestId('login-submit')
+    this.error = page.getByTestId('login-error')
   }
 
   /** Opens the login page, optionally with the `redirect` it returns to. */
@@ -48,7 +48,7 @@ export class LoginPage {
 
 /** The second step of the login, at `/login/verify`. */
 export class TwoFactorPage {
-  /** «Un paso más», shown once the password was accepted. */
+  /** The content of the second step, shown only once the password was accepted. */
   readonly heading: Locator
 
   /** The code field. */
@@ -64,11 +64,11 @@ export class TwoFactorPage {
   readonly error: Locator
 
   constructor(page: Page) {
-    this.heading = page.getByRole('heading', { name: 'Un paso más' })
-    this.code = page.getByLabel('Código de verificación')
-    this.submit = page.getByRole('button', { name: 'Verificar' })
-    this.resend = page.getByRole('button', { name: /pide otro código/ })
-    this.error = page.locator('form').getByRole('alert')
+    this.heading = page.getByTestId('page-login-two-factor')
+    this.code = page.getByTestId('login-two-factor-code')
+    this.submit = page.getByTestId('login-two-factor-submit')
+    this.resend = page.getByTestId('login-two-factor-resend')
+    this.error = page.getByTestId('login-two-factor-error')
   }
 
   /** Types `code` and sends it. */

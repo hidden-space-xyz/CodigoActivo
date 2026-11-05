@@ -30,7 +30,7 @@ test.describe('diplomas', () => {
     const issued = await certificatesFor(actor.api, ended.id)
 
     const page = await pageAs(actor)
-    await new AccountPage(page).goto('Diplomas')
+    await new AccountPage(page).goto('certificates')
     const diplomas = new CertificatesTab(page)
 
     expect(
@@ -41,7 +41,9 @@ test.describe('diplomas', () => {
       expect(certificate.code).toMatch(/^CA-\d{4}-[0-9A-F]{8}$/)
       await expect(diplomas.tile(name, ended.title)).toContainText(certificate.code)
     }
-    await expect(page.getByText(upcoming.title)).toBeHidden()
+    await expect(
+      page.getByTestId('certificate-tile').filter({ hasText: upcoming.title }),
+    ).toBeHidden()
     expect(await certificatesFor(actor.api, upcoming.id)).toHaveLength(0)
 
     await diplomas.open(guardianName, ended.title).click()

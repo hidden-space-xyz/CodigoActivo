@@ -1,6 +1,7 @@
 import { currentUser } from '../../support/api/account'
 import { PASSWORD } from '../../support/config/environment'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { AccountPage } from '../../support/pages/account/account-page'
 import {
   AuthenticatorSetupDialog,
@@ -11,7 +12,7 @@ import { LoginPage, TwoFactorPage } from '../../support/pages/login-page'
 import { SiteHeader } from '../../support/pages/site-header'
 import { notification } from '../../support/ui/element-plus'
 
-const INVALID_CODE = 'El código no es válido o ha caducado.'
+const INVALID_CODE = t('errors.TwoFactorCodeInvalid')
 
 test.describe('two-step verification', () => {
   test('a person uses the emailed code until they choose an application', async ({
@@ -22,7 +23,7 @@ test.describe('two-step verification', () => {
     await account.goto()
     const twoFactor = new TwoFactorSection(account)
 
-    await expect(twoFactor.method).toHaveText('Código por correo electrónico')
+    await expect(twoFactor.method).toHaveText(t('pages.account.twoFactor.methods.Email'))
     await expect(twoFactor.useAuthenticator).toBeVisible()
     await expect(twoFactor.useEmail).toBeHidden()
   })
@@ -40,22 +41,26 @@ test.describe('two-step verification', () => {
     const setup = new AuthenticatorSetupDialog(page)
 
     await setup.continue.click()
-    await expect(setup.root.getByText('Introduce tu contraseña.')).toBeVisible()
+    await expect(setup.root.getByTestId('two-factor-setup-password-error')).toHaveText(
+      t('pages.account.twoFactor.form.problems.passwordRequired'),
+    )
     await setup.password.fill(`${PASSWORD}-wrong`)
     await setup.continue.click()
-    await expect(setup.error).toHaveText('La contraseña actual no es correcta.')
+    await expect(setup.error).toHaveText(t('errors.UserCurrentPasswordIncorrect'))
     await expect(setup.sharedKey).toBeHidden()
 
     await setup.unlock(PASSWORD)
     await setup.activate.click()
-    await expect(setup.root.getByText('Introduce el código.')).toBeVisible()
+    await expect(setup.root.getByTestId('two-factor-setup-code-error')).toHaveText(
+      t('pages.account.twoFactor.form.problems.codeRequired'),
+    )
     await setup.code.fill('000000')
     await setup.activate.click()
     await expect(setup.error).toHaveText(INVALID_CODE)
 
-    await setup.root.getByRole('button', { name: 'Cancelar' }).click()
+    await setup.root.getByTestId('two-factor-setup-cancel').click()
     await expect(setup.root).toBeHidden()
-    await expect(twoFactor.method).toHaveText('Código por correo electrónico')
+    await expect(twoFactor.method).toHaveText(t('pages.account.twoFactor.methods.Email'))
     expect((await currentUser(actor.api)).twoFactorMethod).toBe('Email')
   })
 
@@ -77,9 +82,11 @@ test.describe('two-step verification', () => {
     await setup.code.fill(await app.nextCode())
     await setup.activate.click()
 
-    await expect(notification(accountPage, 'Aplicación activada')).toBeVisible()
+    await expect(
+      notification(accountPage, t('pages.account.twoFactor.enabledSummary')),
+    ).toBeVisible()
     await expect(setup.root).toBeHidden()
-    await expect(twoFactor.method).toHaveText('Aplicación de autenticación')
+    await expect(twoFactor.method).toHaveText(t('pages.account.twoFactor.methods.Authenticator'))
     await expect(twoFactor.useEmail).toBeVisible()
     expect((await currentUser(actor.api)).twoFactorMethod).toBe('Authenticator')
 
@@ -88,9 +95,9 @@ test.describe('two-step verification', () => {
     await login.submitPassword(actor.account)
     const verify = new TwoFactorPage(page)
     await expect(verify.heading).toBeVisible()
-    await expect(
-      page.getByText('Introduce el código que muestra tu aplicación de autenticación.'),
-    ).toBeVisible()
+    await expect(page.getByTestId('login-two-factor-intro')).toHaveText(
+      t('pages.loginTwoFactor.authenticatorIntro'),
+    )
     await verify.enter(app.lastCode())
     await expect(verify.error).toHaveText(INVALID_CODE)
     await verify.enter(await app.nextCode())
@@ -100,8 +107,12 @@ test.describe('two-step verification', () => {
     await twoFactor.useEmail.click()
     const disable = new DisableAuthenticatorDialog(accountPage)
     await disable.submit.click()
-    await expect(disable.root.getByText('Introduce tu contraseña.')).toBeVisible()
-    await expect(disable.root.getByText('Introduce el código.')).toBeVisible()
+    await expect(disable.root.getByTestId('two-factor-disable-password-error')).toHaveText(
+      t('pages.account.twoFactor.form.problems.passwordRequired'),
+    )
+    await expect(disable.root.getByTestId('two-factor-disable-code-error')).toHaveText(
+      t('pages.account.twoFactor.form.problems.codeRequired'),
+    )
     await disable.password.fill(PASSWORD)
     await disable.code.fill('000000')
     await disable.submit.click()
@@ -109,9 +120,11 @@ test.describe('two-step verification', () => {
     await disable.code.fill(await app.nextCode())
     await disable.submit.click()
 
-    await expect(notification(accountPage, 'Verificación por correo')).toBeVisible()
+    await expect(
+      notification(accountPage, t('pages.account.twoFactor.disabledSummary')),
+    ).toBeVisible()
     await expect(disable.root).toBeHidden()
-    await expect(twoFactor.method).toHaveText('Código por correo electrónico')
+    await expect(twoFactor.method).toHaveText(t('pages.account.twoFactor.methods.Email'))
     expect((await currentUser(actor.api)).twoFactorMethod).toBe('Email')
   })
 })

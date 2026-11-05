@@ -8,7 +8,7 @@ const { consents, entries, isWithdrawing, withdraw } = useAccountConsents()
 </script>
 
 <template>
-  <section class="acc-pane">
+  <section class="acc-pane" data-testid="consents-section">
     <div class="acc-pane__head">
       <div class="acc-pane__heading">
         <h2 class="acc-pane__title">{{ $t('pages.account.consents.title') }}</h2>
@@ -20,12 +20,17 @@ const { consents, entries, isWithdrawing, withdraw } = useAccountConsents()
     <p v-else-if="consents.isError.value" class="acc-pane__state">
       {{ $t('pages.account.consents.error') }}
     </p>
-    <p v-else-if="entries.length === 0" class="acc-pane__state">
+    <p v-else-if="entries.length === 0" class="acc-pane__state" data-testid="consents-empty">
       {{ $t('pages.account.consents.empty') }}
     </p>
 
     <ul v-else class="acc-consents">
-      <li v-for="consent in entries" :key="consentKey(consent)" class="acc-consent">
+      <li
+        v-for="consent in entries"
+        :key="consentKey(consent)"
+        class="acc-consent"
+        data-testid="consents-item"
+      >
         <div class="acc-consent__info">
           <span class="acc-consent__name">
             {{ consent.documentName }} · {{ consent.personName }}
@@ -59,6 +64,7 @@ const { consents, entries, isWithdrawing, withdraw } = useAccountConsents()
           <BrandButton
             v-if="consent.accepted"
             variant="ghost"
+            data-testid="consents-item-withdraw"
             :loading="isWithdrawing(consent)"
             @click="withdraw(consent)"
           >

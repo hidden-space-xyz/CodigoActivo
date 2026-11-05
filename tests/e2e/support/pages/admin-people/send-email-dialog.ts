@@ -1,10 +1,10 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
 import type { UploadFile } from '../../api/api-client'
-import { confirm, setChecked } from '../../ui/element-plus'
+import { confirm, messageBox, setChecked } from '../../ui/element-plus'
 
-/** The kind of email the dialog sends. */
-export type EmailPurpose = 'Aviso' | 'Novedades'
+/** The kind of email the dialog sends: a notice or news. */
+export type EmailPurpose = 'notice' | 'news'
 
 /** What the email dialog is filled in with. */
 export interface EmailDraft {
@@ -39,17 +39,17 @@ export class SendEmailDialog {
   readonly confirmation: Locator
 
   constructor(private readonly page: Page) {
-    this.root = page.getByRole('dialog', { name: 'Enviar correo' })
-    this.confirmation = page.getByRole('dialog', { name: '¿Enviar el correo?' })
-    this.subject = this.root.getByLabel('Asunto')
-    this.body = this.root.getByLabel('Mensaje')
-    this.send = this.root.getByRole('button', { name: 'Enviar', exact: true })
-    this.attachments = this.root.locator('.attachments__list')
+    this.root = page.getByTestId('send-email-dialog')
+    this.confirmation = messageBox(page)
+    this.subject = this.root.getByTestId('send-email-subject')
+    this.body = this.root.getByTestId('send-email-body')
+    this.send = this.root.getByTestId('send-email-send')
+    this.attachments = this.root.getByTestId('send-email-attachments')
   }
 
   /** The radio of the kind of email `purpose`. */
   purpose(purpose: EmailPurpose): Locator {
-    return this.root.getByRole('radio', { name: purpose })
+    return this.root.getByTestId(`send-email-purpose-${purpose}`)
   }
 
   /** Chooses the kind of email. */
@@ -59,8 +59,10 @@ export class SendEmailDialog {
 
   /** Attaches `file` through the hidden input behind «Adjuntar archivos». */
   async attach(file: UploadFile): Promise<void> {
-    await this.root.locator('input.attachments__input').setInputFiles(file)
-    await expect(this.attachments.getByText(file.name, { exact: true })).toBeVisible()
+    await this.root.getByTestId('send-email-attachments-input').setInputFiles(file)
+    await expect(
+      this.attachments.getByTestId('send-email-attachment').filter({ hasText: file.name }),
+    ).toBeVisible()
   }
 
   /** Fills in every field of the dialog. */
@@ -75,6 +77,6 @@ export class SendEmailDialog {
   async sendConfirmed(message: string | RegExp): Promise<void> {
     await this.send.click()
     await expect(this.confirmation).toContainText(message)
-    await confirm(this.page, '¿Enviar el correo?', 'Enviar')
+    await confirm(this.page)
   }
 }

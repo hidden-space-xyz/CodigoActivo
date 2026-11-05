@@ -26,6 +26,7 @@ function onChange(value: unknown): void {
     clearable
     :placeholder="$t('pages.events.allCategories')"
     :aria-label="$t('pages.events.categoryFilter')"
+    data-testid="event-category-filter"
     @change="onChange"
   >
     <el-option
@@ -33,6 +34,7 @@ function onChange(value: unknown): void {
       :key="category.id"
       :label="category.name"
       :value="category.id"
+      :data-testid="`option-${category.id}`"
     >
       <span class="category-filter__option">
         <span

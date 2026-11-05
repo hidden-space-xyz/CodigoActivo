@@ -1,9 +1,16 @@
 import { addMinor, eventOnFreeDay, householdSignups } from '../../support/api/signups-extra'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { EventDetailPage } from '../../support/pages/event-detail-page'
-import { ActivityCard } from '../../support/pages/signups/activity-card'
+import { ActivityCard, ROLE_LABELS, STATUS_LABELS } from '../../support/pages/signups/activity-card'
 import { HouseholdDialog } from '../../support/pages/signups/household-dialog'
-import { confirm, dialog, notification, setChecked } from '../../support/ui/element-plus'
+import {
+  confirm,
+  expectChecked,
+  messageBox,
+  notification,
+  setChecked,
+} from '../../support/ui/element-plus'
 
 test.describe('household signup', () => {
   test('a guardian signs the whole family up with a role for each person', async ({
@@ -29,34 +36,29 @@ test.describe('household signup', () => {
     await expect(card.signUp).toBeHidden()
     await card.signUpFamily.click()
     await expect(household.root).toContainText(activity.title)
-    await expect(household.person(guardian.account.firstName)).toBeChecked()
-    await expect(household.person(albaName)).toBeChecked()
-    await expect(household.person(brunoName)).toBeChecked()
-    await household.expectRoles(albaName, ['Participante', 'Voluntario'])
-    await household.chooseRole(guardian.account.firstName, 'Voluntario')
+    await expectChecked(household.person(guardian.account.firstName), true)
+    await expectChecked(household.person(albaName), true)
+    await expectChecked(household.person(brunoName), true)
+    await household.expectRoles(albaName, ['participant', 'volunteer'])
+    await household.chooseRole(guardian.account.firstName, 'volunteer')
     await household.submit.click()
-    await expect(
-      notification(page, 'Selecciona un rol para cada integrante que quieras apuntar.'),
-    ).toContainText('Falta el rol')
+    await expect(notification(page, t('pages.eventDetail.toast.missingRoleDetail'))).toContainText(
+      t('pages.eventDetail.toast.missingRole'),
+    )
     await expect(household.root).toBeVisible()
 
-    await household.chooseRole(albaName, 'Participante')
-    await household.chooseRole(brunoName, 'Participante')
+    await household.chooseRole(albaName, 'participant')
+    await household.chooseRole(brunoName, 'participant')
     await household.submit.click()
 
     await expect(household.root).toBeHidden()
     await expect(
-      notification(
-        page,
-        'Hemos recibido las 3 solicitudes. Te avisaremos por correo cuando se revisen.',
-      ),
-    ).toContainText('Inscripción enviada')
-    await expect(card.member(self, 'Voluntario')).toContainText('Solicitada')
-    await expect(card.member(albaName, 'Participante')).toContainText('Solicitada')
-    await expect(card.member(brunoName, 'Participante')).toContainText('Solicitada')
-    await expect(
-      card.root.getByText('Toda tu familia ya está inscrita en esta actividad.'),
-    ).toBeVisible()
+      notification(page, t('pages.eventDetail.toast.householdSuccess', { count: 3 })),
+    ).toContainText(t('pages.eventDetail.toast.signupSent'))
+    await expect(card.member(self, 'volunteer')).toContainText(STATUS_LABELS.requested)
+    await expect(card.member(albaName, 'participant')).toContainText(STATUS_LABELS.requested)
+    await expect(card.member(brunoName, 'participant')).toContainText(STATUS_LABELS.requested)
+    await expect(card.note(t('pages.eventDetail.household.allInscribed'))).toBeVisible()
     await expect(card.signUpAnother).toBeHidden()
     const signups = await householdSignups(guardian.api, event.id)
     expect(signups.map((signup) => [signup.userId, signup.roleName]).sort()).toStrictEqual(
@@ -89,48 +91,47 @@ test.describe('household signup', () => {
 
     await card.signUpFamily.click()
     await setChecked(household.person(guardian.account.firstName), false)
-    await household.chooseRole(albaName, 'Participante')
-    await household.chooseRole(brunoName, 'Voluntario')
+    await household.chooseRole(albaName, 'participant')
+    await household.chooseRole(brunoName, 'volunteer')
     await household.submit.click()
 
     await expect(
-      notification(
-        page,
-        'Hemos recibido las 2 solicitudes. Te avisaremos por correo cuando se revisen.',
-      ),
+      notification(page, t('pages.eventDetail.toast.householdSuccess', { count: 2 })),
     ).toBeVisible()
-    await expect(card.member(albaName, 'Participante')).toBeVisible()
-    await expect(card.member(brunoName, 'Voluntario')).toBeVisible()
+    await expect(card.member(albaName, 'participant')).toBeVisible()
+    await expect(card.member(brunoName, 'volunteer')).toBeVisible()
     await expect(card.signUpAnother).toBeVisible()
 
-    await card.withdrawMember(albaName, 'Participante').click()
-    await expect(dialog(page, 'Anular inscripción')).toContainText(
-      `¿Quieres anular la inscripción de ${albaName} en «${activity.title}»?`,
+    await card.withdrawMember(albaName, 'participant').click()
+    await expect(messageBox(page)).toContainText(
+      t('pages.eventDetail.unassignConfirm.member', { name: albaName, activity: activity.title }),
     )
-    await confirm(page, 'Anular inscripción', 'Anular inscripción')
+    await confirm(page)
 
-    await expect(notification(page, 'Se ha eliminado la inscripción.')).toContainText(
-      'Inscripción cancelada',
+    await expect(notification(page, t('pages.eventDetail.toast.unassignSuccess'))).toContainText(
+      t('pages.eventDetail.toast.unassignSummary'),
     )
-    await expect(card.member(albaName, 'Participante')).toBeHidden()
-    await expect(card.member(brunoName, 'Voluntario')).toBeVisible()
+    await expect(card.member(albaName, 'participant')).toBeHidden()
+    await expect(card.member(brunoName, 'volunteer')).toBeVisible()
     expect(await householdSignups(guardian.api, event.id)).toMatchObject([
       { userId: bruno.id, roleName: 'Voluntario' },
     ])
 
     await card.signUpAnother.click()
-    await expect(household.row(brunoName)).toContainText('Ya tiene inscripción como Voluntario')
+    await expect(household.row(brunoName)).toContainText(
+      t('pages.eventDetail.household.alreadyAs', { role: ROLE_LABELS.volunteer }),
+    )
     await expect(household.person(brunoName)).toHaveCount(0)
-    await expect(household.person(albaName)).toBeChecked()
-    await expect(household.person(guardian.account.firstName)).toBeChecked()
+    await expectChecked(household.person(albaName), true)
+    await expectChecked(household.person(guardian.account.firstName), true)
     await setChecked(household.person(guardian.account.firstName), false)
-    await household.chooseRole(albaName, 'Voluntario')
+    await household.chooseRole(albaName, 'volunteer')
     await household.submit.click()
 
     await expect(
-      notification(page, 'Hemos recibido la solicitud. Te avisaremos por correo cuando se revise.'),
+      notification(page, t('pages.eventDetail.toast.householdSuccess', { count: 1 })),
     ).toBeVisible()
-    await expect(card.member(albaName, 'Voluntario')).toBeVisible()
+    await expect(card.member(albaName, 'volunteer')).toBeVisible()
     await expect(card.signUpAnother).toBeVisible()
   })
 })

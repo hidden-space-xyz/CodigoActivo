@@ -2,6 +2,7 @@ import { findUser } from '../../support/api/accounts'
 import { currentUser } from '../../support/api/account'
 import { PASSWORD } from '../../support/config/environment'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { SUBJECTS } from '../../support/mail/mailbox'
 import { AccountPage } from '../../support/pages/account/account-page'
 import {
@@ -27,9 +28,9 @@ test.describe('account deletion', () => {
     const dialog = new DeleteAccountDialog(page)
 
     const code = await dialog.requestCode(mailbox, actor.account)
-    await expect(
-      dialog.root.getByText(`Te hemos enviado un código a ${actor.account.email}.`),
-    ).toBeVisible()
+    await expect(dialog.root.getByTestId('delete-account-code-intro')).toHaveText(
+      t('pages.account.deleteAccount.codeSent', { email: actor.account.email }),
+    )
     await expect(dialog.submit).toBeDisabled()
     await dialog.code.fill(code)
     await expect(dialog.submit).toBeDisabled()
@@ -38,14 +39,14 @@ test.describe('account deletion', () => {
     await dialog.submit.click()
 
     await expect(page).toHaveURL('/')
-    await expect(notification(page, 'Cuenta eliminada')).toBeVisible()
+    await expect(notification(page, t('pages.account.deleteAccount.deletedSummary'))).toBeVisible()
     await expect(new SiteHeader(page).login).toBeVisible()
     expect(await findUser(initialAdmin.api, actor.account.email)).toBeUndefined()
 
     const login = new LoginPage(page)
     await login.goto()
     await login.submitPassword(actor.account)
-    await expect(login.error).toContainText('No hemos podido iniciar sesión')
+    await expect(login.error).toHaveText(t('pages.login.error'))
   })
 
   test('a wrong password or code leaves the account in place', async ({
@@ -61,11 +62,13 @@ test.describe('account deletion', () => {
     const dialog = new DeleteAccountDialog(page)
 
     await dialog.sendCode.click()
-    await expect(dialog.root.getByText('Introduce tu contraseña.')).toBeVisible()
+    await expect(dialog.root.getByTestId('delete-account-password-error')).toHaveText(
+      t('pages.account.deleteAccount.form.problems.passwordRequired'),
+    )
     await dialog.password.fill(`${PASSWORD}-wrong`)
     const sentAfter = new Date()
     await dialog.sendCode.click()
-    await expect(dialog.error).toHaveText('La contraseña actual no es correcta.')
+    await expect(dialog.error).toHaveText(t('errors.UserCurrentPasswordIncorrect'))
     await expect(dialog.code).toBeHidden()
     expect(
       await mailbox.received({
@@ -79,7 +82,7 @@ test.describe('account deletion', () => {
     await dialog.code.fill('000000')
     await setChecked(dialog.irreversible, true)
     await dialog.submit.click()
-    await expect(dialog.error).toHaveText('El código no es válido o ha caducado.')
+    await expect(dialog.error).toHaveText(t('errors.TwoFactorCodeInvalid'))
     await expect(dialog.root).toBeVisible()
     expect((await currentUser(actor.api)).id).toBe(actor.account.id)
   })
@@ -112,7 +115,7 @@ test.describe('account deletion', () => {
     await new DeleteAccountDialog(page).deleteWithEmailedCode(mailbox, actor.account)
 
     await expect(page).toHaveURL('/')
-    await expect(notification(page, 'Cuenta eliminada')).toBeVisible()
+    await expect(notification(page, t('pages.account.deleteAccount.deletedSummary'))).toBeVisible()
     await expect(header.admin).toBeHidden()
     expect(await findUser(initialAdmin.api, actor.account.email)).toBeUndefined()
   })

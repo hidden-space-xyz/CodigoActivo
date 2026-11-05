@@ -1,16 +1,23 @@
 import { readFile } from 'node:fs/promises'
 import { expect, type Locator, type Page } from '@playwright/test'
 
-/** A tab of the account page. */
-export type AccountTab = 'Perfil' | 'Historial' | 'Diplomas'
+/** A tab of the account page, by the name it has in `?tab=`. */
+export type AccountTab = 'profile' | 'history' | 'certificates'
 
-/** A titled section of the profile tab. */
+/** A section of the profile tab. */
 export type AccountSection =
-  | 'Verificación en dos pasos'
-  | 'Menores a mi cargo'
-  | 'Consentimientos'
-  | 'Tus datos'
-  | 'Eliminar mi cuenta'
+  'two-factor' | 'minors' | 'consents' | 'personal-data' | 'delete-account'
+
+/** A term of the profile data list. */
+export type ProfileField =
+  | 'name'
+  | 'status'
+  | 'national-id'
+  | 'gender'
+  | 'phone'
+  | 'secondary-phone'
+  | 'email'
+  | 'news-consent'
 
 /** The part of the downloaded personal data file the tests read. */
 export interface PersonalDataCopy {
@@ -33,17 +40,17 @@ export interface SavedFile {
 }
 
 const TAB_QUERIES: Readonly<Record<AccountTab, string>> = {
-  Perfil: '',
-  Historial: '?tab=history',
-  Diplomas: '?tab=certificates',
+  profile: '',
+  history: '?tab=history',
+  certificates: '?tab=certificates',
 }
 
 /**
- * «Mi cuenta», at `/account`: the heading, the tabs kept in `?tab=`, the profile data list and the
- * sections of the profile tab, each found by its `h2` since they have no accessible name.
+ * «Mi cuenta», at `/account`: the tabs kept in `?tab=`, the profile data list and the sections of
+ * the profile tab.
  */
 export class AccountPage {
-  /** The `h1` «Mi área de usuario». */
+  /** The content of the account page, shown only while it is the current page. */
   readonly heading: Locator
 
   /** The section with the personal data and the buttons that edit them. */
@@ -56,42 +63,39 @@ export class AccountPage {
   readonly changePassword: Locator
 
   constructor(private readonly page: Page) {
-    this.heading = page.getByRole('heading', { level: 1, name: 'Mi área de usuario' })
-    this.editData = page.getByRole('button', { name: 'Editar datos', exact: true })
-    this.changePassword = page.getByRole('button', { name: 'Cambiar contraseña', exact: true })
-    this.profile = page.locator('section.acc-pane').filter({ has: this.editData })
+    this.heading = page.getByTestId('page-account')
+    this.profile = page.getByTestId('profile-section')
+    this.editData = this.profile.getByTestId('profile-edit-data')
+    this.changePassword = this.profile.getByTestId('profile-change-password')
   }
 
   /** Opens the account page on `tab` and waits until that tab is the selected one. */
-  async goto(tab: AccountTab = 'Perfil'): Promise<void> {
+  async goto(tab: AccountTab = 'profile'): Promise<void> {
     await this.page.goto(`/account${TAB_QUERIES[tab]}`)
     await expect(this.heading).toBeVisible()
     await expect(this.tab(tab)).toHaveAttribute('aria-selected', 'true')
   }
 
-  /** The tab named `name`. */
+  /** The header of the tab `name`, which reports in `aria-selected` whether it is the selected one. */
   tab(name: AccountTab): Locator {
-    return this.page.getByRole('tab', { name, exact: true })
-  }
-
-  /** The section of the profile tab titled `title`. */
-  section(title: AccountSection): Locator {
     return this.page
-      .locator('section.acc-pane')
-      .filter({ has: this.page.getByRole('heading', { level: 2, name: title, exact: true }) })
+      .locator('.el-tabs__item')
+      .filter({ has: this.page.getByTestId(`account-tab-${name}`) })
   }
 
-  /** The value the profile data list shows for the term `label`, such as «Teléfono». */
-  profileValue(label: string): Locator {
-    return this.profile
-      .locator('.acc-info__row')
-      .filter({ has: this.page.locator('dt').getByText(label, { exact: true }) })
-      .locator('dd')
+  /** The section `name` of the profile tab. */
+  section(name: AccountSection): Locator {
+    return this.page.getByTestId(`${name}-section`)
+  }
+
+  /** The value the profile data list shows for the term `field`, such as the phone. */
+  profileValue(field: ProfileField): Locator {
+    return this.profile.getByTestId(`profile-value-${field}`)
   }
 
   /** Clicks «Descargar mis datos» and reads the JSON copy the browser saves. */
   async downloadPersonalData(): Promise<{ name: string; data: PersonalDataCopy }> {
-    const button = this.section('Tus datos').getByRole('button', { name: 'Descargar mis datos' })
+    const button = this.section('personal-data').getByTestId('personal-data-download')
     const file = await saveDownload(this.page, () => button.click())
     return { name: file.name, data: JSON.parse(file.content.toString('utf8')) as PersonalDataCopy }
   }

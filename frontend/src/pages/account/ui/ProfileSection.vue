@@ -39,14 +39,14 @@ const {
 </script>
 
 <template>
-  <section class="acc-pane">
+  <section class="acc-pane" data-testid="profile-section">
     <div class="acc-pane__head">
       <p class="acc-pane__lead">{{ $t('pages.account.profile.lead') }}</p>
       <div class="acc-pane__actions">
-        <BrandButton variant="ghost" @click="openEdit">{{
+        <BrandButton variant="ghost" data-testid="profile-edit-data" @click="openEdit">{{
           $t('pages.account.profile.editData')
         }}</BrandButton>
-        <BrandButton variant="ghost" @click="openPassword">{{
+        <BrandButton variant="ghost" data-testid="profile-change-password" @click="openPassword">{{
           $t('pages.account.profile.changePassword')
         }}</BrandButton>
       </div>
@@ -56,40 +56,43 @@ const {
     <dl v-else-if="user" class="acc-info">
       <div class="acc-info__row">
         <dt>{{ $t('common.name') }}</dt>
-        <dd>{{ fullName(user) }}</dd>
+        <dd data-testid="profile-value-name">{{ fullName(user) }}</dd>
       </div>
       <div class="acc-info__row">
         <dt>{{ $t('common.status') }}</dt>
-        <dd>{{ user.statusName || '—' }}</dd>
+        <dd data-testid="profile-value-status">{{ user.statusName || '—' }}</dd>
       </div>
       <div class="acc-info__row">
         <dt>{{ $t('common.nationalId') }}</dt>
-        <dd>{{ user.nationalId || '—' }}</dd>
+        <dd data-testid="profile-value-national-id">{{ user.nationalId || '—' }}</dd>
       </div>
       <div class="acc-info__row">
         <dt>{{ $t('common.gender') }}</dt>
-        <dd>{{ $t(genderLabelKey(user.gender)) }}</dd>
+        <dd data-testid="profile-value-gender">{{ $t(genderLabelKey(user.gender)) }}</dd>
       </div>
       <div class="acc-info__row">
         <dt>{{ $t('common.phone') }}</dt>
-        <dd>{{ user.phone || '—' }}</dd>
+        <dd data-testid="profile-value-phone">{{ user.phone || '—' }}</dd>
       </div>
       <div class="acc-info__row">
         <dt>{{ $t('common.secondaryPhone') }}</dt>
-        <dd>{{ user.secondaryPhone || '—' }}</dd>
+        <dd data-testid="profile-value-secondary-phone">{{ user.secondaryPhone || '—' }}</dd>
       </div>
       <div class="acc-info__row">
         <dt>{{ $t('common.email') }}</dt>
-        <dd>{{ user.email || '—' }}</dd>
+        <dd data-testid="profile-value-email">{{ user.email || '—' }}</dd>
       </div>
       <div class="acc-info__row">
         <dt>{{ $t('common.newsConsent') }}</dt>
-        <dd>{{ user.newsConsent ? $t('common.yes') : $t('common.no') }}</dd>
+        <dd data-testid="profile-value-news-consent">
+          {{ user.newsConsent ? $t('common.yes') : $t('common.no') }}
+        </dd>
       </div>
     </dl>
 
     <el-dialog
       v-model="editVisible"
+      data-testid="profile-dialog"
       :title="$t('pages.account.profile.editDialogHeader')"
       width="min(90vw, 520px)"
       :close-on-click-modal="false"
@@ -101,6 +104,7 @@ const {
             <el-input
               id="p-firstname"
               v-model="draft.firstName"
+              data-testid="profile-dialog-first-name"
               :maxlength="PERSON_NAME_MAX_LENGTH"
               :class="{ 'ca-invalid': errors.firstName }"
               :aria-invalid="!!errors.firstName"
@@ -116,6 +120,7 @@ const {
             <el-input
               id="p-lastname"
               v-model="draft.lastName"
+              data-testid="profile-dialog-last-name"
               :maxlength="PERSON_NAME_MAX_LENGTH"
               :class="{ 'ca-invalid': errors.lastName }"
               :aria-invalid="!!errors.lastName"
@@ -131,6 +136,7 @@ const {
             <NationalIdInput
               id="p-national-id"
               v-model="draft.nationalId"
+              data-testid="profile-dialog-national-id"
               :show-errors="editSubmitted"
             />
           </div>
@@ -139,6 +145,7 @@ const {
             <el-select
               id="p-gender"
               v-model="draft.gender"
+              data-testid="profile-dialog-gender"
               :class="{ 'ca-invalid': errors.gender }"
             >
               <el-option
@@ -146,6 +153,7 @@ const {
                 :key="gender"
                 :label="$t(genderLabelKey(gender))"
                 :value="gender"
+                :data-testid="`option-${gender}`"
               />
             </el-select>
             <small v-if="errors.gender" class="ca-field__error">{{ errors.gender }}</small>
@@ -155,6 +163,7 @@ const {
             <el-input
               id="p-phone"
               v-model="draft.phone"
+              data-testid="profile-dialog-phone"
               type="tel"
               :maxlength="PHONE_MAX_LENGTH"
               :class="{ 'ca-invalid': errors.phone }"
@@ -191,6 +200,7 @@ const {
             <el-input
               id="p-email"
               v-model="draft.email"
+              data-testid="profile-dialog-email"
               type="email"
               :maxlength="EMAIL_ADDRESS_MAX_LENGTH"
               :class="{ 'ca-invalid': errors.email }"
@@ -206,6 +216,7 @@ const {
             <el-checkbox
               id="p-news-consent"
               v-model="draft.newsConsent"
+              data-testid="profile-dialog-news-consent"
               class="ca-checkbox-text acc-form__consent-label"
             >
               {{ $t('common.newsConsentOption') }}
@@ -221,6 +232,7 @@ const {
             <el-input
               id="p-current"
               v-model="currentPassword"
+              data-testid="profile-dialog-current-password"
               type="password"
               show-password
               autocomplete="current-password"
@@ -230,22 +242,36 @@ const {
                 editError || (editSubmitted && passwordMissing) ? 'p-current-error' : undefined
               "
             />
-            <small v-if="editError" id="p-current-error" class="ca-field__error">{{
-              editError
-            }}</small>
+            <small
+              v-if="editError"
+              id="p-current-error"
+              class="ca-field__error"
+              data-testid="profile-dialog-current-password-error"
+              >{{ editError }}</small
+            >
             <small
               v-else-if="editSubmitted && passwordMissing"
               id="p-current-error"
               class="ca-field__error"
+              data-testid="profile-dialog-current-password-error"
               >{{ $t('pages.account.profile.contactChange.passwordRequired') }}</small
             >
           </div>
         </div>
         <div class="acc-form__actions">
-          <BrandButton variant="link" type="button" @click="editVisible = false">{{
-            $t('common.cancel')
-          }}</BrandButton>
-          <BrandButton variant="primary" type="submit" :loading="updateProfile.isPending.value">
+          <BrandButton
+            variant="link"
+            type="button"
+            data-testid="profile-dialog-cancel"
+            @click="editVisible = false"
+            >{{ $t('common.cancel') }}</BrandButton
+          >
+          <BrandButton
+            variant="primary"
+            type="submit"
+            :loading="updateProfile.isPending.value"
+            data-testid="profile-dialog-save"
+          >
             {{ $t('common.save') }}
           </BrandButton>
         </div>
@@ -254,6 +280,7 @@ const {
 
     <el-dialog
       v-model="passwordVisible"
+      data-testid="password-dialog"
       :title="$t('pages.account.profile.changePassword')"
       width="min(90vw, 460px)"
       :close-on-click-modal="false"
@@ -266,6 +293,7 @@ const {
           <el-input
             id="p-cur"
             v-model="passwordForm.current"
+            data-testid="password-dialog-current"
             type="password"
             show-password
             autocomplete="current-password"
@@ -280,6 +308,7 @@ const {
           <el-input
             id="p-new"
             v-model="passwordForm.next"
+            data-testid="password-dialog-new"
             type="password"
             show-password
             autocomplete="new-password"
@@ -294,6 +323,7 @@ const {
           <el-input
             id="p-conf"
             v-model="passwordForm.confirm"
+            data-testid="password-dialog-confirm"
             type="password"
             show-password
             autocomplete="new-password"
@@ -301,14 +331,24 @@ const {
             required
           />
         </div>
-        <p v-if="passwordError" class="ca-form-alert acc-form__alert" role="alert">
+        <p
+          v-if="passwordError"
+          class="ca-form-alert acc-form__alert"
+          role="alert"
+          data-testid="password-dialog-error"
+        >
           {{ passwordError }}
         </p>
         <div class="acc-form__actions">
           <BrandButton variant="link" type="button" @click="passwordVisible = false">
             {{ $t('common.cancel') }}
           </BrandButton>
-          <BrandButton variant="primary" type="submit" :loading="changePassword.isPending.value">
+          <BrandButton
+            variant="primary"
+            type="submit"
+            :loading="changePassword.isPending.value"
+            data-testid="password-dialog-save"
+          >
             {{ $t('common.save') }}
           </BrandButton>
         </div>

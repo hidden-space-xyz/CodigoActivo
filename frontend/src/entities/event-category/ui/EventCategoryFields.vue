@@ -31,6 +31,7 @@ function pickColor(value: string | null): void {
       <el-input
         id="event-category-name"
         v-model="name"
+        data-testid="event-category-fields-name"
         :maxlength="CATALOG_NAME_MAX_LENGTH"
         :class="{ 'ca-invalid': invalid }"
         :aria-invalid="invalid"

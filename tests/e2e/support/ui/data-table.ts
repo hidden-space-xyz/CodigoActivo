@@ -14,13 +14,17 @@ export class DataTable {
   /** The list of active filter chips. */
   readonly chips: Locator
 
+  /** The button that clears every filter. */
+  readonly clear: Locator
+
   constructor(
     private readonly page: Page,
     scope: Locator | Page = page,
   ) {
-    this.root = scope.locator('.data-table').first()
-    this.count = this.root.locator('.data-table__count')
-    this.chips = this.root.getByRole('list', { name: 'Filtros activos' })
+    this.root = scope.getByTestId('data-table').first()
+    this.count = this.root.getByTestId('data-table-count')
+    this.chips = this.root.getByTestId('data-table-chips')
+    this.clear = this.root.getByTestId('data-table-clear')
   }
 
   /** Waits until the table is not fetching. */
@@ -28,57 +32,69 @@ export class DataTable {
     await expect(this.root).toHaveAttribute('aria-busy', 'false')
   }
 
-  /** Types into the toolbar search box named `label` and waits for the filtered rows. */
-  async search(label: string, text: string): Promise<void> {
-    const box = this.root.getByRole('textbox', { name: label })
+  /** Types into the toolbar search box and waits for the filtered rows. */
+  async search(text: string): Promise<void> {
+    const box = this.root.getByTestId('data-table-search')
     await box.fill(text)
     await box.press('Enter')
     await this.expectSettled()
   }
 
+  /** The filter chip that shows `text`. */
+  chip(text: string | RegExp): Locator {
+    return this.chips.getByTestId('data-table-chip').filter({ hasText: text })
+  }
+
   /** The body row that contains `text`. */
   row(text: string | RegExp): Locator {
-    return this.root.locator('.el-table__body').getByRole('row').filter({ hasText: text })
+    return this.root.locator('.el-table__body tr').filter({ hasText: text })
   }
 
-  /** Runs the row action `action`, an inline button or an entry of the row menu named `menu`. */
-  async rowAction(text: string | RegExp, action: string, menu?: string): Promise<void> {
+  /**
+   * Runs the row action `key` (the `key` of its `RowAction`) of the row that contains `text`: its
+   * inline button, or else the entry of the row menu.
+   */
+  async rowAction(text: string | RegExp, key: string): Promise<void> {
     const row = this.row(text)
-    if (menu === undefined) {
-      await row.getByRole('button', { name: action, exact: true }).click()
+    const inline = row.getByTestId(`row-action-${key}`)
+    if ((await inline.count()) > 0) {
+      await inline.click()
       return
     }
-    await row.getByRole('button', { name: menu }).click()
-    await this.menuItem(action).click()
+    await row.getByTestId('row-actions-menu').click()
+    await this.menuItem(key).click()
   }
 
-  /** The entry `action` of the open row menu. */
-  menuItem(action: string | RegExp): Locator {
-    return this.page.locator('.row-actions__menu').getByRole('menuitem', { name: action })
+  /** The entry `key` of the open row menu. */
+  menuItem(key: string): Locator {
+    return this.page
+      .locator('.row-actions__menu')
+      .filter({ visible: true })
+      .getByTestId(`row-action-${key}`)
   }
 
-  /** Opens the header or toolbar filter `Filtrar por {label}` and picks `option`. */
-  async filterBy(label: string, option: string): Promise<void> {
-    const panel = await this.openFilter(`Filtrar por ${label}`)
-    await panel.locator('.el-select').click()
-    await this.page.getByRole('option', { name: option, exact: true }).click()
+  /** Opens the column or toolbar filter that carries the test id `filter` and picks `value`. */
+  async filterBy(filter: string, value: string): Promise<void> {
+    const panel = await this.openFilter(filter)
+    await panel.getByTestId('column-filter-select').click()
+    await this.page.getByTestId(`option-${value}`).filter({ visible: true }).click()
     await this.expectSettled()
   }
 
   /**
-   * Types `text` into the header search «Buscar por {label}» and applies it with Enter once the panel
-   * has focused its box, which also closes the panel.
+   * Types `text` into the column search that carries the test id `search` and applies it with Enter
+   * once the panel has focused its box, which also closes the panel.
    */
-  async searchColumn(label: string, text: string): Promise<void> {
-    const panel = await this.enterColumnSearch(label, text)
+  async searchColumn(search: string, text: string): Promise<void> {
+    const panel = await this.enterColumnSearch(search, text)
     await this.expectSettled()
     await expect(panel).toBeHidden()
   }
 
-  /** Opens the header search «Buscar por {label}», types `text` and presses Enter in it. */
-  async enterColumnSearch(label: string, text: string): Promise<Locator> {
-    const panel = await this.openFilter(`Buscar por ${label}`)
-    const box = panel.locator('input')
+  /** Opens the column search that carries the test id `search`, types `text` and presses Enter. */
+  async enterColumnSearch(search: string, text: string): Promise<Locator> {
+    const panel = await this.openFilter(search)
+    const box = panel.getByTestId('column-filter-search')
     await expect(box).toBeFocused()
     await box.fill(text)
     await box.press('Enter')
@@ -86,12 +102,13 @@ export class DataTable {
   }
 
   /**
-   * Opens the filter popover of the toggle named `toggle` and returns its panel. A click that lands
-   * while the table re-renders can leave the popover closed, so the click is repeated until it opens.
+   * Opens the popover of the filter that carries the test id `filter` and returns its panel. A
+   * click that lands while the table re-renders can leave the popover closed, so the click is
+   * repeated until it opens.
    */
-  private async openFilter(toggle: string): Promise<Locator> {
-    const button = this.root.getByRole('button', { name: toggle, exact: true })
-    const panel = this.page.locator('.column-filter__panel').filter({ visible: true })
+  async openFilter(filter: string): Promise<Locator> {
+    const button = this.root.getByTestId(filter).getByTestId('column-filter-toggle')
+    const panel = this.page.getByTestId('column-filter-panel').filter({ visible: true })
     await expect(async () => {
       await button.click()
       await expect(panel).toBeVisible({ timeout: 2_000 })

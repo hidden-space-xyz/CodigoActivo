@@ -6,9 +6,13 @@ import type { ContentSeeder } from '../../support/api/content'
 import { signUp } from '../../support/api/signups'
 import type { Actor } from '../../support/fixtures/actors'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { AccountPage } from '../../support/pages/account/account-page'
 import { HistoryTab, RatingDialog } from '../../support/pages/account/history-tab'
-import { confirm, notification } from '../../support/ui/element-plus'
+import { confirm, messageBox, notification } from '../../support/ui/element-plus'
+
+/** How the API names the signup statuses the history shows, which come from its catalog. */
+const STATUS_NAMES = { requested: 'Solicitada', confirmed: 'Confirmada' } as const
 
 /** An event that started `daysAgo` days ago, with one activity `actor` signed up for. */
 async function pastEventWith(
@@ -39,21 +43,25 @@ test.describe('event history', () => {
     const missed = await pastEventWith(seed, actor, 12, 'denied')
 
     const page = await pageAs(actor)
-    await new AccountPage(page).goto('Historial')
+    await new AccountPage(page).goto('history')
     const history = new HistoryTab(page)
 
-    const next = history.event('Próximos eventos', upcoming.title)
-    await expect(next).toContainText('2 actividades')
-    await expect(next.getByRole('button', { name: 'Valorar', exact: true })).toBeHidden()
+    const next = history.event('upcoming', upcoming.title)
+    await expect(next).toContainText(t('pages.account.history.activityCount', { count: 2 }))
+    await expect(next.getByTestId('history-event-rate')).toBeHidden()
     await history.toggle(next).click()
     await expect(history.toggle(next)).toHaveAttribute('aria-expanded', 'true')
-    await expect(history.activity(next, requested.title)).toContainText('Solicitada')
-    await expect(history.activity(next, confirmed.title)).toContainText('Confirmada')
+    await expect(history.activity(next, requested.title)).toContainText(STATUS_NAMES.requested)
+    await expect(history.activity(next, confirmed.title)).toContainText(STATUS_NAMES.confirmed)
 
-    const previous = history.event('Eventos anteriores', attended.title)
-    await expect(previous).toContainText('1 actividad')
-    await expect(previous.getByRole('button', { name: 'Valorar', exact: true })).toBeVisible()
-    await expect(page.getByText(missed.title)).toBeHidden()
+    const previous = history.event('past', attended.title)
+    await expect(previous).toContainText(t('pages.account.history.activityCount', { count: 1 }))
+    await expect(previous.getByTestId('history-event-rate')).toHaveText(
+      t('pages.account.history.rate'),
+    )
+    await expect(
+      page.getByTestId('history-event-title').filter({ hasText: missed.title }),
+    ).toBeHidden()
     expect(await historyEntry(actor.api, missed.id)).toBeUndefined()
   })
 
@@ -65,11 +73,13 @@ test.describe('event history', () => {
     const actor = await accounts.actor({ label: 'rating' })
     const event = await pastEventWith(seed, actor, 10, 'confirmed')
     const page = await pageAs(actor)
-    await new AccountPage(page).goto('Historial')
-    const entry = new HistoryTab(page).event('Eventos anteriores', event.title)
+    await new AccountPage(page).goto('history')
+    const entry = new HistoryTab(page).event('past', event.title)
     const rating = new RatingDialog(page)
+    const rate = entry.getByTestId('history-event-rate')
 
-    await entry.getByRole('button', { name: 'Valorar', exact: true }).click()
+    await expect(rate).toHaveText(t('pages.account.history.rate'))
+    await rate.click()
     await expect(rating.root).toContainText(event.title)
     await expect(rating.submit).toBeDisabled()
     await rating.mostLiked.fill('Los retos por parejas')
@@ -82,21 +92,20 @@ test.describe('event history', () => {
     await rating.mostLiked.fill('Los retos por parejas')
     await rating.submit.click()
 
-    await expect(notification(page, 'Valoración guardada')).toBeVisible()
+    await expect(notification(page, t('pages.account.history.savedSummary'))).toBeVisible()
     await expect(rating.root).toBeHidden()
-    const edit = entry.getByRole('button', { name: 'Editar valoración' })
-    await expect(edit).toBeVisible()
+    await expect(rate).toHaveText(t('pages.account.history.editRating'))
     expect((await historyEntry(actor.api, event.id))?.rating).toMatchObject({
       score: 4,
       mostLiked: 'Los retos por parejas',
     })
 
-    await edit.click()
+    await rate.click()
     await expect(rating.mostLiked).toHaveValue('Los retos por parejas')
     await rating.rate(5)
     await rating.suggestions.fill('Más talleres de robótica')
     await rating.saveChanges.click()
-    await expect(notification(page, 'Valoración guardada')).toBeVisible()
+    await expect(notification(page, t('pages.account.history.savedSummary'))).toBeVisible()
     await expect(rating.root).toBeHidden()
     expect((await historyEntry(actor.api, event.id))?.rating).toMatchObject({
       score: 5,
@@ -104,12 +113,15 @@ test.describe('event history', () => {
       suggestions: 'Más talleres de robótica',
     })
 
-    await edit.click()
+    await rate.click()
     await rating.remove.click()
-    await confirm(page, 'Borrar valoración', 'Eliminar')
-    await expect(notification(page, 'Tu valoración se ha borrado.')).toBeVisible()
+    await expect(messageBox(page)).toContainText(
+      t('pages.account.history.dialog.deleteMessage', { event: event.title }),
+    )
+    await confirm(page)
+    await expect(notification(page, t('pages.account.history.deletedDetail'))).toBeVisible()
     await expect(rating.root).toBeHidden()
-    await expect(entry.getByRole('button', { name: 'Valorar', exact: true })).toBeVisible()
+    await expect(rate).toHaveText(t('pages.account.history.rate'))
     expect((await historyEntry(actor.api, event.id))?.rating).toBeNull()
   })
 })

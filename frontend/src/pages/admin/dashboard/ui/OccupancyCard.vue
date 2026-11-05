@@ -30,6 +30,7 @@ function toggle(id: string): void {
 
 <template>
   <ChartCard
+    data-testid="occupancy-card"
     :title="$t('pages.admin.dashboard.occupancy.title')"
     :subtitle="$t('pages.admin.dashboard.occupancy.subtitle')"
   >
@@ -53,7 +54,12 @@ function toggle(id: string): void {
 
     <ul v-else class="occupancy__list">
       <li v-for="event in events" :key="event.id" class="occupancy__event">
-        <button type="button" class="occupancy__row" @click="toggle(event.id)">
+        <button
+          type="button"
+          class="occupancy__row"
+          data-testid="occupancy-card-event"
+          @click="toggle(event.id)"
+        >
           <span class="occupancy__chevron">
             <AppIcon :name="expanded[event.id] ? 'chevron-down' : 'chevron-right'" />
           </span>
@@ -63,7 +69,12 @@ function toggle(id: string): void {
         </button>
 
         <ul v-if="expanded[event.id]" class="occupancy__activities">
-          <li v-for="activity in event.activities" :key="activity.id" class="occupancy__activity">
+          <li
+            v-for="activity in event.activities"
+            :key="activity.id"
+            class="occupancy__activity"
+            data-testid="occupancy-card-activity"
+          >
             <span class="occupancy__activity-info">
               <span class="occupancy__activity-name" :title="activity.title">{{
                 activity.title

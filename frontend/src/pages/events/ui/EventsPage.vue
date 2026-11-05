@@ -71,13 +71,19 @@ const hasNoPastResults = computed(
       </div>
     </section>
 
-    <section class="events-section">
+    <section class="events-section" data-testid="events-upcoming">
       <div class="ca-container">
         <div class="events-section__head">
           <h2 class="events-section__title">{{ $t('pages.events.upcomingTitle') }}</h2>
         </div>
-        <p v-if="isLoadingUpcoming" class="events-loading">{{ $t('common.loading') }}</p>
-        <p v-else-if="upcomingEvents.length === 0" class="events-loading">
+        <p v-if="isLoadingUpcoming" class="events-loading" data-testid="events-loading">
+          {{ $t('common.loading') }}
+        </p>
+        <p
+          v-else-if="upcomingEvents.length === 0"
+          class="events-loading"
+          data-testid="events-empty"
+        >
           {{ $t('pages.events.noUpcoming') }}
         </p>
         <EventBoard v-else :events="upcomingEvents" />
@@ -86,13 +92,14 @@ const hasNoPastResults = computed(
             :label="$t('common.loadMore')"
             plain
             :loading="isFetchingMoreUpcoming"
+            data-testid="events-more"
             @click="loadMoreUpcoming"
           />
         </div>
       </div>
     </section>
 
-    <section class="events-section events-section--past">
+    <section class="events-section events-section--past" data-testid="events-past">
       <div class="ca-container">
         <div class="events-section__head">
           <h2 class="events-section__title">{{ $t('pages.events.pastTitle') }}</h2>
@@ -103,6 +110,7 @@ const hasNoPastResults = computed(
                 v-model="search"
                 class="events-filters__search"
                 :label="$t('common.searchByTitleOrSubtitle')"
+                data-testid="events-search"
               />
               <EventCategoryFilter
                 v-if="categories.length"
@@ -113,8 +121,10 @@ const hasNoPastResults = computed(
             </div>
           </div>
         </div>
-        <p v-if="isLoadingPast" class="events-loading">{{ $t('common.loading') }}</p>
-        <p v-else-if="hasNoPastResults" class="events-loading">
+        <p v-if="isLoadingPast" class="events-loading" data-testid="events-loading">
+          {{ $t('common.loading') }}
+        </p>
+        <p v-else-if="hasNoPastResults" class="events-loading" data-testid="events-empty">
           {{ $t('pages.events.noResults') }}
         </p>
         <div v-else class="events-grid">
@@ -125,6 +135,7 @@ const hasNoPastResults = computed(
             :label="$t('common.loadMore')"
             plain
             :loading="isFetchingMorePast"
+            data-testid="events-more"
             @click="loadMorePast"
           />
         </div>

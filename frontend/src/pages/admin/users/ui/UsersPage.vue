@@ -222,14 +222,20 @@ const staffRoleOptions = computed(() =>
       <template #filters>
         <el-segmented
           size="small"
+          data-testid="users-scope"
           :aria-label="$t('pages.admin.users.scope.label')"
           :options="scopeOptions"
           :model-value="scope"
           @change="setScope"
-        />
+        >
+          <template #default="{ item }">
+            <span :data-testid="`users-scope-${item.value}`">{{ item.label }}</span>
+          </template>
+        </el-segmented>
         <ColumnFilterSelect
           v-if="showsField('newsConsent')"
           v-model="table.columnFilter('newsConsent').value"
+          data-testid="users-filter-news-consent"
           variant="toolbar"
           :label="$t('pages.admin.users.columns.newsConsent')"
           :options="yesNoOptions"
@@ -238,6 +244,7 @@ const staffRoleOptions = computed(() =>
         <ColumnFilterDate
           v-if="showsField('birthDate')"
           v-model="table.columnFilter('birthDate').value"
+          data-testid="users-filter-birth-date"
           variant="toolbar"
           :label="$t('pages.admin.users.columns.birth')"
           @apply="table.onFilter"
@@ -246,6 +253,7 @@ const staffRoleOptions = computed(() =>
       <template #actions>
         <ActionButton
           :label="$t('pages.admin.users.email.bulkLabel')"
+          data-testid="users-bulk-email"
           :tooltip="$t('pages.admin.users.email.bulkTooltip')"
           icon="envelope"
           size="small"
@@ -264,18 +272,21 @@ const staffRoleOptions = computed(() =>
         <template #default="{ row }">
           <TablePrimaryCell :title="fullName(row)">
             <template v-if="isOwnAccount(row)" #badges>
-              <el-tag size="small" type="info" disable-transitions>{{
+              <el-tag size="small" type="info" disable-transitions data-testid="users-you">{{
                 $t('pages.admin.users.badges.you')
               }}</el-tag>
             </template>
             <template v-if="ageLabel(row) !== null || hasFamily(row)" #meta>
               <span class="user-meta">
-                <span v-if="row.parentId">{{ $t('pages.admin.users.guardianPrefix') }}</span>
+                <span v-if="row.parentId" data-testid="users-guardian-prefix">{{
+                  $t('pages.admin.users.guardianPrefix')
+                }}</span>
                 <button
                   v-if="row.parentId"
                   type="button"
                   class="user-meta__link"
                   :title="$t('pages.admin.users.tooltips.showTutor')"
+                  data-testid="users-guardian"
                   @click="showGuardianOf(row)"
                 >
                   {{ row.parentName }}
@@ -285,6 +296,7 @@ const staffRoleOptions = computed(() =>
                   type="button"
                   class="user-meta__link"
                   :title="$t('pages.admin.users.tooltips.showDependents')"
+                  data-testid="users-dependents"
                   @click="showDependentsOf(row)"
                 >
                   {{ dependentsLabel(row.dependentCount) }}
@@ -312,6 +324,7 @@ const staffRoleOptions = computed(() =>
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('email').value"
+            data-testid="users-filter-email"
             :label="$t('common.email')"
             :placeholder="$t('pages.admin.users.search.email')"
             @apply="table.onFilter"
@@ -329,6 +342,7 @@ const staffRoleOptions = computed(() =>
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('phone').value"
+            data-testid="users-filter-phone"
             :label="$t('common.phone')"
             :placeholder="$t('pages.admin.users.search.phone')"
             @apply="table.onFilter"
@@ -353,6 +367,7 @@ const staffRoleOptions = computed(() =>
         <template #header>
           <ColumnSearch
             v-model="table.columnFilter('nationalId').value"
+            data-testid="users-filter-national-id"
             :label="$t('pages.admin.users.columns.nationalId')"
             :placeholder="$t('pages.admin.users.search.nationalId')"
             @apply="table.onFilter"
@@ -370,6 +385,7 @@ const staffRoleOptions = computed(() =>
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('status').value"
+            data-testid="users-filter-status"
             :label="$t('common.status')"
             :options="statusOptions"
             @apply="table.onFilter"
@@ -394,6 +410,7 @@ const staffRoleOptions = computed(() =>
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('type').value"
+            data-testid="users-filter-type"
             :label="$t('pages.admin.users.columns.type')"
             :options="typeOptions"
             @apply="table.onFilter"
@@ -414,6 +431,7 @@ const staffRoleOptions = computed(() =>
         <template #header>
           <ColumnFilterSelect
             v-model="table.columnFilter('staffRole').value"
+            data-testid="users-filter-staff-role"
             :label="$t('pages.admin.users.columns.staffRole')"
             :options="staffRoleOptions"
             @apply="table.onFilter"
@@ -421,13 +439,14 @@ const staffRoleOptions = computed(() =>
         </template>
         <template #default="{ row }">
           <div class="staff-cell">
-            <span>{{ staffRoleLabel(row) }}</span>
+            <span data-testid="users-staff-role">{{ staffRoleLabel(row) }}</span>
             <el-tag
               v-if="row.isPrivacyOfficer"
               size="small"
               type="success"
               disable-transitions
               :title="$t('pages.admin.users.badges.privacyOfficerTitle')"
+              data-testid="users-privacy-officer"
               >{{ $t('pages.admin.users.badges.privacyOfficer') }}</el-tag
             >
           </div>
@@ -453,6 +472,7 @@ const staffRoleOptions = computed(() =>
 
     <AdminPasswordDialog
       v-model:visible="officerVisible"
+      data-testid="privacy-officer-dialog"
       :title="$t('pages.admin.users.privacyOfficer.header')"
       :message="
         $t('pages.admin.users.privacyOfficer.message', { fullName: fullName(officerUser ?? {}) })
@@ -467,6 +487,7 @@ const staffRoleOptions = computed(() =>
 
     <AdminPasswordDialog
       v-model:visible="resetVisible"
+      data-testid="reset-two-factor-dialog"
       :title="$t('pages.admin.users.resetTwoFactor.header')"
       :message="
         resetUser?.usesAuthenticator

@@ -1,5 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
+import type { SiteSection } from '../site-header'
+
 /** The colour theme of the site: the `ca-dark` class on the root element and the saved choice. */
 export class SiteTheme {
   /** The `<html>` element, which carries `ca-dark` while the dark theme is on. */
@@ -17,19 +19,39 @@ export class SiteTheme {
 
 /** The menu drawer that holds the navigation on narrow screens. */
 export class MenuDrawer {
-  /** The drawer, a dialog named «Menú». */
+  /** The panel that slides in with the navigation, present only while it is open. */
   readonly root: Locator
 
-  /** The navigation inside the drawer. */
-  readonly navigation: Locator
+  /** The greeting of signed-in people. */
+  readonly greeting: Locator
+
+  /** The link to the administration, for administrators. */
+  readonly admin: Locator
+
+  /** The link to «Mi cuenta», for signed-in people. */
+  readonly account: Locator
+
+  /** The sign-out button. */
+  readonly logout: Locator
+
+  /** The link to the registration page, for visitors. */
+  readonly register: Locator
+
+  /** The link to the login page, for visitors. */
+  readonly login: Locator
 
   constructor(page: Page) {
-    this.root = page.getByRole('dialog', { name: 'Menú' })
-    this.navigation = this.root.getByRole('navigation', { name: 'Principal' })
+    this.root = page.getByTestId('site-menu')
+    this.greeting = this.root.getByTestId('site-menu-greeting')
+    this.admin = this.root.getByTestId('site-menu-admin')
+    this.account = this.root.getByTestId('site-menu-account')
+    this.logout = this.root.getByTestId('site-menu-logout')
+    this.register = this.root.getByTestId('site-menu-register')
+    this.login = this.root.getByTestId('site-menu-login')
   }
 
-  /** The link `name` of the drawer. */
-  link(name: string): Locator {
-    return this.root.getByRole('link', { name, exact: true })
+  /** The navigation link to `section`. */
+  link(section: SiteSection): Locator {
+    return this.root.getByTestId(`nav-${section}`)
   }
 }

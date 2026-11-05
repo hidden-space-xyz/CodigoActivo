@@ -1,7 +1,12 @@
 import { signUp } from '../../support/api/signups'
 import { uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
-import { EventAdminPage } from '../../support/pages/admin-events/event-admin-page'
+import { t } from '../../support/i18n'
+import {
+  EventAdminPage,
+  ROLE_LABELS,
+  USER_TYPE_LABELS,
+} from '../../support/pages/admin-events/event-admin-page'
 import { firstDependent } from '../../support/api/accounts'
 import { fullName } from '../../support/data/people'
 import { BadgesPage, RosterPage, stubPrint } from '../../support/pages/admin-events/printout-pages'
@@ -35,7 +40,7 @@ test.describe('event printouts', () => {
     await expect(adult).toContainText(event.title)
     await expect(adult).toContainText(activity.title)
     await expect(adult).toContainText(activity.location)
-    await expect(adult).toContainText('Participante')
+    await expect(adult).toContainText(USER_TYPE_LABELS.participant)
     const child = badges.badge(fullName(minor))
     await expect(child).toContainText(guardian.account.firstName)
     await expect(child).toContainText(guardian.account.phone)
@@ -72,8 +77,12 @@ test.describe('event printouts', () => {
     await expect(page).toHaveURL(`${EventAdminPage.path(event.id)}/roster`)
     const roster = new RosterPage(page)
     await expect(roster.activity(activity.title)).toBeVisible()
-    await expect(page.getByText('2 inscritos').filter({ visible: true })).toBeVisible()
-    await expect(page.getByRole('cell', { name: 'Participantes', exact: true })).toBeVisible()
+    await expect(
+      roster.root.getByTestId('roster-chunk-count').filter({ visible: true }),
+    ).toContainText(t('pages.admin.eventRoster.participantsCount', { count: 2 }))
+    await expect(roster.root.getByTestId('roster-chunk-role').filter({ visible: true })).toHaveText(
+      t('pages.admin.eventRoster.rolePluralVowel', { name: ROLE_LABELS.participant }),
+    )
     await expect(roster.person(fullName(participant.account))).toContainText(
       participant.account.email,
     )
@@ -101,13 +110,13 @@ test.describe('event printouts', () => {
     await page.goto(`${EventAdminPage.path(event.id)}/badges`)
 
     const badges = new BadgesPage(page)
-    await expect(badges.empty).toBeVisible()
+    await expect(badges.empty).toHaveText(t('pages.admin.eventBadges.emptyText'))
     await expect(badges.badges).toHaveCount(0)
 
     await page.goto(`${EventAdminPage.path(event.id)}/roster`)
 
     const roster = new RosterPage(page)
-    await expect(roster.empty).toBeVisible()
+    await expect(roster.empty).toHaveText(t('pages.admin.eventRoster.emptyText'))
     await expect(roster.activity(activity.title)).toBeHidden()
   })
 })

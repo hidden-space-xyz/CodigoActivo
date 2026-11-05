@@ -1,6 +1,7 @@
 import { eventById, eventTitled, findEvent } from '../../support/api/admin-events'
 import { uniqueLetters, uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
 import { EventAdminPage } from '../../support/pages/admin-events/event-admin-page'
 import {
   EventFormDialog,
@@ -8,7 +9,7 @@ import {
 } from '../../support/pages/admin-events/events-admin-page'
 import { pickerDate, pickerMoment } from '../../support/data/formats'
 import { dayFromToday } from '../../support/data/time'
-import { confirm, notification } from '../../support/ui/element-plus'
+import { confirm, expectChecked, notification } from '../../support/ui/element-plus'
 
 test.describe('events admin', () => {
   test('an administrator creates an event with categories, optional terms and an image', async ({
@@ -25,13 +26,13 @@ test.describe('events admin', () => {
     await events.open()
 
     await events.newEvent.click()
-    const dialog = new EventFormDialog(page, 'Nuevo evento')
+    const dialog = new EventFormDialog(page)
     await dialog.title.fill(title)
     await dialog.subtitle.fill('Jornada abierta de programación creativa')
-    await dialog.chooseCategory(category.name)
+    await dialog.chooseCategory(category.id)
     await dialog.createCategory(newCategory)
-    await dialog.chooseTerms(conditions.name)
-    await expect(dialog.termsRequired(conditions.name)).toBeChecked()
+    await dialog.chooseTerms(conditions.id)
+    await expectChecked(dialog.termsRequired(conditions.name), true)
     await dialog.setTermsRequired(conditions.name, false)
     await dialog.describe('Talleres de robótica y videojuegos para todas las edades.')
     await dialog.schedule({
@@ -44,7 +45,7 @@ test.describe('events admin', () => {
     await dialog.pickImage()
     await dialog.save.click()
 
-    await expect(notification(page, 'Evento creado.')).toBeVisible()
+    await expect(notification(page, t('pages.admin.events.toasts.created'))).toBeVisible()
     await expect(dialog.root).toBeHidden()
     await events.find(title)
     const row = events.table.row(title)
@@ -66,20 +67,24 @@ test.describe('events admin', () => {
     const events = new EventsAdminPage(page)
     await events.open()
     await events.newEvent.click()
-    const dialog = new EventFormDialog(page, 'Nuevo evento')
+    const dialog = new EventFormDialog(page)
 
     await dialog.save.click()
 
-    for (const message of [
-      'Selecciona al menos una categoría.',
-      'La fecha de inicio es obligatoria.',
-      'La fecha de fin es obligatoria.',
-      'La apertura de inscripción es obligatoria.',
-      'El cierre de inscripción es obligatorio.',
-      'La imagen es obligatoria.',
-    ]) {
-      await expect(dialog.root.getByText(message, { exact: true })).toBeVisible()
+    for (const [error, message] of [
+      ['event-form-categories-error', 'categoriesRequired'],
+      ['event-form-starts-on-error', 'eventStartRequired'],
+      ['event-form-ends-on-error', 'eventEndRequired'],
+      ['event-form-signup-from-error', 'signupStartRequired'],
+      ['event-form-signup-until-error', 'signupEndRequired'],
+    ] as const) {
+      await expect(dialog.root.getByTestId(error)).toHaveText(
+        t(`pages.admin.events.form.problems.${message}`),
+      )
     }
+    await expect(dialog.root.getByTestId('thumbnail-field')).toContainText(
+      t('common.imageRequired'),
+    )
     await expect(dialog.title).toHaveAttribute('aria-invalid', 'true')
     await expect(dialog.subtitle).toHaveAttribute('aria-invalid', 'true')
     await expect(dialog.root).toBeVisible()
@@ -90,7 +95,7 @@ test.describe('events admin', () => {
     const events = new EventsAdminPage(page)
     await events.open()
     await events.newEvent.click()
-    const dialog = new EventFormDialog(page, 'Nuevo evento')
+    const dialog = new EventFormDialog(page)
     await dialog.schedule({
       startsOn: pickerDate(dayFromToday(20)),
       endsOn: pickerDate(dayFromToday(20)),
@@ -101,16 +106,13 @@ test.describe('events admin', () => {
 
     await dialog.save.click()
 
-    await expect(
-      dialog.root.getByText('El cierre debe ser posterior a la apertura.', { exact: true }),
-    ).toBeVisible()
-    await expect(
-      dialog.root.getByText(
-        'La inscripción anticipada debe abrir antes que la inscripción general.',
-        { exact: true },
-      ),
-    ).toBeVisible()
-    await expect(dialog.root.getByText('La fecha de inicio es obligatoria.')).toBeHidden()
+    await expect(dialog.root.getByTestId('event-form-signup-until-error')).toHaveText(
+      t('pages.admin.events.form.problems.signupOrderInvalid'),
+    )
+    await expect(dialog.root.getByTestId('event-form-early-signup-from-error')).toHaveText(
+      t('pages.admin.events.form.problems.earlySignupOrderInvalid'),
+    )
+    await expect(dialog.root.getByTestId('event-form-starts-on-error')).toBeHidden()
   })
 
   test('an administrator renames an event', async ({ pageAs, admin, seed }) => {
@@ -121,14 +123,14 @@ test.describe('events admin', () => {
     await events.open()
     await events.find(event.title)
 
-    await events.table.rowAction(event.title, 'Editar')
-    const dialog = new EventFormDialog(page, 'Editar evento')
+    await events.table.rowAction(event.title, 'edit')
+    const dialog = new EventFormDialog(page)
     await expect(dialog.title).toHaveValue(event.title)
     await expect(dialog.subtitle).toHaveValue(event.subtitle)
     await dialog.title.fill(renamed)
     await dialog.save.click()
 
-    await expect(notification(page, 'Evento actualizado.')).toBeVisible()
+    await expect(notification(page, t('pages.admin.events.toasts.updated'))).toBeVisible()
     await expect(dialog.root).toBeHidden()
     await events.find(renamed)
     await expect(events.table.row(renamed)).toBeVisible()
@@ -142,10 +144,10 @@ test.describe('events admin', () => {
     await events.open()
     await events.find(event.title)
 
-    await events.table.rowAction(event.title, 'Eliminar', `Más acciones para ${event.title}`)
-    await confirm(page, 'Eliminar evento', 'Eliminar')
+    await events.table.rowAction(event.title, 'delete')
+    await confirm(page)
 
-    await expect(notification(page, 'Evento eliminado.')).toBeVisible()
+    await expect(notification(page, t('pages.admin.events.toasts.deleted'))).toBeVisible()
     await expect(events.table.row(event.title)).toBeHidden()
     expect(await findEvent(admin.api, event.title)).toBeUndefined()
   })
@@ -162,14 +164,14 @@ test.describe('events admin', () => {
     await expect(events.table.row(upcoming.title)).toBeVisible()
     await expect(events.table.row(past.title)).toBeHidden()
 
-    await events.showScope('Pasados')
+    await events.showScope('past')
     await expect(events.table.row(past.title)).toBeVisible()
     await expect(events.table.row(upcoming.title)).toBeHidden()
 
-    await events.showScope('Todos')
+    await events.showScope('all')
     await expect(events.table.row(past.title)).toBeVisible()
     await expect(events.table.row(upcoming.title)).toBeVisible()
-    await expect(events.table.count).toHaveText('2 resultados')
+    await expect(events.table.count).toHaveText(t('table.results', { n: 2 }))
   })
 
   test('the search finds an event by its subtitle', async ({ pageAs, admin, seed }) => {
@@ -184,7 +186,7 @@ test.describe('events admin', () => {
 
     await expect(events.table.row(wanted.title)).toBeVisible()
     await expect(events.table.row(other.title)).toBeHidden()
-    await expect(events.table.count).toHaveText('1 resultado')
+    await expect(events.table.count).toHaveText(t('table.results', { n: 1 }))
   })
 
   test('the category filter keeps only the events of that category', async ({
@@ -203,11 +205,18 @@ test.describe('events admin', () => {
     await events.find(token)
     await expect(events.table.row(other.title)).toBeVisible()
 
-    await events.table.filterBy('Categorías', robotics.name)
+    await events.table.filterBy('admin-events-category-filter', robotics.id)
 
     await expect(events.table.row(wanted.title)).toBeVisible()
     await expect(events.table.row(other.title)).toBeHidden()
-    await expect(events.table.chips.getByText(`Categorías: ${robotics.name}`)).toBeVisible()
+    await expect(
+      events.table.chip(
+        t('table.filterChip', {
+          label: t('pages.admin.events.columns.categories'),
+          value: robotics.name,
+        }),
+      ),
+    ).toBeVisible()
   })
 
   test('managing an event opens its admin page', async ({ pageAs, admin, seed }) => {
@@ -217,7 +226,7 @@ test.describe('events admin', () => {
     await events.open()
     await events.find(event.title)
 
-    await events.table.rowAction(event.title, 'Gestionar')
+    await events.table.rowAction(event.title, 'manage')
 
     await expect(page).toHaveURL(EventAdminPage.path(event.id))
     await expect(new EventAdminPage(page).heading(event.title)).toBeVisible()

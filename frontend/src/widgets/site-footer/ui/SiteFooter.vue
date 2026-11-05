@@ -10,7 +10,7 @@ const { data: legalEntity } = useQuery(legalEntityQueries.detail())
 </script>
 
 <template>
-  <footer class="footer">
+  <footer class="footer" data-testid="site-footer">
     <div class="footer__inner">
       <div class="footer__brandcol">
         <BrandLogo class="footer__brand" />
@@ -25,6 +25,7 @@ const { data: legalEntity } = useQuery(legalEntityQueries.detail())
           <div class="footer__links">
             <a
               v-if="legalEntity?.email"
+              data-testid="site-footer-email"
               :href="`mailto:${legalEntity.email}`"
               class="footer__link footer__link--icon"
             >
@@ -33,6 +34,7 @@ const { data: legalEntity } = useQuery(legalEntityQueries.detail())
             </a>
             <a
               v-if="legalEntity?.phone"
+              data-testid="site-footer-phone"
               :href="`tel:${legalEntity.phone.dialable}`"
               class="footer__link footer__link--icon"
             >
@@ -46,6 +48,7 @@ const { data: legalEntity } = useQuery(legalEntityQueries.detail())
           <div class="footer__heading">{{ $t('widgets.siteFooter.follow') }}</div>
           <div class="footer__channels">
             <a
+              data-testid="site-footer-instagram"
               :href="ORGANIZATION.social.instagram"
               target="_blank"
               rel="noopener"
@@ -55,6 +58,7 @@ const { data: legalEntity } = useQuery(legalEntityQueries.detail())
               {{ $t('widgets.siteFooter.social.instagram') }}
             </a>
             <a
+              data-testid="site-footer-facebook"
               :href="ORGANIZATION.social.facebook"
               target="_blank"
               rel="noopener"
@@ -64,6 +68,7 @@ const { data: legalEntity } = useQuery(legalEntityQueries.detail())
               {{ $t('widgets.siteFooter.social.facebook') }}
             </a>
             <a
+              data-testid="site-footer-linkedin"
               :href="ORGANIZATION.social.linkedin"
               target="_blank"
               rel="noopener"
@@ -73,6 +78,7 @@ const { data: legalEntity } = useQuery(legalEntityQueries.detail())
               {{ $t('widgets.siteFooter.social.linkedIn') }}
             </a>
             <a
+              data-testid="site-footer-youtube"
               :href="ORGANIZATION.social.youtube"
               target="_blank"
               rel="noopener"
@@ -87,11 +93,19 @@ const { data: legalEntity } = useQuery(legalEntityQueries.detail())
         <nav class="footer__group footer__legal" :aria-label="$t('widgets.siteFooter.legal')">
           <div class="footer__heading">{{ $t('widgets.siteFooter.legal') }}</div>
           <div class="footer__links">
-            <RouterLink :to="{ name: 'privacy-policy' }" class="footer__legal-link">
+            <RouterLink
+              :to="{ name: 'privacy-policy' }"
+              class="footer__legal-link"
+              data-testid="nav-privacy-policy"
+            >
               <AppIcon name="lock" />
               {{ $t('widgets.siteFooter.privacy') }}
             </RouterLink>
-            <RouterLink :to="{ name: 'cookie-policy' }" class="footer__legal-link">
+            <RouterLink
+              :to="{ name: 'cookie-policy' }"
+              class="footer__legal-link"
+              data-testid="nav-cookie-policy"
+            >
               <AppIcon name="cookie" />
               {{ $t('widgets.siteFooter.cookies') }}
             </RouterLink>
