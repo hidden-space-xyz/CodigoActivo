@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM mcr.microsoft.com/playwright:v1.64.1-noble
+FROM mcr.microsoft.com/playwright:v1.65.0-noble
 WORKDIR /repo/tests/e2e
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --no-fund

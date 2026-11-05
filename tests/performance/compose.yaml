@@ -46,7 +46,7 @@ services:
 
   mailpit:
     <<: *tools
-    image: axllent/mailpit:v1.31.5
+    image: axllent/mailpit:v1.33.0
     environment:
       MP_MAX_MESSAGES: 50000
 
@@ -98,7 +98,7 @@ services:
 
   k6:
     <<: *tools
-    image: grafana/k6:2.2.0
+    image: grafana/k6:2.3.0
     profiles: [k6]
     depends_on:
       api:
