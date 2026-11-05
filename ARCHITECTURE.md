@@ -75,12 +75,13 @@ no check enforces.
   `DateRange.InstantsIn` gives the UTC bounds of the event days that both `DateRange.Covers` (a new activity
   schedule) and `IActivityRepository.AnyOutsideRangeAsync` (a shortened event) compare activities against.
 - The aggregates are `User` (a dependent is another `User` referenced by `ParentId`), `UserSession`,
-  `BlockedDataConsultation` (with its findings and extracts), `Event` (with its categories and terms links),
-  `Activity` (with its role capacities and signups), `EventTermsAcceptance`, `EventRating`, `NewsItem`,
-  `Resource`, `Partner`, `TermsDocument`, `LegalPolicy`, `EventCategoryType` and `StoredFile`. Their state has
-  private setters: factories create them, returning `Result<T>` when a rule can fail, and behavior methods own the
-  invariants and the transitions (`User.Verify`, `User.RecordPasswordFailure`, `Activity.RequestAssignment`,
-  `Activity.ChangeAssignmentStatus`, `Event.Feature`). Child entities change only through their root. For people,
+  `BlockedDataConsultation` (with its findings and extracts), `BlockedDataHold` (with the accounts it keeps),
+  `Event` (with its categories and terms links), `Activity` (with its role capacities and signups),
+  `EventTermsAcceptance`, `EventRating`, `NewsItem`, `Resource`, `Partner`, `TermsDocument`, `LegalPolicy`,
+  `EventCategoryType` and `StoredFile`. Their state has private setters: factories create them, returning
+  `Result<T>` when a rule can fail, and behavior methods own the invariants and the transitions (`User.Verify`,
+  `User.RecordPasswordFailure`, `Activity.RequestAssignment`, `Activity.ChangeAssignmentStatus`,
+  `Event.Feature`). Child entities change only through their root. For people,
   `CreateIndependent`, `CreateDependent` and `PlanProfileChange`/`ApplyProfileChange` decide which details an
   independent account or a dependent needs and answer each broken rule with one `DomainErrorCode`.
 - Aggregates record domain events for the changes other parts react to (`PartnerUpdated`, `NewsItemDeleted`,
@@ -251,7 +252,7 @@ of `BeginAuthenticatorSetup`, the recipient count of `SendEmail*` or the number 
 removed. The controller then runs the query that builds the HTTP response. Commands never call query handlers;
 they and the listeners may read the read store only for lookups that change nothing, each one reviewed in
 `HandlerConventionTests`: email audiences, the names a notification shows, the guardianship `ActingUserPolicy`
-checks, and the accounts a blocked data consultation searches or exports, with their personal data copy.
+checks, and the accounts a blocked data consultation searches, exports or holds, with their personal data copy.
 
 `AuditCommandDecorator` hands every command to `IAuditTrail` (`Application/Abstractions/Auditing`) as an
 `AuditRecord`: the actor (`ICurrentUser`, or the system for an `IScheduledCommand`), the caller address
@@ -439,7 +440,7 @@ Entities expose query keys (`xKeys`), `queryOptions` factories (`xQueries`), pag
 refresh in `meta.invalidates`; the query client invalidates them after a successful mutation, and a page adds
 keys of another slice with `alsoInvalidates`. Reports read by a single page (event statistics, attendees,
 ratings and terms decisions, badges, roster, dashboard analytics and the diagnostic and audit logs) and the
-blocked data consultations live in that page's `api` segment.
+blocked data consultations and holds live in that page's `api` segment.
 
 Person field rules mirror the backend `User` rules in one place, `entities/user`: `usePersonForm` (and the
 `parseIndependentPerson`/`parseDependentPerson` functions behind it) validates and normalizes an independent

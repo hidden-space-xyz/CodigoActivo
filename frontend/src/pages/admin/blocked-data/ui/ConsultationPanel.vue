@@ -30,6 +30,8 @@ const props = defineProps<{
   searching: boolean
   /** Shows a loading state on the download button. */
   extracting: boolean
+  /** Shows a loading state on the hold button. */
+  placing: boolean
   /** Kinds of data an extract can be narrowed to. */
   availableEntities: readonly string[]
 }>()
@@ -39,6 +41,8 @@ const emit = defineEmits<{
   search: []
   /** Fired to download the extract about the picked account. */
   download: []
+  /** Fired to keep the history of the picked account while the claim is open. */
+  hold: []
   /** Fired to forget the consultation. */
   close: []
 }>()
@@ -197,6 +201,14 @@ function summary(candidate: Candidate): string {
         :loading="extracting"
         :disabled="!accountId"
         @click="emit('download')"
+      />
+      <ActionButton
+        :label="$t('pages.admin.blockedData.holds.place.action')"
+        data-testid="blocked-data-panel-hold"
+        icon="lock"
+        :loading="placing"
+        :disabled="!accountId"
+        @click="emit('hold')"
       />
     </div>
   </section>

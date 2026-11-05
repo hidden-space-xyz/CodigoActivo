@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.BlockedData.Contracts;
@@ -39,16 +38,14 @@ public sealed record ExportBlockedDataCommand(
 /// </summary>
 /// <param name="officer">Policy that tells who may consult the blocked data.</param>
 /// <param name="consultations">Repository of the consultations.</param>
-/// <param name="readStore">Read side of the existing accounts.</param>
-/// <param name="executor">Query executor used to materialize database results.</param>
+/// <param name="minors">Finder of the minors of the account.</param>
 /// <param name="history">Reader of the data history.</param>
 /// <param name="personalData">Reader of the current personal data of an account.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class ExportBlockedDataCommandHandler(
     PrivacyOfficer officer,
     IBlockedDataConsultationRepository consultations,
-    IReadStore readStore,
-    IQueryExecutor executor,
+    BlockedDataMinors minors,
     IDataHistoryReader history,
     PersonalDataReader personalData,
     IClock clock
@@ -110,7 +107,7 @@ public sealed class ExportBlockedDataCommandHandler(
         }
 
         var accountId = command.AccountId.Value;
-        var household = await HouseholdAsync(accountId, now, ct);
+        IReadOnlyList<Guid> household = [accountId, .. await minors.OfAsync(accountId, now, ct)];
         var zone = clock.TimeZone;
         var entries = await history.ReadAboutAsync(
             household,
@@ -147,30 +144,6 @@ public sealed class ExportBlockedDataCommandHandler(
             [.. entries.Select(Entry)],
             current.IsSuccess ? current.Value : null
         );
-    }
-
-    private async Task<List<Guid>> HouseholdAsync(
-        Guid accountId,
-        DateTimeOffset now,
-        CancellationToken ct
-    )
-    {
-        var past = PastAccounts.From(
-            await history.ReadAboutAsync(
-                [accountId],
-                new DataHistoryPeriod(null, null, [nameof(User)], now),
-                ct
-            )
-        );
-        var liveDependents = await executor.ToListAsync(
-            readStore.Users.Where(u => u.ParentId == accountId).Select(u => u.Id),
-            ct
-        );
-        return
-        [
-            accountId,
-            .. liveDependents.Concat(past.DependentsOf(new HashSet<Guid> { accountId })).Distinct(),
-        ];
     }
 
     private static BlockedDataEntryResponse Entry(DataHistoryItem item)

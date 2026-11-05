@@ -79,4 +79,7 @@ public interface IReadStore
 
     /// <summary>Gets the consultations of the blocked data.</summary>
     public IQueryable<BlockedDataConsultationRow> BlockedDataConsultations { get; }
+
+    /// <summary>Gets the holds on the blocked data.</summary>
+    public IQueryable<BlockedDataHoldRow> BlockedDataHolds { get; }
 }

@@ -73,6 +73,8 @@ export type AuditAction =
   | 'OpenBlockedDataConsultation'
   | 'SearchBlockedData'
   | 'ExportBlockedData'
+  | 'PlaceBlockedDataHold'
+  | 'LiftBlockedDataHold'
   | 'SendConsentWithdrawalNotices'
   | 'SendBlockedDataConsultationNotices'
   | 'DiscardExpiredAccountChanges'
@@ -81,6 +83,7 @@ export type AuditAction =
 export type AuditEntityType =
   | 'Activity'
   | 'BlockedDataConsultation'
+  | 'BlockedDataHold'
   | 'Event'
   | 'EventCategoryType'
   | 'LegalPolicy'
@@ -96,7 +99,7 @@ export type AuditOutcome = 'Succeeded' | 'Rejected' | 'Failed'
 
 /**
  * One thing an audited command named: a person's full name or a title, empty when it no longer
- * exists or is a consultation of the blocked data, which the audit log never names.
+ * exists or is a consultation of the blocked data or a hold on it, which the audit log never names.
  */
 export interface AuditEntityRef {
   readonly type: AuditEntityType

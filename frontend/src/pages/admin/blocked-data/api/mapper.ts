@@ -3,11 +3,12 @@ import type {
   BlockedDataCandidateResponse,
   BlockedDataConsultationResponse,
   BlockedDataExport,
+  BlockedDataHoldResponse,
 } from '@/shared/api/generated/models'
 import type { Translate } from '@/shared/i18n'
 
 import { authorityLabelKey, entityLabelKey } from '../lib/labels'
-import type { BlockedDataAccess, Candidate, Consultation, ExtractFile } from '../model/types'
+import type { BlockedDataAccess, Candidate, Consultation, ExtractFile, Hold } from '../model/types'
 
 /** Maps what the signed-in administrator may do with the blocked data. */
 export function toBlockedDataAccess(response: BlockedDataAccessResponse): BlockedDataAccess {
@@ -28,6 +29,20 @@ export function toConsultation(response: BlockedDataConsultationResponse): Consu
     expiresAt: response.expiresAt,
     foundAccounts: response.foundAccounts,
     extracts: response.extracts,
+  }
+}
+
+/** Maps a hold; a name is `null` once that officer's account no longer exists. */
+export function toHold(response: BlockedDataHoldResponse): Hold {
+  return {
+    id: response.id,
+    authority: response.authority,
+    reference: response.reference,
+    accounts: response.accounts,
+    placedAt: response.placedAt,
+    placedByName: response.placedByName ?? null,
+    liftedAt: response.liftedAt ?? null,
+    liftedByName: response.liftedByName ?? null,
   }
 }
 

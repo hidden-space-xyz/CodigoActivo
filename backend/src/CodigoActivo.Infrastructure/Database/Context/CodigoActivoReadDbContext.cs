@@ -97,6 +97,10 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
         Set<BlockedDataConsultationRow>().AsNoTracking();
 
     /// <inheritdoc />
+    public IQueryable<BlockedDataHoldRow> BlockedDataHolds =>
+        Set<BlockedDataHoldRow>().AsNoTracking();
+
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
@@ -297,5 +301,16 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
             .HasOne<BlockedDataConsultationRow>()
             .WithMany(c => c.Extracts)
             .HasForeignKey(e => e.ConsultationId);
+
+        var holds = Table<BlockedDataHoldRow>(modelBuilder, "blocked_data_holds");
+        holds.HasKey(h => h.Id);
+        holds.Property(h => h.Authority).HasConversion<string>();
+
+        var subjects = Table<BlockedDataHoldSubjectRow>(modelBuilder, "blocked_data_hold_subjects");
+        subjects.HasKey(s => new { s.HoldId, s.AccountId });
+        subjects
+            .HasOne<BlockedDataHoldRow>()
+            .WithMany(h => h.Subjects)
+            .HasForeignKey(s => s.HoldId);
     }
 }

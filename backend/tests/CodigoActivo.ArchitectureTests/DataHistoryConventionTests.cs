@@ -40,6 +40,7 @@ public sealed class DataHistoryConventionTests
     [
         typeof(AccountErasureStore),
         typeof(BlockedDataConsultationRepository),
+        typeof(BlockedDataHoldRepository),
         typeof(DashboardCountsReader),
         typeof(EmailDeliveryLock),
         typeof(EmailOutboxStore),
@@ -129,6 +130,7 @@ public sealed class DataHistoryConventionTests
                     typeof(SearchBlockedDataCommandHandler),
                     typeof(ExportBlockedDataCommandHandler),
                     typeof(GetBlockedDataAccessQueryHandler),
+                    typeof(BlockedDataMinors),
                 ],
                 "the data history is blocked (article 32 LOPDGDD): only a consultation reads it"
             );

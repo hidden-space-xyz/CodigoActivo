@@ -7,11 +7,16 @@ namespace CodigoActivo.Application.BlockedData;
 public interface IDataHistoryRetention
 {
     /// <summary>
-    /// Physically removes every entry whose retention has ended. It runs immediately, without
-    /// waiting for the unit of work.
+    /// Physically removes every entry whose retention has ended, except those about an account a
+    /// hold keeps. It runs immediately, without waiting for the unit of work.
     /// </summary>
     /// <param name="now">Current time.</param>
+    /// <param name="heldAccountIds">Identifiers of the accounts whose history is kept.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is the number of entries removed.</returns>
-    public Task<int> PurgeExpiredAsync(DateTimeOffset now, CancellationToken ct = default);
+    public Task<int> PurgeExpiredAsync(
+        DateTimeOffset now,
+        IReadOnlyCollection<Guid> heldAccountIds,
+        CancellationToken ct = default
+    );
 }

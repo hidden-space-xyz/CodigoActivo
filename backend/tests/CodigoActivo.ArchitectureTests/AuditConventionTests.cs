@@ -87,7 +87,7 @@ public sealed class AuditConventionTests
     }
 
     [Fact]
-    public void OnlyTheAccountOfABlockedDataExtractIsAnUnauditedProperty()
+    public void OnlyTheAccountsOfTheBlockedDataAreUnauditedProperties()
     {
         ProductionAssemblies
             .Application.GetTypes()
@@ -99,7 +99,10 @@ public sealed class AuditConventionTests
                     .Select(property => $"{type.Name}.{property.Name}")
             )
             .Should()
-            .BeEquivalentTo("ExportBlockedDataCommand.AccountId");
+            .BeEquivalentTo(
+                "ExportBlockedDataCommand.AccountId",
+                "PlaceBlockedDataHoldCommand.AccountId"
+            );
     }
 
     [Fact]

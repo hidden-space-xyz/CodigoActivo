@@ -396,7 +396,7 @@ public sealed partial class HandlerConventionTests
                 typeof(ConsentWithdrawalNotifier),
                 typeof(PersonalDataReader),
                 typeof(SearchBlockedDataCommandHandler),
-                typeof(ExportBlockedDataCommandHandler),
+                typeof(BlockedDataMinors),
                 typeof(SendBlockedDataConsultationNoticesCommandHandler),
             ]);
     }

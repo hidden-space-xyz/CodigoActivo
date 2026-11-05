@@ -207,6 +207,11 @@ public class CodigoActivoDbContext(
         Set<BlockedDataConsultation>();
 
     /// <summary>
+    /// Gets the holds on the blocked data.
+    /// </summary>
+    public DbSet<BlockedDataHold> BlockedDataHolds => Set<BlockedDataHold>();
+
+    /// <summary>
     /// Adds <see cref="InitialAdministratorGuard"/> to every instance, whatever registered the
     /// options, so no commit can delete the initial administrator, and the data history recorder
     /// of the scope, so no commit of a historized row goes without its history.

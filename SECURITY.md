@@ -235,9 +235,12 @@ since the row itself is the record, and neither does a change of excluded proper
   does not decrypt. A copy of the database without `DATA_PROTECTION_KEY` and the key ring reveals nothing.
 - **Retention** (`DataHistoryRetentionOptions`): five years, the personal actions on the event conditions
   (Civil Code article 1964.2), which also outlast image and honor claims (LO 1/1982 article 9.5); three years for
-  news consent changes and ratings, when the very serious infringements prescribe (LOPDGDD article 72).
+  news consent changes and ratings, when the very serious infringements prescribe (LOPDGDD article 72). A claim
+  interrupts those terms (Civil Code article 1973), so the purge keeps every entry about an account an active
+  [hold](#blocked-data-consultations) names, whatever its age, until the hold is lifted.
   `DataHistoryPurgeWorker` runs `PurgeDataHistory` 30 seconds after startup and then hourly; it also removes the
-  consultations kept five years. Nothing else deletes entries, and the recorder refuses to change one.
+  consultations kept five years and the holds lifted five years ago. Nothing else deletes entries, and the
+  recorder refuses to change one.
 
 ### Blocked data consultations
 
@@ -267,6 +270,13 @@ administrator reaches the list of consultations, and only that person opens them
   to days and kinds of data, adds the current personal data of an existing account and records the extract
   (account, filters, moment and number of entries, enough to find the same entries again). An entry that no longer
   decrypts is returned without content and logged (`DataHistoryEntryUnreadable`).
+- `POST .../{id}/holds` places a hold for an open claim on an account the consultation found: it names that
+  account and its minors, existing and erased, without a foreign key, and copies the authority and the reference
+  of the consultation. `POST .../{id}/holds/{holdId}/lift`, from any open consultation, lifts it once the claim
+  is closed (`BlockedDataHoldLifted` the second time); lifting lets the next purge destroy what the claim needed,
+  so it takes the same password, second factor and notice as reading. `GET /api/blocked-data/holds` lists the
+  holds to every administrator with how many accounts each keeps, never which. Erasing an account is never
+  refused for a hold: the erasure only adds to the history the hold keeps.
 - `GET /api/blocked-data/consultations` lists who consulted, when, for what request, how many accounts were found
   and how many extracts taken, to every administrator and the designated account, without any of the data. A
   consultation keeps its officer without a foreign key, so it stays listed after that account is erased.
@@ -610,8 +620,8 @@ that error responses show as their reference. It never stores anything typed by 
 passwords, one-time codes, signatures, secrets and free text stay out, and so does the requested path. Login,
 password reset and verification requests record the account the email belongs to, so failed logins are
 attributed to their account. Saving or deleting an event rating is never recorded, and the scheduled purges are recorded
-only when they removed something. An extract of the blocked data never names its account (`[Unaudited]`), so only the
-privacy officer knows whose blocked data was handed over: neither the other administrators nor that person read
+only when they removed something. An extract of the blocked data or a hold on it never names its account (`[Unaudited]`), so only the
+privacy officer knows whose blocked data was handed over or held: neither the other administrators nor that person read
 it in the audit log or the personal data copy (LOPDGDD article 32). The account ids have no foreign key, so an erased account's entries remain
 until the audit retention ends; they are not part of the data history.
 

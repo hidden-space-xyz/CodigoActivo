@@ -79,6 +79,8 @@ export const AuditAction = {
   OpenBlockedDataConsultation: 'OpenBlockedDataConsultation',
   SearchBlockedData: 'SearchBlockedData',
   ExportBlockedData: 'ExportBlockedData',
+  PlaceBlockedDataHold: 'PlaceBlockedDataHold',
+  LiftBlockedDataHold: 'LiftBlockedDataHold',
   SendConsentWithdrawalNotices: 'SendConsentWithdrawalNotices',
   SendBlockedDataConsultationNotices: 'SendBlockedDataConsultationNotices',
   DiscardExpiredAccountChanges: 'DiscardExpiredAccountChanges',

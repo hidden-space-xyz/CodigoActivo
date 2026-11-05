@@ -94,3 +94,25 @@ public sealed record BlockedDataEntryResponse(
     string? Command,
     IReadOnlyDictionary<string, JsonElement> Values
 );
+
+/// <summary>
+/// A hold on the blocked data, without the accounts it keeps.
+/// </summary>
+/// <param name="Id">Identifier of the hold.</param>
+/// <param name="Authority">Who the claim is answered before.</param>
+/// <param name="Reference">Reference of the claim.</param>
+/// <param name="Accounts">How many accounts it keeps the history of: the account and its minors.</param>
+/// <param name="PlacedAt">When it was placed.</param>
+/// <param name="PlacedByName">Name of the account that placed it, while it exists.</param>
+/// <param name="LiftedAt">When it was lifted, or <see langword="null"/> while it is active.</param>
+/// <param name="LiftedByName">Name of the account that lifted it, while it exists.</param>
+public sealed record BlockedDataHoldResponse(
+    Guid Id,
+    BlockedDataAuthority Authority,
+    string Reference,
+    int Accounts,
+    DateTimeOffset PlacedAt,
+    string? PlacedByName,
+    DateTimeOffset? LiftedAt,
+    string? LiftedByName
+);

@@ -419,8 +419,9 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ListAuditLeavesBlockedDataConsultationsUnnamed()
+    public async Task ListAuditLeavesTheConsultationsAndHoldsOfTheBlockedDataUnnamed()
     {
+        var holdId = Guid.NewGuid();
         var consultation = BlockedDataConsultation
             .Open(
                 UserId.From(TestSeedData.Users.AdminId),
@@ -444,6 +445,13 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
                 TestSeedData.Users.AdminId,
                 consultation.Id.Value,
                 entityType: "BlockedDataConsultation"
+            ),
+            Audit(
+                Morning.AddMinutes(2),
+                AuditAction.PlaceBlockedDataHold,
+                TestSeedData.Users.AdminId,
+                holdId,
+                entityType: "BlockedDataHold"
             )
         );
         var admin = await LoginAsAdminAsync();
@@ -455,6 +463,7 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
             )
             .Should()
             .Equal(
+                (AuditAction.PlaceBlockedDataHold, AuditEntityType.BlockedDataHold, holdId, null),
                 (
                     AuditAction.ExportBlockedData,
                     AuditEntityType.BlockedDataConsultation,

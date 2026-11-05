@@ -25,13 +25,16 @@ interface DownloadedExtract {
 }
 
 /**
- * The legal archive, at `/admin/blocked-data`: the list of consultations every administrator
- * sees, the privacy officer's «Abrir consulta» dialog and the panel «Consulta abierta» that looks
- * accounts up and downloads an extract about one of them.
+ * The legal archive, at `/admin/blocked-data`: the lists of consultations and of holds every
+ * administrator sees, the privacy officer's «Abrir consulta» dialog and the panel «Consulta
+ * abierta» that looks accounts up, downloads an extract about one of them and holds its history.
  */
 export class BlockedDataPage {
   /** The list of consultations. */
   readonly consultations: DataTable
+
+  /** The list of holds that keep the history of an account while a claim is open. */
+  readonly holds: DataTable
 
   /** The button that starts a consultation, shown only to the privacy officer. */
   readonly openConsultation: Locator
@@ -47,6 +50,7 @@ export class BlockedDataPage {
 
   constructor(private readonly page: Page) {
     this.consultations = new DataTable(page)
+    this.holds = new DataTable(page, page.getByTestId('blocked-data-holds'))
     this.openConsultation = page.getByTestId('blocked-data-open')
     this.dialog = page.getByTestId('blocked-data-dialog')
     this.panel = page.getByTestId('blocked-data-panel')

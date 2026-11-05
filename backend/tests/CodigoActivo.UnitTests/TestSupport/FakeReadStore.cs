@@ -55,6 +55,8 @@ public sealed class FakeReadStore : IReadStore
 
     public List<BlockedDataConsultationRow> BlockedDataConsultations { get; } = [];
 
+    public List<BlockedDataHoldRow> BlockedDataHolds { get; } = [];
+
     IQueryable<UserRow> IReadStore.Users => Read(Users);
 
     IQueryable<UserStatusTypeRow> IReadStore.UserStatusTypes => Read(UserStatusTypes);
@@ -106,6 +108,8 @@ public sealed class FakeReadStore : IReadStore
 
     IQueryable<BlockedDataConsultationRow> IReadStore.BlockedDataConsultations =>
         Read(BlockedDataConsultations);
+
+    IQueryable<BlockedDataHoldRow> IReadStore.BlockedDataHolds => Read(BlockedDataHolds);
 
     public int ReadsOf<TRow>()
     {

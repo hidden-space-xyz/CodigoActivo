@@ -39,4 +39,35 @@ public static class BlockedDataProjections
                 )
         );
     }
+
+    /// <summary>
+    /// Projects holds without the accounts they keep. The officers who placed and lifted them are
+    /// looked up on their own, since a hold keeps no foreign key to them: one placed or lifted by
+    /// an account erased since stays, without the name.
+    /// </summary>
+    /// <param name="holds">Holds to project, already filtered and sorted.</param>
+    /// <param name="users">Accounts the officers are looked up in.</param>
+    /// <returns>The projected holds, in the same order.</returns>
+    public static IQueryable<BlockedDataHoldResponse> Holds(
+        IQueryable<BlockedDataHoldRow> holds,
+        IQueryable<UserRow> users
+    )
+    {
+        return holds.Select(hold => new BlockedDataHoldResponse(
+            hold.Id,
+            hold.Authority,
+            hold.Reference,
+            hold.Subjects.Count,
+            hold.PlacedAt,
+            users
+                .Where(officer => officer.Id == hold.PlacedById)
+                .Select(officer => officer.FirstName + " " + officer.LastName)
+                .FirstOrDefault(),
+            hold.LiftedAt,
+            users
+                .Where(officer => officer.Id == hold.LiftedById)
+                .Select(officer => officer.FirstName + " " + officer.LastName)
+                .FirstOrDefault()
+        ));
+    }
 }

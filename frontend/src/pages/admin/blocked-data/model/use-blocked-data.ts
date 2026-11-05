@@ -7,11 +7,16 @@ import { hasErrorCode } from '@/shared/api'
 import { BLOCKED_DATA_MIN_SEARCH_LENGTH } from '@/shared/config'
 import { toDateOnly } from '@/shared/lib/date'
 import { downloadBlob } from '@/shared/lib/download'
-import { getErrorMessage, useCrudFeedback } from '@/shared/lib/feedback'
+import { getErrorMessage, useActionConfirm, useCrudFeedback } from '@/shared/lib/feedback'
 import { useServerTable } from '@/shared/lib/paging'
 
-import { blockedDataMutations, blockedDataQueries, consultationList } from '../api/queries'
-import type { Candidate, Consultation, ConsultationRequest } from './types'
+import {
+  blockedDataMutations,
+  blockedDataQueries,
+  consultationList,
+  holdList,
+} from '../api/queries'
+import type { Candidate, Consultation, ConsultationRequest, Hold } from './types'
 
 /** Errors after which the open consultation can no longer be used. */
 const CLOSING_ERRORS = [
@@ -26,17 +31,25 @@ const CLOSING_ERRORS = [
  * about the account it picks, narrowed to a range of days and to kinds of data. Opening takes two
  * steps: the request and the password, which email a
  * code unless the account reads it from an authenticator application, and then that code; closing
- * the dialog forgets the request and its password. A consultation that ended is closed with its
- * error. Call it in `setup`.
+ * the dialog forgets the request and its password. Every administrator also sees the holds, newest
+ * first, without the accounts they keep; the designated account places one on the account it
+ * picks, for the request of its open consultation, and lifts one from an open consultation once
+ * its claim is closed, each after confirming. A consultation that ended is closed with its error.
+ * Call it in `setup`.
  */
 export function useBlockedData() {
   const { t } = useI18n()
   const feedback = useCrudFeedback()
+  const { confirmAction } = useActionConfirm()
   const session = useSession()
   const access = useQuery(blockedDataQueries.access())
   const table = useServerTable({
     ...consultationList,
     defaultSort: { field: 'openedAt', order: -1 },
+  })
+  const holdTable = useServerTable({
+    ...holdList,
+    defaultSort: { field: 'placedAt', order: -1 },
   })
 
   const dialogVisible = ref(false)
@@ -105,6 +118,22 @@ export function useBlockedData() {
     onError: closeOn,
   })
 
+  const placing = useMutation({
+    ...blockedDataMutations.placeHold(),
+    onSuccess: (hold) => {
+      feedback.success(t('pages.admin.blockedData.holds.place.done', { reference: hold.reference }))
+    },
+    onError: closeOn,
+  })
+
+  const lifting = useMutation({
+    ...blockedDataMutations.liftHold(),
+    onSuccess: () => {
+      feedback.success(t('pages.admin.blockedData.holds.lift.done'))
+    },
+    onError: closeOn,
+  })
+
   watch(dialogVisible, (visible) => {
     if (!visible) pendingRequest.value = null
   })
@@ -165,6 +194,46 @@ export function useBlockedData() {
     })
   }
 
+  /**
+   * Asks for confirmation and keeps the history of the picked account and its minors past its
+   * retention, for the request of the open consultation.
+   */
+  function placeHold(): void {
+    const open = consultation.value
+    const picked = candidates.value.find((candidate) => candidate.accountId === accountId.value)
+    if (!open || !picked) return
+    confirmAction({
+      header: t('pages.admin.blockedData.holds.place.title'),
+      message: t('pages.admin.blockedData.holds.place.message', {
+        name: picked.name,
+        reference: open.reference,
+      }),
+      acceptLabel: t('pages.admin.blockedData.holds.place.confirm'),
+      accept: () => {
+        placing.mutate({ consultationId: open.id, accountId: picked.accountId })
+      },
+    })
+  }
+
+  /** Tells whether `hold` can be lifted now: it is active and a consultation is open. */
+  function canLift(hold: Hold): boolean {
+    return consultation.value !== null && hold.liftedAt === null
+  }
+
+  /** Asks for confirmation and lifts `hold` from the open consultation. */
+  function liftHold(hold: Hold): void {
+    const open = consultation.value
+    if (!open || !canLift(hold)) return
+    confirmAction({
+      header: t('pages.admin.blockedData.holds.lift.title'),
+      message: t('pages.admin.blockedData.holds.lift.message', { reference: hold.reference }),
+      acceptLabel: t('pages.admin.blockedData.holds.lift.confirm'),
+      accept: () => {
+        lifting.mutate({ consultationId: open.id, holdId: hold.id })
+      },
+    })
+  }
+
   /** Forgets the open consultation and what it found. */
   function closeConsultation(): void {
     consultation.value = null
@@ -175,6 +244,7 @@ export function useBlockedData() {
 
   return {
     table,
+    holdTable,
     isOfficer,
     usesAuthenticator,
     email,
@@ -193,12 +263,17 @@ export function useBlockedData() {
     range,
     entities,
     extracting: computed(() => extracting.isPending.value),
+    placing: computed(() => placing.isPending.value),
+    lifting: computed(() => lifting.isPending.value),
     startConsultation,
     continueConsultation,
     resendCode,
     openConsultation,
     search,
     downloadExtract,
+    placeHold,
+    canLift,
+    liftHold,
     closeConsultation,
   }
 }

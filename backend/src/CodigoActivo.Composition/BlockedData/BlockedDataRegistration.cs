@@ -10,7 +10,7 @@ namespace CodigoActivo.Composition.BlockedData;
 
 /// <summary>
 /// Registers the blocked data: the data history with its reader and scheduled purge, the account
-/// designated for data protection and the consultations it opens.
+/// designated for data protection, the consultations it opens and the holds it places.
 /// </summary>
 internal static class BlockedDataRegistration
 {
@@ -23,6 +23,8 @@ internal static class BlockedDataRegistration
     {
         services.AddScoped<PrivacyOfficer>();
         services.AddScoped<IBlockedDataConsultationRepository, BlockedDataConsultationRepository>();
+        services.AddScoped<IBlockedDataHoldRepository, BlockedDataHoldRepository>();
+        services.AddScoped<BlockedDataMinors>();
         services.AddScoped<IDataHistoryReader, DataHistoryReader>();
         services.AddSingleton<IBlockedDataEmailComposer, BlockedDataEmailComposer>();
         services.AddFixedOptions<DataHistoryRetentionOptions>();

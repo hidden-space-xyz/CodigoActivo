@@ -5,6 +5,7 @@ import {
   toCandidate,
   toConsultation,
   toExtractFile,
+  toHold,
 } from '@/pages/admin/blocked-data/api/mapper'
 
 import { t } from '../../../../../support/render'
@@ -38,6 +39,46 @@ describe('blocked data mapper', () => {
       expiresAt: '2026-10-25T09:15:00Z',
       foundAccounts: 2,
       extracts: 1,
+    })
+  })
+
+  it('maps an active hold placed by an account erased since', () => {
+    expect(
+      toHold({
+        id: 'h1',
+        authority: 'Claim',
+        reference: 'Reclamación 7/2026',
+        accounts: 2,
+        placedAt: '2026-10-25T09:05:00Z',
+      }),
+    ).toEqual({
+      id: 'h1',
+      authority: 'Claim',
+      reference: 'Reclamación 7/2026',
+      accounts: 2,
+      placedAt: '2026-10-25T09:05:00Z',
+      placedByName: null,
+      liftedAt: null,
+      liftedByName: null,
+    })
+  })
+
+  it('maps a lifted hold with the names of its officers', () => {
+    expect(
+      toHold({
+        id: 'h1',
+        authority: 'Court',
+        reference: 'Ref',
+        accounts: 1,
+        placedAt: '2026-10-25T09:05:00Z',
+        placedByName: 'Dana Delegada',
+        liftedAt: '2027-03-01T10:00:00Z',
+        liftedByName: 'Leo Delegado',
+      }),
+    ).toMatchObject({
+      placedByName: 'Dana Delegada',
+      liftedAt: '2027-03-01T10:00:00Z',
+      liftedByName: 'Leo Delegado',
     })
   })
 

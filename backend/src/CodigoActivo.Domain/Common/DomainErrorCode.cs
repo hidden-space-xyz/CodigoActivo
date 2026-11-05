@@ -330,4 +330,14 @@ public enum DomainErrorCode
     /// No search of the consultation found the account.
     /// </summary>
     BlockedDataAccountNotFound,
+
+    /// <summary>
+    /// The hold on the blocked data does not exist.
+    /// </summary>
+    BlockedDataHoldNotFound,
+
+    /// <summary>
+    /// The hold on the blocked data was already lifted.
+    /// </summary>
+    BlockedDataHoldLifted,
 }

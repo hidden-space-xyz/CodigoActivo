@@ -104,3 +104,23 @@ public record ExportBlockedDataRequest(
         );
     }
 }
+
+/// <summary>
+/// Request to keep the data history of an account past its retention while a claim is open.
+/// </summary>
+/// <param name="AccountId">Identifier of an account a search of the consultation found.</param>
+public record PlaceBlockedDataHoldRequest([Required] Guid AccountId)
+{
+    /// <summary>
+    /// Builds the command that places the hold.
+    /// </summary>
+    /// <param name="consultationId">Identifier of the consultation.</param>
+    /// <returns>The command.</returns>
+    public PlaceBlockedDataHoldCommand ToCommand(Guid consultationId)
+    {
+        return new PlaceBlockedDataHoldCommand(
+            BlockedDataConsultationId.From(consultationId),
+            UserId.From(AccountId)
+        );
+    }
+}

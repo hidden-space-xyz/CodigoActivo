@@ -20,11 +20,27 @@ export interface Consultation {
   readonly extracts: number
 }
 
-/** Paging and sorting of the list of consultations. */
-export interface ConsultationListParams {
+/** Paging and sorting of the lists of consultations and holds. */
+export interface BlockedDataListParams {
   page?: number
   pageSize?: number
   sort?: string
+}
+
+/**
+ * A hold that keeps the history of an account and its minors past its retention while a claim is
+ * open, without the accounts; `liftedAt` is `null` while it is active, and a name is `null` once
+ * that officer's account no longer exists.
+ */
+export interface Hold {
+  readonly id: string
+  readonly authority: BlockedDataAuthority
+  readonly reference: string
+  readonly accounts: number
+  readonly placedAt: string
+  readonly placedByName: string | null
+  readonly liftedAt: string | null
+  readonly liftedByName: string | null
 }
 
 /** Number of history entries about an account for one kind of data. */

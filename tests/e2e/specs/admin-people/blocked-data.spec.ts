@@ -8,7 +8,7 @@ import { t } from '../../support/i18n'
 import { codeIn, SUBJECTS } from '../../support/mail/mailbox'
 import { BlockedDataPage } from '../../support/pages/admin-people/blocked-data-page'
 import { fullName } from '../../support/data/people'
-import { chooseOption, expectChecked } from '../../support/ui/element-plus'
+import { chooseOption, confirm, expectChecked } from '../../support/ui/element-plus'
 
 test.describe('legal archive of blocked data', () => {
   test('every administrator sees the consultations but only the privacy officer opens one', async ({
@@ -28,7 +28,7 @@ test.describe('legal archive of blocked data', () => {
     await expect(officerArchive.openConsultation).toBeEnabled()
   })
 
-  test('the privacy officer opens a consultation, finds a changed account and downloads its history', async ({
+  test('the privacy officer opens a consultation, downloads the history of an account and holds it', async ({
     pageAs,
     privacyOfficer,
     accounts,
@@ -96,5 +96,19 @@ test.describe('legal archive of blocked data', () => {
     await expect(archive.consultations.row(reference)).toContainText(
       fullName(privacyOfficer.account),
     )
+
+    await archive.panel.getByTestId('blocked-data-panel-hold').click()
+    await confirm(page)
+
+    const hold = archive.holds.row(reference)
+    await expect(hold).toContainText(t('pages.admin.blockedData.holds.active'))
+    await expect(hold).toContainText(court)
+    await expect(hold).toContainText(fullName(privacyOfficer.account))
+
+    await archive.holds.rowAction(reference, 'lift')
+    await confirm(page)
+
+    await expect(hold).not.toContainText(t('pages.admin.blockedData.holds.active'))
+    await expect(hold.getByTestId('row-action-lift')).toBeDisabled()
   })
 })

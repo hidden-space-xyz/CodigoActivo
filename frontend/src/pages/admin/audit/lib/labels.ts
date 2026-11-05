@@ -87,6 +87,8 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'OpenBlockedDataConsultation',
   'SearchBlockedData',
   'ExportBlockedData',
+  'PlaceBlockedDataHold',
+  'LiftBlockedDataHold',
   'SendConsentWithdrawalNotices',
   'SendBlockedDataConsultationNotices',
   'DiscardExpiredAccountChanges',
@@ -108,13 +110,14 @@ export const AUDIT_ENTITY_TYPES: readonly AuditEntityType[] = [
   'StoredFile',
   'LegalPolicy',
   'BlockedDataConsultation',
+  'BlockedDataHold',
 ]
 
 /**
- * Kind of entity the audit log never names: a consultation of the blocked data, which «Archivo
- * legal» lists by its request.
+ * Kinds of entity the audit log never names: a consultation of the blocked data and a hold on it,
+ * which «Archivo legal» lists by their request.
  */
-type UnnamedEntityType = 'BlockedDataConsultation'
+type UnnamedEntityType = 'BlockedDataConsultation' | 'BlockedDataHold'
 
 /** Every outcome, in the order the outcome filter lists them. */
 export const AUDIT_OUTCOMES: readonly AuditOutcome[] = ['Succeeded', 'Rejected', 'Failed']
@@ -149,7 +152,7 @@ function deletedEntityLabelKey(
 
 /** An entity without a name: by its kind when the audit log never names it, or as removed. */
 function unnamedEntityLabel(entity: AuditEntityRef, t: Translate): string {
-  return entity.type === 'BlockedDataConsultation'
+  return entity.type === 'BlockedDataConsultation' || entity.type === 'BlockedDataHold'
     ? t(entityTypeLabelKey(entity.type))
     : t(deletedEntityLabelKey(entity.type))
 }

@@ -351,7 +351,7 @@ public sealed class LogEntryReader(CodigoActivoReadDbContext context, IQueryExec
             AuditEntityType.Activity => context
                 .Activities.Where(row => ids.Contains(row.Id))
                 .Select(row => new NamedEntity(row.Id, row.Title)),
-            AuditEntityType.BlockedDataConsultation => null,
+            AuditEntityType.BlockedDataConsultation or AuditEntityType.BlockedDataHold => null,
             AuditEntityType.Event => context
                 .Events.Where(row => ids.Contains(row.Id))
                 .Select(row => new NamedEntity(row.Id, row.Title)),

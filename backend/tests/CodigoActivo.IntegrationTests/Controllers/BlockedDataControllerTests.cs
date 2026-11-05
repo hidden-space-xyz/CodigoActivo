@@ -8,8 +8,12 @@ using CodigoActivo.Application.BlockedData;
 using CodigoActivo.Application.BlockedData.Contracts;
 using CodigoActivo.Domain.BlockedData;
 using CodigoActivo.Domain.Users;
+using CodigoActivo.Infrastructure.DataHistory;
 using CodigoActivo.Infrastructure.Security;
 using CodigoActivo.IntegrationTests.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
@@ -20,6 +24,7 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
     private const string AccessUrl = "/api/blocked-data/access";
     private const string ConsultationsUrl = "/api/blocked-data/consultations";
     private const string CodeUrl = "/api/blocked-data/consultations/code";
+    private const string HoldsUrl = "/api/blocked-data/holds";
     private const string Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
     private const string Reference = "Diligencias previas 123/2026";
 
@@ -112,6 +117,81 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
             new ExportBlockedDataRequest(accountId, null, null, entities),
             Ct
         );
+    }
+
+    private static Task<HttpResponseMessage> PlaceHoldAsync(
+        HttpClient client,
+        Guid consultationId,
+        Guid accountId
+    )
+    {
+        return client.PostJsonAsync(
+            $"{ConsultationsUrl}/{consultationId}/holds",
+            new PlaceBlockedDataHoldRequest(accountId),
+            Ct
+        );
+    }
+
+    private static Task<HttpResponseMessage> LiftHoldAsync(
+        HttpClient client,
+        Guid consultationId,
+        Guid holdId
+    )
+    {
+        return client.PostJsonAsync(
+            $"{ConsultationsUrl}/{consultationId}/holds/{holdId}/lift",
+            null,
+            Ct
+        );
+    }
+
+    private async Task<Guid> HeldMemberAsync(HttpClient officer)
+    {
+        var consultationId = await OpenedAsync(officer);
+        using var searched = await SearchAsync(officer, consultationId, TestSeedData.MemberEmail);
+        using var placed = await PlaceHoldAsync(
+            officer,
+            consultationId,
+            TestSeedData.Users.MemberId
+        );
+        placed.StatusCode.Should().Be(HttpStatusCode.Created);
+        return (await placed.ReadJsonAsync<BlockedDataHoldResponse>(Ct))!.Id;
+    }
+
+    private Task<int> PurgeAsync()
+    {
+        return new DataHistoryPurgeWorker(
+            Factory.Services.GetRequiredService<IServiceScopeFactory>(),
+            new DataHistoryRetentionOptions(),
+            NullLogger<DataHistoryPurgeWorker>.Instance
+        ).PurgeAsync(Ct);
+    }
+
+    private Task<int> HistoryAboutAsync(Guid accountId)
+    {
+        return Factory.QueryAsync(db =>
+            db.DataHistory.CountAsync(entry => entry.SubjectIds.Contains(accountId), Ct)
+        );
+    }
+
+    private async Task<Guid> SeedUnrelatedEntryAsync()
+    {
+        var subject = Guid.NewGuid();
+        await Factory.SeedAsync(db =>
+        {
+            db.DataHistory.Add(
+                new DataHistoryEntry
+                {
+                    Id = Guid.CreateVersion7(),
+                    Entity = nameof(User),
+                    OccurredAt = Factory.Clock.UtcNow,
+                    SubjectIds = [subject],
+                    Payload = [1],
+                }
+            );
+            return Task.CompletedTask;
+        });
+        return subject;
     }
 
     private BlockedDataConsultation ErasedOfficerConsultation(string reference)
@@ -539,5 +619,184 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
         using var response = await member.GetAsync(TestUri.Rel(ConsultationsUrl), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task HoldErasedAccountKeepsItsHistoryAndThatOfItsMinorsFromThePurge()
+    {
+        await EraseMemberAsync();
+        var officer = await OfficerAsync();
+        var memberEntries = await HistoryAboutAsync(TestSeedData.Users.MemberId);
+        var childEntries = await HistoryAboutAsync(TestSeedData.Users.MemberChildId);
+        var unrelated = await SeedUnrelatedEntryAsync();
+
+        var holdId = await HeldMemberAsync(officer);
+        Factory.Clock.UtcNow += TimeSpan.FromDays(6 * 366);
+        await PurgeAsync();
+
+        (await HistoryAboutAsync(unrelated)).Should().Be(0);
+        memberEntries.Should().BePositive();
+        childEntries.Should().BePositive();
+        (await HistoryAboutAsync(TestSeedData.Users.MemberId)).Should().Be(memberEntries);
+        (await HistoryAboutAsync(TestSeedData.Users.MemberChildId)).Should().Be(childEntries);
+        (
+            await Factory.QueryAsync(db =>
+                db.BlockedDataHolds.Where(hold => hold.Id == BlockedDataHoldId.From(holdId))
+                    .SelectMany(hold => hold.Subjects)
+                    .Select(subject => subject.AccountId)
+                    .ToListAsync(Ct)
+            )
+        )
+            .Should()
+            .BeEquivalentTo([
+                UserId.From(TestSeedData.Users.MemberId),
+                UserId.From(TestSeedData.Users.MemberChildId),
+            ]);
+    }
+
+    [Fact]
+    public async Task HoldPlacedIsListedWithoutItsAccounts()
+    {
+        await EraseMemberAsync();
+        var officer = await OfficerAsync();
+        var holdId = await HeldMemberAsync(officer);
+
+        using var listed = await officer.GetAsync(TestUri.Rel(HoldsUrl), Ct);
+
+        listed.StatusCode.Should().Be(HttpStatusCode.OK);
+        var hold = (await listed.ReadJsonAsync<PagedResult<BlockedDataHoldResponse>>(Ct))!
+            .Items.Should()
+            .ContainSingle()
+            .Subject;
+        hold.Should()
+            .Be(
+                new BlockedDataHoldResponse(
+                    holdId,
+                    BlockedDataAuthority.Court,
+                    Reference,
+                    2,
+                    Factory.Clock.UtcNow,
+                    "Ada Admin",
+                    null,
+                    null
+                )
+            );
+    }
+
+    [Fact]
+    public async Task HoldAccountNoSearchFoundIsRefused()
+    {
+        var officer = await OfficerAsync();
+        var consultationId = await OpenedAsync(officer);
+
+        using var placed = await PlaceHoldAsync(
+            officer,
+            consultationId,
+            TestSeedData.Users.MemberId
+        );
+
+        await placed.ShouldBeNotFoundAsync(ErrorCode.BlockedDataAccountNotFound);
+        (await Factory.QueryAsync(db => db.BlockedDataHolds.CountAsync(Ct))).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task HoldOnceTheConsultationIsOverIsRefused()
+    {
+        var officer = await OfficerAsync();
+        var consultationId = await OpenedAsync(officer);
+        using var searched = await SearchAsync(officer, consultationId, TestSeedData.MemberEmail);
+        Factory.Clock.UtcNow += BlockedDataConsultation.Validity;
+
+        using var placed = await PlaceHoldAsync(
+            officer,
+            consultationId,
+            TestSeedData.Users.MemberId
+        );
+
+        await placed.ShouldBeForbiddenAsync(ErrorCode.BlockedDataConsultationExpired);
+    }
+
+    [Fact]
+    public async Task LiftFromAnotherConsultationLetsThePurgeRemoveTheHistoryOnlyOnce()
+    {
+        await EraseMemberAsync();
+        var officer = await OfficerAsync();
+        var holdId = await HeldMemberAsync(officer);
+        Factory.Clock.UtcNow += TimeSpan.FromSeconds(30);
+        var consultationId = await OpenedAsync(officer);
+
+        using var lifted = await LiftHoldAsync(officer, consultationId, holdId);
+        using var liftedAgain = await LiftHoldAsync(officer, consultationId, holdId);
+
+        lifted.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await liftedAgain.ShouldBeConflictAsync(ErrorCode.BlockedDataHoldLifted);
+        using var listed = await officer.GetAsync(TestUri.Rel(HoldsUrl), Ct);
+        var hold = (
+            await listed.ReadJsonAsync<PagedResult<BlockedDataHoldResponse>>(Ct)
+        )!.Items.Single();
+        hold.LiftedAt.Should().Be(Factory.Clock.UtcNow);
+        hold.LiftedByName.Should().Be("Ada Admin");
+
+        Factory.Clock.UtcNow += TimeSpan.FromDays(6 * 366);
+        await PurgeAsync();
+
+        (await HistoryAboutAsync(TestSeedData.Users.MemberId)).Should().Be(0);
+        (await HistoryAboutAsync(TestSeedData.Users.MemberChildId)).Should().Be(0);
+        (await Factory.QueryAsync(db => db.BlockedDataHolds.CountAsync(Ct))).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task LiftUnknownHoldIsNotFound()
+    {
+        var officer = await OfficerAsync();
+        var consultationId = await OpenedAsync(officer);
+
+        using var lifted = await LiftHoldAsync(officer, consultationId, Guid.NewGuid());
+
+        await lifted.ShouldBeNotFoundAsync(ErrorCode.BlockedDataHoldNotFound);
+    }
+
+    [Fact]
+    public async Task LiftAnotherAdministratorIsRefused()
+    {
+        var officer = await OfficerAsync();
+        var holdId = await HeldMemberAsync(officer);
+        await PromoteMemberToAdministratorAsync();
+        var member = await LoginAsMemberAsync();
+
+        using var lifted = await LiftHoldAsync(member, Guid.NewGuid(), holdId);
+
+        await lifted.ShouldBeForbiddenAsync(ErrorCode.BlockedDataOfficerOnly);
+        (await Factory.QueryAsync(db => db.BlockedDataHolds.SingleAsync(Ct)))
+            .LiftedAt.Should()
+            .BeNull();
+    }
+
+    [Fact]
+    public async Task PurgeKeepsALiftedHoldFiveYearsAfterItWasLifted()
+    {
+        var now = Factory.Clock.UtcNow;
+        var consultation = ErasedOfficerConsultation("Reclamación 1/2020");
+        var account = UserId.New();
+        consultation.RecordFindings([account], now);
+        BlockedDataHold Lifted(int yearsAgo)
+        {
+            var hold = BlockedDataHold.Place(consultation, account, [], now.AddYears(-8)).Value;
+            hold.Lift(consultation.OfficerId, now.AddYears(-yearsAgo));
+            return hold;
+        }
+
+        var recent = Lifted(4);
+        await Factory.SeedAsync(db =>
+        {
+            db.BlockedDataHolds.AddRange(recent, Lifted(6));
+            return Task.CompletedTask;
+        });
+
+        await PurgeAsync();
+
+        (await Factory.QueryAsync(db => db.BlockedDataHolds.Select(h => h.Id).ToListAsync(Ct)))
+            .Should()
+            .Equal(recent.Id);
     }
 }

@@ -17,9 +17,10 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace CodigoActivo.API.BlockedData;
 
 /// <summary>
-/// Gives the administrators the list of consultations of the blocked data, and the account
-/// designated for data protection the consultations themselves: opening one for a request,
-/// looking accounts up and taking extracts to hand over.
+/// Gives the administrators the lists of consultations of the blocked data and of holds on it,
+/// and the account designated for data protection the consultations themselves: opening one for
+/// a request, looking accounts up, taking extracts to hand over and placing or lifting the holds
+/// that keep the history of an account while a claim is open.
 /// </summary>
 [ApiController]
 [Route("api/blocked-data")]
@@ -64,6 +65,25 @@ public class BlockedDataController : ApiControllerBase
     )
     {
         return Ok(await handler.HandleAsync(new ListBlockedDataConsultationsQuery(query), ct));
+    }
+
+    /// <summary>
+    /// Lists the holds on the blocked data, without the accounts they keep.
+    /// </summary>
+    /// <param name="query">Paging and sorting.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>An HTTP response containing a page of holds.</returns>
+    [HttpGet("holds")]
+    [EnableRateLimiting(SecurityPolicies.Reports)]
+    public async Task<ActionResult<PagedResult<BlockedDataHoldResponse>>> ListHoldsAsync(
+        [FromQuery] BlockedDataHoldListQuery query,
+        [FromServices]
+            IQueryHandler<ListBlockedDataHoldsQuery, PagedResult<BlockedDataHoldResponse>> handler,
+        CancellationToken ct
+    )
+    {
+        return Ok(await handler.HandleAsync(new ListBlockedDataHoldsQuery(query), ct));
     }
 
     /// <summary>
@@ -160,5 +180,64 @@ public class BlockedDataController : ApiControllerBase
     )
     {
         return ToOk(await handler.HandleAsync(request.ToCommand(consultationId), ct));
+    }
+
+    /// <summary>
+    /// Keeps the history of an account an open consultation found and of its minors past its
+    /// retention, for the claim the consultation was opened for, until the hold is lifted.
+    /// </summary>
+    /// <param name="consultationId">Identifier of the consultation.</param>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="getById">Query handler that reads the placed hold.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A 201 response with the hold and its location, or an error response.</returns>
+    [HttpPost("consultations/{consultationId:guid}/holds")]
+    [EnableRateLimiting(SecurityPolicies.Reports)]
+    [ProducesResponseType<BlockedDataHoldResponse>(StatusCodes.Status201Created)]
+    public async Task<ActionResult<BlockedDataHoldResponse>> PlaceHoldAsync(
+        Guid consultationId,
+        [FromBody] PlaceBlockedDataHoldRequest request,
+        [FromServices]
+            ICommandHandler<PlaceBlockedDataHoldCommand, Result<BlockedDataHoldId>> handler,
+        [FromServices]
+            IQueryHandler<GetBlockedDataHoldQuery, Result<BlockedDataHoldResponse>> getById,
+        CancellationToken ct
+    )
+    {
+        return await ToCreatedAfterAsync(
+            await handler.HandleAsync(request.ToCommand(consultationId), ct),
+            id => getById.HandleAsync(new GetBlockedDataHoldQuery(id), ct),
+            id => $"/api/blocked-data/holds/{id}"
+        );
+    }
+
+    /// <summary>
+    /// Lifts a hold on the blocked data from an open consultation once its claim is closed, so the
+    /// retention of the history it kept applies again.
+    /// </summary>
+    /// <param name="consultationId">Identifier of the consultation.</param>
+    /// <param name="holdId">Identifier of the hold.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A 204 response, or an error response.</returns>
+    [HttpPost("consultations/{consultationId:guid}/holds/{holdId:guid}/lift")]
+    [EnableRateLimiting(SecurityPolicies.Reports)]
+    public async Task<ActionResult> LiftHoldAsync(
+        Guid consultationId,
+        Guid holdId,
+        [FromServices] ICommandHandler<LiftBlockedDataHoldCommand, Result> handler,
+        CancellationToken ct
+    )
+    {
+        return ToNoContent(
+            await handler.HandleAsync(
+                new LiftBlockedDataHoldCommand(
+                    BlockedDataConsultationId.From(consultationId),
+                    BlockedDataHoldId.From(holdId)
+                ),
+                ct
+            )
+        );
     }
 }

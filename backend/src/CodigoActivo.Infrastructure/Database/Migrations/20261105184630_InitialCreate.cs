@@ -92,6 +92,24 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "blocked_data_holds",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    account_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    authority = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    reference = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    placed_by_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    placed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    lifted_by_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    lifted_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_blocked_data_holds", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "data_history",
                 columns: table => new
                 {
@@ -288,6 +306,24 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         name: "fk_blocked_data_findings_blocked_data_consultations_consultati",
                         column: x => x.consultation_id,
                         principalTable: "blocked_data_consultations",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "blocked_data_hold_subjects",
+                columns: table => new
+                {
+                    hold_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    account_id = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_blocked_data_hold_subjects", x => new { x.hold_id, x.account_id });
+                    table.ForeignKey(
+                        name: "fk_blocked_data_hold_subjects_blocked_data_holds_hold_id",
+                        column: x => x.hold_id,
+                        principalTable: "blocked_data_holds",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -1075,6 +1111,16 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 column: "consultation_id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_blocked_data_holds_lifted_at",
+                table: "blocked_data_holds",
+                column: "lifted_at");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_blocked_data_holds_placed_at",
+                table: "blocked_data_holds",
+                column: "placed_at");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_data_history_entity_occurred_at",
                 table: "data_history",
                 columns: new[] { "entity", "occurred_at" });
@@ -1395,6 +1441,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "blocked_data_findings");
 
             migrationBuilder.DropTable(
+                name: "blocked_data_hold_subjects");
+
+            migrationBuilder.DropTable(
                 name: "data_history");
 
             migrationBuilder.DropTable(
@@ -1456,6 +1505,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
             migrationBuilder.DropTable(
                 name: "blocked_data_consultations");
+
+            migrationBuilder.DropTable(
+                name: "blocked_data_holds");
 
             migrationBuilder.DropTable(
                 name: "email_outbox_contents");

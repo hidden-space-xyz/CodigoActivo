@@ -691,4 +691,14 @@ public enum ErrorCode
     /// Only the account designated for data protection may consult the blocked data.
     /// </summary>
     BlockedDataOfficerOnly,
+
+    /// <summary>
+    /// The hold on the blocked data does not exist.
+    /// </summary>
+    BlockedDataHoldNotFound,
+
+    /// <summary>
+    /// The hold on the blocked data was already lifted.
+    /// </summary>
+    BlockedDataHoldLifted,
 }

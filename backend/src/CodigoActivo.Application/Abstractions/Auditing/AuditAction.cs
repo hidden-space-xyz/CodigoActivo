@@ -202,7 +202,7 @@ public enum AuditAction
     /// <summary>Updated a user.</summary>
     UpdateUser,
 
-    /// <summary>Purged the data history and the consultations past their retention.</summary>
+    /// <summary>Purged the history, consultations and holds past their retention.</summary>
     PurgeDataHistory,
 
     /// <summary>Asked for the code that confirms opening a consultation of the blocked data.</summary>
@@ -216,6 +216,12 @@ public enum AuditAction
 
     /// <summary>Took an extract of the blocked data about an account.</summary>
     ExportBlockedData,
+
+    /// <summary>Held the data history of an account while a claim about it is open.</summary>
+    PlaceBlockedDataHold,
+
+    /// <summary>Lifted a hold on the data history once its claim closed.</summary>
+    LiftBlockedDataHold,
 
     /// <summary>Told the legal contact about the consents withdrawn since the last notice.</summary>
     SendConsentWithdrawalNotices,

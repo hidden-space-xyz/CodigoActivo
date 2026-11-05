@@ -14,6 +14,9 @@ public enum AuditEntityType
     /// <summary>A consultation of the blocked data.</summary>
     BlockedDataConsultation,
 
+    /// <summary>A hold on the blocked data.</summary>
+    BlockedDataHold,
+
     /// <summary>An event.</summary>
     Event,
 

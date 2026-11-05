@@ -14,7 +14,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CodigoActivo.Infrastructure.Database.Migrations
 {
     [DbContext(typeof(CodigoActivoDbContext))]
-    [Migration("20261105072159_InitialCreate")]
+    [Migration("20261105184630_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -295,6 +295,76 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasName("pk_blocked_data_findings");
 
                     b.ToTable("blocked_data_findings", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.BlockedData.BlockedDataHold", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<string>("Authority")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("authority");
+
+                    b.Property<DateTimeOffset?>("LiftedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lifted_at");
+
+                    b.Property<Guid?>("LiftedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lifted_by_id");
+
+                    b.Property<DateTimeOffset>("PlacedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("placed_at");
+
+                    b.Property<Guid>("PlacedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("placed_by_id");
+
+                    b.Property<string>("Reference")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("reference");
+
+                    b.HasKey("Id")
+                        .HasName("pk_blocked_data_holds");
+
+                    b.HasIndex("LiftedAt")
+                        .HasDatabaseName("ix_blocked_data_holds_lifted_at");
+
+                    b.HasIndex("PlacedAt")
+                        .HasDatabaseName("ix_blocked_data_holds_placed_at");
+
+                    b.ToTable("blocked_data_holds", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.BlockedData.BlockedDataHoldSubject", b =>
+                {
+                    b.Property<Guid>("HoldId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("hold_id");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.HasKey("HoldId", "AccountId")
+                        .HasName("pk_blocked_data_hold_subjects");
+
+                    b.ToTable("blocked_data_hold_subjects", (string)null);
 
                     b.HasAnnotation("CodigoActivo:DataHistory", false);
                 });
@@ -2075,6 +2145,16 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasConstraintName("fk_blocked_data_findings_blocked_data_consultations_consultati");
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.BlockedData.BlockedDataHoldSubject", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.BlockedData.BlockedDataHold", null)
+                        .WithMany("Subjects")
+                        .HasForeignKey("HoldId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_blocked_data_hold_subjects_blocked_data_holds_hold_id");
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Events.Event", b =>
                 {
                     b.HasOne("CodigoActivo.Domain.Users.User", null)
@@ -2389,6 +2469,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("Extracts");
 
                     b.Navigation("Findings");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.BlockedData.BlockedDataHold", b =>
+                {
+                    b.Navigation("Subjects");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Events.Event", b =>

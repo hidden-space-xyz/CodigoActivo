@@ -11,6 +11,7 @@ export type AuditEntityType = typeof AuditEntityType[keyof typeof AuditEntityTyp
 export const AuditEntityType = {
   Activity: 'Activity',
   BlockedDataConsultation: 'BlockedDataConsultation',
+  BlockedDataHold: 'BlockedDataHold',
   Event: 'Event',
   EventCategoryType: 'EventCategoryType',
   LegalPolicy: 'LegalPolicy',

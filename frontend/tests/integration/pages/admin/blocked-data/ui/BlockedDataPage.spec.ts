@@ -9,14 +9,23 @@ import type {
   BlockedDataAccessResponse,
   BlockedDataConsultationResponse,
   BlockedDataExport,
+  BlockedDataHoldResponse,
   BlockedDataSearch,
 } from '@/shared/api/generated/models'
-import { toDateOnly } from '@/shared/lib/date'
+import { formatDateTime, toDateOnly } from '@/shared/lib/date'
 import { ColumnFilterDate } from '@/shared/ui/column-filter'
 
 import { renderWithProviders, t } from '../../../../../support/render'
 import { apiError, http, HttpResponse, paged, server } from '../../../../../support/server'
-import { click, findButton, notificationTexts, typeInto } from '../../../../../support/dom'
+import {
+  acceptMessageBox,
+  click,
+  expectNotification,
+  findButton,
+  messageBox,
+  notificationTexts,
+  typeInto,
+} from '../../../../../support/dom'
 
 const CONSULTATION: BlockedDataConsultationResponse = {
   id: '0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4b01',
@@ -64,11 +73,32 @@ const EXTRACT: BlockedDataExport = {
   ],
 }
 
-function serve(access: BlockedDataAccessResponse, list: BlockedDataConsultationResponse[] = []) {
-  const bodies: Record<string, unknown[]> = { code: [], open: [], search: [], extract: [] }
+const HOLD: BlockedDataHoldResponse = {
+  id: '0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4b04',
+  authority: 'Claim',
+  reference: 'Reclamación 7/2026',
+  accounts: 2,
+  placedAt: '2026-10-25T09:05:00Z',
+  placedByName: 'Dana Delegada',
+}
+
+function serve(
+  access: BlockedDataAccessResponse,
+  list: BlockedDataConsultationResponse[] = [],
+  holds: BlockedDataHoldResponse[] = [],
+) {
+  const bodies: Record<string, unknown[]> = {
+    code: [],
+    open: [],
+    search: [],
+    extract: [],
+    hold: [],
+    lift: [],
+  }
   server.use(
     http.get('/api/blocked-data/access', () => HttpResponse.json(access)),
     http.get('/api/blocked-data/consultations', () => HttpResponse.json(paged(list))),
+    http.get('/api/blocked-data/holds', () => HttpResponse.json(paged(holds))),
     http.post('/api/blocked-data/consultations/code', async ({ request }) => {
       bodies.code!.push(await request.json())
       return new HttpResponse(null, { status: 204 })
@@ -91,8 +121,34 @@ function serve(access: BlockedDataAccessResponse, list: BlockedDataConsultationR
         return HttpResponse.json(EXTRACT)
       },
     ),
+    http.post(`/api/blocked-data/consultations/${CONSULTATION.id}/holds`, async ({ request }) => {
+      bodies.hold!.push(await request.json())
+      return HttpResponse.json({ ...HOLD, reference: CONSULTATION.reference }, { status: 201 })
+    }),
+    http.post(
+      `/api/blocked-data/consultations/${CONSULTATION.id}/holds/:holdId/lift`,
+      ({ params }) => {
+        bodies.lift!.push(params.holdId)
+        return new HttpResponse(null, { status: 204 })
+      },
+    ),
   )
   return bodies
+}
+
+async function openAndFind(wrapper: Awaited<ReturnType<typeof renderPage>>['wrapper']) {
+  await click(findButton(t('pages.admin.blockedData.open.action')))
+  await fillDialog(wrapper, 'Court', CONSULTATION.reference, '123456')
+  await vi.waitFor(() => expect(document.querySelector('#blocked-query')).not.toBeNull())
+  await typeInto('#blocked-query', 'marta@example.test')
+  await click(findButton(t('pages.admin.blockedData.consultation.searchAction')))
+  await vi.waitFor(() => expect(wrapper.text()).toContain('Marta Miembro'))
+}
+
+function liftButton(): HTMLButtonElement {
+  const button = document.querySelector<HTMLButtonElement>('[data-testid="row-action-lift"]')
+  if (!button) throw new Error('No lift action is shown')
+  return button
 }
 
 async function fillDialog(
@@ -312,6 +368,98 @@ describe('BlockedDataPage', () => {
       t('errors.TwoFactorCodeInvalid'),
     )
     expect(wrapper.text()).not.toContain(t('pages.admin.blockedData.consultation.title'))
+  })
+
+  it('lists the holds to any administrator, without the action to lift one', async () => {
+    serve(
+      { isPrivacyOfficer: false, entities: [] },
+      [],
+      [
+        HOLD,
+        { ...HOLD, id: 'h2', reference: 'Diligencias 9/2025', liftedAt: '2026-10-30T12:00:00Z' },
+      ],
+    )
+
+    const { wrapper } = await renderPage()
+
+    const holds = wrapper.find('[data-testid="blocked-data-holds"]')
+    expect(holds.text()).toContain('Reclamación 7/2026')
+    expect(holds.text()).toContain(t('pages.admin.blockedData.authorities.Claim'))
+    expect(holds.text()).toContain(t('pages.admin.blockedData.holds.active'))
+    expect(holds.text()).toContain('Dana Delegada')
+    expect(holds.text()).toContain(
+      t('pages.admin.blockedData.holds.liftedByErased', {
+        date: formatDateTime('2026-10-30T12:00:00Z'),
+      }),
+    )
+    expect(holds.text()).not.toContain(t('pages.admin.blockedData.holds.liftHint'))
+    expect(document.querySelector('[data-testid="row-action-lift"]')).toBeNull()
+  })
+
+  it('keeps the history of the picked account once the officer confirms', async () => {
+    const bodies = serve(OFFICER)
+    const { wrapper } = await renderPage()
+    await openAndFind(wrapper)
+
+    await click(findButton(t('pages.admin.blockedData.holds.place.action')))
+
+    expect(messageBox().textContent).toContain(
+      t('pages.admin.blockedData.holds.place.message', {
+        name: 'Marta Miembro',
+        reference: CONSULTATION.reference,
+      }),
+    )
+    expect(bodies.hold).toEqual([])
+
+    await acceptMessageBox()
+    await vi.waitFor(() => expect(bodies.hold).toHaveLength(1))
+
+    expect(bodies.hold).toEqual([{ accountId: ACCOUNT }])
+    await expectNotification(
+      t('pages.admin.blockedData.holds.place.done', { reference: CONSULTATION.reference }),
+    )
+  })
+
+  it('lifts an active hold only from an open consultation, once the officer confirms', async () => {
+    const bodies = serve(OFFICER, [], [HOLD])
+    const { wrapper } = await renderPage()
+
+    expect(wrapper.text()).toContain(t('pages.admin.blockedData.holds.liftHint'))
+    expect(liftButton().disabled).toBe(true)
+
+    await click(findButton(t('pages.admin.blockedData.open.action')))
+    await fillDialog(wrapper, 'Court', 'Sentencia firme 1/2027', '123456')
+    await vi.waitFor(() => expect(liftButton().disabled).toBe(false))
+    expect(wrapper.text()).not.toContain(t('pages.admin.blockedData.holds.liftHint'))
+
+    await click(liftButton())
+    expect(messageBox().textContent).toContain(
+      t('pages.admin.blockedData.holds.lift.message', { reference: HOLD.reference }),
+    )
+    await acceptMessageBox()
+    await vi.waitFor(() => expect(bodies.lift).toHaveLength(1))
+
+    expect(bodies.lift).toEqual([HOLD.id])
+    await expectNotification(t('pages.admin.blockedData.holds.lift.done'))
+  })
+
+  it('never offers to lift a hold that was lifted already', async () => {
+    serve(OFFICER, [], [{ ...HOLD, liftedAt: '2026-10-30T12:00:00Z', liftedByName: 'Leo' }])
+    const { wrapper } = await renderPage()
+
+    await click(findButton(t('pages.admin.blockedData.open.action')))
+    await fillDialog(wrapper, 'Court', 'Ref', '123456')
+    await vi.waitFor(() =>
+      expect(wrapper.text()).toContain(t('pages.admin.blockedData.consultation.title')),
+    )
+
+    expect(liftButton().disabled).toBe(true)
+    expect(wrapper.text()).toContain(
+      t('pages.admin.blockedData.holds.lifted', {
+        date: formatDateTime('2026-10-30T12:00:00Z'),
+        name: 'Leo',
+      }),
+    )
   })
 
   it('closes the consultation once the API says it is over', async () => {

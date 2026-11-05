@@ -1057,6 +1057,51 @@
         }
       }
     },
+    "/api/blocked-data/holds": {
+      "get": {
+        "tags": [
+          "BlockedData"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockedDataHoldResponsePagedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/blocked-data/consultations/code": {
       "post": {
         "tags": [
@@ -1152,6 +1197,77 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/blocked-data/consultations/{consultationId}/holds": {
+      "post": {
+        "tags": [
+          "BlockedData"
+        ],
+        "parameters": [
+          {
+            "name": "consultationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaceBlockedDataHoldRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlockedDataHoldResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blocked-data/consultations/{consultationId}/holds/{holdId}/lift": {
+      "post": {
+        "tags": [
+          "BlockedData"
+        ],
+        "parameters": [
+          {
+            "name": "consultationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "holdId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -5387,6 +5503,8 @@
           "OpenBlockedDataConsultation",
           "SearchBlockedData",
           "ExportBlockedData",
+          "PlaceBlockedDataHold",
+          "LiftBlockedDataHold",
           "SendConsentWithdrawalNotices",
           "SendBlockedDataConsultationNotices",
           "DiscardExpiredAccountChanges"
@@ -5405,6 +5523,7 @@
         "enum": [
           "Activity",
           "BlockedDataConsultation",
+          "BlockedDataHold",
           "Event",
           "EventCategoryType",
           "LegalPolicy",
@@ -5861,6 +5980,80 @@
           },
           "currentData": {
             "$ref": "#/components/schemas/PersonalDataResponse"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BlockedDataHoldResponse": {
+        "required": [
+          "accounts",
+          "authority",
+          "id",
+          "placedAt",
+          "reference"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "authority": {
+            "$ref": "#/components/schemas/BlockedDataAuthority"
+          },
+          "reference": {
+            "type": "string"
+          },
+          "accounts": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "placedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "placedByName": {
+            "type": "string",
+            "nullable": true
+          },
+          "liftedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "liftedByName": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "BlockedDataHoldResponsePagedResult": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BlockedDataHoldResponse"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -7003,7 +7196,9 @@
           "BlockedDataConsultationNotFound",
           "BlockedDataConsultationExpired",
           "BlockedDataAccountNotFound",
-          "BlockedDataOfficerOnly"
+          "BlockedDataOfficerOnly",
+          "BlockedDataHoldNotFound",
+          "BlockedDataHoldLifted"
         ],
         "type": "string"
       },
@@ -9415,6 +9610,19 @@
             "items": {
               "$ref": "#/components/schemas/PersonalDataTermsDecisionChangeResponse"
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PlaceBlockedDataHoldRequest": {
+        "required": [
+          "accountId"
+        ],
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string",
+            "format": "uuid"
           }
         },
         "additionalProperties": false

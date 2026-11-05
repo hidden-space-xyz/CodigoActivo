@@ -1,9 +1,12 @@
 import {
   getApiBlockedDataAccess,
   getApiBlockedDataConsultations,
+  getApiBlockedDataHolds,
   postApiBlockedDataConsultations,
   postApiBlockedDataConsultationsCode,
   postApiBlockedDataConsultationsConsultationIdExtracts,
+  postApiBlockedDataConsultationsConsultationIdHolds,
+  postApiBlockedDataConsultationsConsultationIdHoldsHoldIdLift,
   postApiBlockedDataConsultationsConsultationIdSearches,
 } from '@/shared/api/generated/endpoints/blocked-data/blocked-data'
 import { toPage } from '@/shared/api'
@@ -12,13 +15,14 @@ import type { ServerTablePage } from '@/shared/lib/paging'
 
 import type {
   BlockedDataAccess,
+  BlockedDataListParams,
   Candidate,
   Consultation,
-  ConsultationListParams,
   ExtractInput,
+  Hold,
   OpenConsultationInput,
 } from '../model/types'
-import { toBlockedDataAccess, toCandidate, toConsultation, toExtractFile } from './mapper'
+import { toBlockedDataAccess, toCandidate, toConsultation, toExtractFile, toHold } from './mapper'
 
 /** Tells whether the signed-in administrator may consult the blocked data. */
 export async function getBlockedDataAccessRequest(): Promise<BlockedDataAccess> {
@@ -28,9 +32,16 @@ export async function getBlockedDataAccessRequest(): Promise<BlockedDataAccess> 
 
 /** Fetches one page of the consultations of the blocked data. */
 export async function getConsultationPageRequest(
-  params: ConsultationListParams,
+  params: BlockedDataListParams,
 ): Promise<ServerTablePage<Consultation>> {
   return toPage(await getApiBlockedDataConsultations(params), toConsultation)
+}
+
+/** Fetches one page of the holds on the blocked data. */
+export async function getHoldPageRequest(
+  params: BlockedDataListParams,
+): Promise<ServerTablePage<Hold>> {
+  return toPage(await getApiBlockedDataHolds(params), toHold)
 }
 
 /**
@@ -74,4 +85,20 @@ export async function exportBlockedDataRequest(
   return new Blob([JSON.stringify(toExtractFile(data, t), null, 2)], {
     type: 'application/json',
   })
+}
+
+/**
+ * Keeps the history of an account an open consultation found, and of its minors, past its
+ * retention while the claim of the consultation is open.
+ */
+export async function placeHoldRequest(consultationId: string, accountId: string): Promise<Hold> {
+  const { data } = await postApiBlockedDataConsultationsConsultationIdHolds(consultationId, {
+    accountId,
+  })
+  return toHold(data)
+}
+
+/** Lifts a hold from an open consultation once its claim is closed. */
+export async function liftHoldRequest(consultationId: string, holdId: string): Promise<void> {
+  await postApiBlockedDataConsultationsConsultationIdHoldsHoldIdLift(consultationId, holdId)
 }

@@ -80,15 +80,14 @@ describe('audit labels', () => {
     )
   })
 
-  it('names a consultation of the blocked data by its kind, never as removed', () => {
-    const consultation = {
-      type: 'BlockedDataConsultation',
-      id: 'consultation-1',
-      name: '',
-    } as const
+  it.each([
+    ['BlockedDataConsultation', 'Consulta de datos bloqueados'],
+    ['BlockedDataHold', 'Retención de datos bloqueados'],
+  ] as const)('names a %s by its kind, never as removed', (type, label) => {
+    const entity = { type, id: 'blocked-1', name: '' }
 
-    expect(entityLabel(consultation, t)).toBe('Consulta de datos bloqueados')
-    expect(relatedLabel(consultation, t)).toBe('Consulta de datos bloqueados')
+    expect(entityLabel(entity, t)).toBe(label)
+    expect(relatedLabel(entity, t)).toBe(label)
   })
 
   it('has a removed label for every kind of entity', () => {
