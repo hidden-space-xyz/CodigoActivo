@@ -338,8 +338,8 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
             var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
             await using (var concurrent = postgres.CreateContext())
             {
-                (await concurrent.Users.SingleAsync(u => u.Id == SeededUserId, Ct)).ChangeType(
-                    UserType.Sponsor,
+                (await concurrent.Users.SingleAsync(u => u.Id == SeededUserId, Ct)).ChangeStaffRole(
+                    StaffRole.Administrator,
                     Fixed
                 );
                 await concurrent.SaveChangesAsync(Ct);
@@ -349,7 +349,7 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
                 async attempt =>
                 {
                     await users.LockAsync(user, attempt);
-                    user.ChangeStaffRole(StaffRole.Administrator, Fixed);
+                    user.DesignateAsPrivacyOfficer(Fixed);
                     return await uow.SaveChangesAsync(attempt);
                 },
                 Ct
@@ -358,8 +358,8 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
 
         await using var verify = postgres.CreateContext();
         var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
-        stored.UserType.Should().Be(UserType.Sponsor);
         stored.StaffRole.Should().Be(StaffRole.Administrator);
+        stored.IsPrivacyOfficer.Should().BeTrue();
     }
 
     [Fact]
@@ -712,12 +712,12 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
             var uow = new UnitOfWork(db, publisher);
             var users = new UserRepository(db, uow);
             var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
-            user.ChangeType(UserType.Sponsor, Fixed);
+            user.ChangeStaffRole(StaffRole.Administrator, Fixed);
 
             await uow.ExecuteInTransactionAsync(
                 async attempt =>
                 {
-                    user.ChangeStaffRole(StaffRole.Administrator, Fixed);
+                    user.DesignateAsPrivacyOfficer(Fixed);
                     return await LockPasswordAsync(users, user, attempt);
                 },
                 Ct
@@ -728,8 +728,8 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
             {
                 var committed = await meanwhile.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
                 committed.PasswordLockout.IsLocked.Should().BeTrue();
-                committed.UserType.Should().Be(UserType.Member);
                 committed.StaffRole.Should().Be(StaffRole.None);
+                committed.IsPrivacyOfficer.Should().BeFalse();
             }
 
             await uow.SaveChangesAsync(Ct);
@@ -738,16 +738,16 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
                 .Published.Should()
                 .Equal(
                     new PasswordLocked(SeededUserId),
-                    new UserTypeChanged(SeededUserId),
-                    new StaffRoleChanged(SeededUserId, StaffRole.Administrator)
+                    new StaffRoleChanged(SeededUserId, StaffRole.Administrator),
+                    new PrivacyOfficerChanged(SeededUserId, true)
                 );
         }
 
         await using var verify = postgres.CreateContext();
         var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
         stored.PasswordLockout.IsLocked.Should().BeTrue();
-        stored.UserType.Should().Be(UserType.Sponsor);
         stored.StaffRole.Should().Be(StaffRole.Administrator);
+        stored.IsPrivacyOfficer.Should().BeTrue();
     }
 
     [Fact]
