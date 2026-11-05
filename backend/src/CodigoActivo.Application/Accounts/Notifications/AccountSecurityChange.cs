@@ -34,14 +34,29 @@ public enum AccountSecurityChange
     TwoFactorReset,
 
     /// <summary>
-    /// Selects the option for administrator rights given to the account.
+    /// Selects the option for the editor role given to the account.
     /// </summary>
-    AdminGranted,
+    EditorGranted,
 
     /// <summary>
-    /// Selects the option for administrator rights taken from the account.
+    /// Selects the option for the administrator role given to the account.
     /// </summary>
-    AdminRevoked,
+    AdministratorGranted,
+
+    /// <summary>
+    /// Selects the option for the staff role taken from the account.
+    /// </summary>
+    StaffRoleRevoked,
+
+    /// <summary>
+    /// Selects the option for the account designated for data protection.
+    /// </summary>
+    PrivacyOfficerDesignated,
+
+    /// <summary>
+    /// Selects the option for the account no longer designated for data protection.
+    /// </summary>
+    PrivacyOfficerReleased,
 
     /// <summary>
     /// Selects the option for a replaced email, told to the previous address.

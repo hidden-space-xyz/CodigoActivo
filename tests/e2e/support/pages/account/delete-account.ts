@@ -20,7 +20,7 @@ export class DeleteAccountSection {
     this.root = account.section('Eliminar mi cuenta')
     this.open = this.root.getByRole('button', { name: 'Eliminar mi cuenta' })
     this.initialAdminNote = this.root.getByText(
-      'Esta es la cuenta genérica de administración, así que no se puede eliminar.',
+      'Esta es la cuenta del superadministrador, así que no se puede eliminar.',
     )
   }
 }

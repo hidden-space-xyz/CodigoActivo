@@ -2,6 +2,7 @@ import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { ElDrawer } from 'element-plus'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { AuthUser } from '@/entities/session'
 import { AdminShell } from '@/widgets/admin-shell'
 import { ADMIN_NAV } from '@/widgets/admin-shell/config/navigation'
 
@@ -13,7 +14,7 @@ const slots = { default: '<section class="page-content">Dashboard body</section>
 
 function renderLayout(route = '/admin/events') {
   return renderWithProviders(AdminShell, {
-    user: { firstName: 'Ada', isAdmin: true },
+    user: { firstName: 'Ada', staffRole: 'Administrator', isSuperAdmin: true },
     route,
     slots,
     attach: true,
@@ -58,6 +59,39 @@ describe('AdminShell', () => {
     expect(wrapper.find('.admin__username').text()).toBe('Ada')
     expect(wrapper.find('.theme-toggle').exists()).toBe(true)
     expect(wrapper.find('.admin__main .page-content').text()).toBe('Dashboard body')
+  })
+
+  it('lists only the entries the signed-in cargo or designation can open', async () => {
+    const sidebar = async (user: Partial<AuthUser>) => {
+      const { wrapper } = await renderWithProviders(AdminShell, { user, route: '/admin', slots })
+      const hrefs = wrapper
+        .findAll('.admin__sidebar .admin__link')
+        .map((link) => link.attributes('href'))
+      wrapper.unmount()
+      return hrefs
+    }
+    const editorPages = [
+      '/admin/events',
+      '/admin/news',
+      '/admin/partners',
+      '/admin/resources',
+      '/admin/catalogs',
+    ]
+
+    expect(await sidebar({ staffRole: 'Editor' })).toEqual(editorPages)
+    expect(await sidebar({ isPrivacyOfficer: true })).toEqual([
+      '/admin/audit',
+      '/admin/blocked-data',
+    ])
+    expect(await sidebar({ staffRole: 'Editor', isPrivacyOfficer: true })).toEqual([
+      ...editorPages.slice(0, 4),
+      '/admin/audit',
+      '/admin/blocked-data',
+      '/admin/catalogs',
+    ])
+    expect(await sidebar({ staffRole: 'Administrator' })).not.toContain('/admin/audit')
+    expect(await sidebar({ staffRole: 'Administrator' })).toContain('/admin/diagnostics')
+    expect(await sidebar({})).toEqual([])
   })
 
   it('signs out and goes to login', async () => {

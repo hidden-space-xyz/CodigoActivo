@@ -37,6 +37,7 @@ const {
   filterByEntity,
   filterByIp,
   filterByTrace,
+  opensDiagnostics,
   openDiagnostics,
 } = useAuditLog()
 
@@ -242,7 +243,13 @@ function entryActions(entry: AuditEntry): RowAction[] {
           <span v-else class="muted">—</span>
         </template>
       </el-table-column>
-      <el-table-column :label="$t('common.actions')" width="100" align="right" fixed="right">
+      <el-table-column
+        v-if="opensDiagnostics"
+        :label="$t('common.actions')"
+        width="100"
+        align="right"
+        fixed="right"
+      >
         <template #default="{ row }">
           <RowActions :actions="entryActions(row)" />
         </template>

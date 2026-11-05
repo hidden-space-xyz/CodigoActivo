@@ -99,7 +99,7 @@ test.describe('account deletion', () => {
     mailbox,
     initialAdmin,
   }) => {
-    const actor = await accounts.actor({ label: 'delete-admin', admin: true })
+    const actor = await accounts.actor({ label: 'delete-admin', type: 'member', admin: true })
     const page = await pageAs(actor)
     const account = new AccountPage(page)
     await account.goto()

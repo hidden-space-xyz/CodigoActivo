@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, toRefs, watch } from 'vue'
+import { computed, ref, toRefs, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useSession } from '@/entities/session'
@@ -13,9 +13,10 @@ import { ThemeToggle } from '@/shared/ui/theme-toggle'
 import { PRIMARY_NAV } from '../config/navigation'
 
 const route = useRoute()
-const { isAuthenticated, isAdmin, displayName } = toRefs(useSession())
+const { isAuthenticated, isEditor, isPrivacyOfficer, displayName } = toRefs(useSession())
 const logout = useLogout()
 
+const opensAdmin = computed(() => isEditor.value || isPrivacyOfficer.value)
 const menuOpen = ref(false)
 
 watch(
@@ -55,7 +56,7 @@ function isActive(section: NavSection): boolean {
         </RouterLink>
 
         <template v-if="isAuthenticated">
-          <RouterLink v-if="isAdmin" :to="{ name: 'admin-dashboard' }" class="header__link">{{
+          <RouterLink v-if="opensAdmin" :to="{ name: 'admin' }" class="header__link">{{
             $t('common.admin')
           }}</RouterLink>
           <RouterLink
@@ -120,8 +121,8 @@ function isActive(section: NavSection): boolean {
 
         <template v-if="isAuthenticated">
           <RouterLink
-            v-if="isAdmin"
-            :to="{ name: 'admin-dashboard' }"
+            v-if="opensAdmin"
+            :to="{ name: 'admin' }"
             class="menu__link"
             @click="menuOpen = false"
           >

@@ -105,7 +105,9 @@ describe('admin resources page', () => {
   it('renders through the application router for admins', async () => {
     serveResources()
 
-    const { wrapper } = await renderApp('/admin/resources', { user: { isAdmin: true } })
+    const { wrapper } = await renderApp('/admin/resources', {
+      user: { staffRole: 'Administrator' },
+    })
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Guía de Python'))
   })

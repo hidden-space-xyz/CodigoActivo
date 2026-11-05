@@ -219,9 +219,15 @@ public enum ApplicationErrorCode
     UserSelfDeleteRequiresVerification,
 
     /// <summary>
-    /// Selects the option for a user who grants or revokes their own administrator rights.
+    /// Selects the option for a user who changes their own staff role.
     /// </summary>
-    UserSelfAdminChangeForbidden,
+    UserSelfStaffRoleChangeForbidden,
+
+    /// <summary>
+    /// Selects the option for an account other than the initial administrator that changes a staff
+    /// role, designates the account for data protection or deletes another independent account.
+    /// </summary>
+    SuperAdministratorOnly,
 
     /// <summary>
     /// Selects the option for a user who changes their own membership type.
@@ -384,7 +390,7 @@ public enum ApplicationErrorCode
     ActingForAnotherUserForbidden,
 
     /// <summary>
-    /// Only the administrator designated for data protection may consult the blocked data.
+    /// Only the account designated for data protection may consult the blocked data.
     /// </summary>
     BlockedDataOfficerOnly,
 

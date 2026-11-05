@@ -122,6 +122,7 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
         users.HasKey(u => u.Id);
         users.Property(u => u.Gender).HasConversion<string>();
         users.Property(u => u.TwoFactorMethod).HasConversion<string>();
+        users.Property(u => u.StaffRole).HasConversion<string>();
         users.HasOne(u => u.Parent).WithMany(u => u.Children).HasForeignKey(u => u.ParentId);
         users.HasOne(u => u.UserStatusType).WithMany().HasForeignKey(u => u.UserStatusTypeId);
         users.HasOne(u => u.UserType).WithMany().HasForeignKey(u => u.UserTypeId);

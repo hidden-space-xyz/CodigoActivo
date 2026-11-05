@@ -5,7 +5,7 @@ namespace CodigoActivo.Application.Accounts.Notifications;
 
 /// <summary>
 /// Tells the holder of an account, once the change is committed, that its credentials, its password
-/// lock, its second factor, its administrator rights or the identifiers it is reached at changed.
+/// lock, its second factor, its staff role, its data protection designation or the identifiers it is reached at changed.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="notifier">Sender of the account security notifications.</param>
@@ -19,7 +19,8 @@ public sealed class AccountSecurityNotifications(
         IDomainEventListener<AuthenticatorEnabled>,
         IDomainEventListener<AuthenticatorDisabled>,
         IDomainEventListener<TwoFactorReset>,
-        IDomainEventListener<AdministratorRightsChanged>,
+        IDomainEventListener<StaffRoleChanged>,
+        IDomainEventListener<PrivacyOfficerChanged>,
         IDomainEventListener<ContactDetailsReplaced>
 {
     /// <inheritdoc />
@@ -65,14 +66,30 @@ public sealed class AccountSecurityNotifications(
     }
 
     /// <inheritdoc />
-    public Task HandleAsync(AdministratorRightsChanged domainEvent, CancellationToken ct)
+    public Task HandleAsync(StaffRoleChanged domainEvent, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(domainEvent);
         return NotifyAsync(
             domainEvent.UserId,
-            domainEvent.IsAdmin
-                ? AccountSecurityChange.AdminGranted
-                : AccountSecurityChange.AdminRevoked,
+            domainEvent.StaffRole switch
+            {
+                StaffRole.Editor => AccountSecurityChange.EditorGranted,
+                StaffRole.Administrator => AccountSecurityChange.AdministratorGranted,
+                _ => AccountSecurityChange.StaffRoleRevoked,
+            },
+            ct
+        );
+    }
+
+    /// <inheritdoc />
+    public Task HandleAsync(PrivacyOfficerChanged domainEvent, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(domainEvent);
+        return NotifyAsync(
+            domainEvent.UserId,
+            domainEvent.IsPrivacyOfficer
+                ? AccountSecurityChange.PrivacyOfficerDesignated
+                : AccountSecurityChange.PrivacyOfficerReleased,
             ct
         );
     }

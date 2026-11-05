@@ -10,7 +10,7 @@ import { readAdminPasswordDraft, toAdminPasswordDraft } from '../model/admin-pas
 /** Opens the dialog; the password is discarded whenever it opens or closes. */
 const visible = defineModel<boolean>('visible', { required: true })
 
-defineProps<{
+const props = defineProps<{
   /** Dialog title naming the sensitive action. */
   title: string
   /** Explanation of what the action does to whom. */
@@ -25,11 +25,18 @@ defineProps<{
   saving: boolean
   /** Rejection reported by the parent, such as an incorrect password; empty hides it. */
   error: string
+  /** Hides the password field for a choice that needs none; `submit` then carries `''`. */
+  passwordless?: boolean
 }>()
 
 const emit = defineEmits<{
-  /** Fired with the signed-in admin's password, never empty, to authorize the action. */
+  /** Fired with the signed-in admin's password, empty only when `passwordless`. */
   submit: [currentPassword: string]
+}>()
+
+defineSlots<{
+  /** Fields of the action shown above the password, such as the choice it applies. */
+  default?: () => unknown
 }>()
 
 const form = useForm({ initial: toAdminPasswordDraft, read: readAdminPasswordDraft })
@@ -40,6 +47,10 @@ watch(visible, () => {
 })
 
 function confirm(): void {
+  if (props.passwordless) {
+    emit('submit', '')
+    return
+  }
   const password = form.submit()
   if (password) emit('submit', password)
 }
@@ -49,7 +60,8 @@ function confirm(): void {
   <el-dialog v-model="visible" :title="title" :width="width" :close-on-click-modal="false">
     <form class="form" @submit.prevent="confirm">
       <p class="form__message">{{ message }}</p>
-      <div class="ca-field">
+      <slot />
+      <div v-if="!passwordless" class="ca-field">
         <label class="ca-field__label" :for="inputId">{{
           $t('pages.admin.users.adminPassword.label')
         }}</label>

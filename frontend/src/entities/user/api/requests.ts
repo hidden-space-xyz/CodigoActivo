@@ -3,13 +3,15 @@ import {
   getApiUsers,
   getApiUsersStatusTypes,
   getApiUsersTypes,
-  patchApiUsersUserIdAdmin,
   patchApiUsersUserIdChangeType,
+  patchApiUsersUserIdStaffRole,
+  postApiUsersUserIdPrivacyOfficer,
   postApiUsersUserIdTwoFactorReset,
 } from '@/shared/api/generated/endpoints/users/users'
 import { toPage } from '@/shared/api'
 import type { ServerTablePage } from '@/shared/lib/paging'
 
+import type { StaffRole } from '../model/staff-role'
 import type { User, UserCatalogRef, UserListParams } from '../model/types'
 import { toUser, toUserCatalogRef } from './mapper'
 
@@ -32,7 +34,10 @@ export async function getUserStatusesRequest(): Promise<readonly UserCatalogRef[
   return response.data.map(toUserCatalogRef)
 }
 
-/** Deletes a user together with their minors; the API never deletes the initial administrator. */
+/**
+ * Deletes a user together with their minors; only the superadministrator deletes other accounts,
+ * and the API never deletes the superadministrator.
+ */
 export async function deleteUserRequest(id: string): Promise<void> {
   await deleteApiUsersUserId(id)
 }
@@ -43,15 +48,28 @@ export async function changeUserTypeRequest(id: string, userTypeId: string): Pro
 }
 
 /**
- * Grants or revokes the admin role. Granting requires the signed-in admin's `currentPassword` (the
- * API rejects it with `UserCurrentPasswordIncorrect` otherwise); revoking ignores it.
+ * Gives a user another cargo; only the superadministrator may, and never their own. Any cargo but
+ * `None` requires the caller's `currentPassword` (the API rejects it with
+ * `UserCurrentPasswordIncorrect` otherwise); removing the cargo ignores it.
  */
-export async function setUserAdminRequest(
+export async function setUserStaffRoleRequest(
   id: string,
-  isAdmin: boolean,
+  staffRole: StaffRole,
   currentPassword: string | null,
 ): Promise<void> {
-  await patchApiUsersUserIdAdmin(id, { isAdmin, currentPassword })
+  await patchApiUsersUserIdStaffRole(id, { staffRole, currentPassword })
+}
+
+/**
+ * Designates a user as the data protection officer, which the account that held it stops being;
+ * only the superadministrator may, with their `currentPassword`, and designating themselves takes
+ * the designation back.
+ */
+export async function designatePrivacyOfficerRequest(
+  id: string,
+  currentPassword: string,
+): Promise<void> {
+  await postApiUsersUserIdPrivacyOfficer(id, { currentPassword })
 }
 
 /**

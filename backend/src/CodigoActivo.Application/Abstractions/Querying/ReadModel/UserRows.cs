@@ -88,8 +88,11 @@ public sealed class UserRow
     /// <summary>Gets the membership type.</summary>
     public UserTypeRow UserType { get; init; } = null!;
 
-    /// <summary>Gets a value indicating whether the account is an administrator.</summary>
-    public bool IsAdmin { get; init; }
+    /// <summary>Gets the staff role of the account.</summary>
+    public StaffRole StaffRole { get; init; }
+
+    /// <summary>Gets a value indicating whether the account is designated for data protection.</summary>
+    public bool IsPrivacyOfficer { get; init; }
 
     /// <summary>Gets the second-factor method.</summary>
     public TwoFactorMethod TwoFactorMethod { get; init; } = TwoFactorMethod.Email;

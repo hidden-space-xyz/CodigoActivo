@@ -41,6 +41,12 @@ public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork
     }
 
     /// <inheritdoc />
+    public Task<User?> GetPrivacyOfficerAsync(CancellationToken ct = default)
+    {
+        return Accounts.FirstOrDefaultAsync(user => user.IsPrivacyOfficer, ct);
+    }
+
+    /// <inheritdoc />
     public Task<int> CountDependentsAsync(UserId guardianId, CancellationToken ct = default)
     {
         return Set.CountAsync(user => user.ParentId == guardianId, ct);

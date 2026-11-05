@@ -36,6 +36,13 @@ public interface IUserRepository : IRepository<User>
     public Task<User?> GetByEmailAsync(EmailAddress email, CancellationToken ct = default);
 
     /// <summary>
+    /// Loads the account designated for data protection to change it.
+    /// </summary>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A task whose result is the account, or <see langword="null"/> when none is designated.</returns>
+    public Task<User?> GetPrivacyOfficerAsync(CancellationToken ct = default);
+
+    /// <summary>
     /// Counts the dependents a guardian has.
     /// </summary>
     /// <param name="guardianId">Identifier of the guardian.</param>

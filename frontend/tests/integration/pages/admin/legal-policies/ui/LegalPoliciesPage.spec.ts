@@ -15,7 +15,7 @@ describe('admin legal policies page', () => {
       http.get('/api/legal-policies/Cookies/versions', () => apiError(404)),
     )
 
-    const { wrapper } = await renderApp('/admin/legal', { user: { isAdmin: true } })
+    const { wrapper } = await renderApp('/admin/legal', { user: { staffRole: 'Administrator' } })
 
     expect(wrapper.get('h1').text()).toBe(t('pages.admin.legalPolicies.header.title'))
     expect(wrapper.findAll('.el-tabs__item').map((tab) => tab.text())).toEqual([

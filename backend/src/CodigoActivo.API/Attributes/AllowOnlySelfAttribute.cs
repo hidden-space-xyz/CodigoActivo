@@ -37,7 +37,7 @@ public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilte
             return;
         }
 
-        if (AdministratorsAllowed && user.IsAdmin())
+        if (AdministratorsAllowed && user.HasStaffRole(StaffRole.Administrator))
         {
             return;
         }

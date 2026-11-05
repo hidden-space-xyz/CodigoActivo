@@ -54,7 +54,7 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
         return Factory.SeedAsync(async db =>
         {
             var member = await db.Users.FindAsync([UserId.From(TestSeedData.Users.MemberId)], Ct);
-            Persisted.Overwrite(member!, new { IsAdmin = true });
+            Persisted.Overwrite(member!, new { StaffRole = StaffRole.Administrator });
         });
     }
 

@@ -4,32 +4,53 @@ using CodigoActivo.Application.Common.Mapping;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Users;
 using Gender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
+using StaffRole = CodigoActivo.Application.Abstractions.Querying.ReadModel.StaffRole;
 
 namespace CodigoActivo.API.Users.Contracts;
 
 /// <summary>
-/// Contains the client-supplied data used to grant or revoke the administrator rights of a user.
+/// Contains the client-supplied data used by the initial administrator to change the staff role of
+/// a user.
 /// </summary>
-/// <param name="IsAdmin">
-/// Whether the user must be an administrator. It must be present: a body without it is refused
-/// instead of being read as a revocation.
+/// <param name="StaffRole">
+/// Staff role of the user from now on. It must be present: a body without it is refused instead of
+/// being read as a revocation.
 /// </param>
 /// <param name="CurrentPassword">
-/// Password of the acting administrator. Required to grant the role; ignored when revoking it.
+/// Password of the initial administrator. Required to give a role; ignored when the user is left
+/// without one.
 /// </param>
-public record SetAdminRequest(
-    [property: JsonRequired] bool IsAdmin,
+public record SetStaffRoleRequest(
+    [property: JsonRequired] [EnumDataType(typeof(StaffRole))] StaffRole StaffRole,
     [MaxLength(128)] string? CurrentPassword
 )
 {
     /// <summary>
-    /// Builds the command that grants or revokes the rights.
+    /// Builds the command that changes the staff role.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
     /// <returns>The command.</returns>
-    public SetAdminCommand ToCommand(UserId userId)
+    public SetStaffRoleCommand ToCommand(UserId userId)
     {
-        return new SetAdminCommand(userId, IsAdmin, CurrentPassword);
+        return new SetStaffRoleCommand(userId, StaffRole.ToDomain(), CurrentPassword);
+    }
+}
+
+/// <summary>
+/// Contains the client-supplied data used by the initial administrator to designate the account for
+/// data protection.
+/// </summary>
+/// <param name="CurrentPassword">Password of the initial administrator, re-entered to authorize it.</param>
+public record DesignatePrivacyOfficerRequest([Required] [MaxLength(128)] string CurrentPassword)
+{
+    /// <summary>
+    /// Builds the command that designates the account.
+    /// </summary>
+    /// <param name="userId">Identifier of the account designated from now on.</param>
+    /// <returns>The command.</returns>
+    public DesignatePrivacyOfficerCommand ToCommand(UserId userId)
+    {
+        return new DesignatePrivacyOfficerCommand(userId, CurrentPassword);
     }
 }
 

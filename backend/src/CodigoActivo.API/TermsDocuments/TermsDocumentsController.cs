@@ -8,6 +8,7 @@ using CodigoActivo.Application.TermsDocuments.Contracts;
 using CodigoActivo.Application.TermsDocuments.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CodigoActivo.API.TermsDocuments;
@@ -28,7 +29,7 @@ public class TermsDocumentsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a page of terms documents.</returns>
     [HttpGet]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<ActionResult<PagedResult<TermsDocumentResponse>>> TermsDocumentsAsync(
         [FromQuery] TermsDocumentListQuery query,
         [FromServices]
@@ -48,7 +49,7 @@ public class TermsDocumentsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 201 response with the terms document and its location, or an error response.</returns>
     [HttpPost]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     [ProducesResponseType<TermsDocumentResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<TermsDocumentResponse>> CreateTermsDocumentAsync(
         [FromBody] CreateTermsDocumentRequest request,
@@ -75,7 +76,7 @@ public class TermsDocumentsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the terms document, or an error response.</returns>
     [HttpPut("{termsDocumentId:guid}")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<ActionResult<TermsDocumentResponse>> UpdateTermsDocumentAsync(
         Guid termsDocumentId,
         [FromBody] UpdateTermsDocumentRequest request,
@@ -100,7 +101,7 @@ public class TermsDocumentsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 204 response, or an error response.</returns>
     [HttpDelete("{termsDocumentId:guid}")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<IActionResult> DeleteTermsDocumentAsync(
         Guid termsDocumentId,
         [FromServices] ICommandHandler<DeleteTermsDocumentCommand, Result> handler,

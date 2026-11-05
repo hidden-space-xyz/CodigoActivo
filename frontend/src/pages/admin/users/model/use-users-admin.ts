@@ -1,17 +1,19 @@
 import { computed, readonly, ref, type Ref } from 'vue'
-import { useMutation, useQuery } from '@tanstack/vue-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 
-import { useSession } from '@/entities/session'
-import { fullName, userList, userMutations, userQueries, type User } from '@/entities/user'
+import { refreshSession, useSession } from '@/entities/session'
+import {
+  fullName,
+  userList,
+  userMutations,
+  userQueries,
+  type StaffRole,
+  type User,
+} from '@/entities/user'
 import { hasErrorCode } from '@/shared/api'
 import { useCrudDialog } from '@/shared/lib/crud'
-import {
-  getErrorMessage,
-  useActionConfirm,
-  useCrudFeedback,
-  useDeleteConfirm,
-} from '@/shared/lib/feedback'
+import { getErrorMessage, useCrudFeedback, useDeleteConfirm } from '@/shared/lib/feedback'
 import { useServerTable } from '@/shared/lib/paging'
 import type { TableFilterChip } from '@/shared/ui/data-table'
 
@@ -27,7 +29,7 @@ const DEFAULT_SORT_FIELD = 'firstName'
 
 const HIDDEN_FIELDS: Record<UserListScope, readonly string[]> = {
   independent: ['birthDate'],
-  dependent: ['email', 'phone', 'nationalId', 'status', 'isAdmin', 'newsConsent'],
+  dependent: ['email', 'phone', 'nationalId', 'status', 'staffRole', 'newsConsent'],
   all: [],
 }
 
@@ -44,23 +46,25 @@ export interface UserRelationFilter {
  * everyone, a filter per column and an optional relation filter (also listed as a table chip) that
  * moves to the scope of the people it shows and is dropped when the scope changes. Each scope hides
  * the fields its people never have (`showsField`) and drops their filters and their sort: the
- * birth date of independent accounts, and the contact details, DNI/NIE, status, admin role and
- * news consent of dependents.
+ * birth date of independent accounts, and the contact details, DNI/NIE, status, cargo and news
+ * consent of dependents.
  *
- * It also opens the dialogs that change a user's type, grant the admin role or return their second
- * factor to email; personal data and consents are only changed by their holder or guardian from
- * «Mi cuenta». Granting the role and resetting the second factor need the signed-in admin's
- * password: a refused one is shown in the dialog instead of a toast. Revoking the admin role and
- * deleting ask for confirmation and then act at once. The initial administrator can be neither
- * demoted nor deleted, and the caller can neither change their own type or admin role nor delete
- * their own account here; the block reasons explain why. Call it in `setup`.
+ * It also opens the dialogs that change a user's type or return their second factor to email, and,
+ * for the superadministrator alone, those that change the cargo of another independent account or
+ * designate the data protection officer; personal data and consents are only changed by their
+ * holder or guardian from «Mi cuenta». Resetting the second factor, designating the officer and
+ * giving any cargo but none need the caller's password: a refused one is shown in the dialog
+ * instead of a toast. Only the superadministrator deletes, after confirmation; they can never be
+ * deleted, and the caller can neither change their own type nor delete their own account here; the
+ * block reasons explain why. Designating the officer away from or onto the caller reloads their
+ * session. Call it in `setup`.
  */
 export function useUsersAdmin() {
   const { t } = useI18n()
   const session = useSession()
+  const queryClient = useQueryClient()
   const feedback = useCrudFeedback()
   const { confirmDelete } = useDeleteConfirm()
-  const { confirmAction } = useActionConfirm()
 
   const scope = ref<UserListScope>('independent')
   const relationFilter = ref<UserRelationFilter | null>(null)
@@ -75,7 +79,7 @@ export function useUsersAdmin() {
       birthDate: { type: 'dateRange', fromParam: 'birthDateFrom', toParam: 'birthDateTo' },
       status: { param: 'userStatusTypeId' },
       type: { param: 'userTypeId' },
-      isAdmin: { param: 'isAdmin' },
+      staffRole: { param: 'staffRole' },
       newsConsent: { param: 'newsConsent' },
     },
     extraParams: () => ({ ...SCOPE_PARAMS[scope.value], ...relationFilter.value?.params }),
@@ -85,20 +89,23 @@ export function useUsersAdmin() {
 
   const remove = useMutation(userMutations.remove())
   const changeType = useMutation(userMutations.changeType())
-  const setAdmin = useMutation(userMutations.setAdmin())
+  const setStaffRole = useMutation(userMutations.setStaffRole())
+  const designateOfficer = useMutation(userMutations.designatePrivacyOfficer())
   const resetTwoFactor = useMutation(userMutations.resetTwoFactor())
 
   const typeDialog = useCrudDialog<User>()
-  const grantDialog = useCrudDialog<User>()
+  const staffRoleDialog = useCrudDialog<User>()
+  const officerDialog = useCrudDialog<User>()
   const resetDialog = useCrudDialog<User>()
-  const grantError = ref('')
+  const staffRoleError = ref('')
+  const officerError = ref('')
   const resetError = ref('')
 
-  function passwordAware(error: Ref<string>, successMessage: string, close: () => void) {
+  function passwordAware(error: Ref<string>, successMessage: string, done: () => void) {
     return {
       onSuccess: () => {
         feedback.success(successMessage)
-        close()
+        done()
       },
       onError: (failure: unknown) => {
         if (hasErrorCode(failure, 'UserCurrentPasswordIncorrect')) {
@@ -164,11 +171,15 @@ export function useUsersAdmin() {
     return isOwnAccount(user) ? t('pages.admin.users.blocked.selfRole') : undefined
   }
 
-  function adminBlockReason(user: User): string | undefined {
-    if (user.isInitialAdmin) return t('pages.admin.users.blocked.initialAdmin')
-    if (isOwnAccount(user)) return t('pages.admin.users.blocked.selfRole')
-    return undefined
+  function mayChangeStaffRole(user: User): boolean {
+    return session.isSuperAdmin && !user.parentId && !isOwnAccount(user)
   }
+
+  function mayDesignatePrivacyOfficer(user: User): boolean {
+    return session.isSuperAdmin && user.staffRole === 'Administrator' && !user.isPrivacyOfficer
+  }
+
+  const mayDelete = computed(() => session.isSuperAdmin)
 
   function deleteBlockReason(user: User): string | undefined {
     if (user.isInitialAdmin) return t('pages.admin.users.blocked.initialAdmin')
@@ -185,32 +196,41 @@ export function useUsersAdmin() {
     )
   }
 
-  function toggleAdmin(user: User, isAdmin: boolean): void {
-    if (isAdmin) {
-      grantError.value = ''
-      void grantDialog.openEdit(user)
-      return
-    }
-    confirmAction({
-      header: t('pages.admin.users.revokeAdmin.header'),
-      message: t('pages.admin.users.revokeAdmin.message', { fullName: fullName(user) }),
-      acceptLabel: t('pages.admin.users.revokeAdmin.confirm'),
-      accept: () => {
-        setAdmin.mutate(
-          { id: user.id, isAdmin: false, currentPassword: null },
-          feedback.outcome(t('pages.admin.users.toasts.adminRevoked')),
-        )
-      },
-    })
+  function openStaffRole(user: User): void {
+    staffRoleError.value = ''
+    void staffRoleDialog.openEdit(user)
   }
 
-  function grantAdmin(currentPassword: string): void {
-    const user = grantDialog.editing.value
+  function saveStaffRole(staffRole: StaffRole, currentPassword: string | null): void {
+    const user = staffRoleDialog.editing.value
     if (!user) return
-    grantError.value = ''
-    setAdmin.mutate(
-      { id: user.id, isAdmin: true, currentPassword },
-      passwordAware(grantError, t('pages.admin.users.toasts.adminGranted'), grantDialog.close),
+    staffRoleError.value = ''
+    setStaffRole.mutate(
+      { id: user.id, staffRole, currentPassword },
+      passwordAware(
+        staffRoleError,
+        t('pages.admin.users.toasts.staffRoleChanged'),
+        staffRoleDialog.close,
+      ),
+    )
+  }
+
+  function openPrivacyOfficer(user: User): void {
+    officerError.value = ''
+    void officerDialog.openEdit(user)
+  }
+
+  function designatePrivacyOfficer(currentPassword: string): void {
+    const user = officerDialog.editing.value
+    if (!user) return
+    officerError.value = ''
+    const changesSession = isOwnAccount(user) || session.isPrivacyOfficer
+    designateOfficer.mutate(
+      { id: user.id, currentPassword },
+      passwordAware(officerError, t('pages.admin.users.toasts.privacyOfficerDesignated'), () => {
+        officerDialog.close()
+        if (changesSession) void refreshSession(queryClient)
+      }),
     )
   }
 
@@ -251,16 +271,23 @@ export function useUsersAdmin() {
     showDependentsOf,
     isOwnAccount,
     typeBlockReason,
-    adminBlockReason,
+    mayChangeStaffRole,
+    mayDesignatePrivacyOfficer,
+    mayDelete,
     deleteBlockReason,
     typeDialog,
     saveType,
     changingType: changeType.isPending,
-    grantDialog,
-    grantError,
-    toggleAdmin,
-    grantAdmin,
-    settingAdmin: setAdmin.isPending,
+    staffRoleDialog,
+    staffRoleError,
+    openStaffRole,
+    saveStaffRole,
+    settingStaffRole: setStaffRole.isPending,
+    officerDialog,
+    officerError,
+    openPrivacyOfficer,
+    designatePrivacyOfficer,
+    designatingOfficer: designateOfficer.isPending,
     resetDialog,
     resetError,
     openResetTwoFactor,

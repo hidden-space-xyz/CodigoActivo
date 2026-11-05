@@ -9,6 +9,7 @@ using CodigoActivo.Application.Partners.Contracts;
 using CodigoActivo.Application.Partners.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Partners;
+using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
@@ -71,7 +72,7 @@ public class PartnersController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 201 response with the partner and its location, or an error response.</returns>
     [HttpPost]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     [ProducesResponseType<PartnerResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<PartnerResponse>> CreateAsync(
         [FromBody] CreatePartnerRequest request,
@@ -97,7 +98,7 @@ public class PartnersController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the partner, or an error response.</returns>
     [HttpPut("{partnerId:guid}")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<ActionResult<PartnerResponse>> UpdateAsync(
         Guid partnerId,
         [FromBody] UpdatePartnerRequest request,
@@ -120,7 +121,7 @@ public class PartnersController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 204 response, or an error response.</returns>
     [HttpDelete("{partnerId:guid}")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<IActionResult> DeleteAsync(
         Guid partnerId,
         [FromServices] ICommandHandler<DeletePartnerCommand, Result> handler,

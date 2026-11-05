@@ -10,7 +10,8 @@ public static class AccountErasers
     public static AccountEraser Create(
         IUserRepository users,
         IAccountErasureStore erasureStore,
-        IUnitOfWork uow
+        IUnitOfWork uow,
+        TestClock? clock = null
     )
     {
         erasureStore
@@ -20,7 +21,8 @@ public static class AccountErasers
             users,
             erasureStore,
             ConsentWithdrawalNotifiers.WithoutLegalContact(),
-            uow.RunsTransactions()
+            uow.RunsTransactions(),
+            clock ?? new TestClock()
         );
     }
 }

@@ -8,18 +8,18 @@ import { DataTable } from '../../support/ui/data-table'
 test.describe('audit log', () => {
   test('the sign-in of an account is found by its email and pinned by account and address', async ({
     pageAs,
-    admin,
+    initialAdmin,
     accounts,
     clientAddress,
   }) => {
     const person = await accounts.actor({ label: 'audited' })
     const name = fullName(person.account)
     await auditEntry(
-      admin.api,
+      initialAdmin.api,
       { search: person.account.email, action: 'CompleteLogin' },
       (entry) => entry.entityId === person.account.id,
     )
-    const page = await pageAs(admin)
+    const page = await pageAs(initialAdmin)
     await new AdminShell(page).open('Auditoría')
     const log = new DataTable(page)
 
@@ -48,18 +48,19 @@ test.describe('audit log', () => {
 
   test('pinning an actor, an entity and a trace narrows the log and leads to the diagnostics', async ({
     pageAs,
+    initialAdmin,
     admin,
     seed,
   }) => {
     const item = await seed.newsItem()
     const entry = await auditEntry(
-      admin.api,
+      initialAdmin.api,
       { action: 'CreateNewsItem', entityId: item.id },
       (found) => found.actorId === admin.account.id,
     )
     const traceId = entry.traceId ?? ''
     const actor = fullName(admin.account)
-    const page = await pageAs(admin)
+    const page = await pageAs(initialAdmin)
     await new AdminShell(page).open('Auditoría')
     const log = new DataTable(page)
     await log.search('Buscar por nombre o email', admin.account.email)
@@ -90,32 +91,32 @@ test.describe('audit log', () => {
     await expect(new DataTable(page).chips.getByText(`Traza: ${traceId}`)).toBeVisible()
   })
 
-  test('a wrong administrator password is logged as rejected with its reason', async ({
+  test('a wrong superadministrator password is logged as rejected with its reason', async ({
     pageAs,
-    admin,
+    initialAdmin,
     participant,
   }) => {
     const target = participant.account
     await expect(
-      admin.api.patch(`/api/users/${target.id}/admin`, {
-        isAdmin: true,
+      initialAdmin.api.patch(`/api/users/${target.id}/staff-role`, {
+        staffRole: 'Administrator',
         currentPassword: `${PASSWORD}-wrong`,
       }),
     ).rejects.toThrow('UserCurrentPasswordIncorrect')
     await auditEntry(
-      admin.api,
-      { action: 'SetAdmin', entityId: target.id, outcome: 'Rejected' },
-      (entry) => entry.actorId === admin.account.id,
+      initialAdmin.api,
+      { action: 'SetStaffRole', entityId: target.id, outcome: 'Rejected' },
+      (entry) => entry.actorId === initialAdmin.account.id,
     )
-    const page = await pageAs(admin)
+    const page = await pageAs(initialAdmin)
     await new AdminShell(page).open('Auditoría')
     const log = new DataTable(page)
     await log.search('Buscar por nombre o email', target.email)
 
     await log.filterBy('Resultado', 'Rechazado')
 
-    const refused = log.row('Cambiar los permisos de administrador').filter({
-      hasText: fullName(admin.account),
+    const refused = log.row('Cambiar el cargo de un usuario').filter({
+      hasText: fullName(initialAdmin.account),
     })
     await expect(refused).toContainText('Rechazado')
     await expect(refused).toContainText('La contraseña actual no es correcta.')

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, toRefs, watch } from 'vue'
+import { computed, ref, toRefs, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { useSession } from '@/entities/session'
+import { hasStaffAccess, useSession } from '@/entities/session'
 import { useLogout } from '@/features/logout'
 import { AppIcon } from '@/shared/ui/app-icon'
 import { BrandButton } from '@/shared/ui/brand-button'
@@ -11,9 +11,13 @@ import { ThemeToggle } from '@/shared/ui/theme-toggle'
 import { ADMIN_NAV } from '../config/navigation'
 
 const route = useRoute()
-const { displayName } = toRefs(useSession())
+const session = useSession()
+const { displayName } = toRefs(session)
 const logout = useLogout()
 
+const navItems = computed(() =>
+  ADMIN_NAV.filter((item) => hasStaffAccess(session.user, item.access)),
+)
 const menuOpen = ref(false)
 
 watch(
@@ -32,7 +36,7 @@ watch(
       }}</RouterLink>
       <nav class="admin__nav">
         <RouterLink
-          v-for="item in ADMIN_NAV"
+          v-for="item in navItems"
           :key="item.routeName"
           :to="{ name: item.routeName }"
           class="admin__link"
@@ -87,7 +91,7 @@ watch(
     >
       <nav class="admin__nav">
         <RouterLink
-          v-for="item in ADMIN_NAV"
+          v-for="item in navItems"
           :key="item.routeName"
           :to="{ name: item.routeName }"
           class="admin__link admin__link--drawer"

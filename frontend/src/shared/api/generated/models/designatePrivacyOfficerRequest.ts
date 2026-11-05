@@ -5,8 +5,6 @@
  * OpenAPI spec version: 1.0
  */
 
-export interface SetAdminRequest {
-  isAdmin: boolean;
-  /** @nullable */
-  currentPassword?: string | null;
+export interface DesignatePrivacyOfficerRequest {
+  currentPassword: string;
 }

@@ -190,7 +190,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         return Factory.SeedAsync(async db =>
         {
             var member = await db.Users.FindAsync([UserId.From(TestSeedData.Users.MemberId)], Ct);
-            Persisted.Overwrite(member!, new { IsAdmin = true });
+            Persisted.Overwrite(member!, new { StaffRole = StaffRole.Administrator });
         });
     }
 
@@ -419,7 +419,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await FindAsync<User>(TestSeedData.Users.MemberId)).Should().BeNull();
         var remaining = await FindAsync<User>(TestSeedData.Users.AdminId);
-        remaining!.IsAdmin.Should().BeTrue();
+        remaining!.StaffRole.Should().Be(StaffRole.Administrator);
     }
 
     [Fact]
@@ -601,7 +601,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         using var other = await another.DeleteWithCsrfAsync(url, Ct);
 
         await own.ShouldBeForbiddenAsync(ErrorCode.UserDeleteInitialAdminForbidden);
-        await other.ShouldBeForbiddenAsync(ErrorCode.UserDeleteInitialAdminForbidden);
+        await other.ShouldBeForbiddenAsync(ErrorCode.AccessDenied);
         (await FindAsync<User>(KnownIds.Users.InitialAdministrator)).Should().NotBeNull();
         (await ErasedUsersAsync()).Should().BeEmpty();
     }

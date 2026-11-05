@@ -10,9 +10,11 @@ const TITLE = 'Restablecer'
 const MESSAGE = 'Vas a restablecer la verificación de Ada Lovelace.'
 const CONFIRM = 'Restablecer ahora'
 
-async function renderDialog(error = '') {
+async function renderDialog(error = '', extra: { passwordless?: boolean; slot?: string } = {}) {
   const rendered = await renderWithProviders(AdminPasswordDialog, {
+    ...(extra.slot ? { slots: { default: extra.slot } } : {}),
     props: {
+      passwordless: extra.passwordless ?? false,
       visible: false,
       title: TITLE,
       message: MESSAGE,
@@ -70,5 +72,18 @@ describe('AdminPasswordDialog', () => {
     await flushPromises()
 
     expect(inputValue('#reset-two-factor-password')).toBe('')
+  })
+
+  it('shows the fields of the action and confirms one that needs no password at once', async () => {
+    const { wrapper, dialog } = await renderDialog('', {
+      passwordless: true,
+      slot: '<p class="choice">Sin cargo</p>',
+    })
+
+    expect(dialog.querySelector('.choice')?.textContent).toBe('Sin cargo')
+    expect(dialog.querySelector('#reset-two-factor-password')).toBeNull()
+    await click(findButton(CONFIRM, dialog))
+
+    expect(wrapper.emitted('submit')).toEqual([['']])
   })
 })

@@ -8,6 +8,7 @@ using CodigoActivo.Application.EventCategories.Contracts;
 using CodigoActivo.Application.EventCategories.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
+using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CodigoActivo.API.EventCategories;
@@ -28,7 +29,7 @@ public class EventCategoryTypesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a page of category types.</returns>
     [HttpGet]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<ActionResult<PagedResult<EventCategoryTypeResponse>>> CategoryTypesAsync(
         [FromQuery] EventCategoryTypeListQuery query,
         [FromServices]
@@ -51,7 +52,7 @@ public class EventCategoryTypesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 201 response with the category type and its location, or an error response.</returns>
     [HttpPost]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     [ProducesResponseType<EventCategoryTypeResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<EventCategoryTypeResponse>> CreateCategoryTypeAsync(
         [FromBody] CreateEventCategoryTypeRequest request,
@@ -79,7 +80,7 @@ public class EventCategoryTypesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the category type, or an error response.</returns>
     [HttpPut("{eventCategoryTypeId:guid}")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<ActionResult<EventCategoryTypeResponse>> UpdateCategoryTypeAsync(
         Guid eventCategoryTypeId,
         [FromBody] UpdateEventCategoryTypeRequest request,
@@ -105,7 +106,7 @@ public class EventCategoryTypesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 204 response, or an error response.</returns>
     [HttpDelete("{eventCategoryTypeId:guid}")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<IActionResult> DeleteCategoryTypeAsync(
         Guid eventCategoryTypeId,
         [FromServices] ICommandHandler<DeleteEventCategoryTypeCommand, Result> handler,

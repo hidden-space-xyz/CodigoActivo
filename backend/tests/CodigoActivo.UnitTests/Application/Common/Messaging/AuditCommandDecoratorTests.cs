@@ -75,8 +75,12 @@ public sealed class AuditCommandDecoratorTests
     {
         var target = UserId.New();
 
-        var result = await HandleAsync<SetAdminCommand, Result>(
-            new SetAdminCommand(target, IsAdmin: true, CurrentPassword: "secret-password"),
+        var result = await HandleAsync<SetStaffRoleCommand, Result>(
+            new SetStaffRoleCommand(
+                target,
+                StaffRole.Administrator,
+                CurrentPassword: "secret-password"
+            ),
             _ => Result.Success()
         );
 
@@ -86,7 +90,7 @@ public sealed class AuditCommandDecoratorTests
             .Should()
             .BeEquivalentTo(
                 new AuditRecord(
-                    AuditAction.SetAdmin,
+                    AuditAction.SetStaffRole,
                     AuditActorType.User,
                     currentUser.Id,
                     Address,

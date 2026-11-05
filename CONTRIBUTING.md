@@ -31,7 +31,7 @@ docker compose up -d db mailpit
 
 export POSTGRES_PASSWORD="$(cat secrets/postgres_password)"
 export DATA_PROTECTION_KEY="$(cat secrets/data_protection_key)"
-export DEMO_MODE=false BOOTSTRAP_ADMIN_EMAIL=admin@example.test PRIVACY_OFFICER_EMAIL=admin@example.test
+export DEMO_MODE=false BOOTSTRAP_ADMIN_EMAIL=admin@example.test
 export SMTP_HOST=localhost SMTP_PORT=1025 SMTP_SECURITY=None SMTP_FROM_ADDRESS=no-reply@codigoactivo.local
 cd backend
 dotnet run --project src/CodigoActivo.API
@@ -132,8 +132,8 @@ The remaining scripts are in `package.json`.
 
 `tests/e2e/` is a [Playwright](https://playwright.dev/) suite in TypeScript that drives the SPA in Chromium
 through every page as each kind of user: visitors, participants, members, sponsors, guardians, activity
-leaders, administrators, the privacy officer and the initial administrator. Like the performance suite it runs
-in Docker as its own Compose project with its own volumes: PostgreSQL, Mailpit, the API (`Development`, without
+leaders, editors, administrators, the privacy officer and the initial administrator. Like the performance suite
+it runs in Docker as its own Compose project with its own volumes: PostgreSQL, Mailpit, the API (`Development`, without
 demo data) and the nginx image built from the working tree, plus the Playwright runner. From the repository root:
 
 ```bash
@@ -147,9 +147,9 @@ Arguments after `playwright` replace its command, such as `npx playwright test s
 `docker compose -f tests/e2e/compose.yaml up -d --build --wait web` the suite also runs from `tests/e2e/` on
 the host (`npm ci`, `npx playwright install chromium`, then `npm test` or `npm run test:ui`).
 
-The `setup` project takes over the initial administrator through a password reset and makes
-`PRIVACY_OFFICER_EMAIL` an administrator; every other account and all content are created through the API by
-the tests that need them, so the suite runs again on the same volumes. Logins complete the second factor with
+The `setup` project takes over the initial administrator through a password reset and has it designate the
+privacy officer, a member it makes an administrator; every other account and all content are created through
+the API by the tests that need them, so the suite runs again on the same volumes. Logins complete the second factor with
 the code read from Mailpit. The `desktop` project runs every spec and `mobile` the ones tagged `@mobile`; a
 full run takes 10 to 20 minutes with the default four workers. Each
 worker sends its own `X-Forwarded-For`, so the rate limits treat workers as different visitors. The email guard
@@ -172,8 +172,8 @@ docker compose -f tests/performance/compose.yaml down -v
 Each scenario sends the requests the SPA sends when its pages open: anonymous visitors (home, events, an event
 and its activities, news, resources), members (home, an event with their signups, profile, history,
 certificates), households signing up for the shared event, new families that register, confirm their email and
-sign in, and administrators who manage an event, its signups and news, read reports and logs, upload images and
-send email. The suite measures only the requests that carry the site's traffic or its heavy work; the rare
+sign in, and administrators who manage an event, its signups and news, read reports and logs (the audit log as
+the bootstrap administrator, its only administrator reader), upload images and send email. The suite measures only the requests that carry the site's traffic or its heavy work; the rare
 account, authenticator, unsubscribe and blocked data flows are left to the integration tests.
 
 `PROFILE` is `smoke` (one or two iterations per scenario, to check the suite; no latency budgets), `load` (the

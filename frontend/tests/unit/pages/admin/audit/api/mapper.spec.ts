@@ -14,7 +14,7 @@ describe('toAuditEntry', () => {
       actorName: 'Ada Admin',
       actorEmail: 'admin@example.com',
       clientIp: '203.0.113.9',
-      action: 'SetAdmin',
+      action: 'SetStaffRole',
       entity: { type: 'User', id: 'user-2', name: 'Marta Miembro' },
       related: [
         {

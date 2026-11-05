@@ -94,7 +94,7 @@ export async function diagnosticsOfTrace(
 
 /** Waits until the audit log holds an entry matching `params` that `accepts` and returns it. */
 export async function auditEntry(
-  admin: ApiClient,
+  reader: ApiClient,
   params: GetApiLogsAuditParams,
   accepts: (entry: AuditLogEntryResponse) => boolean,
 ): Promise<AuditLogEntryResponse> {
@@ -102,7 +102,7 @@ export async function auditEntry(
   const query: Query = { ...params }
   await expect
     .poll(async () => {
-      const page = await admin.get<AuditLogEntryResponsePagedResult>('/api/logs/audit', query)
+      const page = await reader.get<AuditLogEntryResponsePagedResult>('/api/logs/audit', query)
       found = page.items.find(accepts)
       return found !== undefined
     }, LOG_DELIVERY)

@@ -147,7 +147,6 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, 
             "Registro de Asociaciones de Castilla y León, n.º 0000"
         );
         builder.UseSetting("LEGAL_EMAIL", "contacto@codigoactivo.test");
-        builder.UseSetting("PRIVACY_OFFICER_EMAIL", TestSeedData.AdminEmail);
         builder.UseSetting("LEGAL_PHONE", "987 00 00 00");
 
         builder.ConfigureTestServices(services =>

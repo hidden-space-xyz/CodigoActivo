@@ -54,7 +54,7 @@ export function buildAuditEntry(
     actorName: 'Ada Admin',
     actorEmail: 'admin@example.com',
     clientIp: '203.0.113.9',
-    action: 'SetAdmin',
+    action: 'SetStaffRole',
     entityType: 'User',
     entityId: 'user-2',
     entityName: 'Marta Miembro',

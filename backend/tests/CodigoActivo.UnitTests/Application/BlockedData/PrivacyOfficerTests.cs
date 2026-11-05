@@ -7,34 +7,33 @@ using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
+using StaffRole = CodigoActivo.Application.Abstractions.Querying.ReadModel.StaffRole;
 
 namespace CodigoActivo.UnitTests.Application.BlockedData;
 
 public sealed class PrivacyOfficerTests
 {
-    private const string OfficerEmail = "dpd@test.com";
-
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly TestCurrentUser currentUser = new();
     private readonly PrivacyOfficer sut;
 
     public PrivacyOfficerTests()
     {
-        sut = new PrivacyOfficer(
-            new PrivacyOfficerOptions { Email = OfficerEmail },
-            users,
-            currentUser
-        );
+        sut = new PrivacyOfficer(users, currentUser);
     }
 
     private User SignedIn(
-        string email = OfficerEmail,
-        bool isAdmin = true,
+        bool isPrivacyOfficer = true,
+        StaffRole staffRole = StaffRole.Administrator,
         Guid? statusId = null,
         TwoFactorMethod method = TwoFactorMethod.Authenticator
     )
     {
-        var user = NewUser(email: email, isAdmin: isAdmin, statusId: statusId);
+        var user = NewUser(
+            staffRole: staffRole,
+            isPrivacyOfficer: isPrivacyOfficer,
+            statusId: statusId
+        );
         Persisted.Overwrite(user, new { TwoFactorMethod = method });
         currentUser.Id = user.Id;
         users.GetByIdAsync(user.Id, Arg.Any<CancellationToken>()).Returns(user);
@@ -42,13 +41,11 @@ public sealed class PrivacyOfficerTests
     }
 
     [Fact]
-    public void DesignatesOnlyTheActiveAdministratorWithTheConfiguredEmail()
+    public void DesignatesOnlyTheActiveDesignatedAccount()
     {
-        sut.Designates(isAdmin: true, isActive: true, OfficerEmail).Should().BeTrue();
-        sut.Designates(isAdmin: false, isActive: true, OfficerEmail).Should().BeFalse();
-        sut.Designates(isAdmin: true, isActive: false, OfficerEmail).Should().BeFalse();
-        sut.Designates(isAdmin: true, isActive: true, "otra@test.com").Should().BeFalse();
-        sut.Designates(isAdmin: true, isActive: true, null).Should().BeFalse();
+        PrivacyOfficer.Designates(isPrivacyOfficer: true, isActive: true).Should().BeTrue();
+        PrivacyOfficer.Designates(isPrivacyOfficer: false, isActive: true).Should().BeFalse();
+        PrivacyOfficer.Designates(isPrivacyOfficer: true, isActive: false).Should().BeFalse();
     }
 
     [Theory]
@@ -69,17 +66,7 @@ public sealed class PrivacyOfficerTests
     [Fact]
     public async Task SignedInOfficerAsyncAnotherAdministratorIsRefused()
     {
-        SignedIn(email: "admin@test.com");
-
-        var result = await sut.SignedInOfficerAsync(TestContext.Current.CancellationToken);
-
-        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.BlockedDataOfficerOnly);
-    }
-
-    [Fact]
-    public async Task SignedInOfficerAsyncDesignatedEmailWithoutAdministratorRightsIsRefused()
-    {
-        SignedIn(isAdmin: false);
+        SignedIn(isPrivacyOfficer: false);
 
         var result = await sut.SignedInOfficerAsync(TestContext.Current.CancellationToken);
 

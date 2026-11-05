@@ -62,20 +62,23 @@ public sealed class AuditTrailTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task AdministratorChangeRecordsTheActorTheTargetAndTheFlag()
+    public async Task StaffRoleChangeRecordsTheActorTheTargetAndTheRole()
     {
         var client = await LoginAsAdminAsync();
 
         using var response = await client.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberId}/admin",
-            new SetAdminRequest(true, TestSeedData.Password),
+            $"/api/users/{TestSeedData.Users.MemberId}/staff-role",
+            new SetStaffRoleRequest(
+                CodigoActivo.Application.Abstractions.Querying.ReadModel.StaffRole.Administrator,
+                TestSeedData.Password
+            ),
             Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         var record = Factory
             .Audit.Records.Should()
-            .ContainSingle(record => record.Action == AuditAction.SetAdmin)
+            .ContainSingle(record => record.Action == AuditAction.SetStaffRole)
             .Subject;
         record.ActorType.Should().Be(AuditActorType.User);
         record.ActorId.Should().Be(UserId.From(TestSeedData.Users.AdminId));

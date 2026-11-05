@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, toRefs } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import { activityQueries, type ActivityListing } from '@/entities/activity'
 import { eventQueries } from '@/entities/event'
+import { useSession } from '@/entities/session'
 import { formatDate, formatTimeRange } from '@/shared/lib/date'
 import { formatScore } from '@/shared/lib/number'
 import { ActionButton } from '@/shared/ui/action-button'
@@ -31,10 +32,14 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const router = useRouter()
+const { isAdmin } = toRefs(useSession())
 const activeTab = ref<string | number>('activities')
 
 const event = useQuery(() => eventQueries.detail(props.eventId))
-const stats = useQuery(() => eventReportQueries.stats(props.eventId))
+const stats = useQuery(() => ({
+  ...eventReportQueries.stats(props.eventId),
+  enabled: isAdmin.value,
+}))
 const modalities = useQuery(activityQueries.modalities())
 const roles = useQuery(activityQueries.roles())
 const { table, dialog, saving, save, confirmRemove } = useEventActivitiesAdmin(() => props.eventId)
@@ -97,7 +102,7 @@ function openRoster(): void {
       :title="event.data.value?.title ?? $t('pages.admin.eventDetail.headerFallback')"
       :subtitle="event.data.value?.subtitle ?? ''"
     >
-      <template #actions>
+      <template v-if="isAdmin" #actions>
         <ActionButton
           :label="$t('pages.admin.eventDetail.printBadges')"
           icon="print"
@@ -111,7 +116,7 @@ function openRoster(): void {
       </template>
     </AdminPageHeader>
 
-    <div class="summary">
+    <div v-if="isAdmin" class="summary">
       <div v-for="card in summaryCards" :key="card.label" class="summary__card">
         <div class="summary__value">{{ card.value }}</div>
         <div class="summary__label">{{ card.label }}</div>
@@ -205,13 +210,21 @@ function openRoster(): void {
           </el-table-column>
         </DataTable>
       </el-tab-pane>
-      <el-tab-pane :label="$t('pages.admin.eventDetail.tabs.attendees')" name="attendees">
+      <el-tab-pane
+        v-if="isAdmin"
+        :label="$t('pages.admin.eventDetail.tabs.attendees')"
+        name="attendees"
+      >
         <EventAttendeesTab :event-id="eventId" :active="activeTab === 'attendees'" />
       </el-tab-pane>
-      <el-tab-pane :label="$t('pages.admin.eventDetail.tabs.opinions')" name="opinions">
+      <el-tab-pane
+        v-if="isAdmin"
+        :label="$t('pages.admin.eventDetail.tabs.opinions')"
+        name="opinions"
+      >
         <EventOpinionsTab :event-id="eventId" :active="activeTab === 'opinions'" />
       </el-tab-pane>
-      <el-tab-pane :label="$t('pages.admin.eventDetail.tabs.terms')" name="terms">
+      <el-tab-pane v-if="isAdmin" :label="$t('pages.admin.eventDetail.tabs.terms')" name="terms">
         <EventTermsTab
           :event-id="eventId"
           :documents="event.data.value?.terms ?? []"

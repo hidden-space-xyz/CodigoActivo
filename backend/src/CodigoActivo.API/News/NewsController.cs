@@ -9,6 +9,7 @@ using CodigoActivo.Application.News.Contracts;
 using CodigoActivo.Application.News.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.News;
+using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
@@ -88,7 +89,7 @@ public class NewsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 201 response with the news item and its location, or an error response.</returns>
     [HttpPost]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     [ProducesResponseType<NewsItemResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<NewsItemResponse>> CreateAsync(
         [FromBody] CreateNewsItemRequest request,
@@ -114,7 +115,7 @@ public class NewsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a news item, or an error response.</returns>
     [HttpPut("{newsItemId:guid}")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<ActionResult<NewsItemResponse>> UpdateAsync(
         Guid newsItemId,
         [FromBody] UpdateNewsItemRequest request,
@@ -137,7 +138,7 @@ public class NewsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 204 response, or an error response.</returns>
     [HttpDelete("{newsItemId:guid}")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<IActionResult> DeleteAsync(
         Guid newsItemId,
         [FromServices] ICommandHandler<DeleteNewsItemCommand, Result> handler,
@@ -159,7 +160,7 @@ public class NewsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the news item, or an error response.</returns>
     [HttpPatch("{newsItemId:guid}/feature")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<ActionResult<NewsItemResponse>> FeatureAsync(
         Guid newsItemId,
         [FromServices] ICommandHandler<SetNewsItemFeaturedCommand, Result> handler,

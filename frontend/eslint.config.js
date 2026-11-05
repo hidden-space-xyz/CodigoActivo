@@ -323,6 +323,7 @@ export default withVueTs(
             '/^pages\\.account\\.personalData\\.(actors|sources)\\./u',
             '/^entities\\.event\\.status\\./u',
             '/^entities\\.user\\.gender\\./u',
+            '/^entities\\.user\\.staffRole\\./u',
             '/^entities\\.user\\.person\\./u',
             '/\\.form\\.problems\\./u',
             '/^validation\\.richTextTooLong$/u',

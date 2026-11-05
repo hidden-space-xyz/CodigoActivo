@@ -27,9 +27,12 @@ namespace CodigoActivo.Application.Users.Contracts;
 /// Number of dependents of the user; null unless read through <see cref="UserProjections.UserWithType"/>.
 /// </param>
 /// <param name="Status">Stage of the account: pending verification, active, blocked or dependent.</param>
-/// <param name="IsAdmin">Whether the user has administrator rights.</param>
+/// <param name="StaffRole">Staff role of the user.</param>
+/// <param name="IsPrivacyOfficer">Whether the user is the account designated for data protection.</param>
 /// <param name="IsInitialAdmin">
-/// Whether the account is the initial administrator, which can be neither deleted nor demoted.
+/// Whether the account is the initial administrator, the superadministrator: the only one that
+/// changes staff roles, designates the account for data protection and deletes other accounts, and
+/// one that can be neither deleted nor demoted.
 /// </param>
 /// <param name="Type">
 /// Membership type of the user; null unless read through <see cref="UserProjections.UserWithType"/>.
@@ -57,7 +60,8 @@ public record UserResponse(
     string? ParentName,
     int? DependentCount,
     UserStatusResponse Status,
-    bool IsAdmin,
+    StaffRole StaffRole,
+    bool IsPrivacyOfficer,
     bool IsInitialAdmin,
     UserTypeSummaryResponse? Type,
     TwoFactorMethod TwoFactorMethod,
@@ -86,6 +90,7 @@ public record UserResponse(
             null,
             null,
             null!,
+            StaffRole.None,
             false,
             false,
             null,

@@ -154,14 +154,27 @@ public enum DomainErrorCode
     UserCannotRemoveInitialAdmin,
 
     /// <summary>
-    /// Administrator rights were to be given to a dependent.
+    /// A staff role or the data protection designation was to be given to a dependent.
     /// </summary>
-    UserDependentCannotBeAdmin,
+    UserDependentCannotHoldStaffRole,
 
     /// <summary>
-    /// Administrator rights were to be given to an account whose email is unconfirmed.
+    /// A staff role or the data protection designation was to be given to an account whose email
+    /// is unconfirmed.
     /// </summary>
-    UserPendingVerificationCannotBeAdmin,
+    UserPendingVerificationCannotHoldStaffRole,
+
+    /// <summary>
+    /// A staff role was to be given to an account that is not a member, or an account with one was
+    /// to stop being a member.
+    /// </summary>
+    UserStaffRoleRequiresMember,
+
+    /// <summary>
+    /// An account that is not an administrator was to be designated for data protection, or the
+    /// designated account was to stop being an administrator.
+    /// </summary>
+    UserPrivacyOfficerMustBeAdministrator,
 
     /// <summary>
     /// A dependent was to be added under an account that is itself a dependent.

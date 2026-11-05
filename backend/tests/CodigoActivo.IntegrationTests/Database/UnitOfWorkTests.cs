@@ -314,7 +314,7 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
                 },
                 Ct
             );
-            user.SetAdministrator(true, Fixed);
+            user.ChangeStaffRole(StaffRole.Administrator, Fixed);
 
             var save = () => uow.SaveChangesAsync(Ct);
 
@@ -325,7 +325,7 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
         var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
         stored.PasswordLockout.FailedAttempts.Should().Be(1);
         stored.UserType.Should().Be(UserType.Sponsor);
-        stored.IsAdmin.Should().BeFalse();
+        stored.StaffRole.Should().Be(StaffRole.None);
     }
 
     [Fact]
@@ -349,7 +349,7 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
                 async attempt =>
                 {
                     await users.LockAsync(user, attempt);
-                    user.SetAdministrator(true, Fixed);
+                    user.ChangeStaffRole(StaffRole.Administrator, Fixed);
                     return await uow.SaveChangesAsync(attempt);
                 },
                 Ct
@@ -359,7 +359,7 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
         await using var verify = postgres.CreateContext();
         var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
         stored.UserType.Should().Be(UserType.Sponsor);
-        stored.IsAdmin.Should().BeTrue();
+        stored.StaffRole.Should().Be(StaffRole.Administrator);
     }
 
     [Fact]
@@ -717,7 +717,7 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
             await uow.ExecuteInTransactionAsync(
                 async attempt =>
                 {
-                    user.SetAdministrator(true, Fixed);
+                    user.ChangeStaffRole(StaffRole.Administrator, Fixed);
                     return await LockPasswordAsync(users, user, attempt);
                 },
                 Ct
@@ -729,7 +729,7 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
                 var committed = await meanwhile.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
                 committed.PasswordLockout.IsLocked.Should().BeTrue();
                 committed.UserType.Should().Be(UserType.Member);
-                committed.IsAdmin.Should().BeFalse();
+                committed.StaffRole.Should().Be(StaffRole.None);
             }
 
             await uow.SaveChangesAsync(Ct);
@@ -739,7 +739,7 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
                 .Equal(
                     new PasswordLocked(SeededUserId),
                     new UserTypeChanged(SeededUserId),
-                    new AdministratorRightsChanged(SeededUserId, true)
+                    new StaffRoleChanged(SeededUserId, StaffRole.Administrator)
                 );
         }
 
@@ -747,7 +747,7 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
         var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
         stored.PasswordLockout.IsLocked.Should().BeTrue();
         stored.UserType.Should().Be(UserType.Sponsor);
-        stored.IsAdmin.Should().BeTrue();
+        stored.StaffRole.Should().Be(StaffRole.Administrator);
     }
 
     [Fact]

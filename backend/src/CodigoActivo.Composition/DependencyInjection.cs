@@ -52,7 +52,7 @@ public static class DependencyInjection
             .AddUsers()
             .AddEvents()
             .AddContent()
-            .AddBlockedData(configuration)
+            .AddBlockedData()
             .AddEmails(configuration)
             .AddUseCases();
     }

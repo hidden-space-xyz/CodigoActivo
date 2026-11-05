@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/vue-query'
 
-import { currentUser } from '@/entities/session'
+import { currentUser, hasStaffAccess } from '@/entities/session'
 
 /** The session a view would see, read from `queryClient` outside any component. */
 export function sessionOf(queryClient: QueryClient) {
@@ -8,7 +8,10 @@ export function sessionOf(queryClient: QueryClient) {
   return {
     user,
     isAuthenticated: user !== null,
-    isAdmin: user?.isAdmin ?? false,
+    isEditor: hasStaffAccess(user, 'editor'),
+    isAdmin: hasStaffAccess(user, 'admin'),
+    isSuperAdmin: user?.isSuperAdmin ?? false,
+    isPrivacyOfficer: user?.isPrivacyOfficer ?? false,
     displayName: user?.firstName ?? '',
   }
 }

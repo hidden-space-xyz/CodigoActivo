@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Common.Validation;
 
@@ -71,9 +72,10 @@ public sealed class UserListQuery : PageQuery
     public Guid? UserStatusTypeId { get; set; }
 
     /// <summary>
-    /// Gets or sets whether users must have, or lack, administrator rights.
+    /// Gets or sets the staff role users must have.
     /// </summary>
-    public bool? IsAdmin { get; set; }
+    [EnumDataType(typeof(StaffRole))]
+    public StaffRole? StaffRole { get; set; }
 
     /// <summary>
     /// Gets or sets whether users must have given, or withheld, news consent.

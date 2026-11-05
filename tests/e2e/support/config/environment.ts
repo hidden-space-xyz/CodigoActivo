@@ -1,9 +1,9 @@
-/** Where the suite reaches the stack under test and the accounts its deployment designates. */
+/** Where the suite reaches the stack under test and the accounts it takes over or designates. */
 export const environment = {
   baseUrl: process.env.BASE_URL ?? 'http://localhost:8180',
   mailpitUrl: process.env.MAILPIT_URL ?? 'http://localhost:8125',
   initialAdminEmail: process.env.BOOTSTRAP_ADMIN_EMAIL ?? 'admin@e2e.codigoactivo.test',
-  privacyOfficerEmail: process.env.PRIVACY_OFFICER_EMAIL ?? 'privacy@e2e.codigoactivo.test',
+  privacyOfficerEmail: 'privacy@e2e.codigoactivo.test',
   clientAddressBase: Number(process.env.CLIENT_ADDRESS_BASE ?? '1'),
 } as const
 

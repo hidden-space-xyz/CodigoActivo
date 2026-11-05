@@ -61,7 +61,8 @@ public sealed class GetSessionIdentityQueryHandler(
                     candidate.LastName,
                     candidate.Email,
                     candidate.PasswordHash,
-                    candidate.IsAdmin,
+                    candidate.StaffRole,
+                    candidate.IsPrivacyOfficer,
                 }),
             ct
         );
@@ -73,7 +74,8 @@ public sealed class GetSessionIdentityQueryHandler(
                 user.FirstName,
                 user.LastName,
                 user.Email,
-                user.IsAdmin,
+                user.StaffRole,
+                user.IsPrivacyOfficer,
                 CredentialStamps.For(user.PasswordHash!)
             );
     }

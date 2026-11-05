@@ -279,12 +279,14 @@
     "FileUploadInvalidImage": "No se pudo leer la imagen: el archivo está dañado o no es una imagen válida.",
     "UserNotFound": "No se encontró el usuario.",
     "UserSelfDeleteRequiresVerification": "Para eliminar tu propia cuenta debes confirmarlo con tu contraseña y tu segundo factor desde «Mi cuenta».",
-    "UserSelfAdminChangeForbidden": "No puedes cambiar tu propio rol de administrador: debe hacerlo otro administrador.",
+    "UserSelfStaffRoleChangeForbidden": "No puedes cambiar tu propio cargo.",
     "UserSelfTypeChangeForbidden": "No puedes cambiar tu propio tipo de usuario: debe hacerlo otro administrador.",
-    "UserDeleteInitialAdminForbidden": "La cuenta genérica de administración no se puede eliminar.",
-    "UserCannotRemoveInitialAdmin": "No se puede quitar el rango de administrador a la cuenta genérica de administración.",
-    "UserDependentCannotBeAdmin": "Un dependiente no puede ser administrador.",
-    "UserPendingVerificationCannotBeAdmin": "Esta cuenta aún no ha confirmado su correo electrónico, así que no puede ser administradora.",
+    "UserDeleteInitialAdminForbidden": "La cuenta del superadministrador no se puede eliminar.",
+    "UserCannotRemoveInitialAdmin": "No se puede cambiar el cargo del superadministrador.",
+    "UserDependentCannotHoldStaffRole": "Un menor no puede tener un cargo ni ser responsable de protección de datos.",
+    "UserPendingVerificationCannotHoldStaffRole": "Esta cuenta aún no ha confirmado su correo electrónico, así que no puede tener un cargo ni ser responsable de protección de datos.",
+    "UserStaffRoleRequiresMember": "Solo un socio puede tener un cargo: para cambiar su tipo, retírale antes el cargo.",
+    "UserPrivacyOfficerMustBeAdministrator": "El responsable de protección de datos debe ser administrador: para quitarle ese cargo, designa antes a otra persona.",
     "ParentUserNotFound": "No se encontró el usuario responsable.",
     "UserParentIsMinor": "Una persona a cargo de un responsable no puede tener a su vez menores a su cargo.",
     "UserChildBirthDateNotMinor": "La fecha de nacimiento indicada no corresponde a un menor de edad.",
@@ -506,7 +508,7 @@
       "deleteAccount": {
         "title": "Eliminar mi cuenta",
         "lead": "Al eliminar tu cuenta, tú y los menores a tu cargo perderéis el acceso para siempre: se anularán vuestras inscripciones y ya no podrás consultar vuestros diplomas. No podrás recuperar la cuenta después.",
-        "initialAdminNote": "Esta es la cuenta genérica de administración, así que no se puede eliminar.",
+        "initialAdminNote": "Esta es la cuenta del superadministrador, así que no se puede eliminar.",
         "action": "Eliminar mi cuenta",
         "dialogHeader": "Eliminar mi cuenta",
         "passwordIntro": "Para confirmar que eres tú, escribe tu contraseña actual. Después te pediremos tu código de verificación en dos pasos.",
@@ -795,11 +797,13 @@
           "nationalId": "DNI/NIE",
           "newsConsent": "Novedades",
           "type": "Tipo",
-          "admin": "Admin",
+          "staffRole": "Cargo",
           "user": "Usuario"
         },
         "badges": {
-          "you": "Tú"
+          "you": "Tú",
+          "privacyOfficer": "Protección de datos",
+          "privacyOfficerTitle": "Responsable de protección de datos"
         },
         "age": "{n} año | {n} años",
         "guardianPrefix": "Tutor:",
@@ -807,16 +811,11 @@
           "changeType": "Cambiar tipo",
           "sendEmail": "Escribir un correo",
           "resetTwoFactor": "Restablecer la verificación en dos pasos",
-          "grantAdmin": "Conceder administrador",
-          "revokeAdmin": "Retirar administrador"
-        },
-        "revokeAdmin": {
-          "header": "Retirar rol de administrador",
-          "message": "{fullName} dejará de tener acceso a la administración.",
-          "confirm": "Retirar"
+          "changeStaffRole": "Cambiar cargo",
+          "designatePrivacyOfficer": "Designar responsable de protección de datos"
         },
         "blocked": {
-          "initialAdmin": "Cuenta de administración inicial",
+          "initialAdmin": "Cuenta del superadministrador",
           "self": "Elimina tu cuenta desde «Mi cuenta»",
           "selfRole": "Debe cambiarlo otro administrador"
         },
@@ -844,8 +843,8 @@
         "toasts": {
           "deleted": "Usuario eliminado.",
           "typeUpdated": "Tipo de usuario actualizado.",
-          "adminGranted": "Administrador concedido.",
-          "adminRevoked": "Administrador retirado.",
+          "staffRoleChanged": "Cargo actualizado.",
+          "privacyOfficerDesignated": "Se ha cambiado la persona responsable de protección de datos.",
           "twoFactorReset": "Verificación en dos pasos restablecida: volverá a recibir el código por correo."
         },
         "delete": {
@@ -866,10 +865,17 @@
             }
           }
         },
-        "grantAdmin": {
-          "confirm": "Conceder",
-          "header": "Conceder rol de administrador",
-          "message": "Vas a dar permisos de administrador a {fullName}. Por seguridad, confirma tu contraseña."
+        "staffRole": {
+          "confirm": "Cambiar cargo",
+          "header": "Cambiar cargo",
+          "message": "Elige el cargo de {fullName}. Para darle un cargo, confirma tu contraseña por seguridad.",
+          "label": "Cargo",
+          "superAdmin": "Superadministrador"
+        },
+        "privacyOfficer": {
+          "confirm": "Designar",
+          "header": "Designar responsable de protección de datos",
+          "message": "Vas a designar a {fullName} como responsable de protección de datos: quien lo sea ahora dejará de serlo. Por seguridad, confirma tu contraseña."
         },
         "resetTwoFactor": {
           "confirm": "Restablecer",
@@ -1558,7 +1564,8 @@
           "PurgeAdultDependents": "Eliminar menores que han cumplido 18 años",
           "ResetTwoFactor": "Restablecer el segundo factor",
           "SendComingOfAgeNotices": "Avisar de menores que van a cumplir 18 años",
-          "SetAdmin": "Cambiar los permisos de administrador",
+          "SetStaffRole": "Cambiar el cargo de un usuario",
+          "DesignatePrivacyOfficer": "Designar al responsable de protección de datos",
           "UpdateUser": "Editar un usuario",
           "PurgeDataHistory": "Purgar el historial de datos y las consultas caducadas",
           "RequestBlockedDataConsultationCode": "Pedir el código para abrir una consulta de datos bloqueados",
@@ -2128,6 +2135,11 @@
         "Female": "Mujer",
         "Other": "Otro",
         "PreferNotToSay": "Prefiero no decirlo"
+      },
+      "staffRole": {
+        "None": "Sin cargo",
+        "Editor": "Editor",
+        "Administrator": "Administrador"
       },
       "person": {
         "required": "Este campo es obligatorio.",

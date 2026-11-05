@@ -42,6 +42,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.NationalId).HasMaxLength(9);
         builder.Property(u => u.NewsConsent).IsRequired();
         builder.Property(u => u.Gender).HasConversion<string>().HasMaxLength(16).IsRequired();
+        builder.Property(u => u.StaffRole).HasConversion<string>().HasMaxLength(16).IsRequired();
         builder.Property(u => u.CreatedAt).IsRequired();
         builder
             .Property(u => u.TwoFactorMethod)
@@ -138,6 +139,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasColumnName("user_type_id");
 
         builder.HasIndex(u => u.Email).IsUnique();
+        builder.HasIndex(u => u.IsPrivacyOfficer).IsUnique().HasFilter("is_privacy_officer");
         builder.HasIndex(u => new { u.FirstName, u.LastName });
 
         builder

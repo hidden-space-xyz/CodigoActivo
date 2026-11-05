@@ -6,17 +6,18 @@ using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Logs.Contracts;
 using CodigoActivo.Application.Logs.Queries;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
 namespace CodigoActivo.API.Logs;
 
 /// <summary>
-/// Exposes the diagnostic and audit logs to administrators.
+/// Exposes the diagnostic log to administrators, and the audit log to the initial administrator and
+/// the account designated for data protection.
 /// </summary>
 [ApiController]
 [Route("api/logs")]
-[AllowOnlyAdmin]
 [EnableRateLimiting(SecurityPolicies.Reports)]
 public class LogsController : ApiControllerBase
 {
@@ -28,6 +29,7 @@ public class LogsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a page of diagnostic log entries.</returns>
     [HttpGet("diagnostics")]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<PagedResult<DiagnosticLogEntryResponse>>> ListDiagnosticsAsync(
         [FromQuery] DiagnosticLogEntryListQuery query,
         [FromServices]
@@ -49,6 +51,7 @@ public class LogsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the entry, or an error response.</returns>
     [HttpGet("diagnostics/{id:guid}")]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<DiagnosticLogEntryDetailResponse>> GetDiagnosticAsync(
         Guid id,
         [FromServices]
@@ -70,6 +73,7 @@ public class LogsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a page of audit log entries.</returns>
     [HttpGet("audit")]
+    [AllowOnlySuperAdministrator(PrivacyOfficerAllowed = true)]
     public async Task<ActionResult<PagedResult<AuditLogEntryResponse>>> ListAuditAsync(
         [FromQuery] AuditLogEntryListQuery query,
         [FromServices]

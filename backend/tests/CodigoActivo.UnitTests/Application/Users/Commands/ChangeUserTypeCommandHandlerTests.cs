@@ -95,4 +95,22 @@ public sealed class ChangeUserTypeCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         user.PullDomainEvents().Should().BeEmpty();
     }
+
+    [Theory]
+    [InlineData(UserType.Participant)]
+    [InlineData(UserType.Sponsor)]
+    public async Task HandleAsyncAccountWithAStaffRoleStaysAMember(UserType userType)
+    {
+        var user = NewUser(dob: AdultDob, isAdmin: true, typeId: KnownIds.UserTypes.Member);
+        users.FindReturns(user);
+
+        var result = await sut.HandleAsync(
+            new ChangeUserTypeCommand(user.Id, userType),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserStaffRoleRequiresMember);
+        user.UserType.Should().Be(UserType.Member);
+        user.PullDomainEvents().Should().BeEmpty();
+    }
 }

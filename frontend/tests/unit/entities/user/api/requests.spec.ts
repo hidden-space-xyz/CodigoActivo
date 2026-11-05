@@ -6,8 +6,9 @@ import {
   getUserListPageRequest,
   getUserStatusesRequest,
   getUserTypesRequest,
+  designatePrivacyOfficerRequest,
   resetUserTwoFactorRequest,
-  setUserAdminRequest,
+  setUserStaffRoleRequest,
 } from '@/entities/user/api/requests'
 
 import { http, HttpResponse, noContent, paged, server } from '../../../../support/server'
@@ -79,24 +80,27 @@ describe('user requests', () => {
     ])
   })
 
-  it('grants and revokes the admin role and resets the second factor', async () => {
+  it('changes the cargo, designates the data protection officer and resets the second factor', async () => {
     const bodies: unknown[] = []
     const record = async ({ request }: { request: Request }) => {
       bodies.push(await request.json())
       return noContent()
     }
     server.use(
-      http.patch('/api/users/u1/admin', record),
+      http.patch('/api/users/u1/staff-role', record),
+      http.post('/api/users/u1/privacy-officer', record),
       http.post('/api/users/u1/two-factor/reset', record),
     )
 
-    await setUserAdminRequest('u1', true, 'Str0ngPass!23')
-    await setUserAdminRequest('u1', false, null)
+    await setUserStaffRoleRequest('u1', 'Editor', 'Str0ngPass!23')
+    await setUserStaffRoleRequest('u1', 'None', null)
+    await designatePrivacyOfficerRequest('u1', 'Str0ngPass!23')
     await resetUserTwoFactorRequest('u1', 'Str0ngPass!23')
 
     expect(bodies).toEqual([
-      { isAdmin: true, currentPassword: 'Str0ngPass!23' },
-      { isAdmin: false, currentPassword: null },
+      { staffRole: 'Editor', currentPassword: 'Str0ngPass!23' },
+      { staffRole: 'None', currentPassword: null },
+      { currentPassword: 'Str0ngPass!23' },
       { currentPassword: 'Str0ngPass!23' },
     ])
   })

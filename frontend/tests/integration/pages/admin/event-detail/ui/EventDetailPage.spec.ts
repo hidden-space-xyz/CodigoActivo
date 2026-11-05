@@ -96,6 +96,7 @@ async function renderDetail(options: DetailOptions = {}) {
   const rendered = await renderWithProviders(EventDetailPage, {
     route: `/admin/events/${EVENT_ID}`,
     props: { eventId: EVENT_ID },
+    user: { staffRole: 'Administrator' },
     attach: true,
   })
   await vi.waitFor(() => expect(rendered.wrapper.text()).toContain('Hackathon'))
@@ -178,6 +179,7 @@ describe('EventDetailPage', () => {
     const { wrapper } = await renderWithProviders(EventDetailPage, {
       route: `/admin/events/${EVENT_ID}`,
       props: { eventId: EVENT_ID },
+      user: { staffRole: 'Administrator' },
     })
 
     await vi.waitFor(() =>
@@ -203,11 +205,49 @@ describe('EventDetailPage', () => {
     const { wrapper } = await renderWithProviders(EventDetailPage, {
       route: `/admin/events/${EVENT_ID}`,
       props: { eventId: EVENT_ID },
+      user: { staffRole: 'Administrator' },
     })
 
     await vi.waitFor(() =>
       expect(wrapper.text()).toContain(t('pages.admin.eventDetail.empty.error')),
     )
+  })
+
+  it('shows an editor the activities alone, without asking for any report', async () => {
+    const adminOnly: string[] = []
+    const refuse = ({ request: req }: { request: Request }) => {
+      adminOnly.push(new URL(req.url).pathname)
+      return apiError(403)
+    }
+    useCatalogHandlers()
+    server.use(
+      http.get('/api/events/:eventId', () => HttpResponse.json(buildAdminEvent())),
+      http.get('/api/activities', () => HttpResponse.json(paged([buildActivityResponse()]))),
+      http.get('/api/reports/events/:eventId/summary', refuse),
+      http.get('/api/reports/events/:eventId/attendees', refuse),
+      http.get('/api/events/:eventId/ratings', refuse),
+      http.get('/api/events/:eventId/terms/decisions', refuse),
+      http.get('/api/activities/assignment-status-types', refuse),
+      http.get('/api/users/types', refuse),
+    )
+
+    const { wrapper } = await renderWithProviders(EventDetailPage, {
+      route: `/admin/events/${EVENT_ID}`,
+      props: { eventId: EVENT_ID },
+      user: { staffRole: 'Editor' },
+      attach: true,
+    })
+
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Robotics'))
+    await flushPromises()
+    expect(wrapper.find('.summary').exists()).toBe(false)
+    expect(wrapper.findAll('.el-tabs__item').map((tab) => tab.text())).toEqual([
+      t('pages.admin.eventDetail.tabs.activities'),
+    ])
+    expect(findButtons(t('pages.admin.eventDetail.printBadges'))).toEqual([])
+    expect(findButtons(t('pages.admin.eventDetail.printRoster'))).toEqual([])
+    expect(findButtons(t('pages.admin.eventDetail.newActivity'))).not.toEqual([])
+    expect(adminOnly).toEqual([])
   })
 
   it('opens the printable badges and roster pages', async () => {

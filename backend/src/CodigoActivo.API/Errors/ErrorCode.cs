@@ -362,9 +362,9 @@ public enum ErrorCode
     UserSelfDeleteRequiresVerification,
 
     /// <summary>
-    /// A user tried to grant or revoke their own administrator rights.
+    /// A user tried to change their own staff role.
     /// </summary>
-    UserSelfAdminChangeForbidden,
+    UserSelfStaffRoleChangeForbidden,
 
     /// <summary>
     /// A user tried to change their own membership type.
@@ -382,14 +382,27 @@ public enum ErrorCode
     UserCannotRemoveInitialAdmin,
 
     /// <summary>
-    /// Administrator rights were given to a dependent.
+    /// A staff role or the data protection designation was given to a dependent.
     /// </summary>
-    UserDependentCannotBeAdmin,
+    UserDependentCannotHoldStaffRole,
 
     /// <summary>
-    /// Administrator rights were given to an account whose email is unconfirmed.
+    /// A staff role or the data protection designation was given to an account whose email is
+    /// unconfirmed.
     /// </summary>
-    UserPendingVerificationCannotBeAdmin,
+    UserPendingVerificationCannotHoldStaffRole,
+
+    /// <summary>
+    /// A staff role was given to an account that is not a member, or an account with one was to stop
+    /// being a member.
+    /// </summary>
+    UserStaffRoleRequiresMember,
+
+    /// <summary>
+    /// An account that is not an administrator was designated for data protection, or the designated
+    /// account was to stop being an administrator.
+    /// </summary>
+    UserPrivacyOfficerMustBeAdministrator,
 
     /// <summary>
     /// The guardian a dependent is added to does not exist.
@@ -675,7 +688,7 @@ public enum ErrorCode
     BlockedDataAccountNotFound,
 
     /// <summary>
-    /// Only the administrator designated for data protection may consult the blocked data.
+    /// Only the account designated for data protection may consult the blocked data.
     /// </summary>
     BlockedDataOfficerOnly,
 }

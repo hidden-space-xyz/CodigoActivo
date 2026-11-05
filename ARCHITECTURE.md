@@ -187,9 +187,9 @@ no check enforces.
   identifiers. Closed value sets are domain enums stored as strings or as the `Guid` of their catalog row.
 - Startup validates the configuration and refuses a demo mode other than the locked one before it writes
   anything, then applies migrations, seeds catalogs, creates the initial administrator
-  (`InitialAdministrator.Id`) when the user table is empty, locks the selected demo mode only once that
-  succeeded, refuses a database that has users but not that
-  account, and adds demo data, a replayed data history and an invented log history when enabled.
+  (`InitialAdministrator.Id`, an administrator designated for data protection) when the user table is empty,
+  locks the selected demo mode only once that succeeded, refuses a database that has users but not that account,
+  and adds demo data, a replayed data history and an invented log history when enabled.
 - Infrastructure is organized by feature too: each feature folder (`Users/`, `Events/`, `Activities/`, `News/`,
   `Files/`...) holds its EF configurations, repositories and background services; `Database/` keeps the
   contexts, conventions, catalogs, shared configurations and repository base, the unit of work, the query
@@ -222,7 +222,7 @@ reaches the date rules through the validation context, never through a service l
 records live in the API (`API/<Feature>/Contracts/`) with only the standard attributes the OpenAPI document
 describes, plus the catalog membership check (`IValidatableObject` through `CatalogIdentifiers`), and map
 themselves to the command (`request.ToCommand(id)`). Response records and list criteria stay
-in `Application/<Feature>/Contracts/` as the read contracts of the queries. `Gender`, `TwoFactorMethod`,
+in `Application/<Feature>/Contracts/` as the read contracts of the queries. `Gender`, `TwoFactorMethod`, `StaffRole`,
 `TermsDocumentKind` and `LegalPolicyKind` are contract enums that mirror the domain ones (`ContractEnums`); they
 live with the read rows that store them, so the read model depends on no feature.
 
@@ -263,18 +263,21 @@ keeps a command out and `[Unaudited]` a property. `SerilogAuditTrail` (Infrastru
 [SECURITY.md](SECURITY.md#audit-log).
 
 Use cases decide who may run them on whose behalf. `ICurrentUser` (implemented by `HttpCurrentUser` in the API)
-tells who is signed in; commands and queries take the author, the acting user and the administrator flag from
-it, never from their input. `GetAccountQuery` is the one query that reads the caller's own account by its id:
+tells who is signed in; commands and queries take the author, the acting user and whether they are an administrator
+from it, never from their input. `GetAccountQuery` is the one query that reads the caller's own account by its id:
 email verification and two-factor login completion answer before the session exists. `ActingUserPolicy` lets
 the signed-in user act for themselves or one of their dependents, and an administrator for anyone, reading the
 guardianship from the read side so commands and queries share it, and answers anything else with
-`ActingForAnotherUserForbidden` (403 `AccessDenied` on the wire); withdrawing a person, checking their agenda,
-withdrawing a consent and deleting a user check it. Personal data and signups are narrower: updating a user,
+`ActingForAnotherUserForbidden` (403 `AccessDenied` on the wire); withdrawing a person, checking their agenda and
+withdrawing a consent check it. Deleting a user accepts the initial administrator, the only one that deletes other
+accounts, and otherwise only the holder's guardian. Personal data and signups are narrower: updating a user,
 adding a dependent and signing a person up accept only the holder or their guardian, administrators included
 (`EnsureMayManagePersonalDataAsync`), and changing a password only the holder. Signing up a household is the
 exception: it only takes the signed-in user and their own dependents (`Household.Includes`), administrators
 included, and answers anyone else with `ActivityHouseholdMemberNotAllowed`. The `[AllowOnlySelf]` and
-`[AllowOnlyAdmin]` attributes refuse early at the HTTP edge; `[AllowOnlySelf]` asks the same policy.
+`[AllowOnlyStaff]` attributes refuse early at the HTTP edge; `[AllowOnlySelf]` asks the same policy, and
+`[AllowOnlyStaff]` the role claims the session carries for the account's `StaffRole` (an administrator's include
+the editor's) and its data protection designation.
 
 An event can link several terms documents (`event_terms_documents`, each `is_required`/`display_order`); a
 document holds conditions or a consent (`kind`) and may ask for a handwritten signature (`requires_signature`).
@@ -366,7 +369,7 @@ and `IBlockedDataEmailComposer`; Infrastructure renders the HTML, the branding a
 (`Infrastructure/Communication/Templates`).
 
 Automatic messages (`IEmailSender`/`ThrottledEmailSender`, which applies the email guard to codes only) and
-administrator-authored bulk mail (`ManualEmailDispatcher`) both store their batch through `IEmailOutbox` in
+staff-authored bulk mail (`ManualEmailDispatcher`) both store their batch through `IEmailOutbox` in
 a PostgreSQL outbox, in a unit of work of its own committed before the call returns. Application names what a
 message is about with `EmailMessage.Topic` (`EmailTopics`), so a new message replaces the one waiting on the
 same topic and address, and how long a code is worth with `ValidFor`. A background
@@ -451,8 +454,9 @@ dependents and admin user forms only bind fields and show its messages.
   search box, with «Limpiar filtros», the table and a pager hidden while every row fits on the smallest page.
   Header and toolbar filter components register their chips with the table they sit in; page-owned filters
   go in `extraFilters`. Row actions use `shared/ui/row-actions`: inline icon buttons plus a labelled menu.
-- Route names and params are typed in `shared/routes`. Route guards resolve authentication and administrator
-  access before entering protected pages; detail pages receive their path params as props.
+- Route names and params are typed in `shared/routes`. Route guards resolve authentication and the staff role
+  or data protection designation each admin page needs before entering it; detail pages receive their path
+  params as props.
 - The session is the `GET /api/auth/me` query in the TanStack Query cache, read through `useSession`; ending it
   clears every other cached query. Pinia is not used. A query or mutation the API refuses because the
   session is gone (`AuthenticationRequired`, `CurrentUserNotFound`) ends it too, and protected pages then

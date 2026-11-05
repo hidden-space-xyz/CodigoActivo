@@ -34,6 +34,7 @@ interface RouteNamedMap {
   'reset-password': NamedRoute<'reset-password', '/reset-password'>
   unsubscribe: NamedRoute<'unsubscribe', '/unsubscribe'>
   account: NamedRoute<'account', '/account'>
+  admin: NamedRoute<'admin', '/admin'>
   'admin-dashboard': NamedRoute<'admin-dashboard', '/admin/dashboard'>
   'admin-events': NamedRoute<'admin-events', '/admin/events'>
   'admin-event-detail': NamedRoute<'admin-event-detail', '/admin/events/:eventId', 'eventId'>
@@ -59,8 +60,12 @@ interface RouteNamedMap {
 /** Route name that `RouterLink`, `router.push` and route guards accept. */
 export type RouteName = keyof RouteNamedMap
 
-/** Who may open a route: only guests, any signed-in user, or administrators. */
-type RouteAccess = 'guest' | 'user' | 'admin'
+/**
+ * Who may open a route: only guests, any signed-in user, editors and administrators, only
+ * administrators, whoever may read the audit log (the superadministrator and the data protection
+ * officer) or whoever may see the blocked data (administrators and the data protection officer).
+ */
+export type RouteAccess = 'guest' | 'user' | 'editor' | 'admin' | 'audit' | 'blocked-data'
 
 /** Section of the public header a route belongs to, highlighted while the route is open. */
 export type NavSection = 'home' | 'news' | 'events' | 'resources' | 'about' | 'account'

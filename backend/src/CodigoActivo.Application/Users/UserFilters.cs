@@ -47,9 +47,9 @@ public static class UserFilters
             source = source.Where(u => u.UserStatusTypeId == userStatusTypeId);
         }
 
-        if (query.IsAdmin is { } admin)
+        if (query.StaffRole is { } staffRole)
         {
-            source = source.Where(u => u.IsAdmin == admin);
+            source = source.Where(u => u.StaffRole == staffRole);
         }
 
         if (query.NewsConsent is { } consent)

@@ -412,7 +412,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     parent_id = table.Column<Guid>(type: "uuid", nullable: true),
                     user_status_type_id = table.Column<Guid>(type: "uuid", nullable: false),
                     user_type_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    is_admin = table.Column<bool>(type: "boolean", nullable: false),
+                    staff_role = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
+                    is_privacy_officer = table.Column<bool>(type: "boolean", nullable: false),
                     two_factor_method = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
                     authenticator_key = table.Column<string>(type: "text", nullable: true),
@@ -1351,6 +1352,13 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "ix_users_first_name_last_name",
                 table: "users",
                 columns: new[] { "first_name", "last_name" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_users_is_privacy_officer",
+                table: "users",
+                column: "is_privacy_officer",
+                unique: true,
+                filter: "is_privacy_officer");
 
             migrationBuilder.CreateIndex(
                 name: "ix_users_parent_id",

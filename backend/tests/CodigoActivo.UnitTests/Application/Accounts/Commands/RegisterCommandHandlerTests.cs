@@ -138,7 +138,10 @@ public sealed class RegisterCommandHandlerTests
             return false;
         }
 
-        var isPendingNonAdmin = user.Status == UserStatus.Pending && !user.IsAdmin;
+        var isPendingNonAdmin =
+            user.Status == UserStatus.Pending
+            && user.StaffRole is StaffRole.None
+            && !user.IsPrivacyOfficer;
 
         return isPendingNonAdmin
             && user.Gender is CodigoActivo.Domain.Users.Gender.Female

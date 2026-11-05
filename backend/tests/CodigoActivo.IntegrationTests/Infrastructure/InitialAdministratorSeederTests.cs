@@ -38,7 +38,8 @@ public sealed class InitialAdministratorSeederTests(PostgresDatabaseFixture post
                 "^fake:[A-Za-z0-9+/]{43}=$",
                 "the password is 32 random bytes nobody knows"
             );
-        administrator.IsAdmin.Should().BeTrue();
+        administrator.StaffRole.Should().Be(StaffRole.Administrator);
+        administrator.IsPrivacyOfficer.Should().BeTrue();
         administrator.Status.Should().Be(UserStatus.Active);
         administrator.UserType.Should().Be(UserType.Member);
         administrator.CreatedAt.Should().Be(CreatedAt);

@@ -139,7 +139,7 @@ public class EventsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a page of terms decisions, or an error response.</returns>
     [HttpGet("{eventId:guid}/terms/decisions")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<PagedResult<EventTermsDecisionResponse>>> TermsDecisionsAsync(
         Guid eventId,
         [FromQuery] EventTermsDecisionListQuery query,
@@ -204,7 +204,7 @@ public class EventsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the image, or an error response.</returns>
     [HttpGet("{eventId:guid}/terms/decisions/{userId:guid}/{termsDocumentId:guid}/signature")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<IActionResult> TermsSignatureAsync(
         Guid eventId,
         Guid userId,
@@ -262,7 +262,7 @@ public class EventsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 201 response with the event and its location, or an error response.</returns>
     [HttpPost]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     [ProducesResponseType<EventResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<EventResponse>> CreateAsync(
         [FromBody] CreateEventRequest request,
@@ -288,7 +288,7 @@ public class EventsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an event, or an error response.</returns>
     [HttpPut("{eventId:guid}")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<ActionResult<EventResponse>> UpdateAsync(
         Guid eventId,
         [FromBody] UpdateEventRequest request,
@@ -312,7 +312,7 @@ public class EventsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 204 response, or an error response.</returns>
     [HttpDelete("{eventId:guid}")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<IActionResult> DeleteAsync(
         Guid eventId,
         [FromServices] ICommandHandler<DeleteEventCommand, Result> handler,
@@ -334,7 +334,7 @@ public class EventsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the event, or an error response.</returns>
     [HttpPatch("{eventId:guid}/feature")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<ActionResult<EventResponse>> FeatureAsync(
         Guid eventId,
         [FromServices] ICommandHandler<SetEventFeaturedCommand, Result> handler,

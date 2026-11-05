@@ -43,7 +43,8 @@ public static class UserProjections
             user.UserStatusType.Name,
             user.UserStatusType.Color
         ),
-        IsAdmin = user.IsAdmin,
+        StaffRole = user.StaffRole,
+        IsPrivacyOfficer = user.IsPrivacyOfficer,
         IsInitialAdmin = user.Id == InitialAdministrator.Id.Value,
         TwoFactorMethod = user.TwoFactorMethod,
         EarlySignupEligible = EarlySignupUserTypeIds.Contains(
@@ -79,7 +80,8 @@ public static class UserProjections
                 user.UserStatusType.Name,
                 user.UserStatusType.Color
             ),
-            IsAdmin = user.IsAdmin,
+            StaffRole = user.StaffRole,
+            IsPrivacyOfficer = user.IsPrivacyOfficer,
             IsInitialAdmin = user.Id == InitialAdministrator.Id.Value,
             Type = new UserTypeSummaryResponse(
                 user.UserTypeId,

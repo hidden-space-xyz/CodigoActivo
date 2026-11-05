@@ -1,7 +1,9 @@
 export type { Gender } from './model/gender'
+export type { StaffRole } from './model/staff-role'
 export type { User } from './model/types'
 export type { PersonField, PersonProblem } from './model/person'
 export { GENDERS, genderLabelKey } from './model/gender'
+export { STAFF_ROLES, staffRoleLabelKey } from './model/staff-role'
 export {
   isSameEmail,
   minorBirthDateRange,

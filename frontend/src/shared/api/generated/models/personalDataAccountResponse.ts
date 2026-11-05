@@ -5,6 +5,7 @@
  * OpenAPI spec version: 1.0
  */
 import type { Gender } from './gender';
+import type { StaffRole } from './staffRole';
 import type { TwoFactorMethod } from './twoFactorMethod';
 
 export interface PersonalDataAccountResponse {
@@ -25,7 +26,8 @@ export interface PersonalDataAccountResponse {
   newsConsent: boolean;
   userType: string;
   status: string;
-  isAdmin: boolean;
+  staffRole: StaffRole;
+  isPrivacyOfficer: boolean;
   twoFactorMethod: TwoFactorMethod;
   createdAt: string;
   /** @nullable */

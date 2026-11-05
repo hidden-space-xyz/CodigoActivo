@@ -25,6 +25,7 @@ interface WorkerFixtures {
   initialAdmin: Actor
   privacyOfficer: Actor
   admin: Actor
+  editor: Actor
   category: EventCategoryTypeResponse
   member: Actor
   participant: Actor
@@ -89,6 +90,20 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     async ({ anonymousApi, mailbox, initialAdmin, clientAddress }, use) => {
       const account = await createAccount(
         { label: 'admin', type: 'member', admin: true },
+        anonymousApi,
+        mailbox,
+        initialAdmin,
+      )
+      const actor = await actorFor(account, mailbox, clientAddress)
+      await use(actor)
+      await actor.api.dispose()
+    },
+    WORKER_SETUP,
+  ],
+  editor: [
+    async ({ anonymousApi, mailbox, initialAdmin, clientAddress }, use) => {
+      const account = await createAccount(
+        { label: 'editor', type: 'member', editor: true },
         anonymousApi,
         mailbox,
         initialAdmin,

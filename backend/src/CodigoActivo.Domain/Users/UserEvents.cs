@@ -81,11 +81,18 @@ public sealed record AuthenticatorDisabled(UserId UserId) : IDomainEvent;
 public sealed record TwoFactorReset(UserId UserId) : IDomainEvent;
 
 /// <summary>
-/// An account was granted or lost the administrator rights.
+/// The staff role of an account changed.
 /// </summary>
 /// <param name="UserId">Identifier of the account.</param>
-/// <param name="IsAdmin">Whether the account is an administrator now.</param>
-public sealed record AdministratorRightsChanged(UserId UserId, bool IsAdmin) : IDomainEvent;
+/// <param name="StaffRole">Staff role of the account now.</param>
+public sealed record StaffRoleChanged(UserId UserId, StaffRole StaffRole) : IDomainEvent;
+
+/// <summary>
+/// An account was designated for data protection, or stopped being designated.
+/// </summary>
+/// <param name="UserId">Identifier of the account.</param>
+/// <param name="IsPrivacyOfficer">Whether the account is designated now.</param>
+public sealed record PrivacyOfficerChanged(UserId UserId, bool IsPrivacyOfficer) : IDomainEvent;
 
 /// <summary>
 /// The membership type of an account changed.

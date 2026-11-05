@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 import { ApiClient } from '../../support/api/api-client'
 import { environment } from '../../support/config/environment'
 import { saveActor } from '../../support/fixtures/actors'
-import { takeOver, takeOverAdministrator } from '../../support/fixtures/shared-actors'
+import { takeOver, takeOverPrivacyOfficer } from '../../support/fixtures/shared-actors'
 import { Mailbox } from '../../support/mail/mailbox'
 
 const SETUP_ADDRESS = '203.0.113.250'
@@ -30,11 +30,11 @@ test.describe('stack', () => {
     expect(account.email).toBe(environment.initialAdminEmail)
   })
 
-  test('the privacy officer is an administrator', async () => {
+  test('the initial administrator designates the privacy officer', async () => {
     const officer = await ApiClient.open({ clientAddress: SETUP_ADDRESS })
     try {
       const email = environment.privacyOfficerEmail
-      const account = await takeOverAdministrator(initialAdmin, officer, mailbox, email)
+      const account = await takeOverPrivacyOfficer(initialAdmin, officer, mailbox, email)
       await saveActor('privacy-officer', account, officer)
       expect(account.email).toBe(email)
     } finally {

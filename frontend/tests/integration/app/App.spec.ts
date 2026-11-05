@@ -38,7 +38,7 @@ describe('App', () => {
   it('renders admin pages inside the admin layout', async () => {
     const { wrapper } = await renderWithProviders(App, {
       route: '/admin/users',
-      user: { isAdmin: true },
+      user: { staffRole: 'Administrator' },
       attach: true,
     })
 
@@ -50,7 +50,7 @@ describe('App', () => {
   it('renders printable pages without layout chrome', async () => {
     const { wrapper } = await renderWithProviders(App, {
       route: '/admin/events/3f2504e0-4f89-41d3-9a0c-0305e82c3301/roster',
-      user: { isAdmin: true },
+      user: { staffRole: 'Administrator' },
       attach: true,
     })
 
@@ -62,7 +62,7 @@ describe('App', () => {
   it('switches layouts when navigating between public and admin areas', async () => {
     const { wrapper, router } = await renderWithProviders(App, {
       route: '/events',
-      user: { isAdmin: true },
+      user: { staffRole: 'Administrator' },
       attach: true,
     })
     expect(wrapper.find('.layout').exists()).toBe(true)

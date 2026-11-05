@@ -32,7 +32,7 @@ public sealed class AuditLogSinkTests(PostgresDatabaseFixture postgres)
     private static AuditRecord Record(Guid actor, Guid target, Guid related)
     {
         return new AuditRecord(
-            AuditAction.SetAdmin,
+            AuditAction.SetStaffRole,
             AuditActorType.User,
             UserId.From(actor),
             IPAddress.Parse("203.0.113.9"),
@@ -64,7 +64,7 @@ public sealed class AuditLogSinkTests(PostgresDatabaseFixture postgres)
         entry.ActorType.Should().Be("User");
         entry.ActorId.Should().Be(actor);
         entry.ClientIp.Should().Be(IPAddress.Parse("203.0.113.9"));
-        entry.Action.Should().Be("SetAdmin");
+        entry.Action.Should().Be("SetStaffRole");
         entry.EntityType.Should().Be("User");
         entry.EntityId.Should().Be(target);
         entry.Related.Should().Be($$"""[{"id": "{{related}}", "type": "Activity"}]""");

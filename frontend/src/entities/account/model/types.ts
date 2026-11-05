@@ -17,7 +17,6 @@ export interface AccountProfile {
   readonly newsConsent: boolean
   readonly gender: Gender
   readonly statusName: string
-  readonly isAdmin: boolean
 }
 
 /**
@@ -127,7 +126,8 @@ export interface PersonalDataFile {
     readonly aceptaNovedades: boolean
     readonly relacionConLaAsociacion: string
     readonly estado: string
-    readonly administraLaWeb: boolean
+    readonly cargo: string
+    readonly responsableDeProteccionDeDatos: boolean
     readonly verificacionEnDosPasos: string
     readonly altaEl: string
     readonly modificadaEl: string | null

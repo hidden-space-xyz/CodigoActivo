@@ -60,7 +60,10 @@ public sealed class DeleteUserCommandHandlerTests
     [Fact]
     public async Task HandleAsyncTargetIsTheInitialAdministratorReturnsForbiddenWithoutLoadingIt()
     {
-        var result = await DeleteAsync(KnownIds.Users.InitialAdministrator, Guid.NewGuid());
+        var result = await DeleteAsync(
+            KnownIds.Users.InitialAdministrator,
+            KnownIds.Users.InitialAdministrator
+        );
 
         result.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.UserDeleteInitialAdminForbidden);
         await users
@@ -70,11 +73,11 @@ public sealed class DeleteUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncTargetIsAnotherAdministratorErasesItAsAdministrator()
+    public async Task HandleAsyncTargetIsAnotherAdministratorErasesItAsInitialAdministrator()
     {
         var user = NewUser(isAdmin: true);
         users.FindReturns(user);
-        var administratorId = Guid.NewGuid();
+        var administratorId = KnownIds.Users.InitialAdministrator;
 
         var result = await DeleteAsync(user.Id.Value, administratorId);
 
@@ -87,7 +90,7 @@ public sealed class DeleteUserCommandHandlerTests
     {
         users.FindReturns(null);
 
-        var result = await DeleteAsync(Guid.NewGuid(), Guid.NewGuid());
+        var result = await DeleteAsync(Guid.NewGuid(), KnownIds.Users.InitialAdministrator);
 
         result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
         await AssertNotErasedAsync();
@@ -109,11 +112,11 @@ public sealed class DeleteUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncAdministratorErasesAsAdministrator()
+    public async Task HandleAsyncInitialAdministratorErasesAnotherAccount()
     {
         var user = NewUser(isAdmin: false);
         users.FindReturns(user);
-        var administratorId = Guid.NewGuid();
+        var administratorId = KnownIds.Users.InitialAdministrator;
 
         var result = await DeleteAsync(user.Id.Value, administratorId);
 
@@ -136,11 +139,11 @@ public sealed class DeleteUserCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncAdministratorErasingSomebodysMinorErasesAsAdministrator()
+    public async Task HandleAsyncInitialAdministratorErasingSomebodysMinorErasesIt()
     {
         var minor = NewUser(first: "Leo", parentId: Guid.NewGuid());
         users.FindReturns(minor);
-        var administratorId = Guid.NewGuid();
+        var administratorId = KnownIds.Users.InitialAdministrator;
 
         var result = await DeleteAsync(minor.Id.Value, administratorId);
 
@@ -155,9 +158,21 @@ public sealed class DeleteUserCommandHandlerTests
         users.FindReturns(user);
         erasureStore.LockHouseholdAsync(user.Id, Arg.Any<CancellationToken>()).Returns(false);
 
-        var result = await DeleteAsync(user.Id.Value, Guid.NewGuid());
+        var result = await DeleteAsync(user.Id.Value, KnownIds.Users.InitialAdministrator);
 
         result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
+        await AssertNotErasedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncAnotherAdministratorReturnsForbidden()
+    {
+        var user = NewUser(isAdmin: false);
+        users.FindReturns(user);
+
+        var result = await DeleteAsync(user.Id.Value, Guid.NewGuid());
+
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.ActingForAnotherUserForbidden);
         await AssertNotErasedAsync();
     }
 

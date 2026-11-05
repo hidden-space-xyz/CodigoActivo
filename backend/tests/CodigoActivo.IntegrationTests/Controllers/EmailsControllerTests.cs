@@ -286,7 +286,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         );
 
         using var response = await client.SendEmailFormAsync(
-            $"{UsersUrl}?isAdmin=true",
+            $"{UsersUrl}?staffRole=Administrator",
             attachments: [("acta.pdf", "application/pdf", Encoding.UTF8.GetBytes("contenido"))]
         );
 

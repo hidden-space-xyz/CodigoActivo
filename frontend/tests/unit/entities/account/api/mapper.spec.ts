@@ -29,7 +29,7 @@ const MINOR = {
 
 describe('account mapper', () => {
   it('maps the own profile, missing contact details as empty text', () => {
-    expect(toAccountProfile(buildUserResponse({ email: null, isAdmin: true }))).toEqual({
+    expect(toAccountProfile(buildUserResponse({ email: null }))).toEqual({
       id: 'user-1',
       firstName: 'Ada',
       lastName: 'Lovelace',
@@ -40,7 +40,6 @@ describe('account mapper', () => {
       newsConsent: false,
       gender: 'Female',
       statusName: 'Active',
-      isAdmin: true,
     })
   })
 
@@ -168,7 +167,8 @@ describe('toPersonalDataFile', () => {
       aceptaNovedades: true,
       relacionConLaAsociacion: 'Socio',
       estado: 'Activa',
-      administraLaWeb: false,
+      cargo: t('entities.user.staffRole.None'),
+      responsableDeProteccionDeDatos: false,
       verificacionEnDosPasos: t('pages.account.twoFactor.methods.Authenticator'),
       altaEl: '2026-01-01T00:00:00Z',
       modificadaEl: null,
@@ -281,5 +281,17 @@ describe('toPersonalDataFile', () => {
     const file = toPersonalDataFile(copy, 'https://site.test/privacy', t)
 
     expect(file.politicaDePrivacidad).toBeNull()
+  })
+
+  it('labels the cargo and tells whether the account is the data protection officer', () => {
+    const copy = buildPersonalDataResponse()
+    copy.account = { ...copy.account, staffRole: 'Editor', isPrivacyOfficer: true }
+
+    const file = toPersonalDataFile(copy, 'https://site.test/privacy', t)
+
+    expect(file.cuenta).toMatchObject({
+      cargo: t('entities.user.staffRole.Editor'),
+      responsableDeProteccionDeDatos: true,
+    })
   })
 })

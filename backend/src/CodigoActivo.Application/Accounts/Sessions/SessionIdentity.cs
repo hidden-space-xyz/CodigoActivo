@@ -1,3 +1,5 @@
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
+
 namespace CodigoActivo.Application.Accounts.Sessions;
 
 /// <summary>
@@ -7,14 +9,16 @@ namespace CodigoActivo.Application.Accounts.Sessions;
 /// <param name="FirstName">Given name of the account holder.</param>
 /// <param name="LastName">Family name of the account holder.</param>
 /// <param name="Email">Email address of the account, if any.</param>
-/// <param name="IsAdmin">Whether the account is an administrator.</param>
+/// <param name="StaffRole">Staff role of the account.</param>
+/// <param name="IsPrivacyOfficer">Whether the account is designated for data protection.</param>
 /// <param name="CredentialStamp">Stamp of the current password hash.</param>
 public sealed record SessionIdentity(
     Guid UserId,
     string FirstName,
     string LastName,
     string? Email,
-    bool IsAdmin,
+    StaffRole StaffRole,
+    bool IsPrivacyOfficer,
     string CredentialStamp
 )
 {

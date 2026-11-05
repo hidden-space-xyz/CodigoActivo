@@ -31,10 +31,11 @@ export function reports(data) {
   session.get('/api/logs/diagnostics', { query: { ...LATEST, search: word(), level: 'Warning' } })
   think()
 
-  session.get('/api/logs/audit', { query: LATEST })
-  session.get('/api/logs/audit', {
+  const auditor = sessionFor(data.auditor)
+  auditor.get('/api/logs/audit', { query: LATEST })
+  auditor.get('/api/logs/audit', {
     query: { ...LATEST, action: 'CompleteLogin', occurredFrom: day(-7) },
   })
-  session.get('/api/logs/audit', { query: { ...LATEST, search: word(), outcome: 'Rejected' } })
+  auditor.get('/api/logs/audit', { query: { ...LATEST, search: word(), outcome: 'Rejected' } })
   think()
 }

@@ -5,6 +5,7 @@ using CodigoActivo.API.Errors;
 using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.BlockedData.Contracts;
 using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
@@ -15,12 +16,14 @@ using Microsoft.EntityFrameworkCore;
 using Xunit;
 using ContractGender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
 using Gender = CodigoActivo.Domain.Users.Gender;
+using StaffRoleContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.StaffRole;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
 public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
+    private const string BlockedDataAccessUrl = "/api/blocked-data/access";
     private static readonly DateOnly MinorBirthDate = new(2016, 1, 1);
     private static readonly DateOnly ChildBirthDate = new(2015, 5, 5);
 
@@ -195,11 +198,11 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ListFilterByIsAdminReturnsOnlyAdmins()
+    public async Task ListFilterByStaffRoleReturnsOnlyThoseWithIt()
     {
         var client = await LoginAsAdminAsync();
 
-        var response = await client.GetAsync(TestUri.Rel("/api/users?isAdmin=true"), Ct);
+        var response = await client.GetAsync(TestUri.Rel("/api/users?staffRole=Administrator"), Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var page = await response.ReadJsonAsync<PagedResult<UserResponse>>(Ct);
@@ -303,7 +306,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         var response = await client.GetAsync(
-            TestUri.Rel("/api/users?sort=nationalId&isAdmin=false"),
+            TestUri.Rel("/api/users?sort=nationalId&staffRole=None"),
             Ct
         );
 
@@ -1250,177 +1253,403 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         await response.ShouldBeBadRequestAsync(ErrorCode.UserNewPasswordSameAsCurrent);
     }
 
-    [Fact]
-    public async Task SetAdminCorrectPasswordGrantsAdminToUser()
+    private async Task GiveStaffRoleAsync(Guid userId, StaffRoleContract staffRole)
     {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberId}/admin",
-            new SetAdminRequest(true, TestSeedData.Password),
+        var superadmin = await LoginAsAdminAsync();
+        using var response = await superadmin.PatchJsonAsync(
+            $"/api/users/{userId}/staff-role",
+            new SetStaffRoleRequest(staffRole, TestSeedData.Password),
             Ct
         );
-
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var user = await FindAsync<User>(TestSeedData.Users.MemberId);
-        user!.IsAdmin.Should().BeTrue();
+    }
+
+    private async Task<HttpClient> SeedAnotherAdministratorAsync()
+    {
+        await GiveStaffRoleAsync(TestSeedData.Users.MemberId, StaffRoleContract.Administrator);
+        return await LoginAsMemberAsync();
     }
 
     [Theory]
-    [InlineData(null)]
-    [InlineData("Wr0ngPass!23")]
-    public async Task SetAdminMissingOrIncorrectPasswordReturnsBadRequest(string? currentPassword)
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberId}/admin",
-            new SetAdminRequest(true, currentPassword),
-            Ct
-        );
-
-        await response.ShouldBeBadRequestAsync(ErrorCode.UserCurrentPasswordIncorrect);
-        var user = await FindAsync<User>(TestSeedData.Users.MemberId);
-        user!.IsAdmin.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task SetAdminOnDependentReturnsBadRequest()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberChildId}/admin",
-            new SetAdminRequest(true, TestSeedData.Password),
-            Ct
-        );
-
-        await response.ShouldBeBadRequestAsync(ErrorCode.UserDependentCannotBeAdmin);
-        (await FindAsync<User>(TestSeedData.Users.MemberChildId))!.IsAdmin.Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task SetAdminOnAccountPendingVerificationReturnsBadRequestAndSendsNothing()
+    [InlineData(StaffRoleContract.Editor, StaffRole.Editor)]
+    [InlineData(StaffRoleContract.Administrator, StaffRole.Administrator)]
+    public async Task SetStaffRoleCorrectPasswordGivesTheRoleAndTellsTheHolder(
+        StaffRoleContract requested,
+        StaffRole expected
+    )
     {
         var client = await LoginAsAdminAsync();
         Factory.EmailSender.Clear();
 
         var response = await client.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.PendingId}/admin",
-            new SetAdminRequest(true, TestSeedData.Password),
-            Ct
-        );
-
-        await response.ShouldBeBadRequestAsync(ErrorCode.UserPendingVerificationCannotBeAdmin);
-        (await FindAsync<User>(TestSeedData.Users.PendingId))!.IsAdmin.Should().BeFalse();
-        Factory.EmailSender.Sent.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task SetAdminRevokeWithoutPasswordRemovesAdmin()
-    {
-        var client = await LoginAsAdminAsync();
-        var grant = await client.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberId}/admin",
-            new SetAdminRequest(true, TestSeedData.Password),
-            Ct
-        );
-        grant.StatusCode.Should().Be(HttpStatusCode.NoContent);
-
-        var response = await client.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberId}/admin",
-            new SetAdminRequest(false, null),
+            $"/api/users/{TestSeedData.Users.MemberId}/staff-role",
+            new SetStaffRoleRequest(requested, TestSeedData.Password),
             Ct
         );
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var user = await FindAsync<User>(TestSeedData.Users.MemberId);
-        user!.IsAdmin.Should().BeFalse();
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.StaffRole.Should().Be(expected);
+        Factory
+            .EmailSender.Sent.Should()
+            .ContainSingle()
+            .Which.ToAddress.Should()
+            .Be(TestSeedData.MemberEmail);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("Wr0ngPass!23")]
+    public async Task SetStaffRoleMissingOrIncorrectPasswordReturnsBadRequest(
+        string? currentPassword
+    )
+    {
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/staff-role",
+            new SetStaffRoleRequest(StaffRoleContract.Editor, currentPassword),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserCurrentPasswordIncorrect);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.StaffRole.Should().Be(StaffRole.None);
     }
 
     [Fact]
-    public async Task SetAdminWithoutIsAdminReturnsBadRequestAndKeepsAdmin()
+    public async Task SetStaffRoleOnDependentReturnsBadRequest()
     {
         var client = await LoginAsAdminAsync();
-        var grant = await client.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberId}/admin",
-            new SetAdminRequest(true, TestSeedData.Password),
-            Ct
-        );
-        grant.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var response = await client.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberId}/admin",
-            new { Otp = "0123456789abcdef" },
+            $"/api/users/{TestSeedData.Users.MemberChildId}/staff-role",
+            new SetStaffRoleRequest(StaffRoleContract.Editor, TestSeedData.Password),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserDependentCannotHoldStaffRole);
+        (await FindAsync<User>(TestSeedData.Users.MemberChildId))!
+            .StaffRole.Should()
+            .Be(StaffRole.None);
+    }
+
+    [Fact]
+    public async Task SetStaffRoleOnAccountPendingVerificationReturnsBadRequestAndSendsNothing()
+    {
+        var client = await LoginAsAdminAsync();
+        Factory.EmailSender.Clear();
+
+        var response = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.PendingId}/staff-role",
+            new SetStaffRoleRequest(StaffRoleContract.Administrator, TestSeedData.Password),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(
+            ErrorCode.UserPendingVerificationCannotHoldStaffRole
+        );
+        (await FindAsync<User>(TestSeedData.Users.PendingId))!
+            .StaffRole.Should()
+            .Be(StaffRole.None);
+        Factory.EmailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task SetStaffRoleRevokeWithoutPasswordTakesTheRole()
+    {
+        await GiveStaffRoleAsync(TestSeedData.Users.MemberId, StaffRoleContract.Administrator);
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/staff-role",
+            new SetStaffRoleRequest(StaffRoleContract.None, null),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.StaffRole.Should().Be(StaffRole.None);
+    }
+
+    [Fact]
+    public async Task SetStaffRoleWithoutTheRoleReturnsBadRequestAndKeepsIt()
+    {
+        await GiveStaffRoleAsync(TestSeedData.Users.MemberId, StaffRoleContract.Editor);
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/staff-role",
+            new { CurrentPassword = TestSeedData.Password },
             Ct
         );
 
         await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
-        (await FindAsync<User>(TestSeedData.Users.MemberId))!.IsAdmin.Should().BeTrue();
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!
+            .StaffRole.Should()
+            .Be(StaffRole.Editor);
     }
 
     [Fact]
-    public async Task SetAdminRevokeInitialAdministratorReturnsForbiddenEvenToAnotherAdministrator()
+    public async Task SetStaffRoleByAnotherAdministratorReturnsForbidden()
     {
-        var initial = await LoginAsAdminAsync();
-        var grant = await initial.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberId}/admin",
-            new SetAdminRequest(true, TestSeedData.Password),
-            Ct
-        );
-        grant.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var another = await LoginAsMemberAsync();
+        var another = await SeedAnotherAdministratorAsync();
 
         var response = await another.PatchJsonAsync(
-            $"/api/users/{KnownIds.Users.InitialAdministrator}/admin",
-            new SetAdminRequest(false, null),
+            $"/api/users/{TestSeedData.Users.PendingId}/staff-role",
+            new SetStaffRoleRequest(StaffRoleContract.None, null),
+            Ct
+        );
+        var demotion = await another.PatchJsonAsync(
+            $"/api/users/{KnownIds.Users.InitialAdministrator}/staff-role",
+            new SetStaffRoleRequest(StaffRoleContract.None, null),
             Ct
         );
 
-        await response.ShouldBeForbiddenAsync(ErrorCode.UserCannotRemoveInitialAdmin);
-        (await FindAsync<User>(KnownIds.Users.InitialAdministrator))!.IsAdmin.Should().BeTrue();
+        await response.ShouldBeForbiddenAsync(ErrorCode.AccessDenied);
+        await demotion.ShouldBeForbiddenAsync(ErrorCode.AccessDenied);
+        (await FindAsync<User>(KnownIds.Users.InitialAdministrator))!
+            .StaffRole.Should()
+            .Be(StaffRole.Administrator);
     }
 
     [Fact]
-    public async Task SetAdminOnOwnAccountReturnsForbiddenEvenToAnAdministrator()
+    public async Task SetStaffRoleByAnEditorIsRefusedBeforeTheUseCase()
     {
-        var initial = await LoginAsAdminAsync();
-        var grant = await initial.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberId}/admin",
-            new SetAdminRequest(true, TestSeedData.Password),
-            Ct
-        );
-        grant.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        var member = await LoginAsMemberAsync();
+        await GiveStaffRoleAsync(TestSeedData.Users.MemberId, StaffRoleContract.Editor);
+        var editor = await LoginAsMemberAsync();
 
-        var revoke = await member.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberId}/admin",
-            new SetAdminRequest(false, null),
-            Ct
-        );
-        var regrant = await member.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberId}/admin",
-            new SetAdminRequest(true, TestSeedData.Password),
+        var response = await editor.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/staff-role",
+            new SetStaffRoleRequest(StaffRoleContract.Administrator, TestSeedData.Password),
             Ct
         );
 
-        await revoke.ShouldBeForbiddenAsync(ErrorCode.UserSelfAdminChangeForbidden);
-        await regrant.ShouldBeForbiddenAsync(ErrorCode.UserSelfAdminChangeForbidden);
-        (await FindAsync<User>(TestSeedData.Users.MemberId))!.IsAdmin.Should().BeTrue();
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!
+            .StaffRole.Should()
+            .Be(StaffRole.Editor);
     }
 
     [Fact]
-    public async Task SetAdminOnOwnAccountAsInitialAdministratorReturnsForbidden()
+    public async Task SetStaffRoleOnOwnAccountAsInitialAdministratorReturnsForbidden()
     {
         var client = await LoginAsAdminAsync();
 
         var response = await client.PatchJsonAsync(
-            $"/api/users/{TestSeedData.Users.AdminId}/admin",
-            new SetAdminRequest(false, null),
+            $"/api/users/{TestSeedData.Users.AdminId}/staff-role",
+            new SetStaffRoleRequest(StaffRoleContract.None, null),
             Ct
         );
 
-        await response.ShouldBeForbiddenAsync(ErrorCode.UserSelfAdminChangeForbidden);
-        (await FindAsync<User>(TestSeedData.Users.AdminId))!.IsAdmin.Should().BeTrue();
+        await response.ShouldBeForbiddenAsync(ErrorCode.UserSelfStaffRoleChangeForbidden);
+        (await FindAsync<User>(TestSeedData.Users.AdminId))!
+            .StaffRole.Should()
+            .Be(StaffRole.Administrator);
+    }
+
+    [Fact]
+    public async Task SetStaffRoleReachesTheOpenSessionOfTheHolderOnItsNextRequest()
+    {
+        var member = await LoginAsMemberAsync();
+        using var before = await member.GetAsync(TestUri.Rel("/api/events/categoryType"), Ct);
+
+        await GiveStaffRoleAsync(TestSeedData.Users.MemberId, StaffRoleContract.Editor);
+        using var asEditor = await member.GetAsync(TestUri.Rel("/api/events/categoryType"), Ct);
+        using var people = await member.GetAsync(TestUri.Rel("/api/reports/dashboard"), Ct);
+        var superadmin = await LoginAsAdminAsync();
+        using var revoked = await superadmin.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/staff-role",
+            new SetStaffRoleRequest(StaffRoleContract.None, null),
+            Ct
+        );
+        using var after = await member.GetAsync(TestUri.Rel("/api/events/categoryType"), Ct);
+
+        before.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        asEditor.StatusCode.Should().Be(HttpStatusCode.OK);
+        people.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        revoked.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        after.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
+    public async Task DesignatePrivacyOfficerMovesTheDesignationAndOpensTheBlockedData()
+    {
+        await GiveStaffRoleAsync(TestSeedData.Users.MemberId, StaffRoleContract.Administrator);
+        var superadmin = await LoginAsAdminAsync();
+        var member = await LoginAsMemberAsync();
+
+        using var response = await superadmin.PostJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/privacy-officer",
+            new DesignatePrivacyOfficerRequest(TestSeedData.Password),
+            Ct
+        );
+        using var memberAccess = await member.GetAsync(TestUri.Rel(BlockedDataAccessUrl), Ct);
+        using var adminAccess = await superadmin.GetAsync(TestUri.Rel(BlockedDataAccessUrl), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.IsPrivacyOfficer.Should().BeTrue();
+        (await FindAsync<User>(TestSeedData.Users.AdminId))!.IsPrivacyOfficer.Should().BeFalse();
+        memberAccess.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await memberAccess.ReadJsonAsync<BlockedDataAccessResponse>(Ct))!
+            .IsPrivacyOfficer.Should()
+            .BeTrue();
+        (await adminAccess.ReadJsonAsync<BlockedDataAccessResponse>(Ct))!
+            .IsPrivacyOfficer.Should()
+            .BeFalse();
+    }
+
+    [Fact]
+    public async Task DesignatePrivacyOfficerByAnotherAdministratorReturnsForbidden()
+    {
+        var another = await SeedAnotherAdministratorAsync();
+
+        using var response = await another.PostJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/privacy-officer",
+            new DesignatePrivacyOfficerRequest(TestSeedData.Password),
+            Ct
+        );
+
+        await response.ShouldBeForbiddenAsync(ErrorCode.AccessDenied);
+        (await FindAsync<User>(TestSeedData.Users.AdminId))!.IsPrivacyOfficer.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DesignatePrivacyOfficerWithIncorrectPasswordReturnsBadRequest()
+    {
+        var superadmin = await LoginAsAdminAsync();
+
+        using var response = await superadmin.PostJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/privacy-officer",
+            new DesignatePrivacyOfficerRequest("Wr0ngPass!23"),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserCurrentPasswordIncorrect);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.IsPrivacyOfficer.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DesignatePrivacyOfficerOnDependentReturnsBadRequest()
+    {
+        var superadmin = await LoginAsAdminAsync();
+
+        using var response = await superadmin.PostJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberChildId}/privacy-officer",
+            new DesignatePrivacyOfficerRequest(TestSeedData.Password),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserDependentCannotHoldStaffRole);
+        (await FindAsync<User>(TestSeedData.Users.AdminId))!.IsPrivacyOfficer.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DeleteUserErasingThePrivacyOfficerReturnsTheDesignationToTheInitialAdministrator()
+    {
+        await GiveStaffRoleAsync(TestSeedData.Users.MemberId, StaffRoleContract.Administrator);
+        var superadmin = await LoginAsAdminAsync();
+        using var designated = await superadmin.PostJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/privacy-officer",
+            new DesignatePrivacyOfficerRequest(TestSeedData.Password),
+            Ct
+        );
+        designated.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using var deleted = await superadmin.DeleteWithCsrfAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            Ct
+        );
+
+        deleted.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await FindAsync<User>(TestSeedData.Users.MemberId)).Should().BeNull();
+        (await FindAsync<User>(TestSeedData.Users.AdminId))!.IsPrivacyOfficer.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task DeleteUserByAnotherAdministratorReturnsForbiddenAndKeepsTheAccount()
+    {
+        var another = await SeedAnotherAdministratorAsync();
+
+        using var response = await another.DeleteWithCsrfAsync(
+            $"/api/users/{TestSeedData.Users.PendingId}",
+            Ct
+        );
+
+        await response.ShouldBeForbiddenAsync(ErrorCode.AccessDenied);
+        (await FindAsync<User>(TestSeedData.Users.PendingId)).Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task DesignatePrivacyOfficerOnAnAccountThatIsNotAnAdministratorReturnsBadRequest()
+    {
+        await GiveStaffRoleAsync(TestSeedData.Users.MemberId, StaffRoleContract.Editor);
+        var superadmin = await LoginAsAdminAsync();
+
+        using var response = await superadmin.PostJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/privacy-officer",
+            new DesignatePrivacyOfficerRequest(TestSeedData.Password),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserPrivacyOfficerMustBeAdministrator);
+        (await FindAsync<User>(TestSeedData.Users.AdminId))!.IsPrivacyOfficer.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SetStaffRoleDemotingThePrivacyOfficerReturnsBadRequestAndKeepsTheRole()
+    {
+        await GiveStaffRoleAsync(TestSeedData.Users.MemberId, StaffRoleContract.Administrator);
+        var superadmin = await LoginAsAdminAsync();
+        using var designated = await superadmin.PostJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/privacy-officer",
+            new DesignatePrivacyOfficerRequest(TestSeedData.Password),
+            Ct
+        );
+        designated.StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        var response = await superadmin.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/staff-role",
+            new SetStaffRoleRequest(StaffRoleContract.Editor, TestSeedData.Password),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserPrivacyOfficerMustBeAdministrator);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!
+            .StaffRole.Should()
+            .Be(StaffRole.Administrator);
+    }
+
+    [Fact]
+    public async Task SetStaffRoleOnAnAccountThatIsNotAMemberReturnsBadRequest()
+    {
+        await Factory.SeedAsync(async db =>
+            Persisted.Overwrite(
+                (await db.Users.FindAsync([UserId.From(TestSeedData.Users.MemberId)], Ct))!,
+                new { UserType = UserType.Sponsor }
+            )
+        );
+        var superadmin = await LoginAsAdminAsync();
+
+        var response = await superadmin.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/staff-role",
+            new SetStaffRoleRequest(StaffRoleContract.Editor, TestSeedData.Password),
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserStaffRoleRequiresMember);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.StaffRole.Should().Be(StaffRole.None);
+    }
+
+    [Fact]
+    public async Task ChangeTypeOfAnAccountWithAStaffRoleAwayFromMemberReturnsBadRequest()
+    {
+        await GiveStaffRoleAsync(TestSeedData.Users.MemberId, StaffRoleContract.Editor);
+        var client = await LoginAsAdminAsync();
+
+        var response = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/change-type?userTypeId={KnownIds.UserTypes.Participant}",
+            ct: Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.UserStaffRoleRequiresMember);
+        (await FindAsync<User>(TestSeedData.Users.MemberId))!.UserType.Should().Be(UserType.Member);
     }
 }

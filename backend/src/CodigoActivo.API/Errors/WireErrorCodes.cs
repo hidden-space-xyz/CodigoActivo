@@ -26,6 +26,7 @@ public static class WireErrorCodes
         [DomainErrorCode.EventTermsSignatureInvalid] = ErrorCode.RequestValidationFailed,
         [ApplicationErrorCode.MessageInvalid] = ErrorCode.RequestValidationFailed,
         [ApplicationErrorCode.ActingForAnotherUserForbidden] = ErrorCode.AccessDenied,
+        [ApplicationErrorCode.SuperAdministratorOnly] = ErrorCode.AccessDenied,
         [DomainErrorCode.BlockedDataReferenceRequired] = ErrorCode.RequestValidationFailed,
         [ApplicationErrorCode.BlockedDataEntityUnknown] = ErrorCode.RequestValidationFailed,
         [ApplicationErrorCode.BlockedDataPeriodInvalid] = ErrorCode.RequestValidationFailed,

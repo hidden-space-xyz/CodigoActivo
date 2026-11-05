@@ -7,6 +7,7 @@ using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Accounts.AuthTestData;
+using StaffRole = CodigoActivo.Application.Abstractions.Querying.ReadModel.StaffRole;
 
 namespace CodigoActivo.UnitTests.Application.Accounts.Queries;
 
@@ -66,7 +67,8 @@ public sealed class GetSessionIdentityQueryHandlerTests
                     "Ana",
                     "Ruiz",
                     "ana@test.com",
-                    true,
+                    StaffRole.Administrator,
+                    false,
                     CredentialStamps.For("fake:secret")
                 )
             );

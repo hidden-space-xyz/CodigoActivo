@@ -15,7 +15,8 @@ import { useDiagnostics } from '../model/use-diagnostics'
 import DiagnosticDetailDialog from './DiagnosticDetailDialog.vue'
 
 const { t } = useI18n()
-const { table, extraFilters, filterByTrace, openAudit, detail, openDetail } = useDiagnostics()
+const { table, extraFilters, filterByTrace, opensAudit, openAudit, detail, openDetail } =
+  useDiagnostics()
 
 const levelOptions = DIAGNOSTIC_LEVELS.map((level) => ({
   label: t(levelLabelKey(level)),
@@ -23,7 +24,7 @@ const levelOptions = DIAGNOSTIC_LEVELS.map((level) => ({
 }))
 
 function entryActions(entry: DiagnosticEntry): RowAction[] {
-  return [
+  const actions: RowAction[] = [
     {
       key: 'detail',
       label: t('pages.admin.diagnostics.viewDetail'),
@@ -33,7 +34,9 @@ function entryActions(entry: DiagnosticEntry): RowAction[] {
         openDetail(entry)
       },
     },
-    {
+  ]
+  if (opensAudit.value) {
+    actions.push({
       key: 'audit',
       label: t('pages.admin.diagnostics.openAudit'),
       icon: 'check-square',
@@ -43,8 +46,9 @@ function entryActions(entry: DiagnosticEntry): RowAction[] {
       run: () => {
         openAudit(entry.traceId)
       },
-    },
-  ]
+    })
+  }
+  return actions
 }
 </script>
 

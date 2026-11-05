@@ -47,93 +47,7 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
-export type getApiMeAssignedActivitiesResponse200 = {
-  data: AssignedActivityResponse[]
-  status: 200
-}
-
-export type getApiMeAssignedActivitiesResponseSuccess = (getApiMeAssignedActivitiesResponse200) & {
-  headers: Headers;
-};
-;
-
-export type getApiMeAssignedActivitiesResponse = (getApiMeAssignedActivitiesResponseSuccess)
-
-export const getGetApiMeAssignedActivitiesUrl = (params?: GetApiMeAssignedActivitiesParams,) => {
-  const normalizedParams = new URLSearchParams();
-
-  Object.entries(params || {}).forEach(([key, value]) => {
-
-    if (value !== undefined) {
-      normalizedParams.append(key, value === null ? 'null' : String(value))
-    }
-  });
-
-  const stringifiedParams = normalizedParams.toString();
-
-  return stringifiedParams.length > 0 ? `/api/me/assigned-activities?${stringifiedParams}` : `/api/me/assigned-activities`
-}
-
-export const getApiMeAssignedActivities = async (params?: GetApiMeAssignedActivitiesParams, options?: Parameters<typeof httpClient>[1]): Promise<getApiMeAssignedActivitiesResponse> => {
-
-  return httpClient<getApiMeAssignedActivitiesResponse>(getGetApiMeAssignedActivitiesUrl(params),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetApiMeAssignedActivitiesMutationKey = () => ['getApiMeAssignedActivities'] as const;
-
-export const getGetApiMeAssignedActivitiesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, TError,GetApiMeAssignedActivitiesMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, TError,GetApiMeAssignedActivitiesMutationVariables, TContext> => {
-
-const mutationKey = getGetApiMeAssignedActivitiesMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, GetApiMeAssignedActivitiesMutationVariables> = (props) => {
-          const {params} = props ?? {};
-
-          return  getApiMeAssignedActivities(params,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiMeAssignedActivitiesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiMeAssignedActivities>>>
-
-    export type GetApiMeAssignedActivitiesMutationError = unknown
-    export type GetApiMeAssignedActivitiesMutationVariables = {params?: GetApiMeAssignedActivitiesParams}
-
-    export const useGetApiMeAssignedActivities = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, TError,GetApiMeAssignedActivitiesMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiMeAssignedActivities>>,
-        TError,
-        GetApiMeAssignedActivitiesMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiMeAssignedActivitiesMutationOptions(options), queryClient);
-    }
-    export type getApiMeEventHistoryResponse200 = {
+export type getApiMeEventHistoryResponse200 = {
   data: EventHistoryResponse[]
   status: 200
 }
@@ -290,6 +204,171 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getGetApiMeCertificatesMutationOptions(options), queryClient);
+    }
+    export type getApiMeConsentsResponse200 = {
+  data: MyConsentResponse[]
+  status: 200
+}
+
+export type getApiMeConsentsResponseSuccess = (getApiMeConsentsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiMeConsentsResponse = (getApiMeConsentsResponseSuccess)
+
+export const getGetApiMeConsentsUrl = () => {
+
+
+
+
+  return `/api/me/consents`
+}
+
+export const getApiMeConsents = async ( options?: Parameters<typeof httpClient>[1]): Promise<getApiMeConsentsResponse> => {
+
+  return httpClient<getApiMeConsentsResponse>(getGetApiMeConsentsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiMeConsentsMutationKey = () => ['getApiMeConsents'] as const;
+
+export const getGetApiMeConsentsMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeConsents>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiMeConsents>>, TError,void, TContext> => {
+
+const mutationKey = getGetApiMeConsentsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiMeConsents>>, void> = () => {
+
+
+          return  getApiMeConsents(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiMeConsentsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiMeConsents>>>
+
+    export type GetApiMeConsentsMutationError = unknown
+
+
+    export const useGetApiMeConsents = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeConsents>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiMeConsents>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getGetApiMeConsentsMutationOptions(options), queryClient);
+    }
+    export type getApiMeAssignedActivitiesResponse200 = {
+  data: AssignedActivityResponse[]
+  status: 200
+}
+
+export type getApiMeAssignedActivitiesResponseSuccess = (getApiMeAssignedActivitiesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getApiMeAssignedActivitiesResponse = (getApiMeAssignedActivitiesResponseSuccess)
+
+export const getGetApiMeAssignedActivitiesUrl = (params?: GetApiMeAssignedActivitiesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/me/assigned-activities?${stringifiedParams}` : `/api/me/assigned-activities`
+}
+
+export const getApiMeAssignedActivities = async (params?: GetApiMeAssignedActivitiesParams, options?: Parameters<typeof httpClient>[1]): Promise<getApiMeAssignedActivitiesResponse> => {
+
+  return httpClient<getApiMeAssignedActivitiesResponse>(getGetApiMeAssignedActivitiesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetApiMeAssignedActivitiesMutationKey = () => ['getApiMeAssignedActivities'] as const;
+
+export const getGetApiMeAssignedActivitiesMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, TError,GetApiMeAssignedActivitiesMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+): UseMutationOptions<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, TError,GetApiMeAssignedActivitiesMutationVariables, TContext> => {
+
+const mutationKey = getGetApiMeAssignedActivitiesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, GetApiMeAssignedActivitiesMutationVariables> = (props) => {
+          const {params} = props ?? {};
+
+          return  getApiMeAssignedActivities(params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetApiMeAssignedActivitiesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiMeAssignedActivities>>>
+
+    export type GetApiMeAssignedActivitiesMutationError = unknown
+    export type GetApiMeAssignedActivitiesMutationVariables = {params?: GetApiMeAssignedActivitiesParams}
+
+    export const useGetApiMeAssignedActivities = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, TError,GetApiMeAssignedActivitiesMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof getApiMeAssignedActivities>>,
+        TError,
+        GetApiMeAssignedActivitiesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getGetApiMeAssignedActivitiesMutationOptions(options), queryClient);
     }
     export type getApiMeDeletionResponse200 = {
   data: AccountDeletionStatusResponse
@@ -645,82 +724,3 @@ export function usePostApiMeDeletionCode<TData = Awaited<ReturnType<typeof postA
 
 
 
-export type getApiMeConsentsResponse200 = {
-  data: MyConsentResponse[]
-  status: 200
-}
-
-export type getApiMeConsentsResponseSuccess = (getApiMeConsentsResponse200) & {
-  headers: Headers;
-};
-;
-
-export type getApiMeConsentsResponse = (getApiMeConsentsResponseSuccess)
-
-export const getGetApiMeConsentsUrl = () => {
-
-
-
-
-  return `/api/me/consents`
-}
-
-export const getApiMeConsents = async ( options?: Parameters<typeof httpClient>[1]): Promise<getApiMeConsentsResponse> => {
-
-  return httpClient<getApiMeConsentsResponse>(getGetApiMeConsentsUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetApiMeConsentsMutationKey = () => ['getApiMeConsents'] as const;
-
-export const getGetApiMeConsentsMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeConsents>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiMeConsents>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiMeConsentsMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiMeConsents>>, void> = () => {
-
-
-          return  getApiMeConsents(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiMeConsentsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiMeConsents>>>
-
-    export type GetApiMeConsentsMutationError = unknown
-
-
-    export const useGetApiMeConsents = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeConsents>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiMeConsents>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiMeConsentsMutationOptions(options), queryClient);
-    }

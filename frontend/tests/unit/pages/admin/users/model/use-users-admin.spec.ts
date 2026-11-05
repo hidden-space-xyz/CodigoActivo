@@ -1,6 +1,7 @@
 import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { AuthUser } from '@/entities/session'
 import { toUser } from '@/entities/user/api/mapper'
 import { useUsersAdmin } from '@/pages/admin/users/model/use-users-admin'
 import type { UserResponse } from '@/shared/api/generated/models'
@@ -72,7 +73,7 @@ describe('useUsersAdmin', () => {
     result.table.columnFilter('email').value = 'ada'
     result.table.columnFilter('phone').value = '600'
     result.table.columnFilter('nationalId').value = 'x123'
-    result.table.columnFilter('isAdmin').value = false
+    result.table.columnFilter('staffRole').value = 'Editor'
     result.table.columnFilter('newsConsent').value = true
     result.table.columnFilter('type').value = 'type-member'
     result.table.onSortChange({ prop: 'email', order: 'descending' })
@@ -153,13 +154,13 @@ describe('useUsersAdmin', () => {
 
   it('explains why the initial administrator and the own account are protected', async () => {
     serveUserPages([[]])
-    const own = toUser(buildUserResponse({ isAdmin: true }))
+    const own = toUser(buildUserResponse({ staffRole: 'Administrator' }))
     const initial = toUser(
-      buildUserResponse({ id: 'admin-0', isAdmin: true, isInitialAdmin: true }),
+      buildUserResponse({ id: 'admin-0', staffRole: 'Administrator', isInitialAdmin: true }),
     )
     const other = toUser(buildUserResponse({ id: 'user-2' }))
     const signedIn = await mountComposable(() => useUsersAdmin(), {
-      user: { id: 'user-1', isAdmin: true },
+      user: { id: 'user-1', staffRole: 'Administrator' },
     })
     const anonymous = await mountComposable(() => useUsersAdmin())
     const { result } = signedIn
@@ -176,14 +177,44 @@ describe('useUsersAdmin', () => {
     expect(result.typeBlockReason(other)).toBeUndefined()
     expect(anonymous.result.typeBlockReason(own)).toBeUndefined()
 
-    expect(result.adminBlockReason(initial)).toBe(t('pages.admin.users.blocked.initialAdmin'))
-    expect(result.adminBlockReason(own)).toBe(t('pages.admin.users.blocked.selfRole'))
-    expect(result.adminBlockReason(other)).toBeUndefined()
-    expect(anonymous.result.adminBlockReason(own)).toBeUndefined()
-
     expect(result.deleteBlockReason(initial)).toBe(t('pages.admin.users.blocked.initialAdmin'))
     expect(result.deleteBlockReason(own)).toBe(t('pages.admin.users.blocked.self'))
     expect(result.deleteBlockReason(other)).toBeUndefined()
     expect(anonymous.result.deleteBlockReason(own)).toBeUndefined()
+  })
+
+  it('leaves cargos, the data protection designation and deletions to the superadministrator', async () => {
+    serveUserPages([[]])
+    const superAdmin = toUser(
+      buildUserResponse({
+        staffRole: 'Administrator',
+        isInitialAdmin: true,
+        isPrivacyOfficer: true,
+      }),
+    )
+    const editor = toUser(buildUserResponse({ id: 'user-2', staffRole: 'Editor' }))
+    const officer = toUser(buildUserResponse({ id: 'user-3', isPrivacyOfficer: true }))
+    const dependent = toUser(buildDependentResponse())
+    const administrator = toUser(buildUserResponse({ id: 'user-4', staffRole: 'Administrator' }))
+    const viewedBy = async (user: Partial<AuthUser>) =>
+      (await mountComposable(() => useUsersAdmin(), { user })).result
+    const sup = await viewedBy({ id: 'user-1', staffRole: 'Administrator', isSuperAdmin: true })
+    const admin = await viewedBy({ id: 'user-9', staffRole: 'Administrator' })
+
+    expect(
+      [superAdmin, editor, officer, dependent, administrator].map(sup.mayChangeStaffRole),
+    ).toEqual([false, true, true, false, true])
+    expect(
+      [superAdmin, editor, officer, dependent, administrator].map(sup.mayDesignatePrivacyOfficer),
+    ).toEqual([false, false, false, false, true])
+    expect(sup.mayDelete.value).toBe(true)
+
+    expect([superAdmin, editor, officer].map(admin.mayChangeStaffRole)).toEqual([
+      false,
+      false,
+      false,
+    ])
+    expect([superAdmin, editor].map(admin.mayDesignatePrivacyOfficer)).toEqual([false, false])
+    expect(admin.mayDelete.value).toBe(false)
   })
 })

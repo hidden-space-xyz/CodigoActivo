@@ -125,10 +125,10 @@ describe('admin news page', () => {
     expect(feature.querySelector('.row-actions__item-reason')).toBeNull()
   })
 
-  it('renders through the application router for admins', async () => {
+  it('renders through the application router for editors', async () => {
     serveNews()
 
-    const { wrapper } = await renderApp('/admin/news', { user: { isAdmin: true } })
+    const { wrapper } = await renderApp('/admin/news', { user: { staffRole: 'Editor' } })
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Hackathon'))
   })

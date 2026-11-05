@@ -14,7 +14,9 @@ describe('useSession', () => {
     expect(result.user).toBeNull()
     expect(result.isAuthenticated).toBe(false)
     expect(result.displayName).toBe('')
-    expect(result.isAdmin).toBe(false)
+    expect([result.isEditor, result.isAdmin, result.isSuperAdmin, result.isPrivacyOfficer]).toEqual(
+      [false, false, false, false],
+    )
   })
 
   it('loads the user once when nothing resolved the session yet', async () => {
@@ -22,7 +24,9 @@ describe('useSession', () => {
     server.use(
       http.get('/api/auth/me', () => {
         calls += 1
-        return HttpResponse.json(buildUserResponse({ firstName: 'Grace', isAdmin: true }))
+        return HttpResponse.json(
+          buildUserResponse({ firstName: 'Grace', staffRole: 'Administrator' }),
+        )
       }),
     )
 
@@ -31,6 +35,25 @@ describe('useSession', () => {
     expect(result.displayName).toBe('Grace')
     expect(result.isAdmin).toBe(true)
     expect(calls).toBe(1)
+  })
+
+  it('derives the staff flags from the cargo and the designations', async () => {
+    const { result, queryClient } = await mountComposable(() => useSession())
+    const flags = () => [
+      result.isEditor,
+      result.isAdmin,
+      result.isSuperAdmin,
+      result.isPrivacyOfficer,
+    ]
+
+    startSession(queryClient, buildAuthUser({ staffRole: 'Editor' }))
+    expect(flags()).toEqual([true, false, false, false])
+
+    startSession(queryClient, buildAuthUser({ staffRole: 'Administrator', isSuperAdmin: true }))
+    expect(flags()).toEqual([true, true, true, false])
+
+    startSession(queryClient, buildAuthUser({ isPrivacyOfficer: true }))
+    expect(flags()).toEqual([false, false, false, true])
   })
 
   it('follows the session as it starts and ends', async () => {

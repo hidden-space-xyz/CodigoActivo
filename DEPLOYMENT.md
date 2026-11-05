@@ -73,7 +73,7 @@ docker compose exec db sh -c 'tail -n 100 /var/log/postgresql/postgresql-*.log'
 ```
 
 Set at least `APP_BASE_URL` (final public HTTPS origin, no path/query/fragment), `DEMO_MODE` (permanent for
-these volumes), `BOOTSTRAP_ADMIN_EMAIL` (used only when the user table is empty), `PRIVACY_OFFICER_EMAIL`,
+these volumes), `BOOTSTRAP_ADMIN_EMAIL` (used only when the user table is empty),
 `SMTP_HOST` and `SMTP_FROM_ADDRESS`, the association's identity for the privacy policy (`LEGAL_NAME`,
 `LEGAL_TAX_ID`, `LEGAL_ADDRESS`, `LEGAL_REGISTRY`, `LEGAL_EMAIL`), plus `SMTP_USERNAME` and its password in
 `secrets/smtp_password` when the server needs a login. See [Secrets](#secrets) for the file rules.
@@ -134,7 +134,6 @@ or missing. `.env.example` lists every variable with an empty value.
 | `APP_TIMEZONE`          | IANA time-zone ID used by the application clock                               | `Europe/Madrid`                             |
 | `DEMO_MODE`             | `true` or `false`; locked on first start                                      | Required                                    |
 | `BOOTSTRAP_ADMIN_EMAIL` | Initial administrator email for an empty database                             | Required on an empty database               |
-| `PRIVACY_OFFICER_EMAIL` | Email of the administrator designated for data protection                     | Required                                    |
 | `SMTP_HOST`             | SMTP host; always required because login codes are emailed                    | Required                                    |
 | `SMTP_PORT`             | SMTP port                                                                     | `587`                                       |
 | `SMTP_SECURITY`         | `StartTls`, `SslOnConnect`, `None` or `Auto`; Production rejects the last two | `SslOnConnect` on port 465, else `StartTls` |
@@ -157,12 +156,11 @@ rather than code so that personal details, such as a home address or a private p
 repository; the association's public identity (name, domain, social profiles) is code, in `Organization`
 (backend) and `shared/config` (frontend).
 
-`PRIVACY_OFFICER_EMAIL` designates the only account that may consult the blocked data (see
-[SECURITY.md](SECURITY.md#blocked-data-consultations)): the administrator whose verified email it is, whatever
-their second factor. Use the personal mailbox of the person the board designated in writing, never a shared one
-such as `LEGAL_EMAIL`, since whoever reads the mailbox can reset the password and, while the account uses
-emailed codes, also receives its second factor. A value that is not a single address stops the start; to change
-the person, change it and restart the API. The development overlay defaults it to `BOOTSTRAP_ADMIN_EMAIL`.
+The account designated for data protection, the only one that may consult the blocked data (see
+[SECURITY.md](SECURITY.md#blocked-data-consultations)), is chosen in the application by the initial
+administrator, which holds it until then. Designate the account of the person the board designated in writing,
+whose email is a personal mailbox, never a shared one such as `LEGAL_EMAIL`, since whoever reads the mailbox can
+reset the password and, while the account uses emailed codes, also receives its second factor.
 
 ### Secrets
 

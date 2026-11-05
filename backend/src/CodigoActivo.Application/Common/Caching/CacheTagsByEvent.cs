@@ -50,7 +50,8 @@ public static class CacheTagsByEvent
         [typeof(DependentAdded)] = [CacheTags.Users],
         [typeof(ProfileChanged)] = [CacheTags.Users],
         [typeof(UserTypeChanged)] = [CacheTags.Users],
-        [typeof(AdministratorRightsChanged)] = [CacheTags.Users],
+        [typeof(StaffRoleChanged)] = [CacheTags.Users],
+        [typeof(PrivacyOfficerChanged)] = [CacheTags.Users],
         [typeof(AccountErased)] = [.. CacheTags.Erasure],
     };
 

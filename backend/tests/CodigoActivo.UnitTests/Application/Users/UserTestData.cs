@@ -5,6 +5,7 @@ using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Gender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
+using StaffRole = CodigoActivo.Application.Abstractions.Querying.ReadModel.StaffRole;
 using TwoFactorMethod = CodigoActivo.Application.Abstractions.Querying.ReadModel.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Users;
@@ -28,7 +29,9 @@ internal static class UserTestData
         Guid? typeId = null,
         Guid? statusId = null,
         string? passwordHash = null,
-        string? nationalId = AdultNationalId
+        string? nationalId = AdultNationalId,
+        StaffRole? staffRole = null,
+        bool isPrivacyOfficer = false
     )
     {
         return Persisted.As<User>(
@@ -47,7 +50,8 @@ internal static class UserTestData
                 Status = CatalogIds.UserStatuses.ValueOf(
                     statusId ?? KnownIds.UserStatusTypes.Active
                 ),
-                IsAdmin = isAdmin,
+                StaffRole = staffRole ?? (isAdmin ? StaffRole.Administrator : StaffRole.None),
+                IsPrivacyOfficer = isPrivacyOfficer,
                 UserType = CatalogIds.UserTypes.ValueOf(typeId ?? KnownIds.UserTypes.Participant),
                 CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
             }
@@ -70,7 +74,9 @@ internal static class UserTestData
         string? passwordHash = null,
         string? nationalId = AdultNationalId,
         bool newsConsent = false,
-        UserRow? parent = null
+        UserRow? parent = null,
+        StaffRole? staffRole = null,
+        bool isPrivacyOfficer = false
     )
     {
         var guardianId = parentId ?? parent?.Id;
@@ -98,7 +104,8 @@ internal static class UserTestData
                 Color = "#111",
                 Description = "",
             },
-            IsAdmin = isAdmin,
+            StaffRole = staffRole ?? (isAdmin ? StaffRole.Administrator : StaffRole.None),
+            IsPrivacyOfficer = isPrivacyOfficer,
             UserTypeId = userTypeId,
             UserType = new UserTypeRow
             {

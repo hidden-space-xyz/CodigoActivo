@@ -1,4 +1,5 @@
 import type { Gender } from './gender'
+import type { StaffRole } from './staff-role'
 
 /** A user status or user type as a user carries it and the catalogs list it. */
 export interface UserCatalogRef {
@@ -26,9 +27,16 @@ export interface User {
   /** Whether the user agreed to receive news by email; always `false` for dependents. */
   readonly newsConsent: boolean
   readonly gender: Gender
-  readonly isAdmin: boolean
-  /** The generic administrator created on first start: it can be neither deleted nor demoted. */
+  /** Cargo in the admin area; `None` for those who only use the public site. */
+  readonly staffRole: StaffRole
+  /**
+   * The superadministrator, the account created on first start: it can be neither deleted nor
+   * demoted, and only it changes cargos, designates the data protection officer and deletes
+   * other accounts.
+   */
   readonly isInitialAdmin: boolean
+  /** The account designated as the data protection officer; exactly one holds it. */
+  readonly isPrivacyOfficer: boolean
   /** Sign-ins are confirmed with an authenticator app instead of emailed codes. */
   readonly usesAuthenticator: boolean
   readonly parentId: string | null
@@ -47,7 +55,7 @@ export interface UserListParams {
   readonly nationalId?: string
   readonly userTypeId?: string
   readonly userStatusTypeId?: string
-  readonly isAdmin?: boolean
+  readonly staffRole?: StaffRole
   readonly newsConsent?: boolean
   readonly parentId?: string
   /** Independent accounts or dependents only; omitted for both. */

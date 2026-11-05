@@ -29,7 +29,7 @@ export function installSessionExpiry(router: Router, queryClient: QueryClient): 
         position: 'top-right',
       })
       const route = router.currentRoute.value
-      if (route.meta.access === 'user' || route.meta.access === 'admin') {
+      if (route.meta.access !== undefined && route.meta.access !== 'guest') {
         await router.push({ name: 'login', query: { redirect: route.fullPath } })
       }
     } finally {

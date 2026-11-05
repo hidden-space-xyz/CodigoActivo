@@ -369,9 +369,9 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraphDefaultContainsNoAdmins()
+    public void BuildGraphDefaultContainsNoStaff()
     {
-        graph.Users.Should().NotContain(u => u.IsAdmin);
+        graph.Users.Should().NotContain(u => u.StaffRole != StaffRole.None || u.IsPrivacyOfficer);
     }
 
     [Fact]
@@ -523,7 +523,7 @@ public sealed class DemoDataSeederTests
         var demoAuthor = graph.Users.Single(u => u.FirstName == "Lucía");
 
         graph.Files.Select(f => f.Id).Should().OnlyHaveUniqueItems();
-        demoAuthor.IsAdmin.Should().BeFalse();
+        demoAuthor.StaffRole.Should().Be(StaffRole.None);
         graph.Files.Should().OnlyContain(f => f.UploadedBy == demoAuthor.Id);
     }
 

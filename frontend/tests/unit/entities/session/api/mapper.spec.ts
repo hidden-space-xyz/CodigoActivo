@@ -4,14 +4,24 @@ import { toAuthUser, toLoginChallenge } from '@/entities/session/api/mapper'
 import { buildUserResponse } from '../../../../support/builders'
 
 describe('toAuthUser', () => {
-  it('maps the signed-in user', () => {
-    expect(toAuthUser(buildUserResponse({ isAdmin: true }))).toEqual({
+  it('maps the signed-in user, the initial account as the superadministrator', () => {
+    expect(
+      toAuthUser(
+        buildUserResponse({
+          staffRole: 'Administrator',
+          isInitialAdmin: true,
+          isPrivacyOfficer: true,
+        }),
+      ),
+    ).toEqual({
       id: 'user-1',
       firstName: 'Ada',
       lastName: 'Lovelace',
       email: 'ada@example.test',
       phone: '600000000',
-      isAdmin: true,
+      staffRole: 'Administrator',
+      isSuperAdmin: true,
+      isPrivacyOfficer: true,
       earlySignupEligible: false,
       twoFactorMethod: 'Email',
     })

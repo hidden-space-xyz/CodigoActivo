@@ -72,7 +72,7 @@ describe('useSendEmail', () => {
     const { result } = await mountComposable(() => useSendEmail())
 
     await result.sendToUsers.mutateAsync({
-      params: { name: 'ada', isAdmin: false },
+      params: { name: 'ada', staffRole: 'Editor' },
       payload: {
         ...payload,
         purpose: 'News',
@@ -80,7 +80,7 @@ describe('useSendEmail', () => {
       },
     })
 
-    expect(queryOf(received?.url ?? '')).toEqual({ name: 'ada', isAdmin: 'false' })
+    expect(queryOf(received?.url ?? '')).toEqual({ name: 'ada', staffRole: 'Editor' })
     expect(received?.purpose).toBe('News')
     expect(received?.attachments).toEqual(['a.txt', 'b.pdf'])
   })

@@ -101,8 +101,15 @@ public static class SecurityAlertEmail
             AccountSecurityChange.AuthenticatorDisabled =>
                 AppStrings.EmailsSecurityAlertAuthenticatorDisabled,
             AccountSecurityChange.TwoFactorReset => AppStrings.EmailsSecurityAlertTwoFactorReset,
-            AccountSecurityChange.AdminGranted => AppStrings.EmailsSecurityAlertAdminGranted,
-            AccountSecurityChange.AdminRevoked => AppStrings.EmailsSecurityAlertAdminRevoked,
+            AccountSecurityChange.EditorGranted => AppStrings.EmailsSecurityAlertEditorGranted,
+            AccountSecurityChange.AdministratorGranted =>
+                AppStrings.EmailsSecurityAlertAdministratorGranted,
+            AccountSecurityChange.StaffRoleRevoked =>
+                AppStrings.EmailsSecurityAlertStaffRoleRevoked,
+            AccountSecurityChange.PrivacyOfficerDesignated =>
+                AppStrings.EmailsSecurityAlertPrivacyOfficerDesignated,
+            AccountSecurityChange.PrivacyOfficerReleased =>
+                AppStrings.EmailsSecurityAlertPrivacyOfficerReleased,
             AccountSecurityChange.AddressChanged => AppStrings.EmailsSecurityAlertEmailChanged,
             AccountSecurityChange.PhoneChanged => AppStrings.EmailsSecurityAlertPhoneChanged,
             AccountSecurityChange.AddressAndPhoneChanged =>
@@ -119,8 +126,11 @@ public static class SecurityAlertEmail
             AccountSecurityChange.AddressChanged or AccountSecurityChange.AddressAndPhoneChanged =>
                 AppStrings.EmailsSecurityAlertEmailChangedWarning,
             AccountSecurityChange.TwoFactorReset
-            or AccountSecurityChange.AdminGranted
-            or AccountSecurityChange.AdminRevoked =>
+            or AccountSecurityChange.EditorGranted
+            or AccountSecurityChange.AdministratorGranted
+            or AccountSecurityChange.StaffRoleRevoked
+            or AccountSecurityChange.PrivacyOfficerDesignated
+            or AccountSecurityChange.PrivacyOfficerReleased =>
                 AppStrings.EmailsSecurityAlertUnexpectedWarning,
             AccountSecurityChange.CredentialLocked =>
                 AppStrings.EmailsSecurityAlertPasswordLockedWarning,

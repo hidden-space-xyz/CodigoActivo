@@ -1,5 +1,6 @@
 using GenderContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
 using LegalPolicyKindContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.LegalPolicyKind;
+using StaffRoleContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.StaffRole;
 using TermsDocumentKindContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.TermsDocumentKind;
 
 namespace CodigoActivo.Application.Common.Mapping;
@@ -40,5 +41,15 @@ public static class ContractEnums
     public static Domain.Legal.LegalPolicyKind ToDomain(this LegalPolicyKindContract kind)
     {
         return (Domain.Legal.LegalPolicyKind)(int)kind;
+    }
+
+    /// <summary>
+    /// Gets the domain staff role of a staff role sent by a client.
+    /// </summary>
+    /// <param name="staffRole">Staff role as clients send it.</param>
+    /// <returns>The domain staff role.</returns>
+    public static Domain.Users.StaffRole ToDomain(this StaffRoleContract staffRole)
+    {
+        return (Domain.Users.StaffRole)(int)staffRole;
     }
 }

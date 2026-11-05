@@ -20,8 +20,11 @@ function adminRoute(
 
 /**
  * Application route table with lazily loaded pages. Admin routes use the admin layout (or `blank`
- * for printable pages) and are for administrators only; detail pages receive their path params as
- * props, which only match GUIDs because they become path segments of API requests.
+ * for printable pages) and are for administrators unless their `access` opens them to editors, to
+ * the superadministrator and the data protection officer (the audit log) or to that officer and
+ * the administrators (the blocked data); `/admin` has no page and the access guard sends it on
+ * to the first admin page the user can open. Detail pages receive their path params as props,
+ * which only match GUIDs because they become path segments of API requests.
  */
 export const routes: readonly RouteRecordRaw[] = [
   {
@@ -185,15 +188,21 @@ export const routes: readonly RouteRecordRaw[] = [
       seo: { titleKey: 'seo.routes.account.title', noindex: true },
     },
   },
-  { path: '/admin', redirect: { name: 'admin-dashboard' } },
+  { path: '/admin', name: 'admin', meta: { access: 'user' }, children: [] },
   adminRoute('/admin/dashboard', 'admin-dashboard', () =>
     import('@/pages/admin/dashboard').then((m) => m.DashboardPage),
   ),
-  adminRoute('/admin/events', 'admin-events', () =>
-    import('@/pages/admin/events').then((m) => m.EventsAdminPage),
+  adminRoute(
+    '/admin/events',
+    'admin-events',
+    () => import('@/pages/admin/events').then((m) => m.EventsAdminPage),
+    { access: 'editor' },
   ),
-  adminRoute(`/admin/events/:eventId(${GUID_PARAM})`, 'admin-event-detail', () =>
-    import('@/pages/admin/event-detail').then((m) => m.EventDetailPage),
+  adminRoute(
+    `/admin/events/:eventId(${GUID_PARAM})`,
+    'admin-event-detail',
+    () => import('@/pages/admin/event-detail').then((m) => m.EventDetailPage),
+    { access: 'editor' },
   ),
   adminRoute(
     `/admin/events/:eventId(${GUID_PARAM})/badges`,
@@ -207,14 +216,23 @@ export const routes: readonly RouteRecordRaw[] = [
     () => import('@/pages/admin/event-roster').then((m) => m.EventRosterPage),
     { layout: 'blank', seo: { titleKey: 'seo.routes.eventRoster.title', noindex: true } },
   ),
-  adminRoute('/admin/news', 'admin-news', () =>
-    import('@/pages/admin/news').then((m) => m.NewsPage),
+  adminRoute(
+    '/admin/news',
+    'admin-news',
+    () => import('@/pages/admin/news').then((m) => m.NewsPage),
+    { access: 'editor' },
   ),
-  adminRoute('/admin/partners', 'admin-partners', () =>
-    import('@/pages/admin/partners').then((m) => m.PartnersPage),
+  adminRoute(
+    '/admin/partners',
+    'admin-partners',
+    () => import('@/pages/admin/partners').then((m) => m.PartnersPage),
+    { access: 'editor' },
   ),
-  adminRoute('/admin/resources', 'admin-resources', () =>
-    import('@/pages/admin/resources').then((m) => m.ResourcesPage),
+  adminRoute(
+    '/admin/resources',
+    'admin-resources',
+    () => import('@/pages/admin/resources').then((m) => m.ResourcesPage),
+    { access: 'editor' },
   ),
   adminRoute('/admin/users', 'admin-users', () =>
     import('@/pages/admin/users').then((m) => m.UsersPage),
@@ -222,14 +240,23 @@ export const routes: readonly RouteRecordRaw[] = [
   adminRoute('/admin/diagnostics', 'admin-diagnostics', () =>
     import('@/pages/admin/diagnostics').then((m) => m.DiagnosticsPage),
   ),
-  adminRoute('/admin/audit', 'admin-audit', () =>
-    import('@/pages/admin/audit').then((m) => m.AuditPage),
+  adminRoute(
+    '/admin/audit',
+    'admin-audit',
+    () => import('@/pages/admin/audit').then((m) => m.AuditPage),
+    { access: 'audit' },
   ),
-  adminRoute('/admin/blocked-data', 'admin-blocked-data', () =>
-    import('@/pages/admin/blocked-data').then((m) => m.BlockedDataPage),
+  adminRoute(
+    '/admin/blocked-data',
+    'admin-blocked-data',
+    () => import('@/pages/admin/blocked-data').then((m) => m.BlockedDataPage),
+    { access: 'blocked-data' },
   ),
-  adminRoute('/admin/catalogs', 'admin-catalogs', () =>
-    import('@/pages/admin/catalogs').then((m) => m.CatalogsPage),
+  adminRoute(
+    '/admin/catalogs',
+    'admin-catalogs',
+    () => import('@/pages/admin/catalogs').then((m) => m.CatalogsPage),
+    { access: 'editor' },
   ),
   adminRoute('/admin/legal', 'admin-legal-policies', () =>
     import('@/pages/admin/legal-policies').then((m) => m.LegalPoliciesPage),

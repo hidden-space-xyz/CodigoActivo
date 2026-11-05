@@ -1,11 +1,13 @@
 import { mutationOptions } from '@tanstack/vue-query'
 
+import type { StaffRole } from '../model/staff-role'
 import { userKeys } from './queries'
 import {
   changeUserTypeRequest,
   deleteUserRequest,
+  designatePrivacyOfficerRequest,
   resetUserTwoFactorRequest,
-  setUserAdminRequest,
+  setUserStaffRoleRequest,
 } from './requests'
 
 /** Mutation options of users; each one refreshes every user query once it succeeds. */
@@ -21,18 +23,25 @@ export const userMutations = {
         changeUserTypeRequest(id, userTypeId),
       meta: { invalidates: [userKeys.all] },
     }),
-  /** Grants the admin role with the signed-in admin's password, or revokes it without one. */
-  setAdmin: () =>
+  /** Gives a cargo with the superadministrator's password, or removes it without one. */
+  setStaffRole: () =>
     mutationOptions({
       mutationFn: ({
         id,
-        isAdmin,
+        staffRole,
         currentPassword,
       }: {
         id: string
-        isAdmin: boolean
+        staffRole: StaffRole
         currentPassword: string | null
-      }) => setUserAdminRequest(id, isAdmin, currentPassword),
+      }) => setUserStaffRoleRequest(id, staffRole, currentPassword),
+      meta: { invalidates: [userKeys.all] },
+    }),
+  /** Moves the data protection designation to a user with the superadministrator's password. */
+  designatePrivacyOfficer: () =>
+    mutationOptions({
+      mutationFn: ({ id, currentPassword }: { id: string; currentPassword: string }) =>
+        designatePrivacyOfficerRequest(id, currentPassword),
       meta: { invalidates: [userKeys.all] },
     }),
   /** Returns a user's second factor to email with the signed-in admin's password. */

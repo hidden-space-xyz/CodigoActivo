@@ -29,8 +29,23 @@ public sealed class SecurityAlertEmailTests
                 AppStrings.EmailsSecurityAlertAuthenticatorDisabled
             },
             { AccountSecurityChange.TwoFactorReset, AppStrings.EmailsSecurityAlertTwoFactorReset },
-            { AccountSecurityChange.AdminGranted, AppStrings.EmailsSecurityAlertAdminGranted },
-            { AccountSecurityChange.AdminRevoked, AppStrings.EmailsSecurityAlertAdminRevoked },
+            { AccountSecurityChange.EditorGranted, AppStrings.EmailsSecurityAlertEditorGranted },
+            {
+                AccountSecurityChange.AdministratorGranted,
+                AppStrings.EmailsSecurityAlertAdministratorGranted
+            },
+            {
+                AccountSecurityChange.StaffRoleRevoked,
+                AppStrings.EmailsSecurityAlertStaffRoleRevoked
+            },
+            {
+                AccountSecurityChange.PrivacyOfficerDesignated,
+                AppStrings.EmailsSecurityAlertPrivacyOfficerDesignated
+            },
+            {
+                AccountSecurityChange.PrivacyOfficerReleased,
+                AppStrings.EmailsSecurityAlertPrivacyOfficerReleased
+            },
             { AccountSecurityChange.AddressChanged, AppStrings.EmailsSecurityAlertEmailChanged },
             { AccountSecurityChange.PhoneChanged, AppStrings.EmailsSecurityAlertPhoneChanged },
             {
@@ -57,8 +72,26 @@ public sealed class SecurityAlertEmailTests
                 AccountSecurityChange.TwoFactorReset,
                 AppStrings.EmailsSecurityAlertUnexpectedWarning
             },
-            { AccountSecurityChange.AdminGranted, AppStrings.EmailsSecurityAlertUnexpectedWarning },
-            { AccountSecurityChange.AdminRevoked, AppStrings.EmailsSecurityAlertUnexpectedWarning },
+            {
+                AccountSecurityChange.EditorGranted,
+                AppStrings.EmailsSecurityAlertUnexpectedWarning
+            },
+            {
+                AccountSecurityChange.AdministratorGranted,
+                AppStrings.EmailsSecurityAlertUnexpectedWarning
+            },
+            {
+                AccountSecurityChange.StaffRoleRevoked,
+                AppStrings.EmailsSecurityAlertUnexpectedWarning
+            },
+            {
+                AccountSecurityChange.PrivacyOfficerDesignated,
+                AppStrings.EmailsSecurityAlertUnexpectedWarning
+            },
+            {
+                AccountSecurityChange.PrivacyOfficerReleased,
+                AppStrings.EmailsSecurityAlertUnexpectedWarning
+            },
             {
                 AccountSecurityChange.AddressChanged,
                 AppStrings.EmailsSecurityAlertEmailChangedWarning

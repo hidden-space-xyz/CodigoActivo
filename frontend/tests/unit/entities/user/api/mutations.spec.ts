@@ -21,7 +21,8 @@ describe('userMutations', () => {
     server.use(
       http.delete('/api/users/:id', () => noContent()),
       http.patch('/api/users/:id/change-type', () => HttpResponse.json(buildUserResponse())),
-      http.patch('/api/users/:id/admin', () => noContent()),
+      http.patch('/api/users/:id/staff-role', () => noContent()),
+      http.post('/api/users/:id/privacy-officer', () => noContent()),
       http.post('/api/users/:id/two-factor/reset', () => noContent()),
     )
     const runs = [
@@ -33,10 +34,15 @@ describe('userMutations', () => {
           userTypeId: 'type-member',
         }),
       (client: ReturnType<typeof createTestQueryClient>) =>
-        new MutationObserver(client, userMutations.setAdmin()).mutate({
+        new MutationObserver(client, userMutations.setStaffRole()).mutate({
           id: 'u1',
-          isAdmin: false,
+          staffRole: 'None',
           currentPassword: null,
+        }),
+      (client: ReturnType<typeof createTestQueryClient>) =>
+        new MutationObserver(client, userMutations.designatePrivacyOfficer()).mutate({
+          id: 'u1',
+          currentPassword: 'Str0ngPass!23',
         }),
       (client: ReturnType<typeof createTestQueryClient>) =>
         new MutationObserver(client, userMutations.resetTwoFactor()).mutate({

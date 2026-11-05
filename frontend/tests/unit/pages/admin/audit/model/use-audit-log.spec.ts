@@ -1,6 +1,7 @@
 import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { AuthUser } from '@/entities/session'
 import { toAuditEntry } from '@/pages/admin/audit/api/mapper'
 import { useAuditLog } from '@/pages/admin/audit/model/use-audit-log'
 
@@ -96,5 +97,16 @@ describe('useAuditLog', () => {
     await router.replace({ query: { traceId: TRACE_ID } })
     await flushPromises()
     expect(result.extraFilters.value).toHaveLength(1)
+  })
+
+  it('links to the diagnostics only for administrators, who alone may read them', async () => {
+    recordRequests()
+    const opensDiagnostics = async (user: Partial<AuthUser>) =>
+      (await mountComposable(useAuditLog, { route: '/admin/audit', user })).result.opensDiagnostics
+        .value
+
+    expect(await opensDiagnostics({ staffRole: 'Administrator', isSuperAdmin: true })).toBe(true)
+    expect(await opensDiagnostics({ isPrivacyOfficer: true })).toBe(false)
+    expect(await opensDiagnostics({ staffRole: 'Editor', isPrivacyOfficer: true })).toBe(false)
   })
 })

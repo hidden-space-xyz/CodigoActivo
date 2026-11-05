@@ -15,6 +15,7 @@ using Xunit;
 using ContractGender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
 using ContractTwoFactorMethod = CodigoActivo.Application.Abstractions.Querying.ReadModel.TwoFactorMethod;
 using Gender = CodigoActivo.Domain.Users.Gender;
+using StaffRoleContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.StaffRole;
 using TwoFactorMethod = CodigoActivo.Domain.Users.TwoFactorMethod;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
@@ -121,7 +122,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         var stored = await FindByEmailAsync(NewAdultEmail);
         stored!.Status.Should().Be(UserStatus.Pending);
-        stored.IsAdmin.Should().BeFalse();
+        stored.StaffRole.Should().Be(StaffRole.None);
         stored.Gender.Should().Be(Gender.Female);
         stored.UserType.Should().Be(UserType.Participant);
         stored.VerificationCode.Hash.Should().NotBeNullOrEmpty();
@@ -850,7 +851,9 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var body = await response.ReadJsonAsync<UserResponse>(Ct);
         body!.Id.Should().Be(TestSeedData.Users.AdminId);
         body.Email.Should().Be(TestSeedData.AdminEmail);
-        body.IsAdmin.Should().BeTrue();
+        body.StaffRole.Should().Be(StaffRoleContract.Administrator);
+        body.IsPrivacyOfficer.Should().BeTrue();
+        body.IsInitialAdmin.Should().BeTrue();
     }
 
     [Fact]
@@ -875,7 +878,7 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(async db =>
         {
             var admin = await db.Users.FindAsync([UserId.From(TestSeedData.Users.AdminId)], Ct);
-            Persisted.Overwrite(admin!, new { IsAdmin = false });
+            Persisted.Overwrite(admin!, new { StaffRole = StaffRole.None });
         });
 
         var response = await client.GetAsync(TestUri.Rel("/api/users/types"), Ct);

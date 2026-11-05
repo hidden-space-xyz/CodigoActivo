@@ -94,4 +94,46 @@ public sealed class AccountEraserTests
         await uow.DidNotReceiveWithAnyArgs()
             .ExecuteInTransactionAsync<bool>(default!, TestContext.Current.CancellationToken);
     }
+
+    [Fact]
+    public async Task EraseAsyncPrivacyOfficerReturnsTheDesignationToTheInitialAdministratorAfterTheRemoval()
+    {
+        var account = NewUser(isPrivacyOfficer: true);
+        var initialAdministrator = NewUser(
+            id: KnownIds.Users.InitialAdministrator,
+            isAdmin: true,
+            typeId: KnownIds.UserTypes.Member
+        );
+        users
+            .GetByIdAsync(InitialAdministrator.Id, Arg.Any<CancellationToken>())
+            .Returns(initialAdministrator);
+        var saved = new List<bool>();
+        uow.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                saved.Add(initialAdministrator.IsPrivacyOfficer);
+                return 1;
+            });
+
+        var erased = await sut.EraseAsync(account, TestContext.Current.CancellationToken);
+
+        erased.Should().BeTrue();
+        saved.Should().Equal(false, true);
+        initialAdministrator
+            .PullDomainEvents()
+            .Should()
+            .Equal(new PrivacyOfficerChanged(InitialAdministrator.Id, true));
+    }
+
+    [Fact]
+    public async Task EraseAsyncAnotherAccountLeavesTheDesignationAlone()
+    {
+        var account = NewUser();
+
+        await sut.EraseAsync(account, TestContext.Current.CancellationToken);
+
+        await users
+            .DidNotReceive()
+            .GetByIdAsync(InitialAdministrator.Id, Arg.Any<CancellationToken>());
+    }
 }

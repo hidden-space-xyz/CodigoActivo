@@ -125,7 +125,7 @@ describe('admin partners page', () => {
   it('renders through the application router for admins', async () => {
     servePartners()
 
-    const { wrapper } = await renderApp('/admin/partners', { user: { isAdmin: true } })
+    const { wrapper } = await renderApp('/admin/partners', { user: { staffRole: 'Administrator' } })
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Acme'))
     expect(wrapper.text()).toContain(t('pages.admin.partners.header.title'))

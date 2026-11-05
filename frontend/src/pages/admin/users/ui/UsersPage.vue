@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { fullName, type User } from '@/entities/user'
+import { fullName, STAFF_ROLES, staffRoleLabelKey, type User } from '@/entities/user'
 import { SendEmailDialog, useSendEmail, useSendEmailDialog } from '@/features/send-email'
 import { ageFrom, formatDate } from '@/shared/lib/date'
 import { ActionButton } from '@/shared/ui/action-button'
@@ -20,6 +20,7 @@ import { TablePrimaryCell } from '@/shared/ui/table-primary-cell'
 
 import { useUsersAdmin } from '../model/use-users-admin'
 import AdminPasswordDialog from './AdminPasswordDialog.vue'
+import StaffRoleDialog from './StaffRoleDialog.vue'
 import UserTypeDialog from './UserTypeDialog.vue'
 
 const { t } = useI18n()
@@ -35,16 +36,23 @@ const {
   showDependentsOf,
   isOwnAccount,
   typeBlockReason,
-  adminBlockReason,
+  mayChangeStaffRole,
+  mayDesignatePrivacyOfficer,
+  mayDelete,
   deleteBlockReason,
   typeDialog,
   saveType,
   changingType,
-  grantDialog,
-  grantError,
-  toggleAdmin,
-  grantAdmin,
-  settingAdmin,
+  staffRoleDialog,
+  staffRoleError,
+  openStaffRole,
+  saveStaffRole,
+  settingStaffRole,
+  officerDialog,
+  officerError,
+  openPrivacyOfficer,
+  designatePrivacyOfficer,
+  designatingOfficer,
   resetDialog,
   resetError,
   openResetTwoFactor,
@@ -56,8 +64,10 @@ const { sendToUsers, usersAudience } = useSendEmail()
 
 const typeVisible = typeDialog.visible
 const typedUser = typeDialog.editing
-const grantVisible = grantDialog.visible
-const grantedUser = grantDialog.editing
+const staffRoleVisible = staffRoleDialog.visible
+const staffRoleUser = staffRoleDialog.editing
+const officerVisible = officerDialog.visible
+const officerUser = officerDialog.editing
 const resetVisible = resetDialog.visible
 const resetUser = resetDialog.editing
 
@@ -111,11 +121,8 @@ const {
   fetchAudience: () => usersAudience(table.filterParams.value),
 })
 
-function blockedBy(
-  reason: string | undefined,
-  busy = false,
-): Pick<RowAction, 'disabled' | 'reason'> {
-  return reason === undefined ? { disabled: busy } : { disabled: true, reason }
+function blockedBy(reason: string | undefined): Pick<RowAction, 'disabled' | 'reason'> {
+  return reason === undefined ? { disabled: false } : { disabled: true, reason }
 }
 
 function userActions(user: User): RowAction[] {
@@ -150,32 +157,52 @@ function userActions(user: User): RowAction[] {
       },
     )
   }
-  if (!user.parentId) {
+  if (mayChangeStaffRole(user)) {
     actions.push({
-      key: 'admin',
-      label: user.isAdmin
-        ? t('pages.admin.users.actions.revokeAdmin')
-        : t('pages.admin.users.actions.grantAdmin'),
+      key: 'staffRole',
+      label: t('pages.admin.users.actions.changeStaffRole'),
       icon: 'key',
-      ...blockedBy(adminBlockReason(user), settingAdmin.value),
+      disabled: settingStaffRole.value,
       run: () => {
-        toggleAdmin(user, !user.isAdmin)
+        openStaffRole(user)
       },
     })
   }
-  actions.push({
-    key: 'delete',
-    label: t('common.delete'),
-    icon: 'trash',
-    danger: true,
-    divided: true,
-    ...blockedBy(deleteBlockReason(user)),
-    run: () => {
-      confirmRemove(user)
-    },
-  })
+  if (mayDesignatePrivacyOfficer(user)) {
+    actions.push({
+      key: 'privacyOfficer',
+      label: t('pages.admin.users.actions.designatePrivacyOfficer'),
+      icon: 'id-card',
+      disabled: designatingOfficer.value,
+      run: () => {
+        openPrivacyOfficer(user)
+      },
+    })
+  }
+  if (mayDelete.value) {
+    actions.push({
+      key: 'delete',
+      label: t('common.delete'),
+      icon: 'trash',
+      danger: true,
+      divided: true,
+      ...blockedBy(deleteBlockReason(user)),
+      run: () => {
+        confirmRemove(user)
+      },
+    })
+  }
   return actions
 }
+
+function staffRoleLabel(user: User): string {
+  if (user.isInitialAdmin) return t('pages.admin.users.staffRole.superAdmin')
+  return user.staffRole === 'None' ? '—' : t(staffRoleLabelKey(user.staffRole))
+}
+
+const staffRoleOptions = computed(() =>
+  STAFF_ROLES.map((role) => ({ label: t(staffRoleLabelKey(role)), value: role })),
+)
 </script>
 
 <template>
@@ -199,14 +226,6 @@ function userActions(user: User): RowAction[] {
           :options="scopeOptions"
           :model-value="scope"
           @change="setScope"
-        />
-        <ColumnFilterSelect
-          v-if="showsField('isAdmin')"
-          v-model="table.columnFilter('isAdmin').value"
-          variant="toolbar"
-          :label="$t('pages.admin.users.columns.admin')"
-          :options="yesNoOptions"
-          @apply="table.onFilter"
         />
         <ColumnFilterSelect
           v-if="showsField('newsConsent')"
@@ -244,11 +263,8 @@ function userActions(user: User): RowAction[] {
       >
         <template #default="{ row }">
           <TablePrimaryCell :title="fullName(row)">
-            <template v-if="row.isAdmin || isOwnAccount(row)" #badges>
-              <el-tag v-if="row.isAdmin" size="small" disable-transitions>{{
-                $t('pages.admin.users.columns.admin')
-              }}</el-tag>
-              <el-tag v-if="isOwnAccount(row)" size="small" type="info" disable-transitions>{{
+            <template v-if="isOwnAccount(row)" #badges>
+              <el-tag size="small" type="info" disable-transitions>{{
                 $t('pages.admin.users.badges.you')
               }}</el-tag>
             </template>
@@ -388,6 +404,35 @@ function userActions(user: User): RowAction[] {
           <span v-else>—</span>
         </template>
       </el-table-column>
+      <el-table-column
+        v-if="showsField('staffRole')"
+        prop="staffRole"
+        :label="$t('pages.admin.users.columns.staffRole')"
+        sortable="custom"
+        width="170"
+      >
+        <template #header>
+          <ColumnFilterSelect
+            v-model="table.columnFilter('staffRole').value"
+            :label="$t('pages.admin.users.columns.staffRole')"
+            :options="staffRoleOptions"
+            @apply="table.onFilter"
+          />
+        </template>
+        <template #default="{ row }">
+          <div class="staff-cell">
+            <span>{{ staffRoleLabel(row) }}</span>
+            <el-tag
+              v-if="row.isPrivacyOfficer"
+              size="small"
+              type="success"
+              disable-transitions
+              :title="$t('pages.admin.users.badges.privacyOfficerTitle')"
+              >{{ $t('pages.admin.users.badges.privacyOfficer') }}</el-tag
+            >
+          </div>
+        </template>
+      </el-table-column>
       <el-table-column :label="$t('common.actions')" width="100" align="right" fixed="right">
         <template #default="{ row }">
           <RowActions
@@ -398,18 +443,26 @@ function userActions(user: User): RowAction[] {
       </el-table-column>
     </DataTable>
 
+    <StaffRoleDialog
+      v-model:visible="staffRoleVisible"
+      :user="staffRoleUser"
+      :saving="settingStaffRole"
+      :error="staffRoleError"
+      @submit="saveStaffRole"
+    />
+
     <AdminPasswordDialog
-      v-model:visible="grantVisible"
-      :title="$t('pages.admin.users.grantAdmin.header')"
+      v-model:visible="officerVisible"
+      :title="$t('pages.admin.users.privacyOfficer.header')"
       :message="
-        $t('pages.admin.users.grantAdmin.message', { fullName: fullName(grantedUser ?? {}) })
+        $t('pages.admin.users.privacyOfficer.message', { fullName: fullName(officerUser ?? {}) })
       "
-      :confirm-label="$t('pages.admin.users.grantAdmin.confirm')"
-      input-id="grant-admin-password"
-      width="min(440px, 92vw)"
-      :saving="settingAdmin"
-      :error="grantError"
-      @submit="grantAdmin"
+      :confirm-label="$t('pages.admin.users.privacyOfficer.confirm')"
+      input-id="privacy-officer-password"
+      width="min(460px, 92vw)"
+      :saving="designatingOfficer"
+      :error="officerError"
+      @submit="designatePrivacyOfficer"
     />
 
     <AdminPasswordDialog
@@ -501,6 +554,14 @@ function userActions(user: User): RowAction[] {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.staff-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
 }
 
 .phone-cell__secondary {

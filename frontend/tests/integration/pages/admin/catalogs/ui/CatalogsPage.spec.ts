@@ -5,7 +5,7 @@ import { http, HttpResponse, paged, server } from '../../../../../support/server
 import { buildEventCategoryType, buildTermsDocument } from '../../../../../support/builders'
 
 describe('admin catalogs page', () => {
-  it('shows the event categories and terms documents catalogs', async () => {
+  it('shows editors the event categories and terms documents catalogs', async () => {
     server.use(
       http.get('/api/events/categoryType', () =>
         HttpResponse.json(paged([buildEventCategoryType()])),
@@ -13,7 +13,7 @@ describe('admin catalogs page', () => {
       http.get('/api/events/termsDocument', () => HttpResponse.json(paged([buildTermsDocument()]))),
     )
 
-    const { wrapper } = await renderApp('/admin/catalogs', { user: { isAdmin: true } })
+    const { wrapper } = await renderApp('/admin/catalogs', { user: { staffRole: 'Editor' } })
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Workshop'))
     expect(wrapper.text()).toContain(t('pages.admin.catalogs.header.title'))

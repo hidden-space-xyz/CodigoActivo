@@ -1,10 +1,10 @@
 using System.Security.Claims;
-using CodigoActivo.API.Attributes;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Queries;
 using CodigoActivo.Application.Accounts.Sessions;
+using CodigoActivo.Application.Common.Mapping;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Authentication;
@@ -123,10 +123,14 @@ public sealed class SessionTicketValidator(
             claims.Add(new Claim(ClaimTypes.Email, identity.Email));
         }
 
-        if (identity.IsAdmin)
+        claims.AddRange(
+            ClaimsPrincipalExtensions
+                .RolesOf(identity.StaffRole.ToDomain())
+                .Select(role => new Claim(ClaimTypes.Role, role))
+        );
+        if (identity.IsPrivacyOfficer)
         {
-            claims.Add(new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.TrueString));
-            claims.Add(new Claim(ClaimTypes.Role, AllowOnlyAdminAttribute.AdminRole));
+            claims.Add(new Claim(ClaimTypes.Role, ClaimsPrincipalExtensions.PrivacyOfficerRole));
         }
 
         return new ClaimsPrincipal(

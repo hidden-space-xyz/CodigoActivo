@@ -62,7 +62,7 @@ test.describe('admin user list', () => {
     ).toBeVisible()
     await users.table.filterBy('Tipo', 'Socio')
     await users.table.filterBy('Estado', 'Activo')
-    await users.table.filterBy('Admin', 'No')
+    await users.table.filterBy('Cargo', 'Sin cargo')
     await users.table.filterBy('Novedades', 'Sí')
     await users.table.searchColumn('DNI/NIE', person.nationalId)
 
@@ -71,7 +71,7 @@ test.describe('admin user list', () => {
     for (const chip of [
       'Tipo: Socio',
       'Estado: Activo',
-      'Admin: No',
+      'Cargo: Sin cargo',
       'Novedades: Sí',
       `DNI/NIE: ${person.nationalId}`,
     ]) {
@@ -100,7 +100,7 @@ test.describe('admin user list', () => {
       users.scopes.getByRole('radio', { name: 'Independientes', exact: true }),
     ).toBeChecked()
     await expect(users.table.count).toHaveText('1 resultado')
-    await expect(users.table.root.getByRole('button', { name: 'Filtrar por Admin' })).toBeVisible()
+    await expect(users.table.root.getByRole('button', { name: 'Filtrar por Cargo' })).toBeVisible()
 
     await users.showScope('Todos')
     await expect(users.table.count).toHaveText('3 resultados')
@@ -110,7 +110,7 @@ test.describe('admin user list', () => {
     await expect(
       users.table.root.getByRole('button', { name: 'Filtrar por Nacimiento' }),
     ).toBeVisible()
-    await expect(users.table.root.getByRole('button', { name: 'Filtrar por Admin' })).toBeHidden()
+    await expect(users.table.root.getByRole('button', { name: 'Filtrar por Cargo' })).toBeHidden()
     await expect(users.table.root.getByRole('button', { name: 'Buscar por Correo' })).toBeHidden()
     for (const dependent of parent.dependents) {
       const row = users.row(dependent)
@@ -148,7 +148,7 @@ test.describe('admin user list', () => {
     await expect(users.table.chips).toBeHidden()
   })
 
-  test('the own row is tagged and keeps its role and deletion out of reach', async ({
+  test('the own row is tagged with its cargo and keeps its type out of reach', async ({
     pageAs,
     admin,
   }) => {
@@ -158,47 +158,48 @@ test.describe('admin user list', () => {
     await users.find(self.lastName)
 
     await expect(users.row(self).getByText('Tú', { exact: true })).toBeVisible()
-    await expect(users.row(self).getByText('Admin', { exact: true })).toBeVisible()
+    await expect(users.row(self).getByText('Administrador', { exact: true })).toBeVisible()
     await users.openMenu(self)
 
     await expect(users.menuItem('Cambiar tipo')).toHaveAccessibleName(
       /Debe cambiarlo otro administrador/,
     )
     await expect(users.menuItem('Cambiar tipo')).toHaveAttribute('aria-disabled', 'true')
-    await expect(users.menuItem('Retirar administrador')).toHaveAccessibleName(
-      /Debe cambiarlo otro administrador/,
-    )
-    await expect(users.menuItem('Retirar administrador')).toHaveAttribute('aria-disabled', 'true')
-    await expect(users.menuItem('Eliminar')).toHaveAccessibleName(
-      /Elimina tu cuenta desde «Mi cuenta»/,
-    )
-    await expect(users.menuItem('Eliminar')).toHaveAttribute('aria-disabled', 'true')
+    await expect(users.menuItem('Cambiar cargo')).toHaveCount(0)
+    await expect(users.menuItem('Eliminar')).toHaveCount(0)
     await expect(users.menuItem('Escribir un correo')).not.toHaveAttribute('aria-disabled', 'true')
   })
 
-  test('the initial administrator can be neither demoted nor deleted', async ({
+  test('the superadministrator keeps its own cargo and account out of reach', async ({
     pageAs,
-    admin,
     initialAdmin,
   }) => {
-    const users = new UsersAdminPage(await pageAs(admin))
+    const users = new UsersAdminPage(await pageAs(initialAdmin))
     await users.open()
     await users.table.searchColumn('Correo', environment.initialAdminEmail)
 
     const owner = initialAdmin.account
-    await expect(users.row(owner).getByText('Admin', { exact: true })).toBeVisible()
-    await expect(users.row(owner).getByText('Tú', { exact: true })).toBeHidden()
+    await expect(users.row(owner).getByText('Superadministrador', { exact: true })).toBeVisible()
+    await expect(users.row(owner).getByText('Tú', { exact: true })).toBeVisible()
     await users.openMenu(owner)
 
-    await expect(users.menuItem('Retirar administrador')).toHaveAccessibleName(
-      /Cuenta de administración inicial/,
-    )
-    await expect(users.menuItem('Retirar administrador')).toHaveAttribute('aria-disabled', 'true')
-    await expect(users.menuItem('Eliminar')).toHaveAccessibleName(
-      /Cuenta de administración inicial/,
-    )
+    await expect(users.menuItem('Cambiar cargo')).toHaveCount(0)
+    await expect(users.menuItem('Eliminar')).toHaveAccessibleName(/Cuenta del superadministrador/)
     await expect(users.menuItem('Eliminar')).toHaveAttribute('aria-disabled', 'true')
-    await expect(users.menuItem('Cambiar tipo')).not.toHaveAttribute('aria-disabled', 'true')
+    await expect(users.menuItem('Designar responsable de protección de datos')).not.toHaveAttribute(
+      'aria-disabled',
+      'true',
+    )
+  })
+
+  test('the privacy officer is marked in the list', async ({ pageAs, admin, privacyOfficer }) => {
+    const users = new UsersAdminPage(await pageAs(admin))
+    await users.open()
+    await users.find(privacyOfficer.account.lastName)
+
+    await expect(
+      users.row(privacyOfficer.account).getByText('Protección de datos', { exact: true }),
+    ).toBeVisible()
   })
 
   test('someone who is not an administrator is sent home from the user list', async ({

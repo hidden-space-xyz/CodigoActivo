@@ -1304,10 +1304,10 @@
             }
           },
           {
-            "name": "isAdmin",
+            "name": "staffRole",
             "in": "query",
             "schema": {
-              "type": "boolean"
+              "$ref": "#/components/schemas/StaffRole"
             }
           },
           {
@@ -1647,10 +1647,10 @@
             }
           },
           {
-            "name": "isAdmin",
+            "name": "staffRole",
             "in": "query",
             "schema": {
-              "type": "boolean"
+              "$ref": "#/components/schemas/StaffRole"
             }
           },
           {
@@ -1845,6 +1845,252 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/events/termsDocument": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TermsDocumentResponsePagedResult"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Events"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTermsDocumentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TermsDocumentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/termsDocument/{termsDocumentId}": {
+      "put": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "termsDocumentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTermsDocumentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TermsDocumentResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "termsDocumentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/events/{eventId}/ratings": {
+      "get": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventRatingListItemResponsePagedResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{eventId}/rating": {
+      "put": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveEventRatingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK"
@@ -2142,172 +2388,6 @@
         }
       }
     },
-    "/api/events/categoryType": {
-      "get": {
-        "tags": [
-          "Events"
-        ],
-        "parameters": [
-          {
-            "name": "name",
-            "in": "query",
-            "schema": {
-              "maxLength": 200,
-              "type": "string"
-            }
-          },
-          {
-            "name": "color",
-            "in": "query",
-            "schema": {
-              "maxLength": 200,
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "pageSize",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "sort",
-            "in": "query",
-            "schema": {
-              "maxLength": 200,
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EventCategoryTypeResponsePagedResult"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Events"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateEventCategoryTypeRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/EventCategoryTypeResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/events/termsDocument": {
-      "get": {
-        "tags": [
-          "Events"
-        ],
-        "parameters": [
-          {
-            "name": "name",
-            "in": "query",
-            "schema": {
-              "maxLength": 200,
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "pageSize",
-            "in": "query",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "name": "sort",
-            "in": "query",
-            "schema": {
-              "maxLength": 200,
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TermsDocumentResponsePagedResult"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "Events"
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateTermsDocumentRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TermsDocumentResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/events/{eventId}/terms": {
       "get": {
         "tags": [
@@ -2404,6 +2484,47 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/withdraw": {
+      "post": {
+        "tags": [
+          "Events"
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "termsDocumentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
           }
         }
       }
@@ -2512,19 +2633,26 @@
         }
       }
     },
-    "/api/events/{eventId}/ratings": {
+    "/api/events/categoryType": {
       "get": {
         "tags": [
           "Events"
         ],
         "parameters": [
           {
-            "name": "eventId",
-            "in": "path",
-            "required": true,
+            "name": "name",
+            "in": "query",
             "schema": {
-              "type": "string",
-              "format": "uuid"
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "name": "color",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
             }
           },
           {
@@ -2558,63 +2686,36 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EventRatingListItemResponsePagedResult"
+                  "$ref": "#/components/schemas/EventCategoryTypeResponsePagedResult"
                 }
               }
             }
           }
         }
-      }
-    },
-    "/api/events/{eventId}/rating": {
-      "put": {
+      },
+      "post": {
         "tags": [
           "Events"
-        ],
-        "parameters": [
-          {
-            "name": "eventId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
         ],
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SaveEventRatingRequest"
+                "$ref": "#/components/schemas/CreateEventCategoryTypeRequest"
               }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Events"
-        ],
-        "parameters": [
-          {
-            "name": "eventId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventCategoryTypeResponse"
+                }
+              }
             }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
           }
         }
       }
@@ -2664,89 +2765,6 @@
         "parameters": [
           {
             "name": "eventCategoryTypeId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/events/termsDocument/{termsDocumentId}": {
-      "put": {
-        "tags": [
-          "Events"
-        ],
-        "parameters": [
-          {
-            "name": "termsDocumentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateTermsDocumentRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TermsDocumentResponse"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "Events"
-        ],
-        "parameters": [
-          {
-            "name": "termsDocumentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
-    "/api/files/{fileId}": {
-      "delete": {
-        "tags": [
-          "Files"
-        ],
-        "parameters": [
-          {
-            "name": "fileId",
             "in": "path",
             "required": true,
             "schema": {
@@ -2843,6 +2861,29 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/files/{fileId}": {
+      "delete": {
+        "tags": [
+          "Files"
+        ],
+        "parameters": [
+          {
+            "name": "fileId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
           }
         }
       }
@@ -3251,38 +3292,6 @@
         }
       }
     },
-    "/api/me/assigned-activities": {
-      "get": {
-        "tags": [
-          "Me"
-        ],
-        "parameters": [
-          {
-            "name": "eventId",
-            "in": "query",
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AssignedActivityResponse"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/me/event-history": {
       "get": {
         "tags": [
@@ -3319,6 +3328,60 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/EventCertificateResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/consents": {
+      "get": {
+        "tags": [
+          "Me"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MyConsentResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/assigned-activities": {
+      "get": {
+        "tags": [
+          "Me"
+        ],
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AssignedActivityResponse"
                   }
                 }
               }
@@ -4418,10 +4481,10 @@
             }
           },
           {
-            "name": "isAdmin",
+            "name": "staffRole",
             "in": "query",
             "schema": {
-              "type": "boolean"
+              "$ref": "#/components/schemas/StaffRole"
             }
           },
           {
@@ -4633,7 +4696,7 @@
         }
       }
     },
-    "/api/users/{userId}/admin": {
+    "/api/users/{userId}/staff-role": {
       "patch": {
         "tags": [
           "Users"
@@ -4653,7 +4716,39 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SetAdminRequest"
+                "$ref": "#/components/schemas/SetStaffRoleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/users/{userId}/privacy-officer": {
+      "post": {
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DesignatePrivacyOfficerRequest"
               }
             }
           }
@@ -4799,69 +4894,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/UserResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/withdraw": {
-      "post": {
-        "tags": [
-          "Events"
-        ],
-        "parameters": [
-          {
-            "name": "eventId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "userId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "termsDocumentId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "No Content"
-          }
-        }
-      }
-    },
-    "/api/me/consents": {
-      "get": {
-        "tags": [
-          "Me"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MyConsentResponse"
-                  }
                 }
               }
             }
@@ -5383,7 +5415,8 @@
           "PurgeAdultDependents",
           "ResetTwoFactor",
           "SendComingOfAgeNotices",
-          "SetAdmin",
+          "SetStaffRole",
+          "DesignatePrivacyOfficer",
           "UpdateUser",
           "PurgeDataHistory",
           "RequestBlockedDataConsultationCode",
@@ -5809,7 +5842,7 @@
           },
           "values": {
             "type": "object",
-            "additionalProperties": {}
+            "additionalProperties": { }
           }
         },
         "additionalProperties": false
@@ -6275,6 +6308,55 @@
         },
         "additionalProperties": false
       },
+      "DashboardBreakdownResponse": {
+        "required": [
+          "groups",
+          "series"
+        ],
+        "type": "object",
+        "properties": {
+          "groups": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "series": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardSeriesResponse"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardEventSatisfactionResponse": {
+        "required": [
+          "average",
+          "eventId",
+          "scored",
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "average": {
+            "type": "number",
+            "format": "double"
+          },
+          "scored": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "DashboardKpiResponse": {
         "required": [
           "inRange",
@@ -6388,6 +6470,105 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DashboardOccupancyEventResponse"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardPendingEventResponse": {
+        "required": [
+          "eventId",
+          "nextActivityStartsAt",
+          "oldestRequestedAt",
+          "pending",
+          "title"
+        ],
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string"
+          },
+          "pending": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "oldestRequestedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "nextActivityStartsAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardPendingSignupsResponse": {
+        "required": [
+          "events",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardPendingEventResponse"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardRoleCoverageResponse": {
+        "required": [
+          "confirmed",
+          "desired",
+          "key"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "confirmed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "desired": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DashboardSatisfactionResponse": {
+        "required": [
+          "events",
+          "scored"
+        ],
+        "type": "object",
+        "properties": {
+          "average": {
+            "type": "number",
+            "format": "double",
+            "nullable": true
+          },
+          "scored": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardEventSatisfactionResponse"
             }
           }
         },
@@ -6542,6 +6723,18 @@
             "type": "string"
           },
           "code": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DesignatePrivacyOfficerRequest": {
+        "required": [
+          "currentPassword"
+        ],
+        "type": "object",
+        "properties": {
+          "currentPassword": {
             "type": "string"
           }
         },
@@ -6782,12 +6975,14 @@
           "FileUploadInvalidImage",
           "UserNotFound",
           "UserSelfDeleteRequiresVerification",
-          "UserSelfAdminChangeForbidden",
+          "UserSelfStaffRoleChangeForbidden",
           "UserSelfTypeChangeForbidden",
           "UserDeleteInitialAdminForbidden",
           "UserCannotRemoveInitialAdmin",
-          "UserDependentCannotBeAdmin",
-          "UserPendingVerificationCannotBeAdmin",
+          "UserDependentCannotHoldStaffRole",
+          "UserPendingVerificationCannotHoldStaffRole",
+          "UserStaffRoleRequiresMember",
+          "UserPrivacyOfficerMustBeAdministrator",
           "ParentUserNotFound",
           "UserParentIsMinor",
           "UserChildBirthDateNotMinor",
@@ -8041,6 +8236,60 @@
         },
         "additionalProperties": false
       },
+      "EventTermsPersonDecisionResponse": {
+        "required": [
+          "accepted",
+          "decidedAt",
+          "termsDocumentId"
+        ],
+        "type": "object",
+        "properties": {
+          "termsDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "accepted": {
+            "type": "boolean"
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EventTermsPersonStateResponse": {
+        "required": [
+          "decidesOwnConsents",
+          "decisions",
+          "firstName",
+          "lastName",
+          "userId"
+        ],
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "decidesOwnConsents": {
+            "type": "boolean"
+          },
+          "decisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventTermsPersonDecisionResponse"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "EventTermsStateResponse": {
         "required": [
           "documents",
@@ -8503,6 +8752,63 @@
         ],
         "type": "string"
       },
+      "MyConsentResponse": {
+        "required": [
+          "accepted",
+          "decidedAt",
+          "decidedByName",
+          "documentName",
+          "eventId",
+          "eventStartsAt",
+          "eventTitle",
+          "personId",
+          "personName",
+          "termsDocumentId",
+          "withdrawn"
+        ],
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "eventTitle": {
+            "type": "string"
+          },
+          "eventStartsAt": {
+            "type": "string",
+            "format": "date"
+          },
+          "termsDocumentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "documentName": {
+            "type": "string"
+          },
+          "personId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "personName": {
+            "type": "string"
+          },
+          "accepted": {
+            "type": "boolean"
+          },
+          "withdrawn": {
+            "type": "boolean"
+          },
+          "decidedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decidedByName": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
       "NewsItemResponse": {
         "required": [
           "createdAt",
@@ -8750,9 +9056,10 @@
           "firstName",
           "gender",
           "id",
-          "isAdmin",
+          "isPrivacyOfficer",
           "lastName",
           "newsConsent",
+          "staffRole",
           "status",
           "twoFactorMethod",
           "userType"
@@ -8801,7 +9108,10 @@
           "status": {
             "type": "string"
           },
-          "isAdmin": {
+          "staffRole": {
+            "$ref": "#/components/schemas/StaffRole"
+          },
+          "isPrivacyOfficer": {
             "type": "boolean"
           },
           "twoFactorMethod": {
@@ -9059,6 +9369,37 @@
           "signedUpAt": {
             "type": "string",
             "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PersonalDataTermsDecisionChangeResponse": {
+        "required": [
+          "accepted",
+          "changedAt",
+          "decidedByName",
+          "documentVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "accepted": {
+            "type": "boolean"
+          },
+          "documentVersion": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "changedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "decidedByName": {
+            "type": "string"
+          },
+          "signature": {
+            "type": "string",
+            "format": "byte",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -9453,14 +9794,14 @@
         },
         "additionalProperties": false
       },
-      "SetAdminRequest": {
+      "SetStaffRoleRequest": {
         "required": [
-          "isAdmin"
+          "staffRole"
         ],
         "type": "object",
         "properties": {
-          "isAdmin": {
-            "type": "boolean"
+          "staffRole": {
+            "$ref": "#/components/schemas/StaffRole"
           },
           "currentPassword": {
             "type": "string",
@@ -9485,6 +9826,14 @@
           }
         },
         "additionalProperties": false
+      },
+      "StaffRole": {
+        "enum": [
+          "None",
+          "Editor",
+          "Administrator"
+        ],
+        "type": "string"
       },
       "TermsDecisionRequest": {
         "required": [
@@ -9512,6 +9861,13 @@
           }
         },
         "additionalProperties": false
+      },
+      "TermsDocumentKind": {
+        "enum": [
+          "Conditions",
+          "Consent"
+        ],
+        "type": "string"
       },
       "TermsDocumentResponse": {
         "required": [
@@ -9930,10 +10286,11 @@
           "firstName",
           "gender",
           "id",
-          "isAdmin",
           "isInitialAdmin",
+          "isPrivacyOfficer",
           "lastName",
           "newsConsent",
+          "staffRole",
           "status",
           "twoFactorMethod"
         ],
@@ -10007,7 +10364,10 @@
           "status": {
             "$ref": "#/components/schemas/UserStatusResponse"
           },
-          "isAdmin": {
+          "staffRole": {
+            "$ref": "#/components/schemas/StaffRole"
+          },
+          "isPrivacyOfficer": {
             "type": "boolean"
           },
           "isInitialAdmin": {
@@ -10162,303 +10522,6 @@
         "properties": {
           "otp": {
             "type": "string"
-          }
-        },
-        "additionalProperties": false
-      },
-      "DashboardBreakdownResponse": {
-        "required": [
-          "groups",
-          "series"
-        ],
-        "type": "object",
-        "properties": {
-          "groups": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "series": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DashboardSeriesResponse"
-            }
-          }
-        },
-        "additionalProperties": false
-      },
-      "DashboardEventSatisfactionResponse": {
-        "required": [
-          "average",
-          "eventId",
-          "scored",
-          "title"
-        ],
-        "type": "object",
-        "properties": {
-          "eventId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "title": {
-            "type": "string"
-          },
-          "average": {
-            "type": "number",
-            "format": "double"
-          },
-          "scored": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
-      "DashboardPendingEventResponse": {
-        "required": [
-          "eventId",
-          "nextActivityStartsAt",
-          "oldestRequestedAt",
-          "pending",
-          "title"
-        ],
-        "type": "object",
-        "properties": {
-          "eventId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "title": {
-            "type": "string"
-          },
-          "pending": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "oldestRequestedAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "nextActivityStartsAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "additionalProperties": false
-      },
-      "DashboardPendingSignupsResponse": {
-        "required": [
-          "events",
-          "total"
-        ],
-        "type": "object",
-        "properties": {
-          "total": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "events": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DashboardPendingEventResponse"
-            }
-          }
-        },
-        "additionalProperties": false
-      },
-      "DashboardRoleCoverageResponse": {
-        "required": [
-          "confirmed",
-          "desired",
-          "key"
-        ],
-        "type": "object",
-        "properties": {
-          "key": {
-            "type": "string"
-          },
-          "confirmed": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "desired": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
-      "DashboardSatisfactionResponse": {
-        "required": [
-          "events",
-          "scored"
-        ],
-        "type": "object",
-        "properties": {
-          "average": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
-          },
-          "scored": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "events": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DashboardEventSatisfactionResponse"
-            }
-          }
-        },
-        "additionalProperties": false
-      },
-      "EventTermsPersonDecisionResponse": {
-        "required": [
-          "accepted",
-          "decidedAt",
-          "termsDocumentId"
-        ],
-        "type": "object",
-        "properties": {
-          "termsDocumentId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "accepted": {
-            "type": "boolean"
-          },
-          "decidedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        },
-        "additionalProperties": false
-      },
-      "EventTermsPersonStateResponse": {
-        "required": [
-          "decidesOwnConsents",
-          "decisions",
-          "firstName",
-          "lastName",
-          "userId"
-        ],
-        "type": "object",
-        "properties": {
-          "userId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "firstName": {
-            "type": "string"
-          },
-          "lastName": {
-            "type": "string"
-          },
-          "decidesOwnConsents": {
-            "type": "boolean"
-          },
-          "decisions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/EventTermsPersonDecisionResponse"
-            }
-          }
-        },
-        "additionalProperties": false
-      },
-      "TermsDocumentKind": {
-        "enum": [
-          "Conditions",
-          "Consent"
-        ],
-        "type": "string"
-      },
-      "MyConsentResponse": {
-        "required": [
-          "accepted",
-          "decidedAt",
-          "decidedByName",
-          "documentName",
-          "eventId",
-          "eventStartsAt",
-          "eventTitle",
-          "personId",
-          "personName",
-          "termsDocumentId",
-          "withdrawn"
-        ],
-        "type": "object",
-        "properties": {
-          "eventId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "eventTitle": {
-            "type": "string"
-          },
-          "eventStartsAt": {
-            "type": "string",
-            "format": "date"
-          },
-          "termsDocumentId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "documentName": {
-            "type": "string"
-          },
-          "personId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "personName": {
-            "type": "string"
-          },
-          "accepted": {
-            "type": "boolean"
-          },
-          "withdrawn": {
-            "type": "boolean"
-          },
-          "decidedAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "decidedByName": {
-            "type": "string"
-          }
-        },
-        "additionalProperties": false
-      },
-      "PersonalDataTermsDecisionChangeResponse": {
-        "required": [
-          "accepted",
-          "changedAt",
-          "decidedByName",
-          "documentVersion"
-        ],
-        "type": "object",
-        "properties": {
-          "accepted": {
-            "type": "boolean"
-          },
-          "documentVersion": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "changedAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "decidedByName": {
-            "type": "string"
-          },
-          "signature": {
-            "type": "string",
-            "format": "byte",
-            "nullable": true
           }
         },
         "additionalProperties": false

@@ -148,9 +148,15 @@ public class User : AggregateRoot<UserId>
     public UserType UserType { get; private set; }
 
     /// <summary>
-    /// Gets a value indicating whether the account has administrator rights.
+    /// Gets the staff role of the account.
     /// </summary>
-    public bool IsAdmin { get; private set; }
+    public StaffRole StaffRole { get; private set; }
+
+    /// <summary>
+    /// Gets a value indicating whether the account is the one designated for data protection,
+    /// which only one account is at any time.
+    /// </summary>
+    public bool IsPrivacyOfficer { get; private set; }
 
     /// <summary>
     /// Gets the emailed code that verifies the email of a new account.
@@ -970,8 +976,9 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Creates the initial administrator: an active member with administrator rights and a
-    /// placeholder DNI, the account that keeps the application administered.
+    /// Creates the initial administrator: an active member who is an administrator, designated for
+    /// data protection until another account is, with a placeholder DNI; the account that keeps the
+    /// application administered.
     /// </summary>
     /// <param name="email">Normalized email address.</param>
     /// <param name="passwordHash">Hash of the password.</param>
@@ -997,7 +1004,8 @@ public class User : AggregateRoot<UserId>
             Gender = Gender.Other,
             Status = UserStatus.Active,
             UserType = UserType.Member,
-            IsAdmin = true,
+            StaffRole = StaffRole.Administrator,
+            IsPrivacyOfficer = true,
             CreatedAt = now,
         };
     }
@@ -1203,39 +1211,46 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Changes the membership type and raises <see cref="UserTypeChanged"/>.
+    /// Changes the membership type and raises <see cref="UserTypeChanged"/>. An account with a
+    /// staff role stays a member.
     /// </summary>
     /// <param name="userType">New membership type.</param>
     /// <param name="now">Current time.</param>
-    public void ChangeType(UserType userType, DateTimeOffset now)
+    /// <returns>
+    /// Success, or <see cref="DomainErrorCode.UserStaffRoleRequiresMember"/> when an account with a
+    /// staff role would stop being a member.
+    /// </returns>
+    public Result ChangeType(UserType userType, DateTimeOffset now)
     {
+        if (StaffRole is not StaffRole.None && userType is not UserType.Member)
+        {
+            return Error.Validation(DomainErrorCode.UserStaffRoleRequiresMember);
+        }
+
         UserType = userType;
         UpdatedAt = now;
         Raise(new UserTypeChanged(Id));
+        return Result.Success();
     }
 
     /// <summary>
-    /// Grants or revokes the administrator rights. A dependent, who never signs in, never gets them,
-    /// nor does an account whose email is still unconfirmed, and the initial administrator never
-    /// loses them.
+    /// Changes the staff role. Only a member who signs in by itself and confirmed its email gets
+    /// one, the initial administrator always stays an administrator, and so does the account
+    /// designated for data protection until another account is designated.
     /// </summary>
-    /// <param name="isAdmin">Whether the account is an administrator from now on.</param>
+    /// <param name="staffRole">Staff role of the account from now on.</param>
     /// <param name="now">Current time.</param>
     /// <returns>
-    /// Whether the rights changed, raising <see cref="AdministratorRightsChanged"/> when they did, or
-    /// <see cref="DomainErrorCode.UserDependentCannotBeAdmin"/> for a dependent,
-    /// <see cref="DomainErrorCode.UserPendingVerificationCannotBeAdmin"/> for an unconfirmed
-    /// account, or <see cref="DomainErrorCode.UserCannotRemoveInitialAdmin"/> when they would be
-    /// taken from the initial administrator.
+    /// Whether the role changed, raising <see cref="StaffRoleChanged"/> when it did, the error of
+    /// <see cref="EnsureMayHoldStaffRole"/> when the account may hold none,
+    /// <see cref="DomainErrorCode.UserCannotRemoveInitialAdmin"/> when the initial administrator
+    /// would stop being an administrator, or
+    /// <see cref="DomainErrorCode.UserPrivacyOfficerMustBeAdministrator"/> when the account
+    /// designated for data protection would.
     /// </returns>
-    public Result<bool> SetAdministrator(bool isAdmin, DateTimeOffset now)
+    public Result<bool> ChangeStaffRole(StaffRole staffRole, DateTimeOffset now)
     {
-        if (isAdmin && IsDependent)
-        {
-            return Error.Validation(DomainErrorCode.UserDependentCannotBeAdmin);
-        }
-
-        if (!isAdmin)
+        if (staffRole is not StaffRole.Administrator)
         {
             var revocable = InitialAdministrator.EnsureMayLoseAdminRights(Id);
             if (revocable.IsFailure)
@@ -1244,19 +1259,123 @@ public class User : AggregateRoot<UserId>
             }
         }
 
-        if (IsAdmin == isAdmin)
+        if (StaffRole == staffRole)
         {
             return false;
         }
 
-        if (isAdmin && IsPendingVerification)
+        if (staffRole is not StaffRole.None)
         {
-            return Error.Validation(DomainErrorCode.UserPendingVerificationCannotBeAdmin);
+            var eligible = EnsureMayHoldStaffRole();
+            if (eligible.IsFailure)
+            {
+                return eligible.Error!;
+            }
         }
 
-        IsAdmin = isAdmin;
+        if (IsPrivacyOfficer && staffRole is not StaffRole.Administrator)
+        {
+            return Error.Validation(DomainErrorCode.UserPrivacyOfficerMustBeAdministrator);
+        }
+
+        StaffRole = staffRole;
         UpdatedAt = now;
-        Raise(new AdministratorRightsChanged(Id, isAdmin));
+        Raise(new StaffRoleChanged(Id, staffRole));
         return true;
+    }
+
+    /// <summary>
+    /// Designates the account for data protection. The account designated until now must be
+    /// released first, since only one account is designated at any time.
+    /// </summary>
+    /// <param name="now">Current time.</param>
+    /// <returns>
+    /// Whether the designation changed, raising <see cref="PrivacyOfficerChanged"/> when it did, or
+    /// the error of <see cref="EnsureMayBePrivacyOfficer"/> when the account may not be designated.
+    /// </returns>
+    public Result<bool> DesignateAsPrivacyOfficer(DateTimeOffset now)
+    {
+        if (IsPrivacyOfficer)
+        {
+            return false;
+        }
+
+        var eligible = EnsureMayBePrivacyOfficer();
+        if (eligible.IsFailure)
+        {
+            return eligible.Error!;
+        }
+
+        IsPrivacyOfficer = true;
+        UpdatedAt = now;
+        Raise(new PrivacyOfficerChanged(Id, true));
+        return true;
+    }
+
+    /// <summary>
+    /// Ends the designation of the account for data protection, raising
+    /// <see cref="PrivacyOfficerChanged"/> when it was designated; another account is designated
+    /// in the same transaction.
+    /// </summary>
+    /// <param name="now">Current time.</param>
+    public void ReleasePrivacyOfficer(DateTimeOffset now)
+    {
+        if (!IsPrivacyOfficer)
+        {
+            return;
+        }
+
+        IsPrivacyOfficer = false;
+        UpdatedAt = now;
+        Raise(new PrivacyOfficerChanged(Id, false));
+    }
+
+    /// <summary>
+    /// Checks that the account may hold a staff role: it signs in by itself, its email is
+    /// confirmed and it is a member.
+    /// </summary>
+    /// <returns>
+    /// Success, <see cref="DomainErrorCode.UserDependentCannotHoldStaffRole"/> for a dependent,
+    /// <see cref="DomainErrorCode.UserPendingVerificationCannotHoldStaffRole"/> for an unconfirmed
+    /// account, or <see cref="DomainErrorCode.UserStaffRoleRequiresMember"/> for an account that is
+    /// not a member.
+    /// </returns>
+    public Result EnsureMayHoldStaffRole()
+    {
+        if (IsDependent)
+        {
+            return Error.Validation(DomainErrorCode.UserDependentCannotHoldStaffRole);
+        }
+
+        if (IsPendingVerification)
+        {
+            return Error.Validation(DomainErrorCode.UserPendingVerificationCannotHoldStaffRole);
+        }
+
+        return UserType is UserType.Member
+            ? Result.Success()
+            : Error.Validation(DomainErrorCode.UserStaffRoleRequiresMember);
+    }
+
+    /// <summary>
+    /// Checks that the account may be designated for data protection: it may hold a staff role and
+    /// it is an administrator.
+    /// </summary>
+    /// <returns>
+    /// Success, the error of <see cref="EnsureMayHoldStaffRole"/>, or
+    /// <see cref="DomainErrorCode.UserPrivacyOfficerMustBeAdministrator"/> for an account that is
+    /// not an administrator.
+    /// </returns>
+    public Result EnsureMayBePrivacyOfficer()
+    {
+        var eligible = EnsureMayHoldStaffRole();
+        if (eligible.IsFailure)
+        {
+            return eligible;
+        }
+
+        return StaffRole is StaffRole.Administrator
+            ? Result.Success()
+            : Error.Validation(DomainErrorCode.UserPrivacyOfficerMustBeAdministrator);
     }
 }

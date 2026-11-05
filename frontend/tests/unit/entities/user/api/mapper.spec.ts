@@ -6,7 +6,15 @@ import { buildDependentResponse, buildUserResponse, omit } from '../../../../sup
 
 describe('toUser', () => {
   it('maps an independent account for the admin screens', () => {
-    expect(toUser(buildUserResponse({ secondaryPhone: '611111111', isAdmin: true }))).toEqual({
+    expect(
+      toUser(
+        buildUserResponse({
+          secondaryPhone: '611111111',
+          staffRole: 'Editor',
+          isPrivacyOfficer: true,
+        }),
+      ),
+    ).toEqual({
       id: 'user-1',
       firstName: 'Ada',
       lastName: 'Lovelace',
@@ -17,8 +25,9 @@ describe('toUser', () => {
       nationalId: '12345678Z',
       newsConsent: false,
       gender: 'Female',
-      isAdmin: true,
+      staffRole: 'Editor',
       isInitialAdmin: false,
+      isPrivacyOfficer: true,
       usesAuthenticator: false,
       parentId: null,
       parentName: '',

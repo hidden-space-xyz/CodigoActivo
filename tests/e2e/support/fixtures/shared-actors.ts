@@ -1,6 +1,8 @@
 import {
+  changeUserType,
+  designatePrivacyOfficer,
   findUser,
-  grantAdmin,
+  grantStaffRole,
   registerAccount,
   resetPassword,
   signIn,
@@ -28,17 +30,21 @@ export async function takeOver(api: ApiClient, mailbox: Mailbox, email: string):
 }
 
 /**
- * Makes `email` an administrator, registering it first when nobody has it, and signs it in on
- * `api`. The deployment designates that address as the privacy officer.
+ * Has the initial administrator make `email` a member and an administrator and designate it for
+ * data protection, registering it first when nobody has it, and signs it in on `api`.
  */
-export async function takeOverAdministrator(
+export async function takeOverPrivacyOfficer(
   initialAdmin: ApiClient,
   api: ApiClient,
   mailbox: Mailbox,
   email: string,
 ): Promise<Account> {
   const existing = await findUser(initialAdmin, email)
-  const id = existing?.id ?? (await registerAccount(api, mailbox, { label: 'admin', email })).id
-  if (!existing?.isAdmin) await grantAdmin(initialAdmin, id)
+  const id = existing?.id ?? (await registerAccount(api, mailbox, { label: 'officer', email })).id
+  if (!existing?.isPrivacyOfficer) {
+    await changeUserType(initialAdmin, id, 'member')
+    await grantStaffRole(initialAdmin, id, 'Administrator')
+    await designatePrivacyOfficer(initialAdmin, id)
+  }
   return takeOver(api, mailbox, email)
 }

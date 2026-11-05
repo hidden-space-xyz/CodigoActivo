@@ -2,6 +2,7 @@ import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { ElDrawer } from 'element-plus'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { AuthUser } from '@/entities/session'
 import { SiteHeader } from '@/widgets/site-header'
 
 import { renderWithProviders, t } from '../../../../support/render'
@@ -70,7 +71,7 @@ describe('SiteHeader', () => {
 
   it('greets signed-in users and links to their account without admin access', async () => {
     const { wrapper } = await renderWithProviders(SiteHeader, {
-      user: { firstName: 'Grace', isAdmin: false },
+      user: { firstName: 'Grace' },
       route: '/account',
       attach: true,
     })
@@ -84,16 +85,21 @@ describe('SiteHeader', () => {
     expect(wrapper.find('button.header__cta').text()).toBe(t('common.logout'))
   })
 
-  it('links administrators to the admin dashboard', async () => {
-    const { wrapper } = await renderWithProviders(SiteHeader, {
-      user: { isAdmin: true },
-      attach: true,
-    })
+  it('links editors, administrators and the data protection officer to the admin area', async () => {
+    const adminLink = async (user: Partial<AuthUser>) => {
+      const { wrapper } = await renderWithProviders(SiteHeader, { user, attach: true })
+      const link = wrapper
+        .findAll('.header__nav .header__link')
+        .find((candidate) => candidate.text() === t('common.admin'))
+      const href = link?.attributes('href') ?? null
+      wrapper.unmount()
+      return href
+    }
 
-    const admin = wrapper
-      .findAll('.header__nav .header__link')
-      .find((link) => link.text() === t('common.admin'))
-    expect(admin?.attributes('href')).toBe('/admin/dashboard')
+    expect(await adminLink({ staffRole: 'Administrator' })).toBe('/admin')
+    expect(await adminLink({ staffRole: 'Editor' })).toBe('/admin')
+    expect(await adminLink({ isPrivacyOfficer: true })).toBe('/admin')
+    expect(await adminLink({})).toBeNull()
   })
 
   it('signs out, clears the session and goes to login', async () => {
@@ -140,7 +146,7 @@ describe('SiteHeader', () => {
 
     it('shows the greeting, account and admin links for signed-in administrators', async () => {
       const { wrapper } = await renderWithProviders(SiteHeader, {
-        user: { firstName: 'Ada', isAdmin: true },
+        user: { firstName: 'Ada', staffRole: 'Administrator' },
         route: '/account',
         attach: true,
       })
@@ -173,7 +179,7 @@ describe('SiteHeader', () => {
 
     it('closes after following a link', async () => {
       const { wrapper, router } = await renderWithProviders(SiteHeader, {
-        user: { isAdmin: true },
+        user: { staffRole: 'Administrator' },
         attach: true,
       })
 

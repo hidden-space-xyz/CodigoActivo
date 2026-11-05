@@ -18,7 +18,8 @@ public sealed record ChangeUserTypeCommand(UserId UserId, UserType UserType) : I
 
 /// <summary>
 /// Executes the command to change the membership type of a user. Nobody changes their own type,
-/// administrators included. Setting the type the user already has changes nothing.
+/// administrators included, and an account with a staff role stays a member. Setting the type the
+/// user already has changes nothing.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
@@ -36,8 +37,9 @@ public sealed class ChangeUserTypeCommandHandler(
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
     /// A task whose result reports success;
-    /// <see cref="ApplicationErrorCode.UserSelfTypeChangeForbidden"/> for the caller's own account or
-    /// <see cref="ApplicationErrorCode.UserNotFound"/>.
+    /// <see cref="ApplicationErrorCode.UserSelfTypeChangeForbidden"/> for the caller's own account,
+    /// <see cref="ApplicationErrorCode.UserNotFound"/> or
+    /// <see cref="DomainErrorCode.UserStaffRoleRequiresMember"/> for an account with a staff role.
     /// </returns>
     public async Task<Result> HandleAsync(
         ChangeUserTypeCommand command,
@@ -57,11 +59,8 @@ public sealed class ChangeUserTypeCommandHandler(
             return Error.NotFound(ApplicationErrorCode.UserNotFound);
         }
 
-        if (user.UserType != command.UserType)
-        {
-            user.ChangeType(command.UserType, clock.UtcNow);
-        }
-
-        return Result.Success();
+        return user.UserType == command.UserType
+            ? Result.Success()
+            : user.ChangeType(command.UserType, clock.UtcNow);
     }
 }

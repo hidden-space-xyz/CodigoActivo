@@ -8,6 +8,7 @@ using CodigoActivo.Application.Participation.Contracts;
 using CodigoActivo.Application.Participation.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using EventId = CodigoActivo.Domain.Events.EventId;
@@ -32,7 +33,7 @@ public class EventRatingsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a page of ratings, or an error response.</returns>
     [HttpGet("{eventId:guid}/ratings")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<PagedResult<EventRatingListItemResponse>>> RatingsAsync(
         Guid eventId,
         [FromQuery] EventRatingListQuery query,

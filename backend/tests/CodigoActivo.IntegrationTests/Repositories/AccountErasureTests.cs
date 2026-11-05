@@ -3,6 +3,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.TermsDecisions;
@@ -413,7 +414,8 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             new UserRepository(db, uow),
             new AccountErasureStore(db),
             scope.ServiceProvider.GetRequiredService<ConsentWithdrawalNotifier>(),
-            uow
+            uow,
+            scope.ServiceProvider.GetRequiredService<IClock>()
         );
         return await eraser.EraseAsync(user, Ct);
     }

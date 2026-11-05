@@ -1,6 +1,9 @@
 /** Second factor a user presents after the password: an emailed code or an authenticator app. */
 type TwoFactorMethod = 'Email' | 'Authenticator'
 
+/** Cargo of an account in the admin area; an administrator can do everything an editor can. */
+type StaffRole = 'None' | 'Editor' | 'Administrator'
+
 /** Signed-in user held by the session; missing text fields are empty strings. */
 export interface AuthUser {
   readonly id: string
@@ -8,7 +11,15 @@ export interface AuthUser {
   readonly lastName: string
   readonly email: string
   readonly phone: string
-  readonly isAdmin: boolean
+  /** Cargo of the account; `None` for those who only use the public site. */
+  readonly staffRole: StaffRole
+  /**
+   * The superadministrator, the initial account: the only one that changes cargos, designates the
+   * data protection officer and deletes other accounts.
+   */
+  readonly isSuperAdmin: boolean
+  /** The account designated as the data protection officer, whatever its cargo. */
+  readonly isPrivacyOfficer: boolean
   /** Whether the account may sign up during the early signup, as the API decides. */
   readonly earlySignupEligible: boolean
   /** Second factor the user presents after the password; every account has one. */

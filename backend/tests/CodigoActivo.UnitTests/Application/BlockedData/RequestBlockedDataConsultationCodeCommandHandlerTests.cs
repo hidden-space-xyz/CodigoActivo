@@ -42,11 +42,7 @@ public sealed class RequestBlockedDataConsultationCodeCommandHandlerTests
             options
         );
         sut = new RequestBlockedDataConsultationCodeCommandHandler(
-            new PrivacyOfficer(
-                new PrivacyOfficerOptions { Email = OfficerEmail },
-                users,
-                currentUser
-            ),
+            new PrivacyOfficer(users, currentUser),
             AccountLocks.Create(users, uow),
             clock,
             PasswordGuards.Create(
@@ -68,6 +64,7 @@ public sealed class RequestBlockedDataConsultationCodeCommandHandlerTests
     {
         var user = NewUser(
             isAdmin: true,
+            isPrivacyOfficer: email == OfficerEmail,
             email: email,
             passwordHash: FakePasswordHasher.Prefix + Password
         );

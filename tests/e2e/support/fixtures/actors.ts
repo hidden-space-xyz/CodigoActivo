@@ -4,7 +4,7 @@ import type { UserResponse } from '@contract/userResponse'
 
 import {
   changeUserType,
-  grantAdmin,
+  grantStaffRole,
   registerAccount,
   signIn,
   type Account,
@@ -25,10 +25,11 @@ export interface Actor {
 /** A shared account the setup project signed in, saved for the workers. */
 export type SharedActorName = 'initial-admin' | 'privacy-officer'
 
-/** How to create an account: what to register, its type and whether it administers the site. */
+/** How to create an account: what to register, its type and its staff role, which needs a member. */
 export interface ActorOptions extends Registration {
   readonly type?: UserTypeName
   readonly admin?: boolean
+  readonly editor?: boolean
 }
 
 interface SavedActor {
@@ -82,8 +83,8 @@ export async function actorFor(
 }
 
 /**
- * Registers and verifies a new account, makes it an administrator or changes its type through
- * `initialAdmin` when asked, and returns it without signing it in.
+ * Registers and verifies a new account, makes it an administrator or an editor or changes its type
+ * through `initialAdmin` when asked, and returns it without signing it in.
  */
 export async function createAccount(
   options: ActorOptions,
@@ -92,9 +93,10 @@ export async function createAccount(
   initialAdmin: Actor,
 ): Promise<Account> {
   const account = await registerAccount(anonymous, mailbox, options, initialAdmin.api)
-  if (options.admin) await grantAdmin(initialAdmin.api, account.id)
   if (options.type && options.type !== 'participant') {
     await changeUserType(initialAdmin.api, account.id, options.type)
   }
+  if (options.admin) await grantStaffRole(initialAdmin.api, account.id, 'Administrator')
+  else if (options.editor) await grantStaffRole(initialAdmin.api, account.id, 'Editor')
   return account
 }

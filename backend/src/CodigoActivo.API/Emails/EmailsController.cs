@@ -43,7 +43,7 @@ public class EmailsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the messages queued and skipped, or an error response.</returns>
     [HttpPost("users/{userId:guid}")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     [Consumes("multipart/form-data")]
     [FileUploadSizeLimit]
     [EnableRateLimiting(SecurityPolicies.SingleRecipientEmail)]
@@ -87,7 +87,7 @@ public class EmailsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the messages queued and skipped, or an error response.</returns>
     [HttpPost("users")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     [Consumes("multipart/form-data")]
     [FileUploadSizeLimit]
     [EnableRateLimiting(SecurityPolicies.BulkEmail)]
@@ -132,7 +132,7 @@ public class EmailsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the messages queued and skipped, or an error response.</returns>
     [HttpPost("events/{eventId:guid}/attendees")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     [Consumes("multipart/form-data")]
     [FileUploadSizeLimit]
     [EnableRateLimiting(SecurityPolicies.BulkEmail)]
@@ -174,7 +174,7 @@ public class EmailsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the audience summary, or an error response.</returns>
     [HttpGet("users/audience")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<EmailAudienceResponse>> GetUsersAudienceAsync(
         [FromQuery] UserListQuery query,
         [FromServices]
@@ -195,7 +195,7 @@ public class EmailsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the audience summary, or an error response.</returns>
     [HttpGet("events/{eventId:guid}/attendees/audience")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<EmailAudienceResponse>> GetEventAttendeesAudienceAsync(
         Guid eventId,
         [FromQuery] EventAttendeeListQuery query,

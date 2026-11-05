@@ -14,8 +14,8 @@ public interface ICurrentUser
     public UserId? Id { get; }
 
     /// <summary>
-    /// Gets a value indicating whether the signed-in user is an administrator; <see langword="false"/>
-    /// when nobody is signed in.
+    /// Gets a value indicating whether the signed-in user is an administrator, the initial
+    /// administrator included; <see langword="false"/> when nobody is signed in.
     /// </summary>
     public bool IsAdmin { get; }
 }

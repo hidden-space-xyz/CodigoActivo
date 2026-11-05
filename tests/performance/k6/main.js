@@ -67,6 +67,7 @@ function adminSpecs(runId, pools) {
     .map((spec, index) => ({
       ...spec,
       grantAdmin: true,
+      userTypeId: LOOKUPS.userTypes.member,
       actor: 'admin',
       ipIndex: FIRST_IP.admins + index,
     }))
@@ -103,6 +104,7 @@ export function setup() {
     ),
     members: members.map(account),
     demoMembers: demoMembers.map(account),
+    auditor: account(admin),
     fixtures: { ...fixtures, roster },
   }
 }

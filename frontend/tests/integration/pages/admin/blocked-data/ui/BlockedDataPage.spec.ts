@@ -118,7 +118,7 @@ async function renderPage(twoFactorMethod: 'Email' | 'Authenticator' = 'Authenti
   const rendered = await renderWithProviders(BlockedDataPage, {
     route: '/admin/blocked-data',
     attach: true,
-    user: { isAdmin: true, email: 'dpd@example.test', twoFactorMethod },
+    user: { staffRole: 'Administrator', email: 'dpd@example.test', twoFactorMethod },
   })
   await flushPromises()
   return rendered

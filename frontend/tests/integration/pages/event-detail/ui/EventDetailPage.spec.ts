@@ -195,7 +195,7 @@ describe('event detail page', () => {
     it('does not show the tab to a user who leads no running activity', async () => {
       serveEvent(buildEventResponse())
 
-      const { wrapper, requests } = await renderPage({ isAdmin: true }, [])
+      const { wrapper, requests } = await renderPage({ staffRole: 'Administrator' }, [])
 
       await vi.waitFor(() => expect(requests).toEqual(['event-1']))
       await flushPromises()

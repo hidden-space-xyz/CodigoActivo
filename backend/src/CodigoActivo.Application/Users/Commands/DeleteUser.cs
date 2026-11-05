@@ -17,9 +17,9 @@ public sealed record DeleteUserCommand(UserId UserId) : ICommand<Result>;
 
 /// <summary>
 /// Executes the command to delete the user and their dependents, keeping their data history blocked
-/// and handing the content credited to them over to the initial administrator. It serves an
-/// administrator removing somebody else, another administrator included, and a guardian removing
-/// one of their minors; deleting one's own account goes through
+/// and handing the content credited to them over to the initial administrator. It serves the
+/// initial administrator removing somebody else and a guardian removing one of their minors; no
+/// other administrator deletes accounts; deleting one's own account goes through
 /// <see cref="DeleteOwnAccountCommand"/>, which also demands the password and the second factor.
 /// The initial administrator is never deleted.
 /// </summary>
@@ -41,8 +41,8 @@ public sealed class DeleteUserCommandHandler(
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
     /// A task whose result reports success;
-    /// <see cref="ApplicationErrorCode.ActingForAnotherUserForbidden"/> when the caller is neither an
-    /// administrator nor the guardian, <see cref="DomainErrorCode.UserDeleteInitialAdminForbidden"/>
+    /// <see cref="ApplicationErrorCode.ActingForAnotherUserForbidden"/> when the caller is neither the
+    /// initial administrator nor the guardian, <see cref="DomainErrorCode.UserDeleteInitialAdminForbidden"/>
     /// for the initial administrator,
     /// <see cref="ApplicationErrorCode.UserSelfDeleteRequiresVerification"/> for the caller's own
     /// account, or <see cref="ApplicationErrorCode.UserNotFound"/> when the user is missing or was
@@ -52,7 +52,10 @@ public sealed class DeleteUserCommandHandler(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        var allowed = await actingUser.EnsureMayActForAsync(command.UserId, ct);
+        var allowed =
+            currentUser.RequiredId() == InitialAdministrator.Id
+                ? Result.Success()
+                : await actingUser.EnsureMayManagePersonalDataAsync(command.UserId, ct);
         if (allowed.IsFailure)
         {
             return allowed;

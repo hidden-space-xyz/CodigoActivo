@@ -12,6 +12,7 @@ using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
+using StaffRole = CodigoActivo.Domain.Users.StaffRole;
 
 namespace CodigoActivo.API.Legal;
 
@@ -55,7 +56,7 @@ public class LegalPoliciesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the version in force, or an error response.</returns>
     [HttpPut("{kind}")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<LegalPolicyResponse>> PublishAsync(
         [EnumDataType(typeof(LegalPolicyKind))] LegalPolicyKind kind,
         [FromBody] PublishLegalPolicyRequest request,
@@ -78,7 +79,7 @@ public class LegalPoliciesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the versions, or an error response when none was published yet.</returns>
     [HttpGet("{kind}/versions")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<IReadOnlyList<LegalPolicyVersionResponse>>> ListVersionsAsync(
         [EnumDataType(typeof(LegalPolicyKind))] LegalPolicyKind kind,
         [FromServices]
@@ -101,7 +102,7 @@ public class LegalPoliciesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the version, or an error response when the policy has none with that number.</returns>
     [HttpGet("{kind}/versions/{version:int}")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<LegalPolicyResponse>> GetVersionAsync(
         [EnumDataType(typeof(LegalPolicyKind))] LegalPolicyKind kind,
         int version,

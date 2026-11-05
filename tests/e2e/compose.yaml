@@ -6,7 +6,6 @@ x-database: &database
 
 x-accounts: &accounts
   BOOTSTRAP_ADMIN_EMAIL: admin@e2e.codigoactivo.test
-  PRIVACY_OFFICER_EMAIL: privacy@e2e.codigoactivo.test
 
 services:
   secrets:

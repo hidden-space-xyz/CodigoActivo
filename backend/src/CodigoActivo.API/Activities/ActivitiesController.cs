@@ -125,7 +125,7 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the activity roles.</returns>
     [HttpGet("roleType")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<ActionResult<IReadOnlyList<ActivityRoleTypeResponse>>> RoleTypesAsync(
         [FromServices]
             IQueryHandler<
@@ -165,7 +165,7 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the signup statuses.</returns>
     [HttpGet("assignment-status-types")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<
         ActionResult<IReadOnlyList<AssignmentStatusTypeResponse>>
     > AssignmentStatusTypesAsync(
@@ -187,7 +187,7 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the activity modalities.</returns>
     [HttpGet("modality-types")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<ActionResult<IReadOnlyList<ActivityModalityTypeResponse>>> ModalityTypesAsync(
         [FromServices]
             IQueryHandler<
@@ -210,7 +210,7 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 201 response with the created activity and its location, or an error response.</returns>
     [HttpPost("{eventId:guid}")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     [ProducesResponseType<ActivityResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<ActivityResponse>> CreateAsync(
         Guid eventId,
@@ -237,7 +237,7 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an activity, or an error response.</returns>
     [HttpPut("{activityId:guid}")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<ActionResult<ActivityResponse>> UpdateAsync(
         Guid activityId,
         [FromBody] UpdateActivityRequest request,
@@ -260,7 +260,7 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 204 response, or an error response.</returns>
     [HttpDelete("{activityId:guid}")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<IActionResult> DeleteAsync(
         Guid activityId,
         [FromServices] ICommandHandler<DeleteActivityCommand, Result> handler,
@@ -378,7 +378,7 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an assignment, or an error response.</returns>
     [HttpPatch("{activityId:guid}/{userId:guid}/change-status")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<AssignmentResponse>> ChangeStatusAsync(
         Guid activityId,
         Guid userId,
@@ -412,7 +412,7 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing an assignment, or an error response.</returns>
     [HttpPatch("{activityId:guid}/{userId:guid}/change-role")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<AssignmentResponse>> ChangeRoleAsync(
         Guid activityId,
         Guid userId,

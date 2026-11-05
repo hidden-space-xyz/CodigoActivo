@@ -69,7 +69,6 @@ services:
       APP_BASE_URL: https://performance.codigoactivo.test/
       APP_TIMEZONE: Europe/Madrid
       DEMO_MODE: "true"
-      PRIVACY_OFFICER_EMAIL: admin@performance.codigoactivo.test
       SMTP_HOST: mailpit
       SMTP_PORT: 1025
       SMTP_SECURITY: None

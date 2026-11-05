@@ -10,6 +10,7 @@ using CodigoActivo.Application.BlockedData.Contracts;
 using CodigoActivo.Application.BlockedData.Queries;
 using CodigoActivo.Domain.BlockedData;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -23,7 +24,7 @@ namespace CodigoActivo.API.BlockedData;
 [ApiController]
 [Route("api/blocked-data")]
 [Tags("BlockedData")]
-[AllowOnlyAdmin]
+[AllowOnlyStaff(StaffRole.Administrator)]
 public class BlockedDataController : ApiControllerBase
 {
     /// <summary>

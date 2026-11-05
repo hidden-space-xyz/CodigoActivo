@@ -16,7 +16,7 @@ function named(name: string): RouteRecordRaw {
 }
 
 describe('routes', () => {
-  it('lazily loads a page component for every non-redirect route', async () => {
+  it('lazily loads a page component for every route but the /admin entry', async () => {
     const loaders = routes.filter(
       (route): route is RouteRecordRaw & { component: () => Promise<RouteComponent> } =>
         typeof route.component === 'function',
@@ -28,15 +28,27 @@ describe('routes', () => {
     for (const component of components) expect(component).toBeTruthy()
   }, 60_000)
 
-  it('keeps admin pages for administrators, in the admin layout or blank when printable', () => {
+  it('keeps admin pages for their staff, in the admin layout or blank when printable', () => {
     const adminRoutes = routes.filter((route) => route.path.startsWith('/admin/'))
+    const otherAccess: Record<string, string> = {
+      'admin-events': 'editor',
+      'admin-event-detail': 'editor',
+      'admin-news': 'editor',
+      'admin-partners': 'editor',
+      'admin-resources': 'editor',
+      'admin-catalogs': 'editor',
+      'admin-audit': 'audit',
+      'admin-blocked-data': 'blocked-data',
+    }
 
     expect(adminRoutes.length).toBeGreaterThan(0)
     for (const route of adminRoutes) {
       const expected = /\/(badges|roster)$/.test(route.path) ? 'blank' : 'admin'
       expect(route.meta?.layout).toBe(expected)
-      expect(route.meta?.access).toBe('admin')
+      const name = String(route.name)
+      expect(route.meta?.access, name).toBe(otherAccess[name] ?? 'admin')
     }
+    expect(named('admin').meta?.access).toBe('user')
     expect(named('admin-event-roster').meta?.seo).toEqual({
       titleKey: 'seo.routes.eventRoster.title',
       noindex: true,
@@ -70,17 +82,24 @@ describe('routes', () => {
 
     for (const item of [...PRIMARY_NAV, ...ADMIN_NAV]) expect(names.has(item.routeName)).toBe(true)
   })
+
+  it('shows each admin sidebar entry to the access its route needs', () => {
+    for (const item of ADMIN_NAV) expect(named(item.routeName).meta?.access).toBe(item.access)
+  })
 })
 
 describe('application router', () => {
-  it('redirects /admin to the dashboard for admins', async () => {
-    const queryClient = createTestQueryClient()
-    startSession(queryClient, buildAuthUser({ isAdmin: true }))
-    const router = createAppRouter(queryClient)
+  it('leads /admin to the dashboard for admins and to the events for editors', async () => {
+    const landing = async (staffRole: 'Administrator' | 'Editor') => {
+      const queryClient = createTestQueryClient()
+      startSession(queryClient, buildAuthUser({ staffRole }))
+      const router = createAppRouter(queryClient)
+      await router.push('/admin')
+      return router.currentRoute.value.name
+    }
 
-    await router.push('/admin')
-
-    expect(router.currentRoute.value.name).toBe('admin-dashboard')
+    expect(await landing('Administrator')).toBe('admin-dashboard')
+    expect(await landing('Editor')).toBe('admin-events')
   })
 
   it('matches unknown paths with the not-found route', async () => {

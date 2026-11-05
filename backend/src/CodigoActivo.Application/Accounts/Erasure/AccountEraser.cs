@@ -1,4 +1,5 @@
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.TermsDecisions;
 using CodigoActivo.Domain.Users;
 
@@ -9,7 +10,8 @@ namespace CodigoActivo.Application.Accounts.Erasure;
 /// authored to the <see cref="InitialAdministrator"/>, deletes the email still waiting for their
 /// addresses, tells the association's legal contact about the withdrawn consents it deletes before
 /// they were told and about the consents given it deletes, and deletes the accounts with
-/// everything that belongs to them. Every deleted or
+/// everything that belongs to them. When the account is the one designated for data protection, the
+/// designation returns to the initial administrator in the same transaction. Every deleted or
 /// handed-over row leaves its data history, which the law
 /// requires to keep blocked (LOPDGDD article 32). Any other change staged in the unit of work
 /// commits with it.
@@ -18,11 +20,13 @@ namespace CodigoActivo.Application.Accounts.Erasure;
 /// <param name="erasureStore">Storage steps that work on the whole household.</param>
 /// <param name="withdrawalNotices">Notifier that tells the legal contact about withdrawals.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
+/// <param name="clock">Clock that dates the return of the data protection designation.</param>
 public sealed class AccountEraser(
     IUserRepository users,
     IAccountErasureStore erasureStore,
     ConsentWithdrawalNotifier withdrawalNotices,
-    IUnitOfWork uow
+    IUnitOfWork uow,
+    IClock clock
 )
 {
     /// <summary>
@@ -68,9 +72,29 @@ public sealed class AccountEraser(
                 account.Erase();
                 users.Remove(account);
                 await uow.SaveChangesAsync(attempt);
+                if (account.IsPrivacyOfficer)
+                {
+                    await ReturnPrivacyOfficerAsync(attempt);
+                }
+
                 return true;
             },
             ct
         );
+    }
+
+    private async Task ReturnPrivacyOfficerAsync(CancellationToken ct)
+    {
+        var successor =
+            await users.GetByIdAsync(InitialAdministrator.Id, ct)
+            ?? throw new InvalidOperationException("The initial administrator always exists.");
+        if (successor.DesignateAsPrivacyOfficer(clock.UtcNow).IsFailure)
+        {
+            throw new InvalidOperationException(
+                "The initial administrator always accepts the data protection designation."
+            );
+        }
+
+        await uow.SaveChangesAsync(ct);
     }
 }

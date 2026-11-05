@@ -69,7 +69,11 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
         var claims = new List<Claim> { new(ClaimTypes.NameIdentifier, id.ToString()) };
         if (isAdmin)
         {
-            claims.Add(new Claim(ClaimsPrincipalExtensions.IsAdminClaim, bool.TrueString));
+            claims.AddRange(
+                ClaimsPrincipalExtensions
+                    .RolesOf(CodigoActivo.Domain.Users.StaffRole.Administrator)
+                    .Select(role => new Claim(ClaimTypes.Role, role))
+            );
         }
 
         return new ClaimsPrincipal(new ClaimsIdentity(claims, "TestAuth"));

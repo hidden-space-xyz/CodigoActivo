@@ -41,90 +41,6 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 
 
-export type deleteApiFilesFileIdResponse200 = {
-  data: void
-  status: 200
-}
-
-export type deleteApiFilesFileIdResponseSuccess = (deleteApiFilesFileIdResponse200) & {
-  headers: Headers;
-};
-;
-
-export type deleteApiFilesFileIdResponse = (deleteApiFilesFileIdResponseSuccess)
-
-export const getDeleteApiFilesFileIdUrl = (fileId: string,) => {
-
-
-
-
-  return `/api/files/${fileId}`
-}
-
-export const deleteApiFilesFileId = async (fileId: string, options?: Parameters<typeof httpClient>[1]): Promise<deleteApiFilesFileIdResponse> => {
-
-  return httpClient<deleteApiFilesFileIdResponse>(getDeleteApiFilesFileIdUrl(fileId),
-  {
-    ...options,
-    method: 'DELETE'
-
-
-  }
-);}
-
-
-
-
-
-export const getDeleteApiFilesFileIdQueryKey = (fileId: MaybeRefOrGetter<string>,) => {
-    return [
-    'DELETE', 'api','files',fileId
-    ] as const;
-    }
-
-
-export const getDeleteApiFilesFileIdQueryOptions = <TData = Awaited<ReturnType<typeof deleteApiFilesFileId>>, TError = unknown>(fileId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiFilesFileId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getDeleteApiFilesFileIdQueryKey(fileId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteApiFilesFileId>>> = ({ signal }) => deleteApiFilesFileId(toValue(fileId), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(fileId) !== null && toValue(fileId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteApiFilesFileId>>, TError, TData>
-}
-
-export type DeleteApiFilesFileIdQueryResult = NonNullable<Awaited<ReturnType<typeof deleteApiFilesFileId>>>
-export type DeleteApiFilesFileIdQueryError = unknown
-
-
-
-export function useDeleteApiFilesFileId<TData = Awaited<ReturnType<typeof deleteApiFilesFileId>>, TError = unknown>(
- fileId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiFilesFileId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getDeleteApiFilesFileIdQueryOptions(fileId,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type getApiFilesFileIdContentResponse200 = {
   data: void
   status: 200
@@ -358,6 +274,90 @@ export function usePostApiFiles<TData = Awaited<ReturnType<typeof postApiFiles>>
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
   const queryOptions = getPostApiFilesQueryOptions(postApiFilesBody,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type deleteApiFilesFileIdResponse200 = {
+  data: void
+  status: 200
+}
+
+export type deleteApiFilesFileIdResponseSuccess = (deleteApiFilesFileIdResponse200) & {
+  headers: Headers;
+};
+;
+
+export type deleteApiFilesFileIdResponse = (deleteApiFilesFileIdResponseSuccess)
+
+export const getDeleteApiFilesFileIdUrl = (fileId: string,) => {
+
+
+
+
+  return `/api/files/${fileId}`
+}
+
+export const deleteApiFilesFileId = async (fileId: string, options?: Parameters<typeof httpClient>[1]): Promise<deleteApiFilesFileIdResponse> => {
+
+  return httpClient<deleteApiFilesFileIdResponse>(getDeleteApiFilesFileIdUrl(fileId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteApiFilesFileIdQueryKey = (fileId: MaybeRefOrGetter<string>,) => {
+    return [
+    'DELETE', 'api','files',fileId
+    ] as const;
+    }
+
+
+export const getDeleteApiFilesFileIdQueryOptions = <TData = Awaited<ReturnType<typeof deleteApiFilesFileId>>, TError = unknown>(fileId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiFilesFileId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getDeleteApiFilesFileIdQueryKey(fileId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteApiFilesFileId>>> = ({ signal }) => deleteApiFilesFileId(toValue(fileId), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => toValue(fileId) !== null && toValue(fileId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteApiFilesFileId>>, TError, TData>
+}
+
+export type DeleteApiFilesFileIdQueryResult = NonNullable<Awaited<ReturnType<typeof deleteApiFilesFileId>>>
+export type DeleteApiFilesFileIdQueryError = unknown
+
+
+
+export function useDeleteApiFilesFileId<TData = Awaited<ReturnType<typeof deleteApiFilesFileId>>, TError = unknown>(
+ fileId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiFilesFileId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getDeleteApiFilesFileIdQueryOptions(fileId,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

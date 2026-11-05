@@ -62,7 +62,8 @@ public static class TestSeedData
                 Gender = Gender.Female,
                 Status = UserStatus.Active,
                 UserType = UserType.Member,
-                IsAdmin = true,
+                StaffRole = StaffRole.Administrator,
+                IsPrivacyOfficer = true,
                 CreatedAt = SeededAt,
             }
         );

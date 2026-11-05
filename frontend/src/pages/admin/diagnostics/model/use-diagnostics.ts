@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { hasStaffAccess, useSession } from '@/entities/session'
 import { useServerTable } from '@/shared/lib/paging'
 import type { TableFilterChip } from '@/shared/ui/data-table'
 
@@ -20,12 +21,15 @@ function traceOf(value: unknown): string {
  * Diagnostic page: the entries the API logged, newest first, with a message search, level,
  * source and date filters, a trace filter the page owns (taken from and kept in `?traceId=`, so the
  * audit page can link here) and the dialog that loads one entry with its
- * exception. Call it in `setup`.
+ * exception. The way to the audit page is only for those who may read it (`opensAudit`): the
+ * superadministrator and the data protection officer. Call it in `setup`.
  */
 export function useDiagnostics() {
   const { t } = useI18n()
   const route = useRoute()
   const router = useRouter()
+  const session = useSession()
+  const opensAudit = computed(() => hasStaffAccess(session.user, 'audit'))
   const traceId = ref(traceOf(route.query.traceId))
 
   watch(
@@ -89,6 +93,7 @@ export function useDiagnostics() {
     table,
     extraFilters,
     filterByTrace,
+    opensAudit,
     openAudit,
     detail: {
       visible: detailVisible,

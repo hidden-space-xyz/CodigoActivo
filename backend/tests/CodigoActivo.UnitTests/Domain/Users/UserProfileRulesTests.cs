@@ -103,7 +103,8 @@ public sealed class UserProfileRulesTests
         account.BirthDate.Should().BeNull();
         account.ParentId.Should().BeNull();
         account.PasswordHash.Should().BeNull();
-        account.IsAdmin.Should().BeFalse();
+        account.StaffRole.Should().Be(StaffRole.None);
+        account.IsPrivacyOfficer.Should().BeFalse();
         account.Status.Should().Be(UserStatus.Pending);
         account.UserType.Should().Be(UserType.Participant);
         account.CreatedAt.Should().Be(Now);

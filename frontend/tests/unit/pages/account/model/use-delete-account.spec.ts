@@ -56,7 +56,9 @@ describe('useDeleteAccount', () => {
       http.get('/api/me/deletion', () => HttpResponse.json({ allowed: true })),
       http.post('/api/me/deletion', () => apiError(403, 'UserDeleteInitialAdminForbidden')),
     )
-    const { result } = await mountComposable(() => useDeleteAccount(), { user: { isAdmin: true } })
+    const { result } = await mountComposable(() => useDeleteAccount(), {
+      user: { staffRole: 'Administrator' },
+    })
 
     result.confirm.mutate({ currentPassword: 'secret', code: '123456' })
 

@@ -1,6 +1,7 @@
 import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { AuthUser } from '@/entities/session'
 import { DiagnosticsPage } from '@/pages/admin/diagnostics'
 import type { DiagnosticLogEntryResponse } from '@/shared/api/generated/models'
 import { formatDateTimeSeconds } from '@/shared/lib/date'
@@ -14,9 +15,15 @@ import {
   buildDiagnosticEntry,
   TRACE_ID,
 } from '../../../../../support/builders'
-import { click, findButton, findDialog, textOf } from '../../../../../support/dom'
+import { click, findButton, findButtons, findDialog, textOf } from '../../../../../support/dom'
 
-async function renderPage(entries: DiagnosticLogEntryResponse[], urls: URL[] = []) {
+const SUPER_ADMIN = { staffRole: 'Administrator', isSuperAdmin: true } as const
+
+async function renderPage(
+  entries: DiagnosticLogEntryResponse[],
+  urls: URL[] = [],
+  user: Partial<AuthUser> = SUPER_ADMIN,
+) {
   server.use(
     http.get('/api/logs/diagnostics', ({ request }) => {
       urls.push(new URL(request.url))
@@ -26,6 +33,7 @@ async function renderPage(entries: DiagnosticLogEntryResponse[], urls: URL[] = [
   const rendered = await renderWithProviders(DiagnosticsPage, {
     route: '/admin/diagnostics',
     attach: true,
+    user,
   })
   await flushPromises()
   return rendered
@@ -161,5 +169,16 @@ describe('DiagnosticsPage', () => {
 
     await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('admin-audit'))
     expect(router.currentRoute.value.query).toEqual({ traceId: TRACE_ID })
+  })
+
+  it('offers no way to the audit to an administrator who may not read it', async () => {
+    const { wrapper } = await renderPage([buildDiagnosticEntry()], [], {
+      staffRole: 'Administrator',
+    })
+    await vi.waitFor(() => expect(wrapper.findAll('.el-table__body tr')).toHaveLength(1))
+    const row = wrapper.find('.el-table__body tr')
+
+    expect(findButtons(t('pages.admin.diagnostics.viewDetail'), row.element)).toHaveLength(1)
+    expect(findButtons(t('pages.admin.diagnostics.openAudit'), row.element)).toEqual([])
   })
 })

@@ -10,6 +10,7 @@ using CodigoActivo.Application.Files.Contracts;
 using CodigoActivo.Application.Files.Queries;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
@@ -81,7 +82,7 @@ public class FilesController : ApiControllerBase
     /// error response.
     /// </returns>
     [HttpPost]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     [Consumes("multipart/form-data")]
     [FileUploadSizeLimit]
     [EnableRateLimiting(SecurityPolicies.FileUploads)]
@@ -108,7 +109,7 @@ public class FilesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 204 response, or an error response.</returns>
     [HttpDelete("{fileId:guid}")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<IActionResult> DeleteAsync(
         Guid fileId,
         [FromServices] ICommandHandler<DeleteFileCommand, Result> handler,

@@ -497,16 +497,34 @@ public static class AppStrings
     public static string EmailsPasswordResetSubject => Get("emails.passwordReset.subject");
 
     /// <summary>
-    /// Gets the security alert line for administrator rights granted to the account.
+    /// Gets the security alert line for the administrator role given to the account.
     /// </summary>
-    public static string EmailsSecurityAlertAdminGranted =>
-        Get("emails.securityAlert.adminGranted");
+    public static string EmailsSecurityAlertAdministratorGranted =>
+        Get("emails.securityAlert.administratorGranted");
 
     /// <summary>
-    /// Gets the security alert line for administrator rights revoked from the account.
+    /// Gets the security alert line for the editor role given to the account.
     /// </summary>
-    public static string EmailsSecurityAlertAdminRevoked =>
-        Get("emails.securityAlert.adminRevoked");
+    public static string EmailsSecurityAlertEditorGranted =>
+        Get("emails.securityAlert.editorGranted");
+
+    /// <summary>
+    /// Gets the security alert line for the account designated for data protection.
+    /// </summary>
+    public static string EmailsSecurityAlertPrivacyOfficerDesignated =>
+        Get("emails.securityAlert.privacyOfficerDesignated");
+
+    /// <summary>
+    /// Gets the security alert line for the account no longer designated for data protection.
+    /// </summary>
+    public static string EmailsSecurityAlertPrivacyOfficerReleased =>
+        Get("emails.securityAlert.privacyOfficerReleased");
+
+    /// <summary>
+    /// Gets the security alert line for the staff role taken from the account.
+    /// </summary>
+    public static string EmailsSecurityAlertStaffRoleRevoked =>
+        Get("emails.securityAlert.staffRoleRevoked");
 
     /// <summary>
     /// Gets the security alert line for an authenticator application disabled.

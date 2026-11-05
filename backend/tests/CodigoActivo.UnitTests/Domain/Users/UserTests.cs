@@ -687,7 +687,7 @@ public sealed class UserTests
     public void PullDomainEventsOfOneTypeKeepsTheOtherEventsForTheNextPull()
     {
         var user = NewPendingUser();
-        user.ChangeType(UserType.Sponsor, Now);
+        user.ChangeType(UserType.Sponsor, Now).IsSuccess.Should().BeTrue();
         user.RecordPasswordFailure(1, Now);
         user.ChangeType(UserType.Member, Now);
 
@@ -701,35 +701,45 @@ public sealed class UserTests
     }
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void SetAdministratorDifferentValueChangesItAndStampsTheUpdate(bool isAdmin)
+    [InlineData(StaffRole.None, StaffRole.Editor)]
+    [InlineData(StaffRole.Editor, StaffRole.Administrator)]
+    [InlineData(StaffRole.Administrator, StaffRole.Editor)]
+    [InlineData(StaffRole.Administrator, StaffRole.None)]
+    public void ChangeStaffRoleDifferentValueChangesItAndRaisesTheChange(
+        StaffRole current,
+        StaffRole next
+    )
     {
         var user = NewSignInUser();
-        Persisted.Overwrite(user, new { IsAdmin = !isAdmin });
+        Persisted.Overwrite(user, new { StaffRole = current });
 
-        user.SetAdministrator(isAdmin, Now).Value.Should().BeTrue();
+        user.ChangeStaffRole(next, Now).Value.Should().BeTrue();
 
-        user.IsAdmin.Should().Be(isAdmin);
+        user.StaffRole.Should().Be(next);
         user.UpdatedAt.Should().Be(Now);
+        user.PullDomainEvents().Should().Equal(new StaffRoleChanged(user.Id, next));
     }
 
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public void SetAdministratorSameValueChangesNothing(bool isAdmin)
+    [InlineData(StaffRole.None)]
+    [InlineData(StaffRole.Editor)]
+    [InlineData(StaffRole.Administrator)]
+    public void ChangeStaffRoleSameValueChangesNothing(StaffRole staffRole)
     {
         var user = NewSignInUser();
-        Persisted.Overwrite(user, new { IsAdmin = isAdmin });
+        Persisted.Overwrite(user, new { StaffRole = staffRole });
 
-        user.SetAdministrator(isAdmin, Now).Value.Should().BeFalse();
+        user.ChangeStaffRole(staffRole, Now).Value.Should().BeFalse();
 
-        user.IsAdmin.Should().Be(isAdmin);
+        user.StaffRole.Should().Be(staffRole);
         user.UpdatedAt.Should().BeNull();
+        user.PullDomainEvents().Should().BeEmpty();
     }
 
-    [Fact]
-    public void SetAdministratorRevokingTheInitialAdministratorIsRefused()
+    [Theory]
+    [InlineData(StaffRole.None)]
+    [InlineData(StaffRole.Editor)]
+    public void ChangeStaffRoleDemotingTheInitialAdministratorIsRefused(StaffRole staffRole)
     {
         var administrator = User.CreateInitialAdministrator(
             EmailAddress.FromStored("admin@test.local"),
@@ -737,39 +747,100 @@ public sealed class UserTests
             Seeded
         );
 
-        var revoked = administrator.SetAdministrator(false, Now);
+        var changed = administrator.ChangeStaffRole(staffRole, Now);
 
-        revoked.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.UserCannotRemoveInitialAdmin);
-        administrator.IsAdmin.Should().BeTrue();
+        changed.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.UserCannotRemoveInitialAdmin);
+        administrator.StaffRole.Should().Be(StaffRole.Administrator);
         administrator.PullDomainEvents().Should().BeEmpty();
     }
 
     [Fact]
-    public void SetAdministratorGrantingADependentIsRefused()
+    public void ChangeStaffRoleGivingADependentARoleIsRefused()
     {
         var dependent = UserWithStatus(KnownIds.UserStatusTypes.Dependent, passwordHash: null);
 
-        var granted = dependent.SetAdministrator(true, Now);
+        var changed = dependent.ChangeStaffRole(StaffRole.Editor, Now);
 
-        granted.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserDependentCannotBeAdmin);
-        dependent.IsAdmin.Should().BeFalse();
+        changed.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserDependentCannotHoldStaffRole);
+        dependent.StaffRole.Should().Be(StaffRole.None);
         dependent.UpdatedAt.Should().BeNull();
         dependent.PullDomainEvents().Should().BeEmpty();
     }
 
     [Fact]
-    public void SetAdministratorGrantingAnAccountPendingVerificationIsRefused()
+    public void ChangeStaffRoleGivingAnAccountPendingVerificationARoleIsRefused()
     {
         var pending = NewPendingUser();
 
-        var granted = pending.SetAdministrator(true, Now);
+        var changed = pending.ChangeStaffRole(StaffRole.Administrator, Now);
 
-        granted.ShouldFail(
+        changed.ShouldFail(
             ErrorKind.Validation,
-            DomainErrorCode.UserPendingVerificationCannotBeAdmin
+            DomainErrorCode.UserPendingVerificationCannotHoldStaffRole
         );
-        pending.IsAdmin.Should().BeFalse();
+        pending.StaffRole.Should().Be(StaffRole.None);
         pending.PullDomainEvents().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void DesignateAsPrivacyOfficerDesignatesAndRaisesTheChange()
+    {
+        var user = NewSignInUser();
+        Persisted.Overwrite(user, new { StaffRole = StaffRole.Administrator });
+
+        user.DesignateAsPrivacyOfficer(Now).Value.Should().BeTrue();
+
+        user.IsPrivacyOfficer.Should().BeTrue();
+        user.UpdatedAt.Should().Be(Now);
+        user.PullDomainEvents().Should().Equal(new PrivacyOfficerChanged(user.Id, true));
+    }
+
+    [Fact]
+    public void DesignateAsPrivacyOfficerAlreadyDesignatedChangesNothing()
+    {
+        var user = NewSignInUser();
+        Persisted.Overwrite(
+            user,
+            new { IsPrivacyOfficer = true, StaffRole = StaffRole.Administrator }
+        );
+
+        user.DesignateAsPrivacyOfficer(Now).Value.Should().BeFalse();
+
+        user.UpdatedAt.Should().BeNull();
+        user.PullDomainEvents().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void DesignateAsPrivacyOfficerDependentOrPendingAccountIsRefused()
+    {
+        var dependent = UserWithStatus(KnownIds.UserStatusTypes.Dependent, passwordHash: null);
+        var pending = NewPendingUser();
+
+        dependent
+            .DesignateAsPrivacyOfficer(Now)
+            .ShouldFail(ErrorKind.Validation, DomainErrorCode.UserDependentCannotHoldStaffRole);
+        pending
+            .DesignateAsPrivacyOfficer(Now)
+            .ShouldFail(
+                ErrorKind.Validation,
+                DomainErrorCode.UserPendingVerificationCannotHoldStaffRole
+            );
+        dependent.IsPrivacyOfficer.Should().BeFalse();
+        pending.IsPrivacyOfficer.Should().BeFalse();
+    }
+
+    [Fact]
+    public void ReleasePrivacyOfficerEndsTheDesignationOnce()
+    {
+        var user = NewSignInUser();
+        Persisted.Overwrite(user, new { IsPrivacyOfficer = true });
+
+        user.ReleasePrivacyOfficer(Now);
+        user.ReleasePrivacyOfficer(Now);
+
+        user.IsPrivacyOfficer.Should().BeFalse();
+        user.UpdatedAt.Should().Be(Now);
+        user.PullDomainEvents().Should().Equal(new PrivacyOfficerChanged(user.Id, false));
     }
 
     [Fact]
@@ -777,10 +848,85 @@ public sealed class UserTests
     {
         var user = NewPendingUser();
 
-        user.ChangeType(UserType.Sponsor, Now);
+        user.ChangeType(UserType.Sponsor, Now).IsSuccess.Should().BeTrue();
 
         user.UserType.Should().Be(UserType.Sponsor);
         user.UpdatedAt.Should().Be(Now);
+    }
+
+    [Theory]
+    [InlineData(StaffRole.Editor, UserType.Sponsor)]
+    [InlineData(StaffRole.Administrator, UserType.Participant)]
+    public void ChangeTypeOfAnAccountWithAStaffRoleAwayFromMemberIsRefused(
+        StaffRole staffRole,
+        UserType userType
+    )
+    {
+        var user = NewSignInUser();
+        Persisted.Overwrite(user, new { StaffRole = staffRole });
+
+        user.ChangeType(userType, Now)
+            .ShouldFail(ErrorKind.Validation, DomainErrorCode.UserStaffRoleRequiresMember);
+
+        user.UserType.Should().Be(UserType.Member);
+        user.UpdatedAt.Should().BeNull();
+        user.PullDomainEvents().Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData(UserType.Sponsor)]
+    [InlineData(UserType.Participant)]
+    public void ChangeStaffRoleGivingARoleToAnAccountThatIsNotAMemberIsRefused(UserType userType)
+    {
+        var user = NewSignInUser();
+        Persisted.Overwrite(user, new { UserType = userType });
+
+        user.ChangeStaffRole(StaffRole.Editor, Now)
+            .ShouldFail(ErrorKind.Validation, DomainErrorCode.UserStaffRoleRequiresMember);
+
+        user.StaffRole.Should().Be(StaffRole.None);
+        user.PullDomainEvents().Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData(StaffRole.Editor)]
+    [InlineData(StaffRole.None)]
+    public void ChangeStaffRoleDemotingThePrivacyOfficerIsRefused(StaffRole staffRole)
+    {
+        var user = NewSignInUser();
+        Persisted.Overwrite(
+            user,
+            new { StaffRole = StaffRole.Administrator, IsPrivacyOfficer = true }
+        );
+
+        user.ChangeStaffRole(staffRole, Now)
+            .ShouldFail(
+                ErrorKind.Validation,
+                DomainErrorCode.UserPrivacyOfficerMustBeAdministrator
+            );
+
+        user.StaffRole.Should().Be(StaffRole.Administrator);
+        user.PullDomainEvents().Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData(StaffRole.None)]
+    [InlineData(StaffRole.Editor)]
+    public void DesignateAsPrivacyOfficerAccountThatIsNotAnAdministratorIsRefused(
+        StaffRole staffRole
+    )
+    {
+        var user = NewSignInUser();
+        Persisted.Overwrite(user, new { StaffRole = staffRole });
+
+        user.DesignateAsPrivacyOfficer(Now)
+            .ShouldFail(
+                ErrorKind.Validation,
+                DomainErrorCode.UserPrivacyOfficerMustBeAdministrator
+            );
+
+        user.IsPrivacyOfficer.Should().BeFalse();
+        user.PullDomainEvents().Should().BeEmpty();
     }
 
     [Fact]
@@ -802,7 +948,8 @@ public sealed class UserTests
         administrator.Status.Should().Be(UserStatus.Active);
         administrator.UserType.Should().Be(UserType.Member);
         administrator.ParentId.Should().BeNull();
-        administrator.IsAdmin.Should().BeTrue();
+        administrator.StaffRole.Should().Be(StaffRole.Administrator);
+        administrator.IsPrivacyOfficer.Should().BeTrue();
         administrator.CreatedAt.Should().Be(Now);
         administrator.CanSignIn.Should().BeTrue();
     }

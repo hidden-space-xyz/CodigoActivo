@@ -23,12 +23,12 @@ authentication are not supported.
   a background worker additionally deletes every expired row every hour. The row carries the expiry that
   decides access: refreshing the claims re-issues the cookie with a later expiry, so a cookie can outlive its
   row, and the ticket is rejected as soon as the row is missing or expired.
-- Every authenticated request revalidates account status, password lock, password fingerprint, administrator
-  flag and the `sid` row in one query: it rejects the ticket when the account is not active, is locked, has
-  another password or has no live row, and refreshes its claims, such as the administrator flag, when they changed.
-  Blocking or demoting a user takes effect on existing sessions; changing or resetting the password
-  invalidates them through the fingerprint, and the change then deletes that user's session rows. When the
-  API answers `AuthenticationRequired` or `CurrentUserNotFound` to a signed-in SPA, or right after the user
+- Every authenticated request revalidates account status, password lock, password fingerprint, staff role,
+  data protection designation and the `sid` row in one query: it rejects the ticket when the account is not
+  active, is locked, has another password or has no live row, and refreshes its claims, such as the staff role,
+  when they changed. Blocking a user or changing their role or designation takes effect on existing sessions;
+  changing or resetting the password invalidates them through the fingerprint, and the change then deletes that
+  user's session rows. When the API answers `AuthenticationRequired` or `CurrentUserNotFound` to a signed-in SPA, or right after the user
   changes their password, the SPA drops its cached session and data and sends protected pages back to login.
 - `POST /api/auth/logout` deletes the row of the presented session before clearing the cookies, so a copy of
   that cookie stops working immediately instead of lasting until its expiry. It is idempotent: it asks for no
@@ -37,8 +37,16 @@ authentication are not supported.
   which is logged. Deleting an account removes its rows by cascade.
 - Every endpoint requires an authenticated session unless it is marked `[AllowAnonymous]` (fallback
   authorization policy).
-- Authorization is a boolean administrator flag, not a role system. `[AllowOnlyAdmin]` protects
-  administration endpoints; `[AllowOnlySelf]` accepts the target user, that user's guardian or an
+- Authorization rests on the staff role of the account (`users.staff_role`, `StaffRole`): none, editor or
+  administrator, each including the rights of the one before, carried by the session as role claims (`editor`,
+  `administrator`). `[AllowOnlyStaff(StaffRole.Editor)]` protects the content endpoints: events and activities
+  with their catalogs and terms documents, news, partners, resources and files.
+  `[AllowOnlyStaff(StaffRole.Administrator)]` protects everything about people: users, signups, terms
+  decisions, ratings, reports, every manual email, the diagnostic log and the legal policies; the audit log is
+  [read](#audit-log) only by the initial administrator and the account designated for data protection. The
+  initial administrator is the superadministrator: only it changes staff roles, designates the account for data protection and
+  deletes other accounts; those endpoints admit administrators and their use cases refuse anyone else (`SuperAdministratorOnly`, answered as
+  `AccessDenied`). `[AllowOnlySelf]` accepts the target user, that user's guardian or an
   administrator, except on `PUT /api/users/{id}`, `POST /api/users/{id}/children` and
   `PATCH /api/activities/{activityId}/{userId}/assign` (`AdministratorsAllowed = false`): personal data,
   consents, dependents and signups change only through their holder or guardian, never an administrator. Catalog values
@@ -72,20 +80,25 @@ authentication are not supported.
 - Only someone who knows an account's password learns its state: after a correct password, the password step
   answers a blocked account with `UserAccountBlocked`, an unverified one with `UserAccountPendingVerification`
   and a locked second factor with `TwoFactorLocked`.
-- Granting the administrator flag requires the acting administrator to re-enter their password (a stolen
-  session cookie alone cannot promote another account); a wrong password returns
-  `UserCurrentPasswordIncorrect` and changes nothing. Revoking needs no password (the SPA asks for
-  confirmation), but the body must state `isAdmin`: one without it is refused instead of being read as a
-  revocation. Public registration never grants administrator access; the only account created as one is the
+- Giving a staff role (`PATCH /api/users/{id}/staff-role`) or designating the account for data protection
+  (`POST /api/users/{id}/privacy-officer`) requires the initial administrator to re-enter their password (a
+  stolen session cookie alone cannot promote another account); a wrong password returns
+  `UserCurrentPasswordIncorrect` and changes nothing. Leaving an account without a role needs no password (the
+  SPA asks for confirmation), but the body must state `staffRole`: one without it is refused instead of being
+  read as a revocation. Public registration never grants a staff role; the only account created with one is the
   [initial administrator](DEPLOYMENT.md#demo-mode-and-initial-administrator), whose random password is
   discarded, so there is no bootstrap password. That generic account can be neither demoted
   (`UserCannotRemoveInitialAdmin`) nor deleted, so the application always keeps an administrator; the SPA
-  disables both actions for it. A dependent, who never signs in, is never granted the flag
-  (`UserDependentCannotBeAdmin`); the SPA offers the action only for independent accounts.
-- Nobody changes their own role, administrators included: on the caller's own id, `PATCH
-  /api/users/{id}/admin` returns `UserSelfAdminChangeForbidden` before any password is checked, and `PATCH
-  /api/users/{id}/change-type` returns `UserSelfTypeChangeForbidden`. Another administrator must make the
-  change; the SPA disables both actions on the caller's row.
+  disables both actions for it. A dependent, who never signs in, never holds a role or the designation
+  (`UserDependentCannotHoldStaffRole`), nor does an account whose email is unconfirmed
+  (`UserPendingVerificationCannotHoldStaffRole`); the SPA offers the actions only for independent accounts.
+  Editors and administrators are members: a role is refused to any other type and, while an account holds one,
+  so is changing its type (`UserStaffRoleRequiresMember`). Only an administrator is designated for data
+  protection, and the designated account stays one until another is designated
+  (`UserPrivacyOfficerMustBeAdministrator`).
+- Nobody changes their own role: on the caller's own id, `PATCH /api/users/{id}/staff-role` returns
+  `UserSelfStaffRoleChangeForbidden` before any password is checked, and `PATCH /api/users/{id}/change-type`
+  returns `UserSelfTypeChangeForbidden`; the SPA disables both actions on the caller's row.
 - `PUT /api/users/{id}` asks the caller (the user or their guardian) for their own
   password whenever the update would replace the account's email, phone or secondary phone. A missing or
   wrong password returns `UserCurrentPasswordIncorrect` and changes nothing; edits that leave all three
@@ -181,8 +194,9 @@ signups, terms decisions and [event ratings](#event-ratings), and is refused onl
 (`UserDeleteInitialAdminForbidden`), before the password is checked. `GET /api/me/deletion` tells the caller
 whether they may delete their account, so the SPA hides the action from the initial administrator.
 `DELETE /api/users/{id}` refuses the initial administrator and the caller's own id
-(`UserSelfDeleteRequiresVerification`); the SPA disables that action on both rows. An administrator can delete
-any other administrator without re-entering a password, as with any other user. Every deletion credits the
+(`UserSelfDeleteRequiresVerification`); the SPA disables that action on both rows. Only the initial administrator
+deletes other accounts, administrators included, without re-entering a password, and a guardian deletes their
+own minors; any other administrator gets `AccessDenied`. Every deletion credits the
 initial administrator instead of the household as author, last editor or uploader of events, activities, news,
 partners, resources and files, and as the account that recorded a terms decision about someone else, in the same
 transaction; the [data history](#data-history) keeps the original credit. Each erasure of an account or of a
@@ -223,10 +237,14 @@ since the row itself is the record, and neither does a change of excluded proper
 
 ### Blocked data consultations
 
-Only the [person designated for data protection](DEPLOYMENT.md#environment-variables) reads the history: the active
-administrator whose email is `PRIVACY_OFFICER_EMAIL` (`PrivacyOfficer`), whatever their second factor. No
-administrator can grant it from the application. `GET /api/blocked-data/access` tells the signed-in administrator
-whether they are that person.
+Only the person designated for data protection reads the history: the active administrator marked
+`users.is_privacy_officer` (`PrivacyOfficer`), whatever its second factor. Exactly one account is
+designated at any time: the initial administrator from the first start, then whichever account it designates
+(`POST /api/users/{id}/privacy-officer`, only to the initial administrator), which takes the designation from the
+previous one in one transaction; a unique filtered index refuses a second. Designating itself takes it back, and
+erasing the designated account returns it to the initial administrator in the erasure's transaction.
+`GET /api/blocked-data/access` tells the signed-in administrator whether they are that person; every
+administrator reaches the list of consultations, and only that person opens them.
 
 - `POST /api/blocked-data/consultations` (credentials rate limit) opens a consultation for 15 minutes with the
   authority it is for (court, prosecutor, data protection authority, another public administration or a claim
@@ -246,8 +264,8 @@ whether they are that person.
   (account, filters, moment and number of entries, enough to find the same entries again). An entry that no longer
   decrypts is returned without content and logged (`DataHistoryEntryUnreadable`).
 - `GET /api/blocked-data/consultations` lists who consulted, when, for what request, how many accounts were found
-  and how many extracts taken, to every administrator, without any of the data. A consultation keeps its
-  officer without a foreign key, so it stays listed after that account is erased.
+  and how many extracts taken, to every administrator and the designated account, without any of the data. A
+  consultation keeps its officer without a foreign key, so it stays listed after that account is erased.
 
 Only the consultation handlers use `IDataHistoryReader` (`DataHistoryConventionTests`), and the personal data
 copy of «Mi cuenta» leaves the history out.
@@ -284,8 +302,8 @@ administrator's second-factor reset does not unlock. The accepted trade-off is t
 account's email can lock it, so recovery depends on the owner's mailbox.
 
 Credential routes (both login steps and code resend, registration, verification, email-change confirmation,
-password recovery/change, authenticator enrollment/removal, administrator grants, second-factor resets, user
-updates, the two self-service account-deletion steps, the two steps that open a blocked data consultation and
+password recovery/change, authenticator enrollment/removal, staff role grants and data protection designations,
+second-factor resets, user updates, the two self-service account-deletion steps, the two steps that open a blocked data consultation and
 both unsubscribe endpoints) have layered controls:
 
 - nginx caps `login`, `register`, `forgot-password`, `resend-verification`,
@@ -455,7 +473,7 @@ code cite only these laws.
   and the notice keeps waiting) so what the consent covered stops being used and is removed from the site and
   the social profiles. Several withdrawals go in one email, a withdrawal accepted again before the notice needs
   none, and a failure only delays the notice: it never undoes the withdrawal nor loses the notice.
-- Erasing an account (by its holder, a guardian or an administrator, or on coming of age) or an event deletes
+- Erasing an account (by its holder, a guardian or the initial administrator, or on coming of age) or an event deletes
   its terms decisions, which then stay only in the [data history](#data-history), blocked: nobody may consult
   them to tell whether a published image or name is still covered. So the erasure, in its own transaction and
   before deleting them, also emails the legal contact every consent given it deletes about an event that has
@@ -502,10 +520,10 @@ access can still read the author.
 
 ### Logging
 
-The API keeps two logs, both read only by administrators: the diagnostic log and the
-[audit log](#audit-log). The diagnostic log follows GDPR data minimization: only failures and warnings an
-operator has to diagnose are recorded, so normal use writes nothing to it, and none of its entries outlives
-its retention (30 days). Never in the diagnostic log: names, emails, phone numbers, anything typed
+The API keeps two logs: the diagnostic log, read by administrators, and the [audit log](#audit-log), read only
+by the initial administrator and the account designated for data protection. The diagnostic log follows GDPR
+data minimization: only failures and warnings an operator has to diagnose are recorded, so normal use writes
+nothing to it, and none of its entries outlives its retention (30 days). Never in the diagnostic log: names, emails, phone numbers, anything typed
 by the client, the requested path or query, client IP, user agent, cookies, tokens and one-time codes. Logged:
 counters, enum/kind values, error/SMTP/HTTP codes, the HTTP
 method, the matched endpoint's route template, and exception type/message/stack traces. No event template
@@ -532,7 +550,7 @@ such as the path of a file under `/app/files`; it is written as is.
 - **Security events**: only two events exist, both `Warning` and free of any user id —
   `PasswordLockoutTriggered` and `TwoFactorLockoutTriggered` (an account or its second factor was locked;
   written once the lock commits). Security-change emails are never dropped by a limiter. Logins, logouts,
-  password changes and administrator rights changes are not diagnostic events: the audit log records them.
+  password changes and staff role changes are not diagnostic events: the audit log records them.
 - **API log output**: every event the level policy lets through is stored in the `diagnostic_log_entries`
   table of the application database by a batching Serilog sink (`DatabaseLoggerProvider`): the UTC instant,
   the level, the category, the event name, the rendered message (up to 4,000 characters), the exception with
@@ -570,10 +588,11 @@ such as the path of a file under `/app/files`; it is written as is.
   the new weekday, so `logs-db` holds at most 7 days while `db` runs. A day that starts while `db` is stopped
   is appended to its old file instead, which then keeps entries from a week earlier. See
   [DEPLOYMENT.md](DEPLOYMENT.md#production-topology).
-- **What administrators see**: the diagnostic log shows them trace ids, route templates, the GUIDs exception
-  messages quote and, in the audit log, client IPs and the names of the accounts and things each command
-  named, or that they were removed since; a consultation of the blocked data is shown only by its kind. Raising a framework category such as `Microsoft.AspNetCore` to
-  `Information` would store requested paths and query strings there too.
+- **What the readers see**: the diagnostic log shows administrators trace ids, route templates, the GUIDs
+  exception messages quote and the audit log shows its readers client IPs and the names of the accounts and
+  things each command named, or that they were removed since; a consultation of the blocked data is shown only
+  by its kind. Raising a framework category such as `Microsoft.AspNetCore` to `Information` would store
+  requested paths and query strings there too.
 
 ### Audit log
 
@@ -592,8 +611,10 @@ privacy officer knows whose blocked data was handed over: neither the other admi
 it in the audit log or the personal data copy (LOPDGDD article 32). The account ids have no foreign key, so an erased account's entries remain
 until the audit retention ends; they are not part of the data history.
 
-Only administrators read either log: `GET /api/logs/diagnostics`, `/api/logs/diagnostics/{id}` and
-`/api/logs/audit` require the administrator role and share the report rate limit.
+`GET /api/logs/diagnostics` and `/api/logs/diagnostics/{id}` require the administrator role, and
+`GET /api/logs/audit` the initial administrator or the account designated for data protection
+(`[AllowOnlySuperAdministrator(PrivacyOfficerAllowed = true)]`), so the other administrators do not watch
+who did what to whom; the three share the report rate limit.
 
 ### Production configuration and secrets
 
@@ -637,7 +658,7 @@ is discarded too, since it may name the people the image shows: the file is know
 admin forms show, and the rich text editor inserts images with an empty `alt`. The variants are saved
 under `/app/files` in the `api-files` volume, each written to a temporary entry, flushed to disk and only then
 moved to its name, which never replaces stored content. Files are served only by the API, never from a static
-mount of the volume: only administrators upload or delete them, and anyone who knows a file's id may read it
+mount of the volume: only editors and administrators upload or delete them, and anyone who knows a file's id may read it
 (`GET /api/files/{id}/content` and `/thumbnail`); no route returns its metadata, which only the upload answers
 with. An upload is kept while content references it
 (`StoredFileRepository.GetInUseAsync`); one that nothing references 7 days after it was uploaded, such as an
@@ -682,7 +703,8 @@ would not refuse any domain in `DisposableEmailDomainList.ProtectedDomains` (Gma
 iCloud and Proton, plus `Organization.WebDomain`).
 
 Changing an account's password (by the user or through recovery), its second factor (authenticator confirmed,
-returned to email, or reset by an administrator), its administrator flag or its email or phones queues a
+returned to email, or reset by an administrator), its staff role, its data protection designation or its email
+or phones queues a
 notification to the affected account after commit, from the handler, whoever asked for the change. The notice
 names the change and its timestamp and carries no code, secret or link that performs an action; an email
 change is reported to the **previous** address once it applies (for a holder's own change, when the new

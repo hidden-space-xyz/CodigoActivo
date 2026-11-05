@@ -412,11 +412,20 @@ Equipo de Código Activo</value>
   <data name="emails.securityAlert.twoFactorReset" xml:space="preserve">
     <value>Un administrador ha restablecido la verificación en dos pasos de tu cuenta. A partir de ahora, los códigos te llegarán por correo.</value>
   </data>
-  <data name="emails.securityAlert.adminGranted" xml:space="preserve">
-    <value>Tu cuenta ha recibido permisos de administración.</value>
+  <data name="emails.securityAlert.editorGranted" xml:space="preserve">
+    <value>Tu cuenta tiene ahora el cargo de editor: puede publicar eventos, actividades, noticias, recursos y colaboradores.</value>
   </data>
-  <data name="emails.securityAlert.adminRevoked" xml:space="preserve">
-    <value>Tu cuenta ya no tiene permisos de administración.</value>
+  <data name="emails.securityAlert.administratorGranted" xml:space="preserve">
+    <value>Tu cuenta tiene ahora el cargo de administrador: además de publicar contenido, gestiona usuarios e inscripciones.</value>
+  </data>
+  <data name="emails.securityAlert.staffRoleRevoked" xml:space="preserve">
+    <value>Tu cuenta ya no tiene cargo de editor ni de administrador.</value>
+  </data>
+  <data name="emails.securityAlert.privacyOfficerDesignated" xml:space="preserve">
+    <value>Tu cuenta es ahora la responsable de protección de datos: solo ella puede consultar los datos bloqueados.</value>
+  </data>
+  <data name="emails.securityAlert.privacyOfficerReleased" xml:space="preserve">
+    <value>Tu cuenta ya no es la responsable de protección de datos.</value>
   </data>
   <data name="emails.securityAlert.emailChanged" xml:space="preserve">
     <value>Se ha cambiado el correo electrónico de tu cuenta. Te avisamos en esta dirección porque era la anterior.</value>

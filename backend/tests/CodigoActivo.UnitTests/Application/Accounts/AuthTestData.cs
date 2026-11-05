@@ -4,6 +4,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Gender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
+using StaffRole = CodigoActivo.Application.Abstractions.Querying.ReadModel.StaffRole;
 using TwoFactorMethod = CodigoActivo.Application.Abstractions.Querying.ReadModel.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Accounts;
@@ -64,7 +65,7 @@ internal static class AuthTestData
             PasswordHash = passwordHash,
             NationalId = "12345678Z",
             UserStatusTypeId = statusId ?? KnownIds.UserStatusTypes.Active,
-            IsAdmin = isAdmin,
+            StaffRole = isAdmin ? StaffRole.Administrator : StaffRole.None,
             TwoFactorMethod = twoFactorMethod,
             LoginChallengeId = loginChallengeId,
             LoginChallengeStartedAt = loginChallengeStartedAt,

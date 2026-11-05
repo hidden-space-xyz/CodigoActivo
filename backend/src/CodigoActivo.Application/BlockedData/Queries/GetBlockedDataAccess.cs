@@ -19,13 +19,11 @@ public sealed record GetBlockedDataAccessQuery : IQuery<BlockedDataAccessRespons
 /// <param name="readStore">Read side of the accounts.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="currentUser">Signed-in user.</param>
-/// <param name="officer">Policy that tells who may consult the blocked data.</param>
 /// <param name="history">Reader of the data history.</param>
 public sealed class GetBlockedDataAccessQueryHandler(
     IReadStore readStore,
     IQueryExecutor executor,
     ICurrentUser currentUser,
-    PrivacyOfficer officer,
     IDataHistoryReader history
 ) : IQueryHandler<GetBlockedDataAccessQuery, BlockedDataAccessResponse>
 {
@@ -50,15 +48,14 @@ public sealed class GetBlockedDataAccessQueryHandler(
                 .Users.Where(u => u.Id == userId)
                 .Select(u => new
                 {
-                    u.IsAdmin,
+                    u.IsPrivacyOfficer,
                     Active = u.UserStatusTypeId == ActiveStatusId,
-                    u.Email,
                 }),
             ct
         );
         return new BlockedDataAccessResponse(
             account is not null
-                && officer.Designates(account.IsAdmin, account.Active, account.Email),
+                && PrivacyOfficer.Designates(account.IsPrivacyOfficer, account.Active),
             history.Entities
         );
     }

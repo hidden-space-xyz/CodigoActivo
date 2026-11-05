@@ -44,7 +44,6 @@ export function toAccountProfile(user: UserResponse): AccountProfile {
     newsConsent: user.newsConsent,
     gender: user.gender,
     statusName: user.status.name,
-    isAdmin: user.isAdmin,
   }
 }
 
@@ -248,7 +247,8 @@ export function toPersonalDataFile(
       aceptaNovedades: account.newsConsent,
       relacionConLaAsociacion: account.userType,
       estado: account.status,
-      administraLaWeb: account.isAdmin,
+      cargo: t(`entities.user.staffRole.${account.staffRole}`),
+      responsableDeProteccionDeDatos: account.isPrivacyOfficer,
       verificacionEnDosPasos: t(`pages.account.twoFactor.methods.${account.twoFactorMethod}`),
       altaEl: account.createdAt,
       modificadaEl: account.updatedAt ?? null,

@@ -136,17 +136,17 @@ export function register(specs, admin) {
     'Verification',
   ).forEach((user, index) => (accounts[index].id = user.id))
   for (const { id, grantAdmin, userTypeId } of accounts) {
-    if (grantAdmin) {
-      admin.session.patch('/api/users/{userId}/admin', {
-        route: { userId: id },
-        json: { isAdmin: true, currentPassword: PASSWORD },
-        expect: [204],
-      })
-    }
     if (userTypeId) {
       admin.session.patch('/api/users/{userId}/change-type', {
         route: { userId: id },
         query: { userTypeId },
+      })
+    }
+    if (grantAdmin) {
+      admin.session.patch('/api/users/{userId}/staff-role', {
+        route: { userId: id },
+        json: { staffRole: 'Administrator', currentPassword: PASSWORD },
+        expect: [204],
       })
     }
   }
@@ -159,7 +159,7 @@ export function takeOverDemoMembers(admin, count, firstIpIndex) {
       query: { scope: 'Independent', email: DEMO_EMAIL_DOMAIN, pageSize: 100 },
     }),
   )
-  const demo = (found?.items ?? []).filter((user) => !user.isAdmin).slice(0, count)
+  const demo = (found?.items ?? []).filter((user) => user.staffRole === 'None').slice(0, count)
   if (demo.length < count) {
     fail(`Only ${demo.length} demo members found, ${count} needed`)
   }

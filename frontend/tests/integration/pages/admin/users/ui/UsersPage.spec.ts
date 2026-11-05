@@ -2,7 +2,9 @@ import { flushPromises } from '@vue/test-utils'
 import { ElSelect } from 'element-plus'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { AuthUser } from '@/entities/session'
 import { UsersPage } from '@/pages/admin/users'
+import StaffRoleDialog from '@/pages/admin/users/ui/StaffRoleDialog.vue'
 import type { UserResponse } from '@/shared/api/generated/models'
 import { formatDate } from '@/shared/lib/date'
 import { ColumnFilterDate, ColumnFilterSelect, ColumnSearch } from '@/shared/ui/column-filter'
@@ -10,6 +12,7 @@ import { SearchInput } from '@/shared/ui/search-input'
 
 import { renderApp, renderWithProviders, t } from '../../../../../support/render'
 import { apiError, http, HttpResponse, server } from '../../../../../support/server'
+import { sessionOf } from '../../../../../support/session'
 import {
   buildUserResponse,
   omit,
@@ -18,12 +21,10 @@ import {
 } from '../../../../../support/builders'
 import {
   acceptMessageBox,
-  cancelMessageBox,
   click,
   dismissDialog,
   expectNotification,
   findButton,
-  inputValue,
   isDialogOpen,
   messageBox,
   openDialog,
@@ -38,13 +39,15 @@ import {
 
 const TYPE_TITLE = 'pages.admin.users.typeDialog.header'
 const EMAIL_TITLE = 'features.sendEmail.header'
-const GRANT_TITLE = 'pages.admin.users.grantAdmin.header'
+const STAFF_ROLE_TITLE = 'pages.admin.users.staffRole.header'
+const OFFICER_TITLE = 'pages.admin.users.privacyOfficer.header'
 const RESET_2FA_TITLE = 'pages.admin.users.resetTwoFactor.header'
 const CHANGE_TYPE = 'pages.admin.users.actions.changeType'
 const SEND_EMAIL = 'pages.admin.users.actions.sendEmail'
 const RESET_2FA = 'pages.admin.users.actions.resetTwoFactor'
-const GRANT_ADMIN = 'pages.admin.users.actions.grantAdmin'
-const REVOKE_ADMIN = 'pages.admin.users.actions.revokeAdmin'
+const CHANGE_STAFF_ROLE = 'pages.admin.users.actions.changeStaffRole'
+const DESIGNATE_OFFICER = 'pages.admin.users.actions.designatePrivacyOfficer'
+const SUPER_ADMIN = { id: 'admin-0', staffRole: 'Administrator', isSuperAdmin: true } as const
 
 const ada = buildUserResponse({
   dependentCount: 2,
@@ -69,7 +72,7 @@ const grace = buildUserResponse({
   id: 'user-3',
   firstName: 'Grace',
   lastName: 'Hopper',
-  isAdmin: true,
+  staffRole: 'Administrator',
 })
 
 function ghost(overrides: Partial<UserResponse> = {}): UserResponse {
@@ -120,7 +123,7 @@ function rowElement(
   return row.element as HTMLElement
 }
 
-async function renderPage(user?: { id: string; isAdmin: boolean }) {
+async function renderPage(user?: Partial<AuthUser>) {
   return renderWithProviders(UsersPage, { attach: true, ...(user ? { user } : {}) })
 }
 
@@ -165,7 +168,11 @@ describe('admin users page', () => {
   })
 
   it('lists users with contact, age, catalog tags and family links', async () => {
-    const recorded = serveUsers([ada, tim, ghost({ dependentCount: 0, email: '', isAdmin: true })])
+    const recorded = serveUsers([
+      ada,
+      tim,
+      ghost({ dependentCount: 0, email: '', staffRole: 'Administrator', isPrivacyOfficer: true }),
+    ])
 
     const { wrapper } = await renderPage()
 
@@ -189,12 +196,11 @@ describe('admin users page', () => {
     expect(first?.find('.row-actions__more').attributes('aria-label')).toBe(
       t('table.moreActionsFor', { name: 'Ada Lovelace' }),
     )
+    expect(textOf(first?.find('.staff-cell').element)).toBe('—')
     expect(rowMenuLabels(await openRowMenu(rowElement(wrapper, 0)))).toEqual([
       t(CHANGE_TYPE),
       t(SEND_EMAIL),
       t(RESET_2FA),
-      t(GRANT_ADMIN),
-      t('common.delete'),
     ])
 
     expect(second?.text()).toContain('Tim Lovelace')
@@ -207,14 +213,16 @@ describe('admin users page', () => {
     ])
     expect(second?.find('.user-meta__age').attributes('title')).toBe(formatDate('2016-02-01'))
     expect(second?.find('button').text()).toContain('Ada Lovelace')
-    expect(rowMenuLabels(await openRowMenu(rowElement(wrapper, 1)))).toEqual([
-      t(CHANGE_TYPE),
-      t('common.delete'),
-    ])
+    expect(rowMenuLabels(await openRowMenu(rowElement(wrapper, 1)))).toEqual([t(CHANGE_TYPE)])
 
     expect(third?.text()).toContain('Ghost User')
-    expect(third?.find('.table-primary-cell__badges').text()).toBe(
-      t('pages.admin.users.columns.admin'),
+    expect(third?.find('.table-primary-cell__badges').exists()).toBe(false)
+    expect(third?.findAll('.staff-cell > *').map((part) => textOf(part.element))).toEqual([
+      t('entities.user.staffRole.Administrator'),
+      t('pages.admin.users.badges.privacyOfficer'),
+    ])
+    expect(third?.find('.staff-cell .el-tag').attributes('title')).toBe(
+      t('pages.admin.users.badges.privacyOfficerTitle'),
     )
     expect(third?.text()).not.toContain('(')
     expect(third?.text()).toContain('—')
@@ -224,7 +232,7 @@ describe('admin users page', () => {
   it('renders through the application router for admins', async () => {
     serveUsers()
 
-    const { wrapper } = await renderApp('/admin/users', { user: { isAdmin: true } })
+    const { wrapper } = await renderApp('/admin/users', { user: { staffRole: 'Administrator' } })
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Tim Lovelace'))
   })
@@ -274,17 +282,17 @@ describe('admin users page', () => {
     const consent = selectFilter(wrapper, 'pages.admin.users.columns.newsConsent')
     const status = selectFilter(wrapper, 'common.status')
     const type = selectFilter(wrapper, 'pages.admin.users.columns.type')
-    const admin = selectFilter(wrapper, 'pages.admin.users.columns.admin')
-    expect([admin, consent, status, type].map((filter) => filter.props('variant'))).toEqual([
+    const staffRole = selectFilter(wrapper, 'pages.admin.users.columns.staffRole')
+    expect([consent, status, type, staffRole].map((filter) => filter.props('variant'))).toEqual([
       'toolbar',
-      'toolbar',
+      'header',
       'header',
       'header',
     ])
     consent.vm.$emit('update:modelValue', true)
     status.vm.$emit('update:modelValue', 'status-active')
     type.vm.$emit('update:modelValue', 'type-member')
-    admin.vm.$emit('update:modelValue', false)
+    staffRole.vm.$emit('update:modelValue', 'Editor')
 
     await vi.waitFor(() =>
       expect(queryOf(recorded.list.at(-1) ?? '')).toEqual({
@@ -300,17 +308,21 @@ describe('admin users page', () => {
         birthDateTo: '2000-12-31',
         userStatusTypeId: 'status-active',
         userTypeId: 'type-member',
-        isAdmin: 'false',
+        staffRole: 'Editor',
       }),
     )
     expect(status.props('options')).toEqual([
       { label: 'Active', value: 'status-active' },
       { label: 'Blocked', value: 'status-blocked' },
     ])
-    expect(consent.props('options')).toEqual(admin.props('options'))
-    expect(admin.props('options')).toEqual([
+    expect(consent.props('options')).toEqual([
       { label: t('common.yes'), value: true },
       { label: t('common.no'), value: false },
+    ])
+    expect(staffRole.props('options')).toEqual([
+      { label: t('entities.user.staffRole.None'), value: 'None' },
+      { label: t('entities.user.staffRole.Editor'), value: 'Editor' },
+      { label: t('entities.user.staffRole.Administrator'), value: 'Administrator' },
     ])
     expect(chipLabels(wrapper)).toHaveLength(8)
     expect(chipLabels(wrapper)).toContain(
@@ -407,7 +419,7 @@ describe('admin users page', () => {
     expect(wrapper.findComponent(ColumnFilterDate).exists()).toBe(false)
     expect(wrapper.findAllComponents(ColumnSearch)).toHaveLength(3)
     expect(selectFilter(wrapper, 'common.status').exists()).toBe(true)
-    expect(selectFilter(wrapper, 'pages.admin.users.columns.admin').exists()).toBe(true)
+    expect(selectFilter(wrapper, 'pages.admin.users.columns.staffRole').exists()).toBe(true)
     expect(rowElement(wrapper, 0).textContent).toContain('ada@example.test')
 
     await chooseScope(wrapper, 'pages.admin.users.scope.all')
@@ -492,145 +504,207 @@ describe('admin users page', () => {
     expect(document.body.querySelectorAll('.el-notification')).toHaveLength(0)
   })
 
-  it('asks for the admin password before granting the role', async () => {
-    serveUsers([ada])
+  it('changes the cargo of another account with the password, and removes it without one', async () => {
+    serveUsers([ada, grace])
     const requests: unknown[] = []
     server.use(
-      http.patch('/api/users/:userId/admin', async ({ request, params }) => {
+      http.patch('/api/users/:userId/staff-role', async ({ request, params }) => {
         requests.push({ id: params.userId, body: await request.json() })
         return new HttpResponse(null, { status: 204 })
       }),
     )
-    const { wrapper } = await renderPage()
+    const { wrapper } = await renderPage(SUPER_ADMIN)
+    const staffRoleSelect = () => wrapper.findComponent(StaffRoleDialog).findComponent(ElSelect)
 
-    await chooseRowAction(wrapper, 0, GRANT_ADMIN)
-    const dialog = openDialog(t(GRANT_TITLE))
+    await chooseRowAction(wrapper, 0, CHANGE_STAFF_ROLE)
+    const dialog = openDialog(t(STAFF_ROLE_TITLE))
     expect(dialog.textContent).toContain(
-      t('pages.admin.users.grantAdmin.message', { fullName: 'Ada Lovelace' }),
+      t('pages.admin.users.staffRole.message', { fullName: 'Ada Lovelace' }),
     )
-    expect(requests).toEqual([])
+    expect(staffRoleSelect().props('modelValue')).toBe('None')
+    expect(dialog.querySelector('#staff-role-password')).toBeNull()
+    staffRoleSelect().vm.$emit('update:modelValue', 'Editor')
+    await flushPromises()
 
-    await click(findButton(t('pages.admin.users.grantAdmin.confirm'), dialog))
+    await click(findButton(t('pages.admin.users.staffRole.confirm'), dialog))
     expect(dialog.textContent).toContain(
       t('pages.admin.users.adminPassword.form.problems.passwordRequired'),
     )
     expect(requests).toEqual([])
 
-    await typeInto('#grant-admin-password', 'Str0ngPass!23')
-    await click(findButton(t('pages.admin.users.grantAdmin.confirm'), dialog))
+    await typeInto('#staff-role-password', 'Str0ngPass!23')
+    await click(findButton(t('pages.admin.users.staffRole.confirm'), dialog))
+    await expectNotification(t('pages.admin.users.toasts.staffRoleChanged'))
+    await vi.waitFor(() => expect(isDialogOpen(t(STAFF_ROLE_TITLE))).toBe(false))
 
-    await expectNotification(t('pages.admin.users.toasts.adminGranted'))
+    await chooseRowAction(wrapper, 1, CHANGE_STAFF_ROLE)
+    const again = openDialog(t(STAFF_ROLE_TITLE))
+    expect(staffRoleSelect().props('modelValue')).toBe('Administrator')
+    staffRoleSelect().vm.$emit('update:modelValue', 'None')
+    await flushPromises()
+    expect(again.querySelector('#staff-role-password')).toBeNull()
+    await click(findButton(t('pages.admin.users.staffRole.confirm'), again))
+
+    await vi.waitFor(() => expect(requests).toHaveLength(2))
     expect(requests).toEqual([
-      { id: 'user-1', body: { isAdmin: true, currentPassword: 'Str0ngPass!23' } },
+      { id: 'user-1', body: { staffRole: 'Editor', currentPassword: 'Str0ngPass!23' } },
+      { id: 'user-3', body: { staffRole: 'None', currentPassword: null } },
     ])
-    await vi.waitFor(() => expect(isDialogOpen(t(GRANT_TITLE))).toBe(false))
   })
 
-  it('keeps the grant dialog open when the password is rejected or the request fails', async () => {
+  it('keeps the cargo dialog open when the password is rejected or the request fails', async () => {
     serveUsers([ada])
     let rejectPassword = true
     server.use(
-      http.patch('/api/users/:userId/admin', () =>
+      http.patch('/api/users/:userId/staff-role', () =>
         rejectPassword ? apiError(400, 'UserCurrentPasswordIncorrect') : apiError(500),
       ),
     )
-    const { wrapper } = await renderPage()
+    const { wrapper } = await renderPage(SUPER_ADMIN)
+    const staffRoleSelect = () => wrapper.findComponent(StaffRoleDialog).findComponent(ElSelect)
 
-    await chooseRowAction(wrapper, 0, GRANT_ADMIN)
-    const dialog = openDialog(t(GRANT_TITLE))
-    await typeInto('#grant-admin-password', 'wrong-password')
-    await click(findButton(t('pages.admin.users.grantAdmin.confirm'), dialog))
+    await chooseRowAction(wrapper, 0, CHANGE_STAFF_ROLE)
+    const dialog = openDialog(t(STAFF_ROLE_TITLE))
+    staffRoleSelect().vm.$emit('update:modelValue', 'Administrator')
+    await flushPromises()
+    await typeInto('#staff-role-password', 'wrong-password')
+    await click(findButton(t('pages.admin.users.staffRole.confirm'), dialog))
 
     await vi.waitFor(() =>
       expect(dialog.textContent).toContain(t('errors.UserCurrentPasswordIncorrect')),
     )
     expect(document.body.querySelectorAll('.el-notification')).toHaveLength(0)
-    expect(isDialogOpen(t(GRANT_TITLE))).toBe(true)
-    expect(rowElement(wrapper, 0).querySelector('.table-primary-cell__badges')).toBeNull()
+    expect(isDialogOpen(t(STAFF_ROLE_TITLE))).toBe(true)
 
     rejectPassword = false
-    await click(findButton(t('pages.admin.users.grantAdmin.confirm'), dialog))
+    await click(findButton(t('pages.admin.users.staffRole.confirm'), dialog))
     await expectNotification(t('common.error'))
     expect(dialog.textContent).not.toContain(t('errors.UserCurrentPasswordIncorrect'))
-    expect(isDialogOpen(t(GRANT_TITLE))).toBe(true)
+    expect(isDialogOpen(t(STAFF_ROLE_TITLE))).toBe(true)
 
-    await click(findButton(t('common.cancel'), dialog))
-    await vi.waitFor(() => expect(isDialogOpen(t(GRANT_TITLE))).toBe(false))
-
-    await chooseRowAction(wrapper, 0, GRANT_ADMIN)
-    expect(inputValue('#grant-admin-password')).toBe('')
-    await dismissDialog(wrapper, t(GRANT_TITLE))
-    await vi.waitFor(() => expect(isDialogOpen(t(GRANT_TITLE))).toBe(false))
+    await dismissDialog(wrapper, t(STAFF_ROLE_TITLE))
+    await vi.waitFor(() => expect(isDialogOpen(t(STAFF_ROLE_TITLE))).toBe(false))
+    await chooseRowAction(wrapper, 0, CHANGE_STAFF_ROLE)
+    expect(staffRoleSelect().props('modelValue')).toBe('None')
+    expect(document.querySelector('#staff-role-password')).toBeNull()
   })
 
-  it('revokes the admin role after confirmation without asking for a password', async () => {
-    serveUsers([grace])
-    const requests: unknown[] = []
-    let fail = false
+  it('designates the data protection officer, reloading the session only when it changes', async () => {
+    serveUsers([{ ...ada, staffRole: 'Administrator' }])
+    const designated: unknown[] = []
+    let meCalls = 0
     server.use(
-      http.patch('/api/users/:userId/admin', async ({ request, params }) => {
-        if (fail) return apiError(500)
-        requests.push({ id: params.userId, body: await request.json() })
+      http.post('/api/users/:userId/privacy-officer', async ({ request, params }) => {
+        designated.push({ id: params.userId, body: await request.json() })
         return new HttpResponse(null, { status: 204 })
       }),
+      http.get('/api/auth/me', () => {
+        meCalls += 1
+        return HttpResponse.json(
+          buildUserResponse({ id: 'admin-0', staffRole: 'Administrator', isInitialAdmin: true }),
+        )
+      }),
     )
-    const { wrapper } = await renderPage()
+    const { wrapper, queryClient } = await renderPage({ ...SUPER_ADMIN, isPrivacyOfficer: true })
 
-    await chooseRowAction(wrapper, 0, REVOKE_ADMIN)
-    expect(messageBox().textContent).toContain(
-      t('pages.admin.users.revokeAdmin.message', { fullName: 'Grace Hopper' }),
+    await chooseRowAction(wrapper, 0, DESIGNATE_OFFICER)
+    const dialog = openDialog(t(OFFICER_TITLE))
+    expect(dialog.textContent).toContain(
+      t('pages.admin.users.privacyOfficer.message', { fullName: 'Ada Lovelace' }),
     )
-    await cancelMessageBox()
+    await click(findButton(t('pages.admin.users.privacyOfficer.confirm'), dialog))
+    expect(dialog.textContent).toContain(
+      t('pages.admin.users.adminPassword.form.problems.passwordRequired'),
+    )
+    expect(designated).toEqual([])
+
+    await typeInto('#privacy-officer-password', 'Str0ngPass!23')
+    await click(findButton(t('pages.admin.users.privacyOfficer.confirm'), dialog))
+
+    await expectNotification(t('pages.admin.users.toasts.privacyOfficerDesignated'))
+    expect(designated).toEqual([{ id: 'user-1', body: { currentPassword: 'Str0ngPass!23' } }])
+    await vi.waitFor(() => expect(sessionOf(queryClient).isPrivacyOfficer).toBe(false))
+    expect(meCalls).toBe(1)
+    await vi.waitFor(() => expect(isDialogOpen(t(OFFICER_TITLE))).toBe(false))
+
+    await chooseRowAction(wrapper, 0, DESIGNATE_OFFICER)
+    await typeInto('#privacy-officer-password', 'Str0ngPass!23')
+    await click(findButton(t('pages.admin.users.privacyOfficer.confirm'), dialog))
+    await vi.waitFor(() => expect(designated).toHaveLength(2))
     await flushPromises()
-    expect(requests).toEqual([])
-    expect(isDialogOpen(t(GRANT_TITLE))).toBe(false)
-
-    await chooseRowAction(wrapper, 0, REVOKE_ADMIN)
-    await acceptMessageBox()
-    await expectNotification(t('pages.admin.users.toasts.adminRevoked'))
-    expect(requests).toEqual([{ id: 'user-3', body: { isAdmin: false, currentPassword: null } }])
-
-    fail = true
-    await chooseRowAction(wrapper, 0, REVOKE_ADMIN)
-    await acceptMessageBox()
-    await expectNotification(t('common.error'))
+    expect(meCalls).toBe(1)
   })
 
-  it('locks the role and the deletion of the initial administrator', async () => {
-    serveUsers([buildUserResponse({ isAdmin: true, isInitialAdmin: true }), grace])
-    const { wrapper } = await renderPage()
-    const blocked = t('pages.admin.users.blocked.initialAdmin')
+  it('shows the cargo, designation and deletion actions only to the superadministrator', async () => {
+    serveUsers([
+      buildUserResponse({
+        id: 'admin-0',
+        firstName: 'Super',
+        lastName: 'Admin',
+        staffRole: 'Administrator',
+        isInitialAdmin: true,
+        isPrivacyOfficer: true,
+      }),
+      grace,
+      tim,
+    ])
+    const { wrapper } = await renderPage(SUPER_ADMIN)
 
-    const initialMenu = await openRowMenu(rowElement(wrapper, 0))
-    const initialRevoke = rowMenuItem(initialMenu, t(REVOKE_ADMIN))
-    const initialDelete = rowMenuItem(initialMenu, t('common.delete'))
-    expect(initialRevoke.getAttribute('aria-disabled')).toBe('true')
-    expect(textOf(initialRevoke.querySelector('.row-actions__item-reason'))).toBe(blocked)
-    expect(initialDelete.getAttribute('aria-disabled')).toBe('true')
-    expect(textOf(initialDelete.querySelector('.row-actions__item-reason'))).toBe(blocked)
-    await click(initialDelete)
+    expect(rows(wrapper).map((row) => row.find('.staff-cell > span').text())).toEqual([
+      t('pages.admin.users.staffRole.superAdmin'),
+      t('entities.user.staffRole.Administrator'),
+      '—',
+    ])
+    const ownMenu = await openRowMenu(rowElement(wrapper, 0))
+    expect(rowMenuLabels(ownMenu)).toEqual([
+      t(CHANGE_TYPE),
+      t(SEND_EMAIL),
+      t(RESET_2FA),
+      t('common.delete'),
+    ])
+    const ownDelete = rowMenuItem(ownMenu, t('common.delete'))
+    expect(ownDelete.getAttribute('aria-disabled')).toBe('true')
+    expect(textOf(ownDelete.querySelector('.row-actions__item-reason'))).toBe(
+      t('pages.admin.users.blocked.initialAdmin'),
+    )
+    await click(ownDelete)
     expect(document.body.querySelector('.el-message-box')).toBeNull()
 
-    const graceMenu = await openRowMenu(rowElement(wrapper, 1))
-    const graceDelete = rowMenuItem(graceMenu, t('common.delete'))
-    expect(rowMenuItem(graceMenu, t(REVOKE_ADMIN)).getAttribute('aria-disabled')).not.toBe('true')
-    expect(graceDelete.getAttribute('aria-disabled')).not.toBe('true')
-    expect(graceDelete.querySelector('.row-actions__item-reason')).toBeNull()
+    expect(rowMenuLabels(await openRowMenu(rowElement(wrapper, 1)))).toEqual([
+      t(CHANGE_TYPE),
+      t(SEND_EMAIL),
+      t(RESET_2FA),
+      t(CHANGE_STAFF_ROLE),
+      t(DESIGNATE_OFFICER),
+      t('common.delete'),
+    ])
+    expect(rowMenuLabels(await openRowMenu(rowElement(wrapper, 2)))).toEqual([
+      t(CHANGE_TYPE),
+      t('common.delete'),
+    ])
+    wrapper.unmount()
+
+    const admin = await renderPage({ id: 'user-9', staffRole: 'Administrator' })
+    expect(rowMenuLabels(await openRowMenu(rowElement(admin.wrapper, 1)))).toEqual([
+      t(CHANGE_TYPE),
+      t(SEND_EMAIL),
+      t(RESET_2FA),
+    ])
   })
 
-  it('marks the own account and keeps its type, admin role and deletion out of reach', async () => {
+  it('marks the own account and keeps its type out of reach', async () => {
     const requests: string[] = []
     serveUsers([
-      buildUserResponse({ isAdmin: true }),
+      buildUserResponse({ staffRole: 'Administrator' }),
       buildUserResponse({ id: 'user-2', firstName: 'Grace', lastName: 'Hopper' }),
     ])
     server.use(
-      http.patch('/api/users/:userId/admin', ({ params }) => {
+      http.patch('/api/users/:userId/change-type', ({ params }) => {
         requests.push(String(params.userId))
-        return new HttpResponse(null, { status: 204 })
+        return HttpResponse.json(buildUserResponse())
       }),
     )
-    const { wrapper } = await renderPage({ id: 'user-1', isAdmin: true })
+    const { wrapper } = await renderPage({ id: 'user-1', staffRole: 'Administrator' })
     const [own, other] = rows(wrapper)
 
     expect(textOf(own?.find('.table-primary-cell__badges').element)).toContain(
@@ -638,31 +712,18 @@ describe('admin users page', () => {
     )
     expect(other?.find('.table-primary-cell__badges').exists()).toBe(false)
 
-    const ownMenu = await openRowMenu(rowElement(wrapper, 0))
-    const ownType = rowMenuItem(ownMenu, t(CHANGE_TYPE))
-    const ownRevoke = rowMenuItem(ownMenu, t(REVOKE_ADMIN))
-    const ownDelete = rowMenuItem(ownMenu, t('common.delete'))
-    for (const item of [ownType, ownRevoke]) {
-      expect(item.getAttribute('aria-disabled')).toBe('true')
-      expect(textOf(item.querySelector('.row-actions__item-reason'))).toBe(
-        t('pages.admin.users.blocked.selfRole'),
-      )
-    }
-    expect(ownDelete.getAttribute('aria-disabled')).toBe('true')
-    expect(textOf(ownDelete.querySelector('.row-actions__item-reason'))).toBe(
-      t('pages.admin.users.blocked.self'),
+    const ownType = rowMenuItem(await openRowMenu(rowElement(wrapper, 0)), t(CHANGE_TYPE))
+    expect(ownType.getAttribute('aria-disabled')).toBe('true')
+    expect(textOf(ownType.querySelector('.row-actions__item-reason'))).toBe(
+      t('pages.admin.users.blocked.selfRole'),
     )
     await click(ownType)
-    await click(ownRevoke)
     await flushPromises()
     expect(isDialogOpen(t(TYPE_TITLE))).toBe(false)
-    expect(document.body.querySelector('.el-message-box')).toBeNull()
     expect(requests).toEqual([])
 
-    const otherMenu = await openRowMenu(rowElement(wrapper, 1))
-    for (const key of [CHANGE_TYPE, GRANT_ADMIN, 'common.delete']) {
-      expect(rowMenuItem(otherMenu, t(key)).getAttribute('aria-disabled')).not.toBe('true')
-    }
+    const otherType = rowMenuItem(await openRowMenu(rowElement(wrapper, 1)), t(CHANGE_TYPE))
+    expect(otherType.getAttribute('aria-disabled')).not.toBe('true')
   })
 
   it('deletes a user after confirmation and reports failures', async () => {
@@ -676,7 +737,7 @@ describe('admin users page', () => {
         return new HttpResponse(null, { status: 204 })
       }),
     )
-    const { wrapper } = await renderPage()
+    const { wrapper } = await renderPage(SUPER_ADMIN)
 
     await chooseRowAction(wrapper, 0, 'common.delete')
     expect(messageBox().textContent).toContain(

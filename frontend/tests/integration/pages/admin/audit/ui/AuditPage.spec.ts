@@ -1,6 +1,7 @@
 import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { AuthUser } from '@/entities/session'
 import { AuditPage } from '@/pages/admin/audit'
 import type { AuditLogEntryResponse } from '@/shared/api/generated/models'
 import { formatDateTimeSeconds } from '@/shared/lib/date'
@@ -12,14 +13,24 @@ import { http, HttpResponse, paged, server } from '../../../../../support/server
 import { buildAuditEntry, omit, TRACE_ID } from '../../../../../support/builders'
 import { click, findButton } from '../../../../../support/dom'
 
-async function renderPage(entries: AuditLogEntryResponse[], urls: URL[] = []) {
+const SUPER_ADMIN = { staffRole: 'Administrator', isSuperAdmin: true } as const
+
+async function renderPage(
+  entries: AuditLogEntryResponse[],
+  urls: URL[] = [],
+  user: Partial<AuthUser> = SUPER_ADMIN,
+) {
   server.use(
     http.get('/api/logs/audit', ({ request }) => {
       urls.push(new URL(request.url))
       return HttpResponse.json(paged(entries))
     }),
   )
-  const rendered = await renderWithProviders(AuditPage, { route: '/admin/audit', attach: true })
+  const rendered = await renderWithProviders(AuditPage, {
+    route: '/admin/audit',
+    attach: true,
+    user,
+  })
   await flushPromises()
   return rendered
 }
@@ -72,7 +83,7 @@ describe('AuditPage', () => {
     expect(setAdmin?.text()).toContain('Ada Admin')
     expect(setAdmin?.text()).toContain('admin@example.com')
     expect(setAdmin?.text()).toContain('203.0.113.9')
-    expect(setAdmin?.text()).toContain(t('pages.admin.audit.actions.SetAdmin'))
+    expect(setAdmin?.text()).toContain(t('pages.admin.audit.actions.SetStaffRole'))
     expect(setAdmin?.text()).toContain('Marta Miembro')
     expect(setAdmin?.text()).toContain(
       `${t('pages.admin.audit.entityTypes.Activity')}: Taller de robótica`,
@@ -169,5 +180,14 @@ describe('AuditPage', () => {
 
     await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('admin-diagnostics'))
     expect(router.currentRoute.value.query).toEqual({ traceId: TRACE_ID })
+  })
+
+  it('lets the data protection officer read it without any way to the diagnostics', async () => {
+    const { wrapper } = await renderPage([buildAuditEntry(), purge], [], { isPrivacyOfficer: true })
+    await vi.waitFor(() => expect(wrapper.findAll('.el-table__body tr')).toHaveLength(2))
+
+    expect(wrapper.text()).toContain('Marta Miembro')
+    expect(wrapper.find('.row-actions').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain(t('pages.admin.audit.openDiagnostics'))
   })
 })

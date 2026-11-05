@@ -31,11 +31,12 @@ import type {
 
 import type {
   ChangePasswordRequest,
+  DesignatePrivacyOfficerRequest,
   GetApiUsersParams,
   PatchApiUsersUserIdChangeTypeParams,
   RegisterMinorRequest,
   ResetTwoFactorRequest,
-  SetAdminRequest,
+  SetStaffRoleRequest,
   UpdateUserRequest,
   UserResponse,
   UserResponsePagedResult,
@@ -559,28 +560,28 @@ export function useDeleteApiUsersUserId<TData = Awaited<ReturnType<typeof delete
 
 
 
-export type patchApiUsersUserIdAdminResponse200 = {
+export type patchApiUsersUserIdStaffRoleResponse200 = {
   data: void
   status: 200
 }
 
-export type patchApiUsersUserIdAdminResponseSuccess = (patchApiUsersUserIdAdminResponse200) & {
+export type patchApiUsersUserIdStaffRoleResponseSuccess = (patchApiUsersUserIdStaffRoleResponse200) & {
   headers: Headers;
 };
 ;
 
-export type patchApiUsersUserIdAdminResponse = (patchApiUsersUserIdAdminResponseSuccess)
+export type patchApiUsersUserIdStaffRoleResponse = (patchApiUsersUserIdStaffRoleResponseSuccess)
 
-export const getPatchApiUsersUserIdAdminUrl = (userId: string,) => {
-
-
+export const getPatchApiUsersUserIdStaffRoleUrl = (userId: string,) => {
 
 
-  return `/api/users/${userId}/admin`
+
+
+  return `/api/users/${userId}/staff-role`
 }
 
-export const patchApiUsersUserIdAdmin = async (userId: string,
-    setAdminRequest?: SetAdminRequest, options?: Parameters<typeof httpClient>[1]): Promise<patchApiUsersUserIdAdminResponse> => {
+export const patchApiUsersUserIdStaffRole = async (userId: string,
+    setStaffRoleRequest?: SetStaffRoleRequest, options?: Parameters<typeof httpClient>[1]): Promise<patchApiUsersUserIdStaffRoleResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -596,12 +597,12 @@ export const patchApiUsersUserIdAdmin = async (userId: string,
     }
     return headers;
   };
-return httpClient<patchApiUsersUserIdAdminResponse>(getPatchApiUsersUserIdAdminUrl(userId),
+return httpClient<patchApiUsersUserIdStaffRoleResponse>(getPatchApiUsersUserIdStaffRoleUrl(userId),
   {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(setAdminRequest)
+    body: JSON.stringify(setStaffRoleRequest)
   }
 );}
 
@@ -609,45 +610,147 @@ return httpClient<patchApiUsersUserIdAdminResponse>(getPatchApiUsersUserIdAdminU
 
 
 
-export const getPatchApiUsersUserIdAdminQueryKey = (userId: MaybeRefOrGetter<string>,
-    setAdminRequest?: MaybeRefOrGetter<SetAdminRequest>,) => {
+export const getPatchApiUsersUserIdStaffRoleQueryKey = (userId: MaybeRefOrGetter<string>,
+    setStaffRoleRequest?: MaybeRefOrGetter<SetStaffRoleRequest>,) => {
     return [
-    'PATCH', 'api','users',userId,'admin', setAdminRequest
+    'PATCH', 'api','users',userId,'staff-role', setStaffRoleRequest
     ] as const;
     }
 
 
-export const getPatchApiUsersUserIdAdminQueryOptions = <TData = Awaited<ReturnType<typeof patchApiUsersUserIdAdmin>>, TError = unknown>(userId: MaybeRefOrGetter<string>,
-    setAdminRequest?: MaybeRefOrGetter<SetAdminRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdAdmin>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+export const getPatchApiUsersUserIdStaffRoleQueryOptions = <TData = Awaited<ReturnType<typeof patchApiUsersUserIdStaffRole>>, TError = unknown>(userId: MaybeRefOrGetter<string>,
+    setStaffRoleRequest?: MaybeRefOrGetter<SetStaffRoleRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdStaffRole>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  getPatchApiUsersUserIdAdminQueryKey(userId,setAdminRequest);
+  const queryKey =  getPatchApiUsersUserIdStaffRoleQueryKey(userId,setStaffRoleRequest);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiUsersUserIdAdmin>>> = ({ signal }) => patchApiUsersUserIdAdmin(toValue(userId),toValue(setAdminRequest), { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiUsersUserIdStaffRole>>> = ({ signal }) => patchApiUsersUserIdStaffRole(toValue(userId),toValue(setStaffRoleRequest), { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, enabled: computed(() => toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdAdmin>>, TError, TData>
+   return  { queryKey, queryFn, enabled: computed(() => toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdStaffRole>>, TError, TData>
 }
 
-export type PatchApiUsersUserIdAdminQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiUsersUserIdAdmin>>>
-export type PatchApiUsersUserIdAdminQueryError = unknown
+export type PatchApiUsersUserIdStaffRoleQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiUsersUserIdStaffRole>>>
+export type PatchApiUsersUserIdStaffRoleQueryError = unknown
 
 
 
-export function usePatchApiUsersUserIdAdmin<TData = Awaited<ReturnType<typeof patchApiUsersUserIdAdmin>>, TError = unknown>(
+export function usePatchApiUsersUserIdStaffRole<TData = Awaited<ReturnType<typeof patchApiUsersUserIdStaffRole>>, TError = unknown>(
  userId: MaybeRefOrGetter<string>,
-    setAdminRequest?: MaybeRefOrGetter<SetAdminRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdAdmin>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+    setStaffRoleRequest?: MaybeRefOrGetter<SetStaffRoleRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdStaffRole>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
  , queryClient?: QueryClient
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getPatchApiUsersUserIdAdminQueryOptions(userId,setAdminRequest,options)
+  const queryOptions = getPatchApiUsersUserIdStaffRoleQueryOptions(userId,setStaffRoleRequest,options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export type postApiUsersUserIdPrivacyOfficerResponse200 = {
+  data: void
+  status: 200
+}
+
+export type postApiUsersUserIdPrivacyOfficerResponseSuccess = (postApiUsersUserIdPrivacyOfficerResponse200) & {
+  headers: Headers;
+};
+;
+
+export type postApiUsersUserIdPrivacyOfficerResponse = (postApiUsersUserIdPrivacyOfficerResponseSuccess)
+
+export const getPostApiUsersUserIdPrivacyOfficerUrl = (userId: string,) => {
+
+
+
+
+  return `/api/users/${userId}/privacy-officer`
+}
+
+export const postApiUsersUserIdPrivacyOfficer = async (userId: string,
+    designatePrivacyOfficerRequest?: DesignatePrivacyOfficerRequest, options?: Parameters<typeof httpClient>[1]): Promise<postApiUsersUserIdPrivacyOfficerResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return httpClient<postApiUsersUserIdPrivacyOfficerResponse>(getPostApiUsersUserIdPrivacyOfficerUrl(userId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(designatePrivacyOfficerRequest)
+  }
+);}
+
+
+
+
+
+export const getPostApiUsersUserIdPrivacyOfficerQueryKey = (userId: MaybeRefOrGetter<string>,
+    designatePrivacyOfficerRequest?: MaybeRefOrGetter<DesignatePrivacyOfficerRequest>,) => {
+    return [
+    'POST', 'api','users',userId,'privacy-officer', designatePrivacyOfficerRequest
+    ] as const;
+    }
+
+
+export const getPostApiUsersUserIdPrivacyOfficerQueryOptions = <TData = Awaited<ReturnType<typeof postApiUsersUserIdPrivacyOfficer>>, TError = unknown>(userId: MaybeRefOrGetter<string>,
+    designatePrivacyOfficerRequest?: MaybeRefOrGetter<DesignatePrivacyOfficerRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiUsersUserIdPrivacyOfficer>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  getPostApiUsersUserIdPrivacyOfficerQueryKey(userId,designatePrivacyOfficerRequest);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiUsersUserIdPrivacyOfficer>>> = ({ signal }) => postApiUsersUserIdPrivacyOfficer(toValue(userId),toValue(designatePrivacyOfficerRequest), { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: computed(() => toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiUsersUserIdPrivacyOfficer>>, TError, TData>
+}
+
+export type PostApiUsersUserIdPrivacyOfficerQueryResult = NonNullable<Awaited<ReturnType<typeof postApiUsersUserIdPrivacyOfficer>>>
+export type PostApiUsersUserIdPrivacyOfficerQueryError = unknown
+
+
+
+export function usePostApiUsersUserIdPrivacyOfficer<TData = Awaited<ReturnType<typeof postApiUsersUserIdPrivacyOfficer>>, TError = unknown>(
+ userId: MaybeRefOrGetter<string>,
+    designatePrivacyOfficerRequest?: MaybeRefOrGetter<DesignatePrivacyOfficerRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiUsersUserIdPrivacyOfficer>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getPostApiUsersUserIdPrivacyOfficerQueryOptions(userId,designatePrivacyOfficerRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

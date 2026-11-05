@@ -54,7 +54,7 @@ public class UsersController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the membership types.</returns>
     [HttpGet("types")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<IReadOnlyList<UserTypeResponse>>> TypesAsync(
         [FromServices] IQueryHandler<ListUserTypesQuery, IReadOnlyList<UserTypeResponse>> handler,
         CancellationToken ct
@@ -70,7 +70,7 @@ public class UsersController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the account statuses.</returns>
     [HttpGet("status-types")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<IReadOnlyList<UserStatusTypeResponse>>> StatusTypesAsync(
         [FromServices]
             IQueryHandler<ListUserStatusTypesQuery, IReadOnlyList<UserStatusTypeResponse>> handler,
@@ -88,7 +88,7 @@ public class UsersController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a user, or an error response.</returns>
     [HttpGet("{userId:guid}")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<UserResponse>> GetAsync(
         Guid userId,
         [FromServices] IQueryHandler<GetUserByIdQuery, Result<UserResponse>> handler,
@@ -129,7 +129,8 @@ public class UsersController : ApiControllerBase
 
     /// <summary>
     /// Deletes the selected user, handing the content credited to the account over to the initial
-    /// administrator, which is itself refused. The caller's own account is refused here too:
+    /// administrator, which is itself refused. Only the initial administrator deletes other
+    /// accounts, and a guardian their minors. The caller's own account is refused here too:
     /// erasing it requires the password and the second factor through <c>POST /api/me/deletion</c>.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
@@ -150,22 +151,46 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Sets the admin state. Granting it requires the caller's password, so the endpoint shares
-    /// the credential rate limits. The caller's own state is refused, neither a dependent nor an
-    /// account with an unconfirmed email gets it, and the initial administrator always keeps it.
+    /// Changes the staff role of a user; only the initial administrator does. Giving a role requires
+    /// the caller's password, so the endpoint shares the credential rate limits. The caller's own
+    /// role is refused, neither a dependent nor an account with an unconfirmed email gets one, and
+    /// the initial administrator always stays an administrator.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 204 response, or an error response.</returns>
-    [HttpPatch("{userId:guid}/admin")]
-    [AllowOnlyAdmin]
+    [HttpPatch("{userId:guid}/staff-role")]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
-    public async Task<IActionResult> SetAdminAsync(
+    public async Task<IActionResult> SetStaffRoleAsync(
         Guid userId,
-        [FromBody] SetAdminRequest request,
-        [FromServices] ICommandHandler<SetAdminCommand, Result> handler,
+        [FromBody] SetStaffRoleRequest request,
+        [FromServices] ICommandHandler<SetStaffRoleCommand, Result> handler,
+        CancellationToken ct
+    )
+    {
+        return ToNoContent(await handler.HandleAsync(request.ToCommand(UserId.From(userId)), ct));
+    }
+
+    /// <summary>
+    /// Designates the account for data protection, the only one that consults the blocked data; only
+    /// the initial administrator does, with its password, so the endpoint shares the credential rate
+    /// limits. The account designated until now stops being designated.
+    /// </summary>
+    /// <param name="userId">Identifier of the account designated from now on.</param>
+    /// <param name="request">Validated client request data.</param>
+    /// <param name="handler">Application handler that executes the requested use case.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>A 204 response, or an error response.</returns>
+    [HttpPost("{userId:guid}/privacy-officer")]
+    [AllowOnlyStaff(StaffRole.Administrator)]
+    [EnableRateLimiting(SecurityPolicies.Credentials)]
+    public async Task<IActionResult> DesignatePrivacyOfficerAsync(
+        Guid userId,
+        [FromBody] DesignatePrivacyOfficerRequest request,
+        [FromServices] ICommandHandler<DesignatePrivacyOfficerCommand, Result> handler,
         CancellationToken ct
     )
     {
@@ -183,7 +208,7 @@ public class UsersController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 204 response, or an error response.</returns>
     [HttpPost("{userId:guid}/two-factor/reset")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     public async Task<IActionResult> ResetTwoFactorAsync(
         Guid userId,
@@ -260,7 +285,7 @@ public class UsersController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the user, or an error response.</returns>
     [HttpPatch("{userId:guid}/change-type")]
-    [AllowOnlyAdmin]
+    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<UserResponse>> ChangeTypeAsync(
         Guid userId,
         [FromQuery] Guid userTypeId,

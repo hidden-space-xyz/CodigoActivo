@@ -56,7 +56,8 @@ public sealed record PersonalDataResponse(
 /// <param name="NewsConsent">Whether news email is accepted.</param>
 /// <param name="UserType">Name of the relationship with the association.</param>
 /// <param name="Status">Name of the account status.</param>
-/// <param name="IsAdmin">Whether the account administers the site.</param>
+/// <param name="StaffRole">Staff role of the account.</param>
+/// <param name="IsPrivacyOfficer">Whether the account is designated for data protection.</param>
 /// <param name="TwoFactorMethod">Second factor in use.</param>
 /// <param name="CreatedAt">When the account was created.</param>
 /// <param name="UpdatedAt">When the account was last updated.</param>
@@ -75,7 +76,8 @@ public sealed record PersonalDataAccountResponse(
     bool NewsConsent,
     string UserType,
     string Status,
-    bool IsAdmin,
+    StaffRole StaffRole,
+    bool IsPrivacyOfficer,
     TwoFactorMethod TwoFactorMethod,
     DateTimeOffset CreatedAt,
     DateTimeOffset? UpdatedAt,

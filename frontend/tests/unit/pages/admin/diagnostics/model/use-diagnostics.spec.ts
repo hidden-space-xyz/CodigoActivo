@@ -1,6 +1,7 @@
 import { flushPromises } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { AuthUser } from '@/entities/session'
 import { useDiagnostics } from '@/pages/admin/diagnostics/model/use-diagnostics'
 
 import { http, HttpResponse, paged, server } from '../../../../../support/server'
@@ -101,5 +102,16 @@ describe('useDiagnostics', () => {
     expect(result.detail.visible.value).toBe(true)
     await vi.waitFor(() => expect(result.detail.entry.value?.exception).toContain('boom'))
     expect(requested).toEqual(['0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b'])
+  })
+
+  it('links to the audit only for the superadministrator and the data protection officer', async () => {
+    recordRequests()
+    const opensAudit = async (user: Partial<AuthUser>) =>
+      (await mountComposable(useDiagnostics, { route: '/admin/diagnostics', user })).result
+        .opensAudit.value
+
+    expect(await opensAudit({ staffRole: 'Administrator', isSuperAdmin: true })).toBe(true)
+    expect(await opensAudit({ staffRole: 'Administrator', isPrivacyOfficer: true })).toBe(true)
+    expect(await opensAudit({ staffRole: 'Administrator' })).toBe(false)
   })
 })

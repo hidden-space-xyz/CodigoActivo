@@ -4,7 +4,7 @@ import { createMemoryHistory, createRouter, type RouteMeta } from 'vue-router'
 import type { QueryClient } from '@tanstack/vue-query'
 
 import { installAccessGuard } from '@/app/router/guards'
-import { startSession } from '@/entities/session'
+import { startSession, type AuthUser } from '@/entities/session'
 
 import { createTestQueryClient } from '../../../support/render'
 import { http, HttpResponse, server } from '../../../support/server'
@@ -27,7 +27,12 @@ function routerFor(queryClient: QueryClient) {
       route('/', 'home'),
       route('/login', 'login', { access: 'guest' }),
       route('/account', 'account', { access: 'user' }),
+      { path: '/admin', name: 'admin', meta: { access: 'user' }, children: [] },
+      route('/admin/dashboard', 'admin-dashboard', { access: 'admin' }),
+      route('/admin/events', 'admin-events', { access: 'editor' }),
       route('/admin/users', 'admin-users', { access: 'admin' }),
+      route('/admin/audit', 'admin-audit', { access: 'audit' }),
+      route('/admin/blocked-data', 'admin-blocked-data', { access: 'blocked-data' }),
     ],
   })
   installAccessGuard(router, queryClient)
@@ -119,19 +124,68 @@ describe('installAccessGuard', () => {
     expect(calls.count).toBe(2)
   })
 
-  it('sends signed-in non-admin users home from admin pages', async () => {
-    const queryClient = createTestQueryClient()
-    startSession(queryClient, buildAuthUser({ isAdmin: false }))
+  it('opens each admin page only to the cargo or designation it needs, sending others home', async () => {
+    const pagesOpenedBy = async (user: Partial<AuthUser>) => {
+      const queryClient = createTestQueryClient()
+      startSession(queryClient, buildAuthUser(user))
+      const opened: string[] = []
+      for (const path of ['/admin/events', '/admin/users', '/admin/audit', '/admin/blocked-data']) {
+        if ((await navigate(path, queryClient)).route.name !== 'home') opened.push(path)
+      }
+      return opened
+    }
 
-    expect((await navigate('/admin/users', queryClient)).route.name).toBe('home')
+    expect(await pagesOpenedBy({})).toEqual([])
+    expect(await pagesOpenedBy({ staffRole: 'Editor' })).toEqual(['/admin/events'])
+    expect(await pagesOpenedBy({ isPrivacyOfficer: true })).toEqual([
+      '/admin/audit',
+      '/admin/blocked-data',
+    ])
+    expect(await pagesOpenedBy({ staffRole: 'Editor', isPrivacyOfficer: true })).toEqual([
+      '/admin/events',
+      '/admin/audit',
+      '/admin/blocked-data',
+    ])
+    expect(await pagesOpenedBy({ staffRole: 'Administrator' })).toEqual([
+      '/admin/events',
+      '/admin/users',
+      '/admin/blocked-data',
+    ])
+    expect(await pagesOpenedBy({ staffRole: 'Administrator', isSuperAdmin: true })).toEqual([
+      '/admin/events',
+      '/admin/users',
+      '/admin/audit',
+      '/admin/blocked-data',
+    ])
   })
 
   it('lets administrators resolved from the API open admin pages', async () => {
-    countMeRequests(() => HttpResponse.json(buildUserResponse({ isAdmin: true })))
+    countMeRequests(() => HttpResponse.json(buildUserResponse({ staffRole: 'Administrator' })))
 
     const { route, queryClient } = await navigate('/admin/users')
 
     expect(route.name).toBe('admin-users')
     expect(sessionOf(queryClient).isAdmin).toBe(true)
+  })
+
+  it('leads /admin to the first admin page the user can open', async () => {
+    const landing = async (user: Partial<AuthUser>) => {
+      const queryClient = createTestQueryClient()
+      startSession(queryClient, buildAuthUser(user))
+      return (await navigate('/admin', queryClient)).route.name
+    }
+
+    expect(await landing({ staffRole: 'Administrator' })).toBe('admin-dashboard')
+    expect(await landing({ staffRole: 'Editor' })).toBe('admin-events')
+    expect(await landing({ staffRole: 'Editor', isPrivacyOfficer: true })).toBe('admin-events')
+    expect(await landing({ isPrivacyOfficer: true })).toBe('admin-audit')
+    expect(await landing({})).toBe('home')
+  })
+
+  it('sends guests from /admin to login, coming back to /admin', async () => {
+    const { route } = await navigate('/admin')
+
+    expect(route.name).toBe('login')
+    expect(route.query).toEqual({ redirect: '/admin' })
   })
 })

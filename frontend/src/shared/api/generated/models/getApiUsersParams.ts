@@ -4,6 +4,7 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { StaffRole } from './staffRole';
 import type { UserScope } from './userScope';
 
 export type GetApiUsersParams = {
@@ -26,7 +27,7 @@ phone?: string;
 nationalId?: string;
 userTypeId?: string;
 userStatusTypeId?: string;
-isAdmin?: boolean;
+staffRole?: StaffRole;
 newsConsent?: boolean;
 parentId?: string;
 scope?: UserScope;

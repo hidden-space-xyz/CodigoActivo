@@ -28,7 +28,7 @@ async function setup(path: string, options: { guest?: boolean } = {}) {
       route('/', 'home'),
       route('/login', 'login', { access: 'guest' }),
       route('/account', 'account', { access: 'user' }),
-      route('/admin/users', 'admin-users', { access: 'admin' }),
+      route('/admin/news', 'admin-news', { access: 'editor' }),
     ],
   })
   installSessionExpiry(router, queryClient)
@@ -75,7 +75,7 @@ describe('installSessionExpiry', () => {
   })
 
   it('reacts to a mutation the API refuses for a lost session', async () => {
-    const { queryClient, router } = await setup('/admin/users')
+    const { queryClient, router } = await setup('/admin/news')
 
     await failMutation(queryClient, new ApiError(401, 'x', undefined, 'CurrentUserNotFound'))
 

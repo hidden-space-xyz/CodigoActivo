@@ -13,7 +13,7 @@ vi.mock('chart.js', async () => (await import('../../../../../support/chart-mock
 function renderPage() {
   return renderWithProviders(DashboardPage, {
     route: '/admin/dashboard',
-    user: { isAdmin: true },
+    user: { staffRole: 'Administrator' },
   })
 }
 

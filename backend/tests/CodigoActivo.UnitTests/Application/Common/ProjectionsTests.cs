@@ -15,6 +15,7 @@ using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
 using Gender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
+using StaffRole = CodigoActivo.Application.Abstractions.Querying.ReadModel.StaffRole;
 using TwoFactorMethod = CodigoActivo.Application.Abstractions.Querying.ReadModel.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Common;
@@ -247,7 +248,8 @@ public sealed class ProjectionsTests
                 Name = "Active",
                 Color = "#0f0",
             },
-            IsAdmin = true,
+            StaffRole = StaffRole.Administrator,
+            IsPrivacyOfficer = true,
             UserTypeId = typeId,
             UserType = new UserTypeRow
             {
@@ -291,7 +293,8 @@ public sealed class ProjectionsTests
         response.ParentName.Should().BeNull();
         response.DependentCount.Should().BeNull();
         response.Status.Should().Be(new UserStatusResponse(statusId, "Active", "#0f0"));
-        response.IsAdmin.Should().BeTrue();
+        response.StaffRole.Should().Be(StaffRole.Administrator);
+        response.IsPrivacyOfficer.Should().BeTrue();
         response.Type.Should().BeNull();
     }
 
@@ -321,7 +324,8 @@ public sealed class ProjectionsTests
         response.ParentName.Should().Be("Grace Hopper");
         response.DependentCount.Should().Be(2);
         response.Status.Should().Be(new UserStatusResponse(statusId, "Active", "#0f0"));
-        response.IsAdmin.Should().BeTrue();
+        response.StaffRole.Should().Be(StaffRole.Administrator);
+        response.IsPrivacyOfficer.Should().BeTrue();
         response.Type.Should().Be(new UserTypeSummaryResponse(typeId, "Member", "#00f"));
     }
 

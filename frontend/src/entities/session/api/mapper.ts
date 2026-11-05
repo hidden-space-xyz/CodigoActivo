@@ -10,7 +10,9 @@ export function toAuthUser(user: UserResponse): AuthUser {
     lastName: user.lastName,
     email: user.email ?? '',
     phone: user.phone ?? '',
-    isAdmin: user.isAdmin,
+    staffRole: user.staffRole,
+    isSuperAdmin: user.isInitialAdmin,
+    isPrivacyOfficer: user.isPrivacyOfficer,
     earlySignupEligible: user.earlySignupEligible,
     twoFactorMethod: user.twoFactorMethod,
   }

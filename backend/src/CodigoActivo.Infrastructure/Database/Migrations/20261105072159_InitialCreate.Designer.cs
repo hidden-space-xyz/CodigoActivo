@@ -14,7 +14,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CodigoActivo.Infrastructure.Database.Migrations
 {
     [DbContext(typeof(CodigoActivoDbContext))]
-    [Migration("20261027180239_InitialCreate")]
+    [Migration("20261105072159_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -22,7 +22,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.13")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "pg_trgm");
@@ -1099,9 +1099,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("guardianship_declared_at");
 
-                    b.Property<bool>("IsAdmin")
+                    b.Property<bool>("IsPrivacyOfficer")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_admin");
+                        .HasColumnName("is_privacy_officer");
 
                     b.Property<DateTimeOffset?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone")
@@ -1145,6 +1145,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Property<string>("SecondaryPhone")
                         .HasColumnType("text")
                         .HasColumnName("secondary_phone");
+
+                    b.Property<string>("StaffRole")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("staff_role");
 
                     b.Property<Guid>("Status")
                         .HasColumnType("uuid")
@@ -1314,6 +1320,11 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasIndex("Email")
                         .IsUnique()
                         .HasDatabaseName("ix_users_email");
+
+                    b.HasIndex("IsPrivacyOfficer")
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_is_privacy_officer")
+                        .HasFilter("is_privacy_officer");
 
                     b.HasIndex("ParentId")
                         .HasDatabaseName("ix_users_parent_id");

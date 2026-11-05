@@ -2,6 +2,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useSession } from '@/entities/session'
 import { useServerTable } from '@/shared/lib/paging'
 import type { TableFilterChip } from '@/shared/ui/data-table'
 
@@ -26,12 +27,15 @@ function traceOf(value: unknown): string {
  * Audit page: the commands the application ran, newest first, with a person search, date, actor
  * type, command, entity type and outcome filters, and the filters a click pins — an actor, an
  * entity (also among related ones), an address or a trace. The trace is taken from and kept in
- * `?traceId=`, so the diagnostic page can link here. Call it in `setup`.
+ * `?traceId=`, so the diagnostic page can link here; the way back to the diagnostic page is only
+ * for administrators (`opensDiagnostics`), who alone may read it. Call it in `setup`.
  */
 export function useAuditLog() {
   const { t } = useI18n()
   const route = useRoute()
   const router = useRouter()
+  const session = useSession()
+  const opensDiagnostics = computed(() => session.isAdmin)
   const traceId = ref(traceOf(route.query.traceId))
   const actor = ref<PinnedFilter | null>(null)
   const entity = ref<PinnedFilter | null>(null)
@@ -143,6 +147,7 @@ export function useAuditLog() {
     filterByEntity,
     filterByIp,
     filterByTrace,
+    opensDiagnostics,
     openDiagnostics,
   }
 }

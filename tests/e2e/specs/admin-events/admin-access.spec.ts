@@ -9,6 +9,27 @@ const SECTIONS: readonly AdminSection[] = [
   'Recursos',
   'Usuarios',
   'Diagnóstico',
+  'Archivo legal',
+  'Políticas',
+  'Catálogos',
+]
+
+const EDITOR_SECTIONS: readonly AdminSection[] = [
+  'Eventos',
+  'Novedades',
+  'Patrocinadores',
+  'Recursos',
+  'Catálogos',
+]
+
+const PRIVACY_OFFICER_SECTIONS: readonly AdminSection[] = [
+  'Métricas',
+  'Eventos',
+  'Novedades',
+  'Patrocinadores',
+  'Recursos',
+  'Usuarios',
+  'Diagnóstico',
   'Auditoría',
   'Archivo legal',
   'Políticas',
@@ -38,6 +59,46 @@ test.describe('admin access', () => {
     }
   })
 
+  test('an editor finds only the content and opens the administration on the events', async ({
+    pageAs,
+    editor,
+  }) => {
+    const page = await pageAs(editor)
+    const shell = new AdminShell(page)
+
+    await page.goto('/admin')
+
+    await expect(page).toHaveURL(AdminShell.path('Eventos'))
+    await expect(shell.sidebar.getByRole('link')).toHaveText([...EDITOR_SECTIONS])
+    await page.goto(AdminShell.path('Usuarios'))
+    await expect(page).toHaveURL('/')
+  })
+
+  test('the privacy officer, an administrator, also finds the audit', async ({
+    pageAs,
+    privacyOfficer,
+  }) => {
+    const page = await pageAs(privacyOfficer)
+    const shell = new AdminShell(page)
+    await shell.open('Métricas')
+
+    await expect(shell.sidebar.getByRole('link')).toHaveText([...PRIVACY_OFFICER_SECTIONS])
+    await shell.link('Auditoría').click()
+    await expect(page).toHaveURL(AdminShell.path('Auditoría'))
+    await expect(shell.heading('Auditoría')).toBeVisible()
+  })
+
+  test('an administrator other than the superadministrator is sent home from the audit', async ({
+    pageAs,
+    admin,
+  }) => {
+    const page = await pageAs(admin)
+
+    await page.goto(AdminShell.path('Auditoría'))
+
+    await expect(page).toHaveURL('/')
+  })
+
   test('the administration opens on the metrics dashboard', async ({ pageAs, admin }) => {
     const page = await pageAs(admin)
 
@@ -47,7 +108,7 @@ test.describe('admin access', () => {
     await expect(new AdminShell(page).heading('Métricas')).toBeVisible()
   })
 
-  test('an administrator finds every section in the sidebar and a way back to the site', async ({
+  test('an administrator finds every section but the audit in the sidebar and a way back to the site', async ({
     pageAs,
     admin,
   }) => {

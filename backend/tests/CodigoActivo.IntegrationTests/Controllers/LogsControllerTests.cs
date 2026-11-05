@@ -115,7 +115,7 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
     [InlineData("/api/logs/diagnostics")]
     [InlineData("/api/logs/audit")]
     [InlineData("/api/logs/diagnostics/0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b")]
-    public async Task EndpointsAreOnlyForAdministrators(string url)
+    public async Task EndpointsAreRefusedToMembersWithoutAStaffRole(string url)
     {
         using var anonymous = await CreateClient().GetAsync(TestUri.Rel(url), Ct);
         var member = await LoginAsMemberAsync();
@@ -123,6 +123,54 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
 
         await anonymous.ShouldBeUnauthorizedAsync(ErrorCode.AuthenticationRequired);
         await refused.ShouldBeForbiddenAsync(ErrorCode.AccessDenied);
+    }
+
+    private async Task<HttpClient> LoginAsMemberWithAsync(object state)
+    {
+        await Factory.SeedAsync(async db =>
+            Persisted.Overwrite(
+                (await db.Users.FindAsync([UserId.From(TestSeedData.Users.AdminId)], Ct))!,
+                new { IsPrivacyOfficer = false }
+            )
+        );
+        await Factory.SeedAsync(async db =>
+            Persisted.Overwrite(
+                (await db.Users.FindAsync([UserId.From(TestSeedData.Users.MemberId)], Ct))!,
+                state
+            )
+        );
+        return await LoginAsMemberAsync();
+    }
+
+    [Fact]
+    public async Task AuditIsOnlyForTheInitialAdministratorAndThePrivacyOfficer()
+    {
+        var administrator = await LoginAsMemberWithAsync(
+            new { StaffRole = StaffRole.Administrator }
+        );
+
+        using var diagnostics = await administrator.GetAsync(
+            TestUri.Rel("/api/logs/diagnostics"),
+            Ct
+        );
+        using var audit = await administrator.GetAsync(TestUri.Rel("/api/logs/audit"), Ct);
+
+        diagnostics.StatusCode.Should().Be(HttpStatusCode.OK);
+        await audit.ShouldBeForbiddenAsync(ErrorCode.AccessDenied);
+    }
+
+    [Fact]
+    public async Task AuditIsOpenToThePrivacyOfficerBesidesTheDiagnostics()
+    {
+        var officer = await LoginAsMemberWithAsync(
+            new { StaffRole = StaffRole.Administrator, IsPrivacyOfficer = true }
+        );
+
+        using var audit = await officer.GetAsync(TestUri.Rel("/api/logs/audit"), Ct);
+        using var diagnostics = await officer.GetAsync(TestUri.Rel("/api/logs/diagnostics"), Ct);
+
+        audit.StatusCode.Should().Be(HttpStatusCode.OK);
+        diagnostics.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
@@ -238,9 +286,9 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task ListAuditJoinsTheUsersItMentionsAndKeepsErasedAccountsAnonymous()
     {
-        var setAdmin = Audit(
+        var setStaffRole = Audit(
             Morning.AddMinutes(1),
-            AuditAction.SetAdmin,
+            AuditAction.SetStaffRole,
             TestSeedData.Users.AdminId,
             TestSeedData.Users.MemberId,
             related: $$"""[{"type": "Activity", "id": "{{Activity}}"}]""",
@@ -248,7 +296,7 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
             traceId: Trace
         );
         var erased = Audit(Morning, AuditAction.ChangePassword, ErasedAccount, ErasedAccount);
-        await SeedAsync(setAdmin, erased);
+        await SeedAsync(setStaffRole, erased);
         var admin = await LoginAsAdminAsync();
 
         var page = await GetPageAsync<AuditLogEntryResponse>(
@@ -261,14 +309,14 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
             .Should()
             .BeEquivalentTo(
                 new AuditLogEntryResponse(
-                    setAdmin.Id,
-                    setAdmin.OccurredAt,
+                    setStaffRole.Id,
+                    setStaffRole.OccurredAt,
                     AuditActorType.User,
                     TestSeedData.Users.AdminId,
                     "Ada Admin",
                     TestSeedData.AdminEmail,
                     "203.0.113.9",
-                    AuditAction.SetAdmin,
+                    AuditAction.SetStaffRole,
                     AuditEntityType.User,
                     TestSeedData.Users.MemberId,
                     "Marta Miembro",
@@ -439,7 +487,7 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
         await SeedAsync(
             Audit(
                 Morning.AddMinutes(1),
-                AuditAction.SetAdmin,
+                AuditAction.SetStaffRole,
                 TestSeedData.Users.AdminId,
                 TestSeedData.Users.MemberId,
                 related: $$"""[{"type": "Activity", "id": "{{Activity}}"}]""",
@@ -465,7 +513,7 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
     public async Task ListAuditSortedByActionUsesItsName()
     {
         await SeedAsync(
-            Audit(Morning, AuditAction.SetAdmin, TestSeedData.Users.AdminId, null),
+            Audit(Morning, AuditAction.SetStaffRole, TestSeedData.Users.AdminId, null),
             Audit(Morning.AddMinutes(1), AuditAction.Login, null, null)
         );
         var admin = await LoginAsAdminAsync();
@@ -474,7 +522,7 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
 
         page.Items.Select(entry => entry.Action)
             .Should()
-            .Equal(AuditAction.Login, AuditAction.SetAdmin);
+            .Equal(AuditAction.Login, AuditAction.SetStaffRole);
     }
 
     [Theory]

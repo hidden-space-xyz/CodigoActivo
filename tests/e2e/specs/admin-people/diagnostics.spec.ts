@@ -8,14 +8,14 @@ const LOCKOUT_MESSAGE = 'An account was locked after 5 wrong passwords'
 test.describe('diagnostic log', () => {
   test('a password lockout is logged as a warning with its detail and its trace', async ({
     pageAs,
-    admin,
+    initialAdmin,
     accounts,
     clientAddress,
   }) => {
     const account = await accounts.create({ label: 'locked' })
     const traceId = await lockOutWithWrongPasswords(clientAddress, account.email)
-    await diagnosticsOfTrace(admin.api, traceId)
-    const page = await pageAs(admin)
+    await diagnosticsOfTrace(initialAdmin.api, traceId)
+    const page = await pageAs(initialAdmin)
 
     await page.goto(`/admin/diagnostics?traceId=${traceId}`)
 

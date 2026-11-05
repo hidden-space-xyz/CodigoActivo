@@ -193,8 +193,11 @@ public enum AuditAction
     /// <summary>Told guardians which dependents come of age soon.</summary>
     SendComingOfAgeNotices,
 
-    /// <summary>Granted or removed administrator rights.</summary>
-    SetAdmin,
+    /// <summary>Changed the staff role of a user.</summary>
+    SetStaffRole,
+
+    /// <summary>Designated the account for data protection.</summary>
+    DesignatePrivacyOfficer,
 
     /// <summary>Updated a user.</summary>
     UpdateUser,

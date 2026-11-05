@@ -14,17 +14,17 @@ describe('access guard in the app', () => {
     expect(wrapper.text()).toContain(t('pages.login.title'))
   })
 
-  it('sends guests from admin pages to login, following the admin redirect', async () => {
+  it('sends guests from the admin area to login, coming back to it', async () => {
     const { router } = await renderApp('/admin')
 
     expect(router.currentRoute.value.name).toBe('login')
-    expect(router.currentRoute.value.query).toEqual({ redirect: '/admin/dashboard' })
+    expect(router.currentRoute.value.query).toEqual({ redirect: '/admin' })
   })
 
-  it('sends signed-in non-admin users away from admin pages', async () => {
+  it('sends signed-in users without the needed cargo away from admin pages', async () => {
     useHomeApi()
 
-    const { router } = await renderApp('/admin/users', { user: { isAdmin: false } })
+    const { router } = await renderApp('/admin/users', { user: { staffRole: 'Editor' } })
 
     expect(router.currentRoute.value.name).toBe('home')
   })

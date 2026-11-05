@@ -1,4 +1,5 @@
 import type { RegisterRequest } from '@contract/registerRequest'
+import type { StaffRole } from '@contract/staffRole'
 import type { UserResponse } from '@contract/userResponse'
 import type { UserResponsePagedResult } from '@contract/userResponsePagedResult'
 
@@ -158,9 +159,24 @@ export async function resetPassword(
   })
 }
 
-/** Makes `userId` an administrator; `admin` confirms with its own password. */
-export async function grantAdmin(admin: ApiClient, userId: string): Promise<void> {
-  await admin.patch(`/api/users/${userId}/admin`, { isAdmin: true, currentPassword: PASSWORD })
+/** Gives `userId` a staff role; the initial administrator confirms with its own password. */
+export async function grantStaffRole(
+  initialAdmin: ApiClient,
+  userId: string,
+  staffRole: StaffRole,
+): Promise<void> {
+  await initialAdmin.patch(`/api/users/${userId}/staff-role`, {
+    staffRole,
+    currentPassword: PASSWORD,
+  })
+}
+
+/** Designates `userId` for data protection; the initial administrator confirms with its password. */
+export async function designatePrivacyOfficer(
+  initialAdmin: ApiClient,
+  userId: string,
+): Promise<void> {
+  await initialAdmin.post(`/api/users/${userId}/privacy-officer`, { currentPassword: PASSWORD })
 }
 
 /** Changes the type of the account `userId`. */

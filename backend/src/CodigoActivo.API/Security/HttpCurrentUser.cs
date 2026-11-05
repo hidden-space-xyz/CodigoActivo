@@ -15,5 +15,5 @@ public sealed class HttpCurrentUser(IHttpContextAccessor accessor) : ICurrentUse
     public UserId? Id => accessor.HttpContext?.User.GetUserId() is { } id ? UserId.From(id) : null;
 
     /// <inheritdoc />
-    public bool IsAdmin => accessor.HttpContext?.User.IsAdmin() is true;
+    public bool IsAdmin => accessor.HttpContext?.User.HasStaffRole(StaffRole.Administrator) is true;
 }
