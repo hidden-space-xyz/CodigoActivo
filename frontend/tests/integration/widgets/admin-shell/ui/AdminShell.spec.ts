@@ -79,14 +79,10 @@ describe('AdminShell', () => {
     ]
 
     expect(await sidebar({ staffRole: 'Editor' })).toEqual(editorPages)
-    expect(await sidebar({ isPrivacyOfficer: true })).toEqual([
-      '/admin/audit',
-      '/admin/blocked-data',
-    ])
+    expect(await sidebar({ isPrivacyOfficer: true })).toEqual(['/admin/audit'])
     expect(await sidebar({ staffRole: 'Editor', isPrivacyOfficer: true })).toEqual([
       ...editorPages.slice(0, 4),
       '/admin/audit',
-      '/admin/blocked-data',
       '/admin/catalogs',
     ])
     expect(await sidebar({ staffRole: 'Administrator' })).not.toContain('/admin/audit')

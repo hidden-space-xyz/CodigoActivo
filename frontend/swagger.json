@@ -3391,23 +3391,6 @@
       }
     },
     "/api/me/deletion": {
-      "get": {
-        "tags": [
-          "Me"
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AccountDeletionStatusResponse"
-                }
-              }
-            }
-          }
-        }
-      },
       "post": {
         "tags": [
           "Me"
@@ -4945,18 +4928,6 @@
         "properties": {
           "currentPassword": {
             "type": "string"
-          }
-        },
-        "additionalProperties": false
-      },
-      "AccountDeletionStatusResponse": {
-        "required": [
-          "allowed"
-        ],
-        "type": "object",
-        "properties": {
-          "allowed": {
-            "type": "boolean"
           }
         },
         "additionalProperties": false

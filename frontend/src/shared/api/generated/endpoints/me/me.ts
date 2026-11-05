@@ -30,7 +30,6 @@ import type {
 
 import type {
   AccountDeletionCodeRequest,
-  AccountDeletionStatusResponse,
   AssignedActivityResponse,
   DeleteAccountRequest,
   EventCertificateResponse,
@@ -369,85 +368,6 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getGetApiMeAssignedActivitiesMutationOptions(options), queryClient);
-    }
-    export type getApiMeDeletionResponse200 = {
-  data: AccountDeletionStatusResponse
-  status: 200
-}
-
-export type getApiMeDeletionResponseSuccess = (getApiMeDeletionResponse200) & {
-  headers: Headers;
-};
-;
-
-export type getApiMeDeletionResponse = (getApiMeDeletionResponseSuccess)
-
-export const getGetApiMeDeletionUrl = () => {
-
-
-
-
-  return `/api/me/deletion`
-}
-
-export const getApiMeDeletion = async ( options?: Parameters<typeof httpClient>[1]): Promise<getApiMeDeletionResponse> => {
-
-  return httpClient<getApiMeDeletionResponse>(getGetApiMeDeletionUrl(),
-  {
-    ...options,
-    method: 'GET'
-
-
-  }
-);}
-
-
-
-
-
-export const getGetApiMeDeletionMutationKey = () => ['getApiMeDeletion'] as const;
-
-export const getGetApiMeDeletionMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeDeletion>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiMeDeletion>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiMeDeletionMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiMeDeletion>>, void> = () => {
-
-
-          return  getApiMeDeletion(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiMeDeletionMutationResult = NonNullable<Awaited<ReturnType<typeof getApiMeDeletion>>>
-
-    export type GetApiMeDeletionMutationError = unknown
-
-
-    export const useGetApiMeDeletion = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeDeletion>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiMeDeletion>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiMeDeletionMutationOptions(options), queryClient);
     }
     export type postApiMeDeletionResponse200 = {
   data: void

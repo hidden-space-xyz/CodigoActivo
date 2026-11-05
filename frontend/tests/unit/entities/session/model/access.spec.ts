@@ -4,7 +4,7 @@ import { hasStaffAccess, type AuthUser, type StaffAccess } from '@/entities/sess
 
 import { buildAuthUser } from '../../../../support/models'
 
-const ACCESSES: readonly StaffAccess[] = ['editor', 'admin', 'audit', 'blocked-data']
+const ACCESSES: readonly StaffAccess[] = ['editor', 'admin', 'audit']
 
 function accessesOf(user: AuthUser | null): StaffAccess[] {
   return ACCESSES.filter((access) => hasStaffAccess(user, access))
@@ -18,11 +18,7 @@ describe('hasStaffAccess', () => {
 
   it('opens the content to editors and all but the audit to administrators', () => {
     expect(accessesOf(buildAuthUser({ staffRole: 'Editor' }))).toEqual(['editor'])
-    expect(accessesOf(buildAuthUser({ staffRole: 'Administrator' }))).toEqual([
-      'editor',
-      'admin',
-      'blocked-data',
-    ])
+    expect(accessesOf(buildAuthUser({ staffRole: 'Administrator' }))).toEqual(['editor', 'admin'])
   })
 
   it('opens everything to the superadministrator', () => {
@@ -31,12 +27,11 @@ describe('hasStaffAccess', () => {
     )
   })
 
-  it('opens the audit and the blocked data to the data protection officer whatever their cargo', () => {
-    expect(accessesOf(buildAuthUser({ isPrivacyOfficer: true }))).toEqual(['audit', 'blocked-data'])
+  it('opens the audit to the data protection officer whatever their cargo', () => {
+    expect(accessesOf(buildAuthUser({ isPrivacyOfficer: true }))).toEqual(['audit'])
     expect(accessesOf(buildAuthUser({ staffRole: 'Editor', isPrivacyOfficer: true }))).toEqual([
       'editor',
       'audit',
-      'blocked-data',
     ])
   })
 })

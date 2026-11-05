@@ -225,7 +225,7 @@ public enum ApplicationErrorCode
 
     /// <summary>
     /// Selects the option for an account other than the initial administrator that changes a staff
-    /// role, designates the account for data protection or deletes another independent account.
+    /// role or designates the account for data protection.
     /// </summary>
     SuperAdministratorOnly,
 

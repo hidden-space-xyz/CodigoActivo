@@ -32,7 +32,7 @@ function routerFor(queryClient: QueryClient) {
       route('/admin/events', 'admin-events', { access: 'editor' }),
       route('/admin/users', 'admin-users', { access: 'admin' }),
       route('/admin/audit', 'admin-audit', { access: 'audit' }),
-      route('/admin/blocked-data', 'admin-blocked-data', { access: 'blocked-data' }),
+      route('/admin/blocked-data', 'admin-blocked-data', { access: 'admin' }),
     ],
   })
   installAccessGuard(router, queryClient)
@@ -137,14 +137,10 @@ describe('installAccessGuard', () => {
 
     expect(await pagesOpenedBy({})).toEqual([])
     expect(await pagesOpenedBy({ staffRole: 'Editor' })).toEqual(['/admin/events'])
-    expect(await pagesOpenedBy({ isPrivacyOfficer: true })).toEqual([
-      '/admin/audit',
-      '/admin/blocked-data',
-    ])
+    expect(await pagesOpenedBy({ isPrivacyOfficer: true })).toEqual(['/admin/audit'])
     expect(await pagesOpenedBy({ staffRole: 'Editor', isPrivacyOfficer: true })).toEqual([
       '/admin/events',
       '/admin/audit',
-      '/admin/blocked-data',
     ])
     expect(await pagesOpenedBy({ staffRole: 'Administrator' })).toEqual([
       '/admin/events',

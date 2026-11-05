@@ -4,7 +4,6 @@ import {
   getAccountCertificatesRequest,
   getAccountChildrenRequest,
   getAccountConsentsRequest,
-  getAccountDeletionAllowedRequest,
   getAccountHistoryRequest,
   getAccountProfileRequest,
 } from './requests'
@@ -17,7 +16,6 @@ export const accountKeys = {
   history: () => [...accountKeys.all, 'history'] as const,
   certificates: () => [...accountKeys.all, 'certificates'] as const,
   consents: () => [...accountKeys.all, 'consents'] as const,
-  deletionAllowed: () => [...accountKeys.all, 'deletion-allowed'] as const,
 }
 
 /** Query options of the signed-in account. */
@@ -51,11 +49,5 @@ export const accountQueries = {
     queryOptions({
       queryKey: accountKeys.consents(),
       queryFn: () => getAccountConsentsRequest(),
-    }),
-  /** Whether the user may delete the own account; only the initial administrator may not. */
-  deletionAllowed: () =>
-    queryOptions({
-      queryKey: accountKeys.deletionAllowed(),
-      queryFn: () => getAccountDeletionAllowedRequest(),
     }),
 }

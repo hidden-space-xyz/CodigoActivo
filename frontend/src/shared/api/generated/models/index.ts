@@ -7,7 +7,6 @@
 
 export * from './accountAuditEntryResponse';
 export * from './accountDeletionCodeRequest';
-export * from './accountDeletionStatusResponse';
 export * from './activityModalityTypeResponse';
 export * from './activityResponse';
 export * from './activityResponsePagedResult';

@@ -38,7 +38,6 @@ describe('routes', () => {
       'admin-resources': 'editor',
       'admin-catalogs': 'editor',
       'admin-audit': 'audit',
-      'admin-blocked-data': 'blocked-data',
     }
 
     expect(adminRoutes.length).toBeGreaterThan(0)

@@ -53,7 +53,6 @@ describe('useDeleteAccount', () => {
 
   it('explains a refusal of the initial administrator', async () => {
     server.use(
-      http.get('/api/me/deletion', () => HttpResponse.json({ allowed: true })),
       http.post('/api/me/deletion', () => apiError(403, 'UserDeleteInitialAdminForbidden')),
     )
     const { result } = await mountComposable(() => useDeleteAccount(), {

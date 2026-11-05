@@ -64,7 +64,7 @@ export const ADMIN_NAV = [
     labelKey: 'widgets.adminShell.nav.blockedData',
     routeName: 'admin-blocked-data',
     icon: 'lock',
-    access: 'blocked-data',
+    access: 'admin',
   },
   {
     labelKey: 'widgets.adminShell.nav.legal',

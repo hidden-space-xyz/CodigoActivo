@@ -89,7 +89,7 @@ authentication are not supported.
   [initial administrator](DEPLOYMENT.md#demo-mode-and-initial-administrator), whose random password is
   discarded, so there is no bootstrap password. That generic account can be neither demoted
   (`UserCannotRemoveInitialAdmin`) nor deleted, so the application always keeps an administrator; the SPA
-  disables both actions for it. A dependent, who never signs in, never holds a role or the designation
+  offers no role change for it and disables its deletion. A dependent, who never signs in, never holds a role or the designation
   (`UserDependentCannotHoldStaffRole`), nor does an account whose email is unconfirmed
   (`UserPendingVerificationCannotHoldStaffRole`); the SPA offers the actions only for independent accounts.
   Editors and administrators are members: a role is refused to any other type and, while an account holds one,
@@ -98,7 +98,8 @@ authentication are not supported.
   (`UserPrivacyOfficerMustBeAdministrator`).
 - Nobody changes their own role: on the caller's own id, `PATCH /api/users/{id}/staff-role` returns
   `UserSelfStaffRoleChangeForbidden` before any password is checked, and `PATCH /api/users/{id}/change-type`
-  returns `UserSelfTypeChangeForbidden`; the SPA disables both actions on the caller's row.
+  returns `UserSelfTypeChangeForbidden`; on the caller's row the SPA offers no role change and disables the
+  type change.
 - `PUT /api/users/{id}` asks the caller (the user or their guardian) for their own
   password whenever the update would replace the account's email, phone or secondary phone. A missing or
   wrong password returns `UserCurrentPasswordIncorrect` and changes nothing; edits that leave all three
@@ -191,8 +192,8 @@ Erasing one's own account requires the current password **and** the second facto
 code: same stored code, lifetime and cooldown, so a code sent for either flow is accepted by the other, and each
 still needs the password. Deletion signs the caller out, cascades to remove the user, their dependents and their
 signups, terms decisions and [event ratings](#event-ratings), and is refused only to the initial administrator
-(`UserDeleteInitialAdminForbidden`), before the password is checked. `GET /api/me/deletion` tells the caller
-whether they may delete their account, so the SPA hides the action from the initial administrator.
+(`UserDeleteInitialAdminForbidden`), before the password is checked; the SPA hides the action from the initial
+administrator, whom its session identifies.
 `DELETE /api/users/{id}` refuses the initial administrator and the caller's own id
 (`UserSelfDeleteRequiresVerification`); the SPA disables that action on both rows. Only the initial administrator
 deletes other accounts, administrators included, without re-entering a password, and a guardian deletes their

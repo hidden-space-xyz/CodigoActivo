@@ -17,7 +17,6 @@ import {
 import {
   getApiMeCertificates,
   getApiMeConsents,
-  getApiMeDeletion,
   getApiMeEventHistory,
   getApiMePersonalData,
   postApiMeDeletion,
@@ -88,15 +87,6 @@ export async function updateAccountProfileRequest(
 ): Promise<AccountProfile> {
   const response = await putApiUsersUserId(userId, toUpdateProfileRequest(input))
   return toAccountProfile(response.data)
-}
-
-/**
- * Asks the API whether the signed-in user may delete their own account (`GET /api/me/deletion`);
- * only the initial administrator may not.
- */
-export async function getAccountDeletionAllowedRequest(): Promise<boolean> {
-  const { data } = await getApiMeDeletion()
-  return data.allowed
 }
 
 /**

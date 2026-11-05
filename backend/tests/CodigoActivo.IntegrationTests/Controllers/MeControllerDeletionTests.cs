@@ -3,7 +3,6 @@ using System.Text.Json;
 using AwesomeAssertions;
 using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.API.Errors;
-using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -194,13 +193,6 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         });
     }
 
-    private static async Task<AccountDeletionStatusResponse> StatusAsync(HttpClient client)
-    {
-        using var response = await client.GetAsync(TestUri.Rel(DeletionUrl), Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        return (await response.ReadJsonAsync<AccountDeletionStatusResponse>(Ct))!;
-    }
-
     private async Task<(string? Command, Guid? ActorId)> DeletionOfAsync(Guid userId)
     {
         var erased = (await ErasedUsersAsync()).Single(user => user.UserId == userId);
@@ -371,17 +363,7 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task DeletionStatusMemberIsAllowed()
-    {
-        var client = await LoginAsMemberAsync();
-
-        var status = await StatusAsync(client);
-
-        status.Allowed.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task DeletionInitialAdministratorIsNotAllowedAndIsRefusedOnBothSteps()
+    public async Task DeletionInitialAdministratorIsRefusedOnBothSteps()
     {
         await PromoteMemberToAdministratorAsync();
         await SeedAuthenticatorAsync(TestSeedData.Users.AdminId);
@@ -389,8 +371,6 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         await PassPasswordStepAsync(client, TestSeedData.AdminCredentials);
         await CompleteTwoFactorAsync(client, CurrentCode());
         Factory.Clock.UtcNow += TimeSpan.FromSeconds(30);
-
-        (await StatusAsync(client)).Allowed.Should().BeFalse();
 
         using var code = await RequestCodeAsync(client);
         await code.ShouldBeForbiddenAsync(ErrorCode.UserDeleteInitialAdminForbidden);
@@ -407,8 +387,6 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
     {
         await PromoteMemberToAdministratorAsync();
         var client = await LoginAsMemberAsync();
-
-        (await StatusAsync(client)).Allowed.Should().BeTrue();
 
         using var requested = await RequestCodeAsync(client);
         requested.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -526,9 +504,6 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
     public async Task DeletionAnonymousReturnsUnauthorizedOnEveryRoute()
     {
         var client = CreateClient();
-
-        using var status = await client.GetAsync(TestUri.Rel(DeletionUrl), Ct);
-        await status.ShouldBeUnauthorizedAsync(ErrorCode.AuthenticationRequired);
 
         using var code = await RequestCodeAsync(client);
         await code.ShouldBeUnauthorizedAsync(ErrorCode.AuthenticationRequired);

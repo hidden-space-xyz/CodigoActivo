@@ -74,8 +74,7 @@ describe('DeleteAccountSection', () => {
     )
   })
 
-  it('offers the action to an administrator the API allows', async () => {
-    server.use(http.get('/api/me/deletion', () => HttpResponse.json({ allowed: true })))
+  it('offers the action to the other administrators', async () => {
     await renderSection({ user: { staffRole: 'Administrator' } })
 
     await vi.waitFor(() => expect(findButtons(t(ACTION), document.body)).toHaveLength(1))
@@ -85,8 +84,7 @@ describe('DeleteAccountSection', () => {
   })
 
   it('hides the action from the initial administrator and explains why', async () => {
-    server.use(http.get('/api/me/deletion', () => HttpResponse.json({ allowed: false })))
-    await renderSection({ user: { staffRole: 'Administrator' } })
+    await renderSection({ user: { staffRole: 'Administrator', isSuperAdmin: true } })
 
     await vi.waitFor(() =>
       expect(document.body.textContent).toContain(

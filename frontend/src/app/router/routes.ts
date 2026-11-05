@@ -250,7 +250,7 @@ export const routes: readonly RouteRecordRaw[] = [
     '/admin/blocked-data',
     'admin-blocked-data',
     () => import('@/pages/admin/blocked-data').then((m) => m.BlockedDataPage),
-    { access: 'blocked-data' },
+    { access: 'admin' },
   ),
   adminRoute(
     '/admin/catalogs',

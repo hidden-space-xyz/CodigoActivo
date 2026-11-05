@@ -9,7 +9,6 @@ const ADMIN_HOMES = [
   { name: 'admin-dashboard' },
   { name: 'admin-events' },
   { name: 'admin-audit' },
-  { name: 'admin-blocked-data' },
 ] as const
 
 function allows(user: AuthUser, access: RouteAccess | undefined): boolean {

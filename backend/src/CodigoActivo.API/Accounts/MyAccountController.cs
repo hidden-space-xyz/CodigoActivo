@@ -25,23 +25,6 @@ namespace CodigoActivo.API.Accounts;
 public class MyAccountController : ApiControllerBase
 {
     /// <summary>
-    /// Tells whether the signed-in user may delete their own account, which only the initial
-    /// administrator may not.
-    /// </summary>
-    /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing the account deletion status.</returns>
-    [HttpGet("deletion")]
-    public async Task<ActionResult<AccountDeletionStatusResponse>> DeletionStatusAsync(
-        [FromServices]
-            IQueryHandler<GetAccountDeletionStatusQuery, AccountDeletionStatusResponse> handler,
-        CancellationToken ct
-    )
-    {
-        return Ok(await handler.HandleAsync(new GetAccountDeletionStatusQuery(), ct));
-    }
-
-    /// <summary>
     /// Returns a copy of the personal data kept about the signed-in user and the minors in their
     /// care, which the SPA saves as a JSON file. It shares the report rate limit.
     /// </summary>

@@ -13,7 +13,6 @@ import {
   getAccountCertificatesRequest,
   getAccountChildrenRequest,
   getAccountConsentsRequest,
-  getAccountDeletionAllowedRequest,
   getAccountHistoryRequest,
   getAccountPersonalDataRequest,
   getAccountProfileRequest,
@@ -217,14 +216,6 @@ describe('account requests', () => {
 
     await expect(deleteAccountChildRequest('child-1')).resolves.toBeUndefined()
     expect(deleted).toEqual(['child-1'])
-  })
-
-  it('asks whether the own account may be deleted', async () => {
-    const answers = [{ allowed: true }, { allowed: false }]
-    server.use(http.get('/api/me/deletion', () => HttpResponse.json(answers.shift())))
-
-    await expect(getAccountDeletionAllowedRequest()).resolves.toBe(true)
-    await expect(getAccountDeletionAllowedRequest()).resolves.toBe(false)
   })
 
   it('loads the copy of the personal data as an indented Spanish JSON file', async () => {
