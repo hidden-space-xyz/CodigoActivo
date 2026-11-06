@@ -142,7 +142,9 @@ describe('AuditPage', () => {
     await vi.waitFor(() => expect(wrapper.findAll('.el-table__body tr')).toHaveLength(1))
 
     await click(findButton(t('pages.admin.audit.filterActor', { actor: 'Ada Admin' })))
+    await vi.waitFor(() => expect(urls.at(-1)?.searchParams.get('actorId')).toBe('admin-1'))
     await click(findButton(t('pages.admin.audit.filterIp', { ip: '203.0.113.9' })))
+    await vi.waitFor(() => expect(urls.at(-1)?.searchParams.get('clientIp')).toBe('203.0.113.9'))
     await click(findButton(t('pages.admin.audit.filterTrace', { trace: TRACE_ID })))
     await vi.waitFor(() =>
       expect(Object.fromEntries(urls.at(-1)?.searchParams ?? [])).toMatchObject({
