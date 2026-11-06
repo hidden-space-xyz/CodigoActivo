@@ -19,7 +19,7 @@ export function newcomers(data) {
   const [userId, otp] = waitForMail(address, VERIFICATION_LINK, { since })
   think()
 
-  session.patch('/api/auth/{userId}/verify', { route: { userId }, json: { otp } })
+  session.patch('/api/auth/{userId}/verify', { route: { userId }, json: { otp }, expect: [204] })
   think()
 
   since = Date.now()

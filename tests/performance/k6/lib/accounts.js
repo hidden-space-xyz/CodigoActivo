@@ -131,10 +131,12 @@ export function register(specs, admin) {
     each(accounts, 'PATCH', '/api/auth/{userId}/verify', (_, index) => ({
       route: { userId: links[index][0] },
       json: { otp: links[index][1] },
+      expect: [204],
     })),
-    [200],
+    [204],
     'Verification',
-  ).forEach((user, index) => (accounts[index].id = user.id))
+  )
+  links.forEach(([userId], index) => (accounts[index].id = userId))
   for (const { id, grantAdmin, userTypeId } of accounts) {
     if (userTypeId) {
       admin.session.patch('/api/users/{userId}/change-type', {
