@@ -8,35 +8,25 @@ import type { StaffRole } from './staffRole';
 import type { UserScope } from './userScope';
 
 export type PostApiEmailsUsersParams = {
-id?: string;
-/**
- * @maxLength 200
- */
-name?: string;
-/**
- * @maxLength 200
- */
-email?: string;
-/**
- * @maxLength 200
- */
-phone?: string;
-/**
- * @maxLength 200
- */
-nationalId?: string;
-userTypeId?: string;
-userStatusTypeId?: string;
-staffRole?: StaffRole;
-newsConsent?: boolean;
-parentId?: string;
-scope?: UserScope;
-birthDateFrom?: string;
-birthDateTo?: string;
-page?: number;
-pageSize?: number;
-/**
- * @maxLength 200
- */
-sort?: string;
+  id?: string;
+  /** @maxLength 200 */
+  name?: string;
+  /** @maxLength 200 */
+  email?: string;
+  /** @maxLength 200 */
+  phone?: string;
+  /** @maxLength 200 */
+  nationalId?: string;
+  userTypeId?: string;
+  userStatusTypeId?: string;
+  staffRole?: StaffRole;
+  newsConsent?: boolean;
+  parentId?: string;
+  scope?: UserScope;
+  birthDateFrom?: string;
+  birthDateTo?: string;
+  page?: number;
+  pageSize?: number;
+  /** @maxLength 200 */
+  sort?: string;
 };

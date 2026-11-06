@@ -6,5 +6,5 @@
  */
 
 export type GetApiMeAssignedActivitiesParams = {
-eventId?: string;
+  eventId?: string;
 };

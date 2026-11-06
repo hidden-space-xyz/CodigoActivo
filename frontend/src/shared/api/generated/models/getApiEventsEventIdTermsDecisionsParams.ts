@@ -6,15 +6,11 @@
  */
 
 export type GetApiEventsEventIdTermsDecisionsParams = {
-/**
- * @maxLength 200
- */
-search?: string;
-termsDocumentId?: string;
-page?: number;
-pageSize?: number;
-/**
- * @maxLength 200
- */
-sort?: string;
+  /** @maxLength 200 */
+  search?: string;
+  termsDocumentId?: string;
+  page?: number;
+  pageSize?: number;
+  /** @maxLength 200 */
+  sort?: string;
 };

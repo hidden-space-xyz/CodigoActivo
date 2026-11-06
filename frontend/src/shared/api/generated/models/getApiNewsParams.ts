@@ -6,26 +6,18 @@
  */
 
 export type GetApiNewsParams = {
-/**
- * @maxLength 200
- */
-search?: string;
-/**
- * @maxLength 200
- */
-title?: string;
-/**
- * @maxLength 200
- */
-subtitle?: string;
-featured?: boolean;
-year?: number;
-createdFrom?: string;
-createdTo?: string;
-page?: number;
-pageSize?: number;
-/**
- * @maxLength 200
- */
-sort?: string;
+  /** @maxLength 200 */
+  search?: string;
+  /** @maxLength 200 */
+  title?: string;
+  /** @maxLength 200 */
+  subtitle?: string;
+  featured?: boolean;
+  year?: number;
+  createdFrom?: string;
+  createdTo?: string;
+  page?: number;
+  pageSize?: number;
+  /** @maxLength 200 */
+  sort?: string;
 };

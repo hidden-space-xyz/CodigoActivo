@@ -7,19 +7,15 @@
 import type { Gender } from './gender';
 
 export type GetApiReportsEventsEventIdAttendeesParams = {
-/**
- * @maxLength 200
- */
-search?: string;
-userTypeId?: string;
-gender?: Gender;
-activityId?: string;
-roleTypeId?: string;
-statusId?: string;
-page?: number;
-pageSize?: number;
-/**
- * @maxLength 200
- */
-sort?: string;
+  /** @maxLength 200 */
+  search?: string;
+  userTypeId?: string;
+  gender?: Gender;
+  activityId?: string;
+  roleTypeId?: string;
+  statusId?: string;
+  page?: number;
+  pageSize?: number;
+  /** @maxLength 200 */
+  sort?: string;
 };

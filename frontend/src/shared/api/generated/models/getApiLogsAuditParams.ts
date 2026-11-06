@@ -10,27 +10,21 @@ import type { AuditEntityType } from './auditEntityType';
 import type { AuditOutcome } from './auditOutcome';
 
 export type GetApiLogsAuditParams = {
-/**
- * @maxLength 200
- */
-search?: string;
-actorType?: AuditActorType;
-actorId?: string;
-action?: AuditAction;
-entityType?: AuditEntityType;
-entityId?: string;
-outcome?: AuditOutcome;
-clientIp?: string;
-/**
- * @pattern ^[0-9a-fA-F]{32}$
- */
-traceId?: string;
-occurredFrom?: string;
-occurredTo?: string;
-page?: number;
-pageSize?: number;
-/**
- * @maxLength 200
- */
-sort?: string;
+  /** @maxLength 200 */
+  search?: string;
+  actorType?: AuditActorType;
+  actorId?: string;
+  action?: AuditAction;
+  entityType?: AuditEntityType;
+  entityId?: string;
+  outcome?: AuditOutcome;
+  clientIp?: string;
+  /** @pattern ^[0-9a-fA-F]{32}$ */
+  traceId?: string;
+  occurredFrom?: string;
+  occurredTo?: string;
+  page?: number;
+  pageSize?: number;
+  /** @maxLength 200 */
+  sort?: string;
 };

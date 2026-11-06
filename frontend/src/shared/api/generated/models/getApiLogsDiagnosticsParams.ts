@@ -7,25 +7,17 @@
 import type { DiagnosticLevel } from './diagnosticLevel';
 
 export type GetApiLogsDiagnosticsParams = {
-/**
- * @maxLength 200
- */
-search?: string;
-level?: DiagnosticLevel;
-/**
- * @maxLength 200
- */
-category?: string;
-/**
- * @pattern ^[0-9a-fA-F]{32}$
- */
-traceId?: string;
-occurredFrom?: string;
-occurredTo?: string;
-page?: number;
-pageSize?: number;
-/**
- * @maxLength 200
- */
-sort?: string;
+  /** @maxLength 200 */
+  search?: string;
+  level?: DiagnosticLevel;
+  /** @maxLength 200 */
+  category?: string;
+  /** @pattern ^[0-9a-fA-F]{32}$ */
+  traceId?: string;
+  occurredFrom?: string;
+  occurredTo?: string;
+  page?: number;
+  pageSize?: number;
+  /** @maxLength 200 */
+  sort?: string;
 };

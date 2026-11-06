@@ -6,6 +6,6 @@
  */
 
 export type GetApiReportsDashboardAnalyticsParams = {
-from?: string;
-to?: string;
+  from?: string;
+  to?: string;
 };

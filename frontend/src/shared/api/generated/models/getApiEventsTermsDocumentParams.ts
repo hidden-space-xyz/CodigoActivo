@@ -6,14 +6,10 @@
  */
 
 export type GetApiEventsTermsDocumentParams = {
-/**
- * @maxLength 200
- */
-name?: string;
-page?: number;
-pageSize?: number;
-/**
- * @maxLength 200
- */
-sort?: string;
+  /** @maxLength 200 */
+  name?: string;
+  page?: number;
+  pageSize?: number;
+  /** @maxLength 200 */
+  sort?: string;
 };

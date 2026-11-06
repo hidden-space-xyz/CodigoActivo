@@ -6,5 +6,5 @@
  */
 
 export type PatchApiUsersUserIdChangeTypeParams = {
-userTypeId?: string;
+  userTypeId?: string;
 };

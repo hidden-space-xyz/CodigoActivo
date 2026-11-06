@@ -6,10 +6,8 @@
  */
 
 export type GetApiEventsEventIdRatingsParams = {
-page?: number;
-pageSize?: number;
-/**
- * @maxLength 200
- */
-sort?: string;
+  page?: number;
+  pageSize?: number;
+  /** @maxLength 200 */
+  sort?: string;
 };
