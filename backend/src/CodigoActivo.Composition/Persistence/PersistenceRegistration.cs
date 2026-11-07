@@ -52,7 +52,10 @@ internal static class PersistenceRegistration
 
     /// <summary>
     /// Builds the connection string of the application database from the flat <c>POSTGRES_*</c>
-    /// settings; every one but the password has a local development default.
+    /// settings; every one but the password has a local development default. The database
+    /// authenticates with a password, so GSS encryption is disabled: negotiating it makes every new
+    /// connection resolve the host through Kerberos, whose lookup on musl (the Alpine image) is
+    /// not thread-safe and crashed the process when connections opened concurrently.
     /// </summary>
     /// <param name="settings">Settings of the application.</param>
     /// <returns>The connection string.</returns>
@@ -65,6 +68,7 @@ internal static class PersistenceRegistration
             Database = settings.Text("POSTGRES_DB", "codigoactivo"),
             Username = settings.Text("POSTGRES_USER", "codigoactivo"),
             Password = settings.Verbatim("POSTGRES_PASSWORD"),
+            GssEncryptionMode = GssEncryptionMode.Disable,
         }.ConnectionString;
     }
 }
