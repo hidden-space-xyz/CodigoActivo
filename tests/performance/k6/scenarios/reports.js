@@ -5,6 +5,7 @@ import { day, pick, word } from '../lib/data.js'
 
 const LATEST = { sort: '-occurredAt', page: 1, pageSize: 25 }
 
+/** An administrator reads the dashboard, the reports of an event and the logs. */
 export function reports(data) {
   const { account, iteration } = nextAccount(data.admins.reports)
   const session = sessionFor(account)
@@ -17,7 +18,7 @@ export function reports(data) {
   session.get('/api/reports/events/{eventId}/summary', { route })
   session.get('/api/reports/events/{eventId}/attendees', {
     route,
-    query: { page: 1, pageSize: 25 },
+    query: { page: 1, pageSize: 25, sort: 'firstName' },
   })
   think()
   session.get('/api/reports/events/{eventId}/badges', { route })

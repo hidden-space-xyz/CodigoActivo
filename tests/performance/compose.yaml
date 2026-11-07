@@ -96,13 +96,30 @@ services:
       start_period: 10m
       start_interval: 2s
 
+  volume:
+    <<: *tools
+    image: postgres:18-alpine
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      <<: *database
+    entrypoint:
+      - sh
+      - -c
+      - PGPASSWORD="$$(cat /run/secrets/postgres_password)" exec psql -h db -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -v ON_ERROR_STOP=1 -q -f /volume.sql
+    volumes:
+      - secrets:/run/secrets:ro
+      - ./volume.sql:/volume.sql:ro
+
   k6:
     <<: *tools
     image: grafana/k6:2.3.0
     profiles: [k6]
+    user: root
     depends_on:
-      api:
-        condition: service_healthy
+      volume:
+        condition: service_completed_successfully
     environment:
       <<: *admin
       API_URL: http://api:8080

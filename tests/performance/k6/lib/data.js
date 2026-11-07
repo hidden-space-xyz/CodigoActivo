@@ -1,5 +1,6 @@
 import { EMAIL_DOMAIN, PASSWORD } from './config.js'
 
+/** Identifiers of the catalog rows the API seeds with fixed values. */
 export const LOOKUPS = {
   userTypes: { member: 'b0df7ac6-1312-412f-9c2a-88e6cdfb6e1c' },
   roles: {
@@ -17,6 +18,7 @@ export const LOOKUPS = {
   },
 }
 
+/** A one-pixel image, sent as a signature and as an attachment. */
 export const SIGNATURE_PNG =
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
 
@@ -25,12 +27,15 @@ const lastNames = ['García Prieto', 'Fernández Rey', 'López Vidal', 'Martín 
 const words = ['robótica', 'scratch', 'python', 'arduino', 'videojuegos', 'web', 'datos', 'taller']
 const nationalIds = ['12345678Z', '87654321X', '45678912S', '23456789D', '76543210S', '31415926L']
 
+/** Title prefix of what the back office scenario creates and deletes, so nobody opens it. */
 export const DRAFT = 'Borrador k6'
 
+/** Leaves out the drafts of the back office scenario. */
 export function published(items) {
   return items.filter((item) => !item.title?.startsWith(DRAFT))
 }
 
+/** Picks the item at `index`, wrapping around, or a random one without it. */
 export function pick(items, index) {
   if (!items.length) {
     return undefined
@@ -38,6 +43,7 @@ export function pick(items, index) {
   return items[index === undefined ? randomInt(0, items.length - 1) : index % items.length]
 }
 
+/** Draws an unbiased integer between both limits. */
 export function randomInt(min, max) {
   const range = max - min + 1
   const unbiased = 2 ** 32 - (2 ** 32 % range)
@@ -45,10 +51,12 @@ export function randomInt(min, max) {
   return value < unbiased ? min + (value % range) : randomInt(min, max)
 }
 
+/** Draws a word for a search or a text. */
 export function word() {
   return pick(words)
 }
 
+/** Builds the rich text document the API stores. */
 export function richText(text, image) {
   const content = [{ type: 'paragraph', content: [{ type: 'text', text }] }]
   if (image) {
@@ -61,6 +69,7 @@ function phone() {
   return `6${randomInt(10000000, 99999999)}`
 }
 
+/** Builds an address of the domain the suite owns. */
 export function email(...parts) {
   return `perf-${parts.join('-')}@${EMAIL_DOMAIN}`.toLowerCase()
 }
@@ -73,6 +82,7 @@ function person() {
   }
 }
 
+/** Formats the date `offset` days from today. */
 export function day(offset) {
   const date = new Date()
   date.setUTCHours(12, 0, 0, 0)
@@ -80,10 +90,11 @@ export function day(offset) {
   return date.toISOString().slice(0, 10)
 }
 
-function minor(age = randomInt(8, 15)) {
-  return { ...person(), birthDate: day(-365 * age - 30), declaresGuardianship: true }
+function minor() {
+  return { ...person(), birthDate: day(-365 * randomInt(8, 15) - 30), declaresGuardianship: true }
 }
 
+/** Builds a registration with the given number of children. */
 export function registration(address, minors = 0) {
   return {
     ...person(),
@@ -92,11 +103,12 @@ export function registration(address, minors = 0) {
     password: PASSWORD,
     nationalId: pick(nationalIds),
     declaresAdult: true,
-    newsConsent: true,
+    newsConsent: false,
     minors: Array.from({ length: minors }, () => minor()),
   }
 }
 
+/** Builds an event whose signup is open now. */
 export function eventBody({ thumbnailId, categoryIds, terms = [], startsIn = 14, title }) {
   const now = Date.now()
   return {
@@ -114,6 +126,7 @@ export function eventBody({ thumbnailId, categoryIds, terms = [], startsIn = 14,
   }
 }
 
+/** Builds an activity of an event; slots an hour apart overlap. */
 export function activityBody({ thumbnailId, modalityId, roles, startsIn = 14, slot = 0 }) {
   const hour = 8 + (slot % 8)
   const pad = (value) => String(value).padStart(2, '0')
@@ -129,6 +142,7 @@ export function activityBody({ thumbnailId, modalityId, roles, startsIn = 14, sl
   }
 }
 
+/** Accepts every terms document, signing those that ask for it. */
 export function decisionsFor(documents) {
   return documents.map((document) => ({
     termsDocumentId: document.termsDocumentId,

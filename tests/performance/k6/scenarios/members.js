@@ -4,16 +4,14 @@ import { nextAccount, sessionFor } from '../lib/pool.js'
 import { pick, randomInt, word } from '../lib/data.js'
 import { accountProfile, eventActivities, eventDetail, home, openSite } from '../lib/pages.js'
 
+const REMOVED_RATING_EVERY = 4
+
 function rate(session, history, iteration) {
   const rateable = history.filter((entry) => entry.canRate)
   if (!rateable.length) {
     return
   }
   const route = { eventId: pick(rateable, iteration).eventId }
-  if (iteration % 4 === 1) {
-    session.delete('/api/events/{eventId}/rating', { route, expect: [204, 404] })
-    return
-  }
   session.put('/api/events/{eventId}/rating', {
     route,
     json: {
@@ -24,8 +22,14 @@ function rate(session, history, iteration) {
     },
     expect: [204],
   })
+  session.get('/api/me/event-history')
+  if (iteration % REMOVED_RATING_EVERY === 1) {
+    session.delete('/api/events/{eventId}/rating', { route, expect: [204] })
+    session.get('/api/me/event-history')
+  }
 }
 
+/** A signed-in visit: home, an event with its activities, the account, history and certificates. */
 export function members(data) {
   const { account, iteration } = nextAccount(data.demoMembers.concat(data.members))
   const session = sessionFor(account)
@@ -36,14 +40,15 @@ export function members(data) {
   const eventId = iteration % 2 || !upcoming.length ? data.fixtures.rushEventId : pick(upcoming).id
   const event = eventDetail(session, eventId)
   think()
-  eventActivities(session, event)
-  think()
+  if (event) {
+    eventActivities(session, event)
+    think()
+  }
 
   accountProfile(session)
   think()
 
-  const history = body(session.get('/api/me/event-history')) ?? []
-  rate(session, history, iteration)
+  rate(session, body(session.get('/api/me/event-history')) ?? [], iteration)
   think()
 
   session.get('/api/me/certificates')

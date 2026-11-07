@@ -1,3 +1,4 @@
+/** p95 budget in milliseconds of each kind of endpoint. */
 const BUDGETS = {
   cached: 50,
   read: 200,
@@ -8,6 +9,7 @@ const BUDGETS = {
   upload: 2000,
 }
 
+/** The requests the suite measures, by kind; `[anonymous]` marks a GET without a session. */
 const endpoints = {
   cached: [
     'GET /api/activities [anonymous]',
@@ -52,7 +54,6 @@ const endpoints = {
     'GET /api/news/{newsItemId}',
     'GET /api/users/status-types',
     'GET /api/users/types',
-    'GET /api/users/{userId}',
   ],
   list: [
     'GET /api/activities',
@@ -71,7 +72,6 @@ const endpoints = {
     'DELETE /api/activities/{activityId}',
     'DELETE /api/events/{eventId}',
     'DELETE /api/events/{eventId}/rating',
-    'DELETE /api/files/{fileId}',
     'DELETE /api/news/{newsItemId}',
     'PATCH /api/activities/{activityId}/{userId}/assign',
     'PATCH /api/activities/{activityId}/{userId}/change-role',
@@ -112,8 +112,10 @@ const endpoints = {
 
 export const ENDPOINT_KINDS = Object.keys(BUDGETS)
 
+/** Every catalogued request with its kind and budget. */
 export const ENDPOINTS = Object.entries(endpoints).flatMap(([kind, names]) =>
   names.map((name) => ({ name, kind, budget: BUDGETS[kind] })),
 )
 
+/** Kind of each catalogued request, by name. */
 export const KIND_OF = Object.fromEntries(ENDPOINTS.map(({ name, kind }) => [name, kind]))

@@ -1,11 +1,16 @@
 import http from 'k6/http'
 import { fail, sleep } from 'k6'
+import { Trend } from 'k6/metrics'
 import { MAILPIT_URL } from './config.js'
 
 export const LOGIN_CODE = /^\s*(\d{6})\s*$/m
 export const VERIFICATION_LINK = /\/verify-account#userId=([0-9a-f-]{36})&code=([^\s<>"')\]]+)/
 export const RESET_LINK = /\/reset-password#userId=([0-9a-f-]{36})&code=([^\s<>"')\]]+)/
 
+const TIMEOUT_SECONDS = 60
+const CREATED_TOLERANCE_MS = 1000
+
+const mailDelay = new Trend('mail_delay', true)
 const params = { tags: { name: 'mailpit', target: 'mailpit' } }
 
 function messagesTo(address) {
@@ -22,9 +27,9 @@ function textOf(id, cache) {
   return cache[id]
 }
 
-function find({ address, pattern, since }, cache, includeOlder) {
+function find({ address, pattern, since }, cache) {
   for (const message of messagesTo(address)) {
-    if (includeOlder || Date.parse(message.Created) >= since - 1000) {
+    if (Date.parse(message.Created) >= since - CREATED_TOLERANCE_MS) {
       const match = textOf(message.ID, cache).match(pattern)
       if (match) {
         return match.slice(1).map(decodeURIComponent)
@@ -34,28 +39,33 @@ function find({ address, pattern, since }, cache, includeOlder) {
   return null
 }
 
-export function collectMail(requests, { timeout = 60, reuse = false } = {}) {
+/**
+ * Polls Mailpit until each request `{ address, pattern, since }` finds a message newer than `since`
+ * and returns the groups of each pattern, in the order of the requests. Fails when one never comes.
+ */
+export function collectMail(requests) {
   const results = new Array(requests.length).fill(null)
   const cache = {}
-  const deadline = Date.now() + timeout * 1000
+  const deadline = Date.now() + TIMEOUT_SECONDS * 1000
   let pending = requests.map((_, index) => index)
   while (pending.length) {
-    pending = pending.filter((index) => !(results[index] = find(requests[index], cache, false)))
-    if (!pending.length || Date.now() >= deadline) {
-      break
+    pending = pending.filter((index) => !(results[index] = find(requests[index], cache)))
+    if (pending.length && Date.now() >= deadline) {
+      const missing = pending.map((index) => requests[index].address).join(', ')
+      fail(`No expected email reached ${missing} within ${TIMEOUT_SECONDS}s`)
     }
-    sleep(0.5)
-  }
-  if (reuse) {
-    pending = pending.filter((index) => !(results[index] = find(requests[index], cache, true)))
-  }
-  if (pending.length) {
-    const missing = pending.map((index) => requests[index].address).join(', ')
-    fail(`No expected email reached ${missing} within ${timeout}s`)
+    if (pending.length) {
+      sleep(0.5)
+    }
   }
   return results
 }
 
-export function waitForMail(address, pattern, { since, timeout = 60, reuse = false } = {}) {
-  return collectMail([{ address, pattern, since }], { timeout, reuse })[0]
+/** Waits for one message during a scenario and records how long its reader waited for it. */
+export function waitForMail(address, pattern, since) {
+  try {
+    return collectMail([{ address, pattern, since }])[0]
+  } finally {
+    mailDelay.add(Date.now() - since)
+  }
 }

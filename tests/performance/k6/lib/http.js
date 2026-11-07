@@ -1,4 +1,5 @@
 import http from 'k6/http'
+import { fail } from 'k6'
 import { Counter } from 'k6/metrics'
 import { API_URL } from './config.js'
 import { KIND_OF } from './catalog.js'
@@ -9,11 +10,13 @@ const ipRanges = { visitor: 1, account: 2, setup: 3, newcomer: 4 }
 const rateLimited = new Counter('rate_limited')
 const reported = {}
 
+/** Builds the private address a simulated client sends as `X-Forwarded-For`. */
 export function clientIp(kind, index) {
   const value = index % 65536
   return `10.${ipRanges[kind]}.${value >> 8}.${value & 255}`
 }
 
+/** Parses a JSON response, or returns null for one without it, such as a failure under load. */
 export function body(res) {
   try {
     return res.json()
@@ -22,6 +25,7 @@ export function body(res) {
   }
 }
 
+/** Sends requests of several sessions at once, as `http.batch` does, and settles each of them. */
 export function parallel(calls) {
   const prepared = calls.map(({ session, method, path, options }) =>
     session.prepare(method, path, options),
@@ -70,6 +74,11 @@ function expiresAt(cookie) {
   return typeof cookie.expires === 'string' ? Date.parse(cookie.expires) : cookie.expires || 0
 }
 
+/**
+ * A simulated browser: one client address, its cookies and its CSRF token. Cookies are kept by hand
+ * because the session cookies are `Secure` and k6 talks to the API over plain HTTP. A response
+ * outside `expect` counts as a failed request, and stops the run when it comes during setup.
+ */
 export class Session {
   constructor({ ip, actor = 'anonymous', cookies = {}, csrf = null, user = null } = {}) {
     this.ip = ip
@@ -105,7 +114,7 @@ export class Session {
       payload = JSON.stringify(json)
       headers['Content-Type'] = 'application/json'
     }
-    if (unsafeMethods.has(method) && options.csrf !== false) {
+    if (unsafeMethods.has(method)) {
       headers['X-CSRF-TOKEN'] = this.csrf || this.refreshCsrf()
     }
     const tags = tagsFor(this.name(method, path), this.actor)
@@ -134,7 +143,11 @@ export class Session {
     }
     if (!expect.includes(res.status)) {
       const detail = typeof res.body === 'string' ? res.body.slice(0, 300) : ''
-      reportOnce(tags.name, `${tags.name} answered ${res.status} ${res.error || ''} ${detail}`)
+      const problem = `${tags.name} answered ${res.status} ${res.error || ''} ${detail}`
+      if (!inRun()) {
+        fail(problem)
+      }
+      reportOnce(tags.name, problem)
     }
     return res
   }

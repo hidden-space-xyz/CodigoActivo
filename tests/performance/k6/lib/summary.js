@@ -1,11 +1,11 @@
 import { ENDPOINT_KINDS, ENDPOINTS } from './catalog.js'
 import { RESULTS_DIR } from './config.js'
 import { PROFILE } from './profiles.js'
-import { OBJECTIVE, runMetric, windowMetric } from './thresholds.js'
+import { arrivalsMetric, OBJECTIVE, runMetric, windowMetric } from './thresholds.js'
 
 const ms = (value) => (value >= 100 ? value.toFixed(0) : value.toFixed(1))
 const percent = (value) => `${(value * 100).toFixed(2)}%`
-const objective = `p95 < ${OBJECTIVE.p95} ms, p99 < ${OBJECTIVE.p99} ms and failures < ${percent(OBJECTIVE.failures)}`
+const objective = `p95 < ${OBJECTIVE.p95} ms, p99 < ${OBJECTIVE.p99} ms, failures < ${percent(OBJECTIVE.failures)} and at least ${percent(OBJECTIVE.delivered)} of its load delivered`
 
 function values(data, metric) {
   return data.metrics[metric]?.values ?? {}
@@ -26,7 +26,7 @@ function endpointStatus(row) {
   if (!row.count) {
     return 'not exercised'
   }
-  if (row.p95 > row.budget) {
+  if (row.p95 >= row.budget) {
     return 'over budget'
   }
   return row.errors >= OBJECTIVE.failures ? 'errors' : 'ok'
@@ -52,6 +52,7 @@ function windowRows(data) {
       ...latency(data, windowMetric('http_req_duration', window.name)),
       failures: values(data, windowMetric('http_req_failed', window.name)).rate || 0,
       limited: values(data, windowMetric('rate_limited', window.name)).count || 0,
+      delivered: (values(data, arrivalsMetric(window.name)).count || 0) / window.arrivals,
       kinds: Object.fromEntries(
         ENDPOINT_KINDS.map((kind) => [
           kind,
@@ -64,7 +65,8 @@ function windowRows(data) {
       row.count > 0 &&
       row.p95 < OBJECTIVE.p95 &&
       row.p99 < OBJECTIVE.p99 &&
-      row.failures < OBJECTIVE.failures
+      row.failures < OBJECTIVE.failures &&
+      row.delivered >= OBJECTIVE.delivered
     const verdict = row.count ? (met ? 'met' : 'missed') : 'not reached'
     return { ...row, met, verdict, rps: row.count / (window.to - window.from) }
   })
@@ -99,7 +101,9 @@ function overview(data, endpoints) {
       percent(values(data, runMetric('http_req_failed', 'target:api')).rate || 0),
     ],
     ['Rate limited (429)', count(runMetric('rate_limited', 'target:api'))],
+    ['Unanswered (no status)', count(runMetric('http_reqs', 'target:api,status:0'))],
     ['Dropped iterations', count('dropped_iterations')],
+    ['Emailed code p95', `${ms(latency(data, 'mail_delay').p95)} ms`],
     ['Endpoints exercised', `${endpoints.filter((row) => row.count).length} / ${endpoints.length}`],
     ['Over budget', `${endpoints.filter((row) => row.status === 'over budget').length}`],
   ]
@@ -107,7 +111,7 @@ function overview(data, endpoints) {
 }
 
 function capacity(windows) {
-  const steps = windows.filter((row) => row.users)
+  const steps = windows.filter((row) => row.users && row.count)
   if (!steps.length) {
     return []
   }
@@ -138,6 +142,7 @@ function windowsSection(windows) {
     ...table(
       [
         column('Window', (row) => row.name, false),
+        column('Load', (row) => percent(row.delivered)),
         column('Req/s', (row) => row.rps.toFixed(0)),
         column('p50', (row) => ms(row.med)),
         column('p95', (row) => ms(row.p95)),
@@ -163,13 +168,14 @@ function windowsSection(windows) {
 }
 
 function hotspots(endpoints) {
-  const flagged = endpoints.filter(({ status }) => status === 'over budget' || status === 'errors')
+  const flagged = endpoints.filter(({ status }) => status !== 'ok')
   if (!flagged.length) {
     return ['- None']
   }
-  return flagged.map(
-    (row) =>
-      `- \`${row.name}\`: p95 ${ms(row.p95)} ms (budget ${row.budget} ms), errors ${percent(row.errors)}`,
+  return flagged.map((row) =>
+    row.count
+      ? `- \`${row.name}\`: p95 ${ms(row.p95)} ms (budget ${row.budget} ms), errors ${percent(row.errors)}`
+      : `- \`${row.name}\`: not exercised`,
   )
 }
 
@@ -207,6 +213,7 @@ function markdown(data, endpoints, windows) {
   ].join('\n')
 }
 
+/** Writes the summary to the console and the results folder. */
 export function report(data) {
   const endpoints = endpointRows(data)
   const windows = windowRows(data)

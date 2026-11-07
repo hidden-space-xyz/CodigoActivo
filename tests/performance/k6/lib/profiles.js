@@ -1,8 +1,10 @@
 import { sleep } from 'k6'
 import {
+  codesArriveInTime,
   everyEndpointExercised,
   everyEndpointReliable,
   everyEndpointWithinBudget,
+  everyWindowDelivered,
   objectiveMetIn,
 } from './thresholds.js'
 
@@ -16,6 +18,7 @@ const peak = {
   visitors: { perMinute: 120, vus: 80 },
   members: { perMinute: 30, vus: 40 },
   signups: { perMinute: 30, vus: 30 },
+  logins: { perMinute: 10, vus: 10 },
   newcomers: { perMinute: 4, vus: 10 },
   backoffice: { perMinute: 6, vus: 10 },
   reports: { perMinute: 3, vus: 6 },
@@ -37,7 +40,7 @@ const profiles = {
   smoke: {
     think: [0, 0],
     pools: {
-      members: 2,
+      members: 3,
       demoMembers: 2,
       admins: { backoffice: 1, reports: 1, uploads: 1, mailing: 1 },
     },
@@ -45,6 +48,7 @@ const profiles = {
       visitors: { iterations: 1 },
       members: { iterations: 2 },
       signups: { iterations: 2 },
+      logins: { iterations: 1 },
       newcomers: { iterations: 1 },
       backoffice: { iterations: 1 },
       reports: { iterations: 1 },
@@ -55,14 +59,21 @@ const profiles = {
   },
   load: {
     think: [1, 3],
-    phases: [{ ramp: 60, hold: 480 }],
+    phases: [{ ramp: 60, hold: 480, window: { name: 'peak' } }],
     pools: {
       members: 20,
       demoMembers: 20,
       admins: { backoffice: 2, reports: 2, uploads: 1, mailing: 1 },
     },
     scenarios: peak,
-    gates: [everyEndpointExercised, everyEndpointWithinBudget, everyEndpointReliable],
+    gates: [
+      everyEndpointExercised,
+      everyEndpointWithinBudget,
+      everyEndpointReliable,
+      everyWindowDelivered,
+      objectiveMetIn('peak'),
+      codesArriveInTime,
+    ],
   },
   spike: {
     think: [1, 3],
@@ -73,12 +84,23 @@ const profiles = {
       { ramp: 0, hold: 150, window: { name: 'recovery' } },
     ],
     pools: {
-      members: 100,
+      members: 200,
       demoMembers: 20,
       admins: { backoffice: 2, reports: 2, uploads: 1, mailing: 1 },
     },
-    scenarios: { ...peak, signups: rush(peak.signups), newcomers: rush(peak.newcomers) },
-    gates: [everyEndpointExercised, everyEndpointReliable, objectiveMetIn('recovery')],
+    scenarios: {
+      ...peak,
+      signups: rush(peak.signups),
+      logins: rush(peak.logins),
+      newcomers: rush(peak.newcomers),
+    },
+    gates: [
+      everyEndpointExercised,
+      everyEndpointReliable,
+      everyWindowDelivered,
+      objectiveMetIn('recovery'),
+      codesArriveInTime,
+    ],
   },
   capacity: {
     think: [0.3, 1],
@@ -97,6 +119,7 @@ const profiles = {
       visitors: people(0.7, 8),
       members: people(0.25, 6),
       signups: people(0.05, 5),
+      logins: people(0.025, 6),
       newcomers: { perMinute: 4, vus: 10 },
       backoffice: { perMinute: 4, vus: 10 },
       reports: { perMinute: 2, vus: 4 },
@@ -107,24 +130,31 @@ const profiles = {
   },
 }
 
+function rateAt(perMinute, level = 1) {
+  return Math.round(typeof perMinute === 'function' ? perMinute(level) : perMinute)
+}
+
 function stages(phases, perMinute) {
-  const rate = (level = 1) =>
-    Math.round(typeof perMinute === 'function' ? perMinute(level) : perMinute)
   return phases
     .flatMap(({ ramp, hold, level }) => [
-      { target: rate(level), duration: `${ramp}s` },
-      { target: rate(level), duration: `${hold}s` },
+      { target: rateAt(perMinute, level), duration: `${ramp}s` },
+      { target: rateAt(perMinute, level), duration: `${hold}s` },
     ])
     .filter(({ duration }) => duration !== '0s')
     .concat({ target: 0, duration: `${RAMP_DOWN_SECONDS}s` })
 }
 
-function windows(phases) {
+function windows(phases, scenarios) {
+  const rates = Object.values(scenarios).map(({ perMinute }) => perMinute)
   let elapsed = 0
-  return phases.flatMap(({ ramp, hold, window }) => {
+  return phases.flatMap(({ ramp, hold, level, window }) => {
     const from = elapsed + ramp
     elapsed = from + hold
-    return window ? [{ ...window, from, to: elapsed }] : []
+    if (!window) {
+      return []
+    }
+    const total = rates.reduce((sum, perMinute) => sum + rateAt(perMinute, level), 0)
+    return [{ ...window, from, to: elapsed, arrivals: (total * hold) / 60 }]
   })
 }
 
@@ -132,7 +162,7 @@ function normalize(name, { phases = [], scenarios, ...profile }) {
   return {
     ...profile,
     name,
-    windows: windows(phases),
+    windows: windows(phases, scenarios),
     scenarios: Object.fromEntries(
       Object.entries(scenarios).map(([scenario, { perMinute, vus, iterations }]) => [
         scenario,
@@ -148,8 +178,10 @@ if (!profiles[requested]) {
   throw new Error(`Unknown PROFILE "${requested}"; use ${Object.keys(profiles).join(', ')}`)
 }
 
+/** The profile `PROFILE` names, with its phases turned into k6 stages and measured windows. */
 export const PROFILE = normalize(requested, profiles[requested])
 
+/** Pauses like a person reading a page, within the range of the profile. */
 export function think() {
   const [min, max] = PROFILE.think
   if (max > 0) {

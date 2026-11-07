@@ -15,13 +15,16 @@ function message(purpose, subject) {
   }
 }
 
+/** An administrator emails one member, the subscribers and the attendees of an event. */
 export function mailing(data) {
   const { account, iteration } = nextAccount(data.admins.mailing)
   const session = sessionFor(account)
   const eventId = data.fixtures.rushEventId
+  const { id: userId } = pick(data.members, iteration)
 
+  session.get('/api/emails/users/audience', { query: { id: userId } })
   session.post('/api/emails/users/{userId}', {
-    route: { userId: pick(data.members, iteration).id },
+    route: { userId },
     form: message('Notice', 'Aviso sobre tu inscripción'),
   })
   think()

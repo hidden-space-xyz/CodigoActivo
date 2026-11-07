@@ -12,19 +12,21 @@ import {
   thumbnails,
 } from '../lib/pages.js'
 
+const PAGE = { page: 1, pageSize: 25 }
+
+function latest(years) {
+  return years.length ? Math.max(...years) : undefined
+}
+
 function eventsPage(session) {
   const upcoming = items(
-    session.get('/api/events', {
-      query: { scope: 'Upcoming', sort: 'eventStartsAt', page: 1, pageSize: 25 },
-    }),
+    session.get('/api/events', { query: { scope: 'Upcoming', sort: 'eventStartsAt', ...PAGE } }),
   )
   const years = body(session.get('/api/events/past-years')) ?? []
   session.get('/api/events/past-categories')
-  const past = { scope: 'Past', year: years.length ? Math.max(...years) : undefined }
-  session.get('/api/events', { query: { ...past, sort: '-eventStartsAt', page: 1, pageSize: 25 } })
-  session.get('/api/events', {
-    query: { ...past, search: word(), sort: '-eventStartsAt', page: 1, pageSize: 25 },
-  })
+  const past = { scope: 'Past', year: latest(years), sort: '-eventStartsAt', ...PAGE }
+  session.get('/api/events', { query: past })
+  session.get('/api/events', { query: { ...past, search: word() } })
   thumbnails(session, upcoming)
   return upcoming
 }
@@ -32,32 +34,31 @@ function eventsPage(session) {
 function newsPage(session) {
   const years = body(session.get('/api/news/years')) ?? []
   const news = items(
-    session.get('/api/news', {
-      query: {
-        year: years.length ? Math.max(...years) : undefined,
-        sort: '-createdAt',
-        page: 1,
-        pageSize: 25,
-      },
-    }),
+    session.get('/api/news', { query: { year: latest(years), sort: '-createdAt', ...PAGE } }),
   )
   thumbnails(session, news)
   return news
 }
 
 function resourcesPage(session) {
-  const resources = items(
-    session.get('/api/resources', { query: { sort: '-createdAt', page: 1, pageSize: 25 } }),
-  )
+  const resources = items(session.get('/api/resources', { query: { sort: '-createdAt', ...PAGE } }))
   thumbnails(session, resources)
   return resources
 }
 
-function detail(session, path, route) {
-  const item = body(session.get(path, { route }))
-  poster(session, item.thumbnailId)
+function newsDetail(session, newsItemId) {
+  const news = body(session.get('/api/news/{newsItemId}', { route: { newsItemId } }))
+  poster(session, news?.thumbnailId)
 }
 
+function resourceDetail(session, resourceId) {
+  const resource = body(session.get('/api/resources/{resourceId}', { route: { resourceId } }))
+  if (!resource?.url) {
+    poster(session, resource?.thumbnailId)
+  }
+}
+
+/** An anonymous visit: home, events, an event and its activities, news and resources. */
 export function visitors() {
   const session = new Session({ ip: clientIp('visitor', exec.scenario.iterationInTest) })
   openSite(session)
@@ -67,9 +68,9 @@ export function visitors() {
   const upcoming = eventsPage(session)
   think()
 
-  if (upcoming.length) {
-    const event = eventDetail(session, pick(upcoming).id)
-    think()
+  const event = upcoming.length ? eventDetail(session, pick(upcoming).id) : null
+  think()
+  if (event) {
     eventActivities(session, event)
     think()
   }
@@ -77,14 +78,14 @@ export function visitors() {
   const news = newsPage(session)
   think()
   if (news.length) {
-    detail(session, '/api/news/{newsItemId}', { newsItemId: pick(news).id })
+    newsDetail(session, pick(news).id)
     think()
   }
 
   const resources = resourcesPage(session)
   think()
   if (resources.length) {
-    detail(session, '/api/resources/{resourceId}', { resourceId: pick(resources).id })
+    resourceDetail(session, pick(resources).id)
     think()
   }
 }

@@ -15,7 +15,8 @@ new operational facts.
 
 Backend and frontend coding conventions live in [backend/AGENTS.md](backend/AGENTS.md) and
 [frontend/AGENTS.md](frontend/AGENTS.md), those of the end-to-end suite in
-[tests/e2e/AGENTS.md](tests/e2e/AGENTS.md).
+[tests/e2e/AGENTS.md](tests/e2e/AGENTS.md) and those of the performance suite in
+[tests/performance/AGENTS.md](tests/performance/AGENTS.md).
 
 ## Not deployed yet
 

@@ -12,34 +12,26 @@ const roleCapacities = [
   { activityRoleTypeId: LOOKUPS.roles.leader, desiredCount: 5 },
 ]
 
-function create(session, path, options, what) {
-  const res = session.post(path, { ...options, expect: [201] })
-  if (res.status !== 201) {
-    fail(`Creating ${what} answered ${res.status}: ${res.body}`)
-  }
-  return body(res)
+function create(session, path, options) {
+  return body(session.post(path, { ...options, expect: [201] }))
 }
 
 function list(session, path, query) {
-  return body(session.get(path, { query }))?.items ?? []
+  return body(session.get(path, { query })).items
 }
 
 function termsDocument(session, kind, requiresSignature, label) {
-  return create(
-    session,
-    '/api/events/termsDocument',
-    {
-      json: {
-        name: `${label} ${Date.now().toString(36)}`,
-        description: richText(`${label} de la suite de rendimiento.`),
-        kind,
-        requiresSignature,
-      },
+  return create(session, '/api/events/termsDocument', {
+    json: {
+      name: `${label} ${Date.now().toString(36)}`,
+      description: richText(`${label} de la suite de rendimiento.`),
+      kind,
+      requiresSignature,
     },
-    label,
-  )
+  })
 }
 
+/** Uploads an image the way the file field of the back office does. */
 export function uploadImage(session, image) {
   return session.post('/api/files', {
     form: { file: http.file(image, 'rendimiento.webp', 'image/webp') },
@@ -47,74 +39,55 @@ export function uploadImage(session, image) {
   })
 }
 
+/** Reads a stored image, which the upload scenario sends back as new files. */
 export function downloadImage(session, fileId) {
   return session.get('/api/files/{fileId}/content', { route: { fileId }, responseType: 'binary' })
     .body
 }
 
+/** Creates what the scenarios share: the event of the signup rush, its activities, terms and news. */
 export function createFixtures(admin, runId) {
   const { session } = admin
   const [demoEvent] = list(session, '/api/events', { pageSize: 1 })
   const sourceFileId = demoEvent.thumbnailId
-  const thumbnailId = body(uploadImage(session, downloadImage(session, sourceFileId)))?.id
-  if (!thumbnailId) {
-    fail('Uploading the thumbnail failed')
-  }
-  const category = create(
-    session,
-    '/api/events/categoryType',
-    { json: { name: `Rendimiento ${runId}`, color: '#2DD4D9' } },
-    'the category',
-  )
+  const thumbnailId = body(uploadImage(session, downloadImage(session, sourceFileId))).id
+  const category = create(session, '/api/events/categoryType', {
+    json: { name: `Rendimiento ${runId}`, color: '#2DD4D9' },
+  })
   const conditions = termsDocument(session, 'Conditions', true, 'Condiciones')
   const consent = termsDocument(session, 'Consent', false, 'Consentimiento de imagen')
-  const rush = create(
-    session,
-    '/api/events',
-    {
-      json: eventBody({
-        thumbnailId,
-        categoryIds: [category.id],
-        terms: [
-          { termsDocumentId: conditions.id, required: true },
-          { termsDocumentId: consent.id, required: false },
-        ],
-        title: `Jornada de inscripción ${runId}`,
-      }),
-    },
-    'the signup event',
-  )
+  const rush = create(session, '/api/events', {
+    json: eventBody({
+      thumbnailId,
+      categoryIds: [category.id],
+      terms: [
+        { termsDocumentId: conditions.id, required: true },
+        { termsDocumentId: consent.id, required: false },
+      ],
+      title: `Jornada de inscripción ${runId}`,
+    }),
+  })
   const activities = Array.from(
     { length: RUSH_ACTIVITIES },
     (_, slot) =>
-      create(
-        session,
-        '/api/activities/{eventId}',
-        {
-          route: { eventId: rush.id },
-          json: activityBody({
-            thumbnailId,
-            modalityId: LOOKUPS.modalities.onSite,
-            roles: roleCapacities,
-            slot,
-          }),
-        },
-        'a signup activity',
-      ).id,
+      create(session, '/api/activities/{eventId}', {
+        route: { eventId: rush.id },
+        json: activityBody({
+          thumbnailId,
+          modalityId: LOOKUPS.modalities.onSite,
+          roles: roleCapacities,
+          slot,
+        }),
+      }).id,
   )
-  const news = create(
-    session,
-    '/api/news',
-    {
-      json: {
-        title: `Abiertas las inscripciones ${runId}`,
-        subtitle: 'Noticia fija de la suite de rendimiento',
-        description: richText('Ya puedes inscribirte en la jornada.', thumbnailId),
-        thumbnailId,
-      },
+  const news = create(session, '/api/news', {
+    json: {
+      title: `Abiertas las inscripciones ${runId}`,
+      subtitle: 'Noticia fija de la suite de rendimiento',
+      description: richText('Ya puedes inscribirte en la jornada.', thumbnailId),
+      thumbnailId,
     },
-    'the news item',
-  )
+  })
   const [featuredEvent] = list(session, '/api/events', { featured: true, pageSize: 1 })
   const [featuredNews] = list(session, '/api/news', { featured: true, pageSize: 1 })
   const pastEvents = list(session, '/api/events', { scope: 'Past', pageSize: 20 }).map(
@@ -138,8 +111,9 @@ export function createFixtures(admin, runId) {
   }
 }
 
+/** Signs households up for the first activity of the rush, which the rush itself leaves alone. */
 export function seedSignups(admin, members, fixtures) {
-  const roster = members.slice(0, ROSTER_SIZE)
+  const roster = members.filter(({ dependents }) => dependents.length).slice(0, ROSTER_SIZE)
   const [activityId] = fixtures.activities
   const { documents } = body(
     roster[0].session.get('/api/events/{eventId}/terms', {
