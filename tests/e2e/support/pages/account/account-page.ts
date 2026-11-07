@@ -1,5 +1,6 @@
-import { readFile } from 'node:fs/promises'
 import { expect, type Locator, type Page } from '@playwright/test'
+
+import { saveDownload } from '../../ui/download'
 
 /** A tab of the account page, by the name it has in `?tab=`. */
 export type AccountTab = 'profile' | 'history' | 'certificates'
@@ -31,12 +32,6 @@ export interface PersonalDataCopy {
     readonly apellidos: string
     readonly fechaDeNacimiento: string | null
   }[]
-}
-
-/** A file the browser saved, with the name the page gave it and its bytes. */
-export interface SavedFile {
-  readonly name: string
-  readonly content: Buffer
 }
 
 const TAB_QUERIES: Readonly<Record<AccountTab, string>> = {
@@ -99,11 +94,4 @@ export class AccountPage {
     const file = await saveDownload(this.page, () => button.click())
     return { name: file.name, data: JSON.parse(file.content.toString('utf8')) as PersonalDataCopy }
   }
-}
-
-/** Runs `trigger` and returns the file the page downloads because of it. */
-export async function saveDownload(page: Page, trigger: () => Promise<void>): Promise<SavedFile> {
-  const [download] = await Promise.all([page.waitForEvent('download'), trigger()])
-  const content = await readFile(await download.path())
-  return { name: download.suggestedFilename(), content }
 }

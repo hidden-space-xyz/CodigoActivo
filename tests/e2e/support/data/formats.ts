@@ -18,6 +18,11 @@ const momentFormat = new Intl.DateTimeFormat(LOCALE, {
 const timeFormat = new Intl.DateTimeFormat(LOCALE, { timeStyle: 'short', timeZone: TIME_ZONE })
 const calendarDay = new Intl.DateTimeFormat('en-CA', { dateStyle: 'short', timeZone: TIME_ZONE })
 
+/** `text` with the characters a regular expression reads as syntax escaped. */
+export function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
 function utcDay(day: string): Date {
   return new Date(`${day.slice(0, 10)}T00:00:00Z`)
 }
@@ -41,11 +46,7 @@ export function dayRangeText(start: string, end: string): string {
 
 /** What the date line of a card reads, such as «Fecha: 4 nov 2026», whatever its spacing. */
 export function cardDate(label: string, value: string): RegExp {
-  const pattern = (text: string) =>
-    text
-      .split(/\s+/)
-      .map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-      .join('\\s+')
+  const pattern = (text: string) => text.split(/\s+/).map(escapeRegExp).join('\\s+')
   return new RegExp(`^${pattern(label)}:\\s*${pattern(value)}$`)
 }
 

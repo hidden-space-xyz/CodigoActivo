@@ -1,7 +1,9 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
-import type { Credentials } from '../api/accounts'
-import { codeIn, SUBJECTS, type Mailbox } from '../mail/mailbox'
+import { loginCodeQuery, type Credentials } from '../api/accounts'
+import { codeIn, type Mailbox } from '../mail/mailbox'
+
+const SESSION_COOKIE = 'CodigoActivo.Session'
 
 /** The password step of the login, at `/login`. */
 export class LoginPage {
@@ -78,6 +80,12 @@ export class TwoFactorPage {
   }
 }
 
+/** When the session cookie of `page` expires, in seconds, or -1 when it ends with the browser. */
+export async function sessionExpiry(page: Page): Promise<number | undefined> {
+  const cookies = await page.context().cookies()
+  return cookies.find((cookie) => cookie.name === SESSION_COOKIE)?.expires
+}
+
 /**
  * Signs in through both login pages as a person would: the password, then the code emailed to
  * them. Ends once the browser has left the login pages.
@@ -91,12 +99,7 @@ export async function signInThroughPages(
   await new LoginPage(page).submitPassword(credentials)
   const twoFactor = new TwoFactorPage(page)
   await expect(twoFactor.heading).toBeVisible()
-  const email = await mailbox.waitFor({
-    to: credentials.email,
-    subject: SUBJECTS.loginCode,
-    sentAfter,
-    reusedAfter: new Date(sentAfter.getTime() - 60_000),
-  })
+  const email = await mailbox.waitFor(loginCodeQuery(credentials.email, sentAfter))
   await twoFactor.enter(codeIn(email))
   await expect(page).not.toHaveURL(/\/login/)
 }

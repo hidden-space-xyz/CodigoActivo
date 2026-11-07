@@ -1,8 +1,10 @@
-import { addMinor, eventOnFreeDay, householdSignups } from '../../support/api/signups-extra'
+import { ROLE_LABELS, STATUS_LABELS } from '../../support/api/catalogs'
+import { addMinor } from '../../support/api/my-account'
+import { eventOnFreeDay, householdSignups } from '../../support/api/signups'
+import { fullName } from '../../support/data/people'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import { EventDetailPage } from '../../support/pages/event-detail-page'
-import { ActivityCard, ROLE_LABELS, STATUS_LABELS } from '../../support/pages/signups/activity-card'
 import { HouseholdDialog } from '../../support/pages/signups/household-dialog'
 import {
   confirm,
@@ -21,16 +23,13 @@ test.describe('household signup', () => {
     const guardian = await accounts.actor({ label: 'household' })
     const alba = await addMinor(guardian, 'Alba', 9)
     const bruno = await addMinor(guardian, 'Bruno', 12)
-    const self = `${guardian.account.firstName} ${guardian.account.lastName}`
-    const albaName = `${alba.firstName} ${alba.lastName}`
-    const brunoName = `${bruno.firstName} ${bruno.lastName}`
+    const self = fullName(guardian.account)
+    const albaName = fullName(alba)
+    const brunoName = fullName(bruno)
     const event = await eventOnFreeDay(seed)
     const activity = await seed.activity(event)
     const page = await pageAs(guardian)
-    const eventPage = new EventDetailPage(page)
-    await eventPage.goto(event.id, event.title)
-    await eventPage.openActivities()
-    const card = new ActivityCard(eventPage.activity(activity.title))
+    const card = await new EventDetailPage(page).openActivity(event, activity)
     const household = new HouseholdDialog(page)
 
     await expect(card.signUp).toBeHidden()
@@ -63,9 +62,9 @@ test.describe('household signup', () => {
     const signups = await householdSignups(guardian.api, event.id)
     expect(signups.map((signup) => [signup.userId, signup.roleName]).sort()).toStrictEqual(
       [
-        [guardian.account.id, 'Voluntario'],
-        [alba.id, 'Participante'],
-        [bruno.id, 'Participante'],
+        [guardian.account.id, ROLE_LABELS.volunteer],
+        [alba.id, ROLE_LABELS.participant],
+        [bruno.id, ROLE_LABELS.participant],
       ].sort(),
     )
   })
@@ -78,15 +77,12 @@ test.describe('household signup', () => {
     const guardian = await accounts.actor({ label: 'household' })
     const alba = await addMinor(guardian, 'Alba', 9)
     const bruno = await addMinor(guardian, 'Bruno', 12)
-    const albaName = `${alba.firstName} ${alba.lastName}`
-    const brunoName = `${bruno.firstName} ${bruno.lastName}`
+    const albaName = fullName(alba)
+    const brunoName = fullName(bruno)
     const event = await eventOnFreeDay(seed)
     const activity = await seed.activity(event)
     const page = await pageAs(guardian)
-    const eventPage = new EventDetailPage(page)
-    await eventPage.goto(event.id, event.title)
-    await eventPage.openActivities()
-    const card = new ActivityCard(eventPage.activity(activity.title))
+    const card = await new EventDetailPage(page).openActivity(event, activity)
     const household = new HouseholdDialog(page)
 
     await card.signUpFamily.click()
@@ -114,7 +110,7 @@ test.describe('household signup', () => {
     await expect(card.member(albaName, 'participant')).toBeHidden()
     await expect(card.member(brunoName, 'volunteer')).toBeVisible()
     expect(await householdSignups(guardian.api, event.id)).toMatchObject([
-      { userId: bruno.id, roleName: 'Voluntario' },
+      { userId: bruno.id, roleName: ROLE_LABELS.volunteer },
     ])
 
     await card.signUpAnother.click()

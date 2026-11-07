@@ -1,16 +1,15 @@
-import { signUp } from '../../support/api/signups'
+import { STATUS_LABELS } from '../../support/api/catalogs'
 import {
   assignedActivities,
   decisionsOf,
   eventOnFreeDay,
-  signUpDeclining,
+  signUp,
   termsState,
-} from '../../support/api/signups-extra'
+} from '../../support/api/signups'
 import { uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import { EventDetailPage } from '../../support/pages/event-detail-page'
-import { ActivityCard, STATUS_LABELS } from '../../support/pages/signups/activity-card'
 import { TermsDialog } from '../../support/pages/signups/terms-dialog'
 import { expectChecked, notification, setChecked } from '../../support/ui/element-plus'
 
@@ -37,10 +36,7 @@ test.describe('event terms', () => {
     })
     const activity = await seed.activity(event)
     const page = await pageAs(participant)
-    const eventPage = new EventDetailPage(page)
-    await eventPage.goto(event.id, event.title)
-    await eventPage.openActivities()
-    const card = new ActivityCard(eventPage.activity(activity.title))
+    const card = await new EventDetailPage(page).openActivity(event, activity)
     const terms = new TermsDialog(page)
 
     await card.signUpAs('participant')
@@ -107,12 +103,9 @@ test.describe('event terms', () => {
     })
     const first = await seed.activity(event, { startHour: 10 })
     const second = await seed.activity(event, { startHour: 15 })
-    await signUpDeclining(member.api, first, member.account.id, 'participant', [consent.id])
+    await signUp(member.api, first, member.account.id, 'participant', [consent.id])
     const page = await pageAs(member)
-    const eventPage = new EventDetailPage(page)
-    await eventPage.goto(event.id, event.title)
-    await eventPage.openActivities()
-    const card = new ActivityCard(eventPage.activity(second.title))
+    const card = await new EventDetailPage(page).openActivity(event, second)
     const terms = new TermsDialog(page)
 
     await card.signUpAs('volunteer')
@@ -143,10 +136,7 @@ test.describe('event terms', () => {
     const second = await seed.activity(event, { startHour: 15 })
     await signUp(participant.api, first, participant.account.id)
     const page = await pageAs(participant)
-    const eventPage = new EventDetailPage(page)
-    await eventPage.goto(event.id, event.title)
-    await eventPage.openActivities()
-    const card = new ActivityCard(eventPage.activity(second.title))
+    const card = await new EventDetailPage(page).openActivity(event, second)
 
     await card.signUpAs('participant')
 

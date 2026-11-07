@@ -1,17 +1,12 @@
+import { firstDependent } from '../../support/api/accounts'
+import { ROLE_LABELS, STATUS_LABELS, USER_TYPE_LABELS } from '../../support/api/catalogs'
 import { signUp } from '../../support/api/signups'
+import { fullName } from '../../support/data/people'
 import { uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import { SUBJECTS } from '../../support/mail/mailbox'
-import {
-  AttendeesTab,
-  EventAdminPage,
-  ROLE_LABELS,
-  STATUS_LABELS,
-  USER_TYPE_LABELS,
-} from '../../support/pages/admin-events/event-admin-page'
-import { firstDependent } from '../../support/api/accounts'
-import { fullName } from '../../support/data/people'
+import { AttendeesTab, EventAdminPage } from '../../support/pages/admin-events/event-admin-page'
 import { confirm, notification, setChecked } from '../../support/ui/element-plus'
 
 test.describe('event attendees admin', () => {

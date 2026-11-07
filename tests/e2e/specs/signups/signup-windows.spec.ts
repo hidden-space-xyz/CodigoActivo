@@ -1,14 +1,11 @@
-import {
-  assignedActivities,
-  eventOnFreeDay,
-  ongoingEvent,
-  startedActivity,
-} from '../../support/api/signups-extra'
+import { ROLE_LABELS, STATUS_LABELS } from '../../support/api/catalogs'
+import { assignedActivities, eventOnFreeDay, ongoingEvent } from '../../support/api/signups'
 import { hoursFromNow } from '../../support/data/time'
+import { uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import { EventDetailPage } from '../../support/pages/event-detail-page'
-import { ActivityCard, ROLE_LABELS, STATUS_LABELS } from '../../support/pages/signups/activity-card'
+import { ActivityCard } from '../../support/pages/signups/activity-card'
 import { notification } from '../../support/ui/element-plus'
 
 const SIGNUP_SENT = t('pages.eventDetail.toast.signupSuccess')
@@ -25,11 +22,7 @@ test.describe('signup windows', () => {
     const activity = await seed.activity(event)
     const page = await pageAs(participant)
     const eventPage = new EventDetailPage(page)
-    await eventPage.goto(event.id, event.title)
-
-    await eventPage.openActivities()
-
-    const card = new ActivityCard(eventPage.activity(activity.title))
+    const card = await eventPage.openActivity(event, activity)
     await expect(eventPage.main.getByTestId('event-activities-closed')).toHaveText(CLOSED_BANNER)
     await expect(card.note(t('pages.eventDetail.card.signupClosed'))).toBeVisible()
     await expect(card.role).toHaveCount(0)
@@ -45,26 +38,27 @@ test.describe('signup windows', () => {
     const activity = await seed.activity(event)
     const page = await pageAs(member)
     const eventPage = new EventDetailPage(page)
-    await eventPage.goto(event.id, event.title)
-
-    await eventPage.openActivities()
-
-    const card = new ActivityCard(eventPage.activity(activity.title))
+    const card = await eventPage.openActivity(event, activity)
     await expect(eventPage.main.getByTestId('event-activities-closed')).toHaveText(CLOSED_BANNER)
     await expect(card.note(t('pages.eventDetail.card.signupClosed'))).toBeVisible()
     await expect(card.signUp).toBeHidden()
   })
 
-  test('early signup is closed to a participant', async ({ seed, participant, pageAs }) => {
+  test('early signup is closed to visitors and participants', async ({
+    page,
+    seed,
+    participant,
+    pageAs,
+  }) => {
     const event = await eventOnFreeDay(seed, { signup: 'early' })
     const activity = await seed.activity(event)
-    const page = await pageAs(participant)
-    const eventPage = new EventDetailPage(page)
-    await eventPage.goto(event.id, event.title)
+    const visitor = new EventDetailPage(page)
+    await visitor.openActivity(event, activity)
+    await expect(visitor.main.getByTestId('event-activities-closed')).toHaveText(EARLY_BANNER)
 
-    await eventPage.openActivities()
+    const eventPage = new EventDetailPage(await pageAs(participant))
+    const card = await eventPage.openActivity(event, activity)
 
-    const card = new ActivityCard(eventPage.activity(activity.title))
     await expect(eventPage.main.getByTestId('event-activities-closed')).toHaveText(EARLY_BANNER)
     await expect(card.note(t('pages.eventDetail.card.earlySignupOnly'))).toBeVisible()
     await expect(card.signUp).toBeHidden()
@@ -75,9 +69,7 @@ test.describe('signup windows', () => {
     const activity = await seed.activity(event)
     const page = await pageAs(member)
     const eventPage = new EventDetailPage(page)
-    await eventPage.goto(event.id, event.title)
-    await eventPage.openActivities()
-    const card = new ActivityCard(eventPage.activity(activity.title))
+    const card = await eventPage.openActivity(event, activity)
 
     await card.signUpAs('leader')
 
@@ -94,10 +86,7 @@ test.describe('signup windows', () => {
     const event = await eventOnFreeDay(seed, { signup: 'early' })
     const activity = await seed.activity(event)
     const page = await pageAs(sponsor)
-    const eventPage = new EventDetailPage(page)
-    await eventPage.goto(event.id, event.title)
-    await eventPage.openActivities()
-    const card = new ActivityCard(eventPage.activity(activity.title))
+    const card = await new EventDetailPage(page).openActivity(event, activity)
 
     await card.expectRoles(['participant', 'volunteer'])
     await card.signUpAs('volunteer')
@@ -105,12 +94,11 @@ test.describe('signup windows', () => {
     await expect(notification(page, SIGNUP_SENT)).toBeVisible()
     await expect(card.status).toHaveText(STATUS_LABELS.requested)
     expect(await assignedActivities(sponsor.api, event.id)).toMatchObject([
-      { activityId: activity.id, roleType: { name: 'Voluntario' } },
+      { activityId: activity.id, roleType: { name: ROLE_LABELS.volunteer } },
     ])
   })
 
   test('an activity that has started takes no more signups or withdrawals', async ({
-    admin,
     seed,
     participant,
     pageAs,
@@ -119,7 +107,11 @@ test.describe('signup windows', () => {
     const toJoin = await seed.activity(event, { dayOfEvent: 2, startHour: 16 })
     await seed.enrol(participant.api, toJoin, participant.account.id, 'participant', 'requested')
     const joined = await seed.reschedule(toJoin, hoursFromNow(-2), hoursFromNow(1))
-    const missed = await startedActivity(admin.api, seed, event)
+    const missed = await seed.activity(event, {
+      title: uniqueTitle('Taller en curso'),
+      startsAt: hoursFromNow(-2),
+      endsAt: hoursFromNow(1),
+    })
     const later = await seed.activity(event, { dayOfEvent: 2 })
     const page = await pageAs(participant)
     const eventPage = new EventDetailPage(page)

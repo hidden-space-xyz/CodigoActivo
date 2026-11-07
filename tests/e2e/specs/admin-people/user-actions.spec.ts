@@ -1,16 +1,16 @@
 import { findUser } from '../../support/api/accounts'
 import { signupRoleNames } from '../../support/api/admin-people'
-import { CATALOG } from '../../support/api/catalogs'
+import { CATALOG, ROLE_LABELS, USER_TYPE_LABELS } from '../../support/api/catalogs'
+import { currentUser, enrollAuthenticator } from '../../support/api/my-account'
 import { PASSWORD } from '../../support/config/environment'
 import { fullName } from '../../support/data/people'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
+import { SUBJECTS } from '../../support/mail/mailbox'
 import { UsersAdminPage } from '../../support/pages/admin-people/users-admin-page'
 import { LoginPage } from '../../support/pages/login-page'
 import { SiteHeader } from '../../support/pages/site-header'
 import { chooseOption, confirm, messageBox, notification } from '../../support/ui/element-plus'
-
-const MEMBER_TYPE = 'Socio'
 
 test.describe('admin user actions', () => {
   test('a participant made a member may then lead activities', async ({
@@ -19,7 +19,7 @@ test.describe('admin user actions', () => {
     accounts,
   }) => {
     const person = await accounts.actor({ label: 'promoted' })
-    expect(await signupRoleNames(person.api, person.account.id)).not.toContain('Líder')
+    expect(await signupRoleNames(person.api, person.account.id)).not.toContain(ROLE_LABELS.leader)
     const page = await pageAs(admin)
     const users = new UsersAdminPage(page)
     await users.open()
@@ -32,8 +32,8 @@ test.describe('admin user actions', () => {
 
     await expect(notification(page, t('pages.admin.users.toasts.typeUpdated'))).toBeVisible()
     await expect(dialog).toBeHidden()
-    await expect(users.row(person.account)).toContainText(MEMBER_TYPE)
-    expect(await signupRoleNames(person.api, person.account.id)).toContain('Líder')
+    await expect(users.row(person.account)).toContainText(USER_TYPE_LABELS.member)
+    expect(await signupRoleNames(person.api, person.account.id)).toContain(ROLE_LABELS.leader)
   })
 
   test('the superadministrator gives a cargo with its password and opens the administration', async ({
@@ -135,12 +135,15 @@ test.describe('admin user actions', () => {
     await expect(users.menuItem('delete')).toHaveCount(0)
   })
 
-  test('resetting the second factor needs the administrator password', async ({
+  test('an administrator confirms with a password that a lost authenticator is removed', async ({
     pageAs,
     admin,
     accounts,
+    mailbox,
   }) => {
-    const account = await accounts.create({ label: 'reset-2fa' })
+    const person = await accounts.actor({ label: 'reset-2fa' })
+    await enrollAuthenticator(person.api)
+    const { account } = person
     const page = await pageAs(admin)
     const users = new UsersAdminPage(page)
     await users.open()
@@ -149,7 +152,7 @@ test.describe('admin user actions', () => {
     await users.act(account, 'resetTwoFactor')
     const dialog = page.getByTestId('reset-two-factor-dialog')
     await expect(dialog).toContainText(
-      t('pages.admin.users.resetTwoFactor.messageEmail', { fullName: fullName(account) }),
+      t('pages.admin.users.resetTwoFactor.message', { fullName: fullName(account) }),
     )
     await dialog.getByTestId('admin-password-confirm').click()
     await expect(dialog.getByTestId('admin-password-error')).toHaveText(
@@ -157,10 +160,13 @@ test.describe('admin user actions', () => {
     )
 
     await dialog.getByTestId('admin-password-input').fill(PASSWORD)
+    const sentAfter = new Date()
     await dialog.getByTestId('admin-password-confirm').click()
 
     await expect(notification(page, t('pages.admin.users.toasts.twoFactorReset'))).toBeVisible()
     await expect(dialog).toBeHidden()
+    expect((await currentUser(person.api)).twoFactorMethod).toBe('Email')
+    await mailbox.waitFor({ to: account.email, subject: SUBJECTS.securityAlert, sentAfter })
   })
 
   test('a user the superadministrator deletes leaves the list and can no longer sign in', async ({

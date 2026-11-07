@@ -5,7 +5,8 @@ import type { Minor, Person } from '../data/people'
 import { t } from '../i18n'
 import { chooseOption, setChecked } from '../ui/element-plus'
 
-const GENDER_LABELS: Readonly<Record<Gender, string>> = {
+/** The label the interface shows for each gender. */
+export const GENDER_NAMES: Readonly<Record<Gender, string>> = {
   Male: t('entities.user.gender.Male'),
   Female: t('entities.user.gender.Female'),
   Other: t('entities.user.gender.Other'),
@@ -101,6 +102,3 @@ export class RegistrationPage {
     await chooseOption(fieldset.getByTestId('register-minor-gender'), minor.gender)
   }
 }
-
-/** The label the interface shows for each gender. */
-export const GENDER_NAMES = GENDER_LABELS

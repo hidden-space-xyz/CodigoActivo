@@ -1,5 +1,5 @@
 import { findUser } from '../../support/api/accounts'
-import { currentUser } from '../../support/api/account'
+import { currentUser } from '../../support/api/my-account'
 import { PASSWORD } from '../../support/config/environment'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'

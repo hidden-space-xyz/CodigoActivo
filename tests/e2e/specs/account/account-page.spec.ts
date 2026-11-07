@@ -3,16 +3,8 @@ import { AccountPage } from '../../support/pages/account/account-page'
 import { CertificatesTab } from '../../support/pages/account/certificates-tab'
 import { ConsentsSection } from '../../support/pages/account/consents-section'
 import { MinorsSection } from '../../support/pages/account/minors-section'
-import { LoginPage } from '../../support/pages/login-page'
 
 test.describe('account page', () => {
-  test('a visitor is sent to log in before seeing the account', async ({ page }) => {
-    await page.goto('/account')
-
-    await expect(page).toHaveURL(/\/login\?redirect=\/account$/)
-    await expect(new LoginPage(page).heading).toBeVisible()
-  })
-
   test('the selected tab is kept in the address', async ({ pageAs, participant }) => {
     const page = await pageAs(participant)
     const account = new AccountPage(page)

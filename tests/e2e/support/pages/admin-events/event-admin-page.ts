@@ -2,9 +2,10 @@ import { expect, type Locator, type Page } from '@playwright/test'
 
 import {
   CATALOG,
+  ROLE_LABELS,
+  type ModalityName,
   type RoleName,
   type SignupStatusName,
-  type UserTypeName,
 } from '../../api/catalogs'
 import { t } from '../../i18n'
 import { DataTable } from '../../ui/data-table'
@@ -12,36 +13,6 @@ import { chooseOption } from '../../ui/element-plus'
 
 /** A tab of the event admin page, by its name. */
 type EventAdminTab = 'activities' | 'attendees' | 'opinions' | 'terms'
-
-/** An activity modality: on site or online. */
-type ModalityName = keyof typeof CATALOG.modalities
-
-/** How the backend catalog names each activity role, as the interface shows it. */
-export const ROLE_LABELS: Readonly<Record<RoleName, string>> = {
-  leader: 'Líder',
-  volunteer: 'Voluntario',
-  participant: 'Participante',
-}
-
-/** How the backend catalog names each signup status, as the interface shows it. */
-export const STATUS_LABELS: Readonly<Record<SignupStatusName, string>> = {
-  requested: 'Solicitada',
-  confirmed: 'Confirmada',
-  denied: 'Rechazada',
-}
-
-/** How the backend catalog names each activity modality, as the interface shows it. */
-export const MODALITY_LABELS: Readonly<Record<ModalityName, string>> = {
-  onSite: 'Presencial',
-  online: 'Online',
-}
-
-/** How the backend catalog names each type of user account, as the interface shows it. */
-export const USER_TYPE_LABELS: Readonly<Record<UserTypeName, string>> = {
-  member: 'Socio',
-  sponsor: 'Patrocinador',
-  participant: 'Participante',
-}
 
 /**
  * The admin page of one event, at `/admin/events/{id}`: its header with the print buttons, the

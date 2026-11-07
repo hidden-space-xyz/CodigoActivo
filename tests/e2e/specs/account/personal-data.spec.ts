@@ -1,3 +1,4 @@
+import { fullName } from '../../support/data/people'
 import { dayFromToday } from '../../support/data/time'
 import { expect, test } from '../../support/fixtures/test'
 import { AccountPage } from '../../support/pages/account/account-page'
@@ -23,7 +24,7 @@ test.describe('personal data', () => {
       data.menores.map((minor) => `${minor.nombre} ${minor.apellidos} ${minor.fechaDeNacimiento}`),
     ).toStrictEqual(
       expect.arrayContaining(
-        person.dependents.map((minor) => `${minor.firstName} ${minor.lastName} ${minor.birthDate}`),
+        person.dependents.map((minor) => `${fullName(minor)} ${minor.birthDate}`),
       ),
     )
     expect(data.menores).toHaveLength(person.dependents.length)

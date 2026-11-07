@@ -1,16 +1,14 @@
-import { expect, test } from '../../support/fixtures/test'
-import { t } from '../../support/i18n'
-import { EventDetailPage } from '../../support/pages/event-detail-page'
-import { LoginPage, signInThroughPages } from '../../support/pages/login-page'
 import {
   dayRangeText,
   momentRangeText,
   momentText,
   timeRangeText,
 } from '../../support/data/formats'
+import { expect, test } from '../../support/fixtures/test'
+import { t } from '../../support/i18n'
+import { EventDetailPage } from '../../support/pages/event-detail-page'
+import { LoginPage, signInThroughPages } from '../../support/pages/login-page'
 
-const SIGNUP_CLOSED = t('pages.eventDetail.activities.signupClosed')
-const EARLY_SIGNUP_ONLY = t('pages.eventDetail.activities.earlySignupOnly')
 const DESCRIPTION = 'Una jornada de talleres de programación.'
 
 test.describe('event page', () => {
@@ -115,7 +113,7 @@ test.describe('event page', () => {
     await expect(onlineCard).toContainText(online.description)
   })
 
-  test('a visitor is asked to sign in and comes back to the event', async ({
+  test('a visitor is asked to sign in before signing up and comes back to the event', async ({
     page,
     seed,
     accounts,
@@ -125,10 +123,11 @@ test.describe('event page', () => {
     const activity = await seed.activity(event)
     const account = await accounts.create({ label: 'event-login' })
     const detail = new EventDetailPage(page)
-    await detail.goto(event.id, event.title)
-    await detail.openActivities()
+    const card = await detail.openActivity(event, activity)
+    await expect(card.role).toHaveCount(0)
+    await expect(card.signUp).toBeHidden()
 
-    await detail.activity(activity.title).getByTestId('activity-card-login').click()
+    await card.login.click()
 
     await expect(page).toHaveURL(`/login?redirect=/events/${event.id}`)
     await expect(new LoginPage(page).heading).toBeVisible()
@@ -136,64 +135,26 @@ test.describe('event page', () => {
     await expect(page).toHaveURL(`/events/${event.id}`)
     await expect(detail.main.getByTestId('event-detail-title')).toHaveText(event.title)
     await detail.openActivities()
-    await expect(detail.activity(activity.title).getByTestId('activity-card-login')).toBeHidden()
+    await expect(card.login).toBeHidden()
   })
 
-  test('a signup that has closed or has not opened yet is announced', async ({ page, seed }) => {
+  test('the status tells a signup that has closed or has not opened yet', async ({
+    page,
+    seed,
+  }) => {
     const detail = new EventDetailPage(page)
     for (const [signup, status] of [
       ['closed', t('entities.event.status.signupClosed')],
       ['upcoming', t('entities.event.status.upcoming')],
     ] as const) {
       const event = await seed.event({ signup })
-      await seed.activity(event)
+
       await detail.goto(event.id, event.title)
+
       await expect(
         detail.main.getByTestId('event-detail-info').getByTestId('event-detail-info-value').last(),
       ).toHaveText(status)
-
-      await detail.openActivities()
-
-      await expect(detail.main.getByTestId('event-activities-closed')).toHaveText(SIGNUP_CLOSED)
     }
-  })
-
-  test('early signup is announced to visitors and participants', async ({
-    page,
-    pageAs,
-    participant,
-    seed,
-  }) => {
-    const event = await seed.event({ signup: 'early' })
-    const activity = await seed.activity(event)
-    const visitor = new EventDetailPage(page)
-    await visitor.goto(event.id, event.title)
-    await visitor.openActivities()
-    await expect(visitor.main.getByTestId('event-activities-closed')).toHaveText(EARLY_SIGNUP_ONLY)
-
-    const asParticipant = new EventDetailPage(await pageAs(participant))
-    await asParticipant.goto(event.id, event.title)
-    await asParticipant.openActivities()
-
-    await expect(asParticipant.main.getByTestId('event-activities-closed')).toHaveText(
-      EARLY_SIGNUP_ONLY,
-    )
-    await expect(asParticipant.activity(activity.title)).toContainText(
-      t('pages.eventDetail.card.earlySignupOnly'),
-    )
-  })
-
-  test('members may already sign up during early signup', async ({ pageAs, member, seed }) => {
-    const event = await seed.event({ signup: 'early' })
-    const activity = await seed.activity(event)
-    const detail = new EventDetailPage(await pageAs(member))
-    await detail.goto(event.id, event.title)
-
-    await detail.openActivities()
-
-    await expect(detail.activity(activity.title)).toBeVisible()
-    await expect(detail.main.getByTestId('event-activities-closed')).toBeHidden()
-    await expect(detail.activity(activity.title).getByTestId('activity-card-sign-up')).toBeVisible()
   })
 
   test('an unknown event is not found', async ({ page }) => {

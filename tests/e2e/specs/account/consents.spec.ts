@@ -1,6 +1,7 @@
-import { consentsFor } from '../../support/api/account'
 import { firstDependent } from '../../support/api/accounts'
+import { consentsFor } from '../../support/api/my-account'
 import { signUp } from '../../support/api/signups'
+import { fullName } from '../../support/data/people'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import { AccountPage } from '../../support/pages/account/account-page'
@@ -20,8 +21,8 @@ test.describe('consents', () => {
     const activity = await seed.activity(event)
     await signUp(actor.api, activity, actor.account.id)
     await signUp(actor.api, activity, minor.id)
-    const guardianName = `${actor.account.firstName} ${actor.account.lastName}`
-    const minorName = `${minor.firstName} ${minor.lastName}`
+    const guardianName = fullName(actor.account)
+    const minorName = fullName(minor)
 
     const page = await pageAs(actor)
     const account = new AccountPage(page)

@@ -1,4 +1,7 @@
-import { ageOn, dependentOf, eventOnFreeDay } from '../../support/api/signups-extra'
+import { firstDependent } from '../../support/api/accounts'
+import { eventOnFreeDay } from '../../support/api/signups'
+import { fullName } from '../../support/data/people'
+import { ageOn } from '../../support/data/time'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import { EventDetailPage } from '../../support/pages/event-detail-page'
@@ -13,7 +16,7 @@ test.describe('leader roster', () => {
     guardian,
     pageAs,
   }) => {
-    const minor = dependentOf(guardian.account)
+    const minor = firstDependent(guardian.account)
     const event = await eventOnFreeDay(seed)
     const activity = await seed.activity(event)
     await seed.enrol(member.api, activity, member.account.id, 'leader', 'confirmed')
@@ -58,9 +61,7 @@ test.describe('leader roster', () => {
     await expect(dependent).toContainText(
       t('pages.eventDetail.leaderRoster.ageYears', { age: years, count: years }),
     )
-    await expect(dependent).toContainText(
-      `${guardian.account.firstName} ${guardian.account.lastName}`,
-    )
+    await expect(dependent).toContainText(fullName(guardian.account))
     const dependentEmail = dependent.getByTestId('leader-roster-guardian-email')
     await expect(dependentEmail).toHaveText(guardian.account.email)
     await expect(dependentEmail).toHaveAttribute('href', `mailto:${guardian.account.email}`)

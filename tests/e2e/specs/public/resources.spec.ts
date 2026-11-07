@@ -1,8 +1,8 @@
+import { cardDate, dayText } from '../../support/data/formats'
 import { uniqueLetters, uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
-import { CardListPage } from '../../support/pages/public/card-list-page'
-import { cardDate, dayText } from '../../support/data/formats'
 import { t } from '../../support/i18n'
+import { CardListPage } from '../../support/pages/public/card-list-page'
 
 const INTERNAL_TEXT = 'Guía paso a paso para el primer programa.'
 
@@ -68,40 +68,19 @@ test.describe('resources', () => {
     await expect(page.getByTestId('external-resource')).toBeVisible()
   })
 
-  test('typing applies the search once 300 ms pass without keystrokes', async ({ page, seed }) => {
+  test('the search keeps the resources that match it', async ({ page, seed }) => {
     const prefix = uniqueTitle('Recurso')
     const wanted = await seed.resource({ title: `${prefix} alfa` })
     const other = await seed.resource({ title: `${prefix} beta` })
-    await page.clock.install()
     const resources = new CardListPage(page, '/resources')
     await resources.goto()
-    await expect(resources.card(other.title)).toBeVisible()
-    await page.clock.pauseAt(Date.now() + 1_000)
 
-    await resources.search.fill(wanted.title)
-    await page.clock.runFor(299)
-
-    expect(resources.searches).toStrictEqual([])
-    await page.clock.runFor(1)
-    await expect.poll(() => resources.searches).toStrictEqual([wanted.title])
-    await page.clock.resume()
+    await resources.searchFor(prefix)
     await expect(resources.card(wanted.title)).toBeVisible()
-    await expect(resources.card(other.title)).toBeHidden()
-  })
-
-  test('Enter applies the search without waiting', async ({ page, seed }) => {
-    const prefix = uniqueTitle('Recurso')
-    const wanted = await seed.resource({ title: `${prefix} alfa` })
-    const other = await seed.resource({ title: `${prefix} beta` })
-    await page.clock.install()
-    const resources = new CardListPage(page, '/resources')
-    await resources.goto()
-    await page.clock.pauseAt(Date.now() + 1_000)
+    await expect(resources.card(other.title)).toBeVisible()
 
     await resources.searchFor(wanted.title)
 
-    await expect.poll(() => resources.searches).toStrictEqual([wanted.title])
-    await page.clock.resume()
     await expect(resources.card(wanted.title)).toBeVisible()
     await expect(resources.card(other.title)).toBeHidden()
   })

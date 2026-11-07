@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
-import { AuthenticatorApp } from '../../api/account'
+import { AuthenticatorApp } from '../../api/my-account'
 import type { AccountPage } from './account-page'
 
 /** The section «Verificación en dos pasos» of the profile tab. */

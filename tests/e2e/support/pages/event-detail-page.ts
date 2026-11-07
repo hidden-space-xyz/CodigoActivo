@@ -1,4 +1,8 @@
 import { expect, type Locator, type Page } from '@playwright/test'
+import type { ActivityResponse } from '@contract/activityResponse'
+import type { EventResponse } from '@contract/eventResponse'
+
+import { ActivityCard } from './signups/activity-card'
 
 /** A tab of the public event page. */
 export type EventTab = 'info' | 'activities' | 'attendees'
@@ -41,6 +45,13 @@ export class EventDetailPage {
   async openActivities(): Promise<void> {
     await this.tab('activities').click()
     await expect(this.main.getByTestId('event-activities-loading')).toBeHidden()
+  }
+
+  /** Opens the page of `event` on its activities tab and returns the card of `activity`. */
+  async openActivity(event: EventResponse, activity: ActivityResponse): Promise<ActivityCard> {
+    await this.goto(event.id, event.title)
+    await this.openActivities()
+    return new ActivityCard(this.activity(activity.title))
   }
 
   /** The card of the activity titled `title` in the activities tab. */

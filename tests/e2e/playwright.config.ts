@@ -14,6 +14,8 @@ export default defineConfig({
   reporter: [['list'], ['html', { outputFolder: './results/report', open: 'never' }]],
   use: {
     baseURL: environment.baseUrl,
+    actionTimeout: 15_000,
+    navigationTimeout: 30_000,
     locale: 'es-ES',
     timezoneId: TIME_ZONE,
     trace: 'retain-on-failure',

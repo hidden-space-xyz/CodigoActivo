@@ -5,7 +5,14 @@ import type { UserResponsePagedResult } from '@contract/userResponsePagedResult'
 
 import { PASSWORD } from '../config/environment'
 import { newMinor, newPerson, type Minor, type Person } from '../data/people'
-import { accountLinkParts, codeIn, linkIn, SUBJECTS, type Mailbox } from '../mail/mailbox'
+import {
+  accountLinkParts,
+  codeIn,
+  linkIn,
+  SUBJECTS,
+  type EmailQuery,
+  type Mailbox,
+} from '../mail/mailbox'
 import type { ApiClient } from './api-client'
 import { CATALOG, type UserTypeName } from './catalogs'
 
@@ -114,9 +121,19 @@ async function dependentsOf(
 }
 
 /**
- * Completes both login steps through the API: the password, then the emailed code. The API reuses
- * a code sent less than a minute earlier instead of sending another, so that one is accepted too.
+ * The login code sent to `email` after `sentAfter`. The API reuses a code sent less than a minute
+ * earlier instead of sending another, so that one is accepted too.
  */
+export function loginCodeQuery(email: string, sentAfter: Date): EmailQuery {
+  return {
+    to: email,
+    subject: SUBJECTS.loginCode,
+    sentAfter,
+    reusedAfter: new Date(sentAfter.getTime() - CODE_REUSE_MS),
+  }
+}
+
+/** Completes both login steps through the API: the password, then the emailed code. */
 export async function signIn(
   api: ApiClient,
   mailbox: Mailbox,
@@ -128,12 +145,7 @@ export async function signIn(
     password: credentials.password,
     keepSignedIn: true,
   })
-  const email = await mailbox.waitFor({
-    to: credentials.email,
-    subject: SUBJECTS.loginCode,
-    sentAfter,
-    reusedAfter: new Date(sentAfter.getTime() - CODE_REUSE_MS),
-  })
+  const email = await mailbox.waitFor(loginCodeQuery(credentials.email, sentAfter))
   const user = await api.post<UserResponse>('/api/auth/login/two-factor', { code: codeIn(email) })
   api.forgetCsrfToken()
   return user

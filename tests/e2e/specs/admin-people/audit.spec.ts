@@ -1,9 +1,9 @@
 import { auditEntry } from '../../support/api/admin-people'
 import { PASSWORD } from '../../support/config/environment'
+import { fullName } from '../../support/data/people'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import { AdminShell } from '../../support/pages/admin-shell'
-import { fullName } from '../../support/data/people'
 import { DataTable } from '../../support/ui/data-table'
 
 test.describe('audit log', () => {

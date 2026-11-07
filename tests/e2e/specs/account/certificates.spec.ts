@@ -1,12 +1,14 @@
-import { certificatesFor } from '../../support/api/account'
 import { firstDependent } from '../../support/api/accounts'
+import { certificatesFor } from '../../support/api/my-account'
+import { fullName } from '../../support/data/people'
 import { expect, test } from '../../support/fixtures/test'
-import { AccountPage, saveDownload } from '../../support/pages/account/account-page'
+import { AccountPage } from '../../support/pages/account/account-page'
 import {
   CertificateDialog,
   certificatePngName,
   CertificatesTab,
 } from '../../support/pages/account/certificates-tab'
+import { saveDownload } from '../../support/ui/download'
 
 const PNG_SIGNATURE = '89504e470d0a1a0a'
 
@@ -25,21 +27,20 @@ test.describe('diplomas', () => {
     const ended = await seed.moveToPast(signedUp, [activity], 10)
     const upcoming = await seed.event()
     await seed.enrol(actor.api, await seed.activity(upcoming), actor.account.id)
-    const guardianName = `${actor.account.firstName} ${actor.account.lastName}`
-    const minorName = `${minor.firstName} ${minor.lastName}`
+    const guardianName = fullName(actor.account)
+    const minorName = fullName(minor)
     const issued = await certificatesFor(actor.api, ended.id)
 
     const page = await pageAs(actor)
     await new AccountPage(page).goto('certificates')
     const diplomas = new CertificatesTab(page)
 
-    expect(
-      issued.map((certificate) => `${certificate.firstName} ${certificate.lastName}`),
-    ).toStrictEqual([guardianName, minorName])
+    expect(issued.map(fullName)).toStrictEqual([guardianName, minorName])
     for (const certificate of issued) {
-      const name = `${certificate.firstName} ${certificate.lastName}`
       expect(certificate.code).toMatch(/^CA-\d{4}-[0-9A-F]{8}$/)
-      await expect(diplomas.tile(name, ended.title)).toContainText(certificate.code)
+      await expect(diplomas.tile(fullName(certificate), ended.title)).toContainText(
+        certificate.code,
+      )
     }
     await expect(
       page.getByTestId('certificate-tile').filter({ hasText: upcoming.title }),

@@ -3,10 +3,18 @@ import type { EventCategoryTypeResponse } from '@contract/eventCategoryTypeRespo
 
 import type { Account } from '../api/accounts'
 import { ApiClient } from '../api/api-client'
-import { ContentSeeder, createCategory } from '../api/content'
+import { ContentSeeder, createCategory, uploadSharedThumbnail } from '../api/content'
+import { PublicEvents } from '../api/public'
 import { environment } from '../config/environment'
 import { Mailbox } from '../mail/mailbox'
-import { actorFor, createAccount, loadActor, type Actor, type ActorOptions } from './actors'
+import {
+  actorFor,
+  AdminRoster,
+  createAccount,
+  loadActor,
+  type Actor,
+  type ActorOptions,
+} from './actors'
 
 /** Creates accounts a single test owns, for flows that change or remove them. */
 interface Accounts {
@@ -24,17 +32,20 @@ interface WorkerFixtures {
   anonymousApi: ApiClient
   initialAdmin: Actor
   privacyOfficer: Actor
-  admin: Actor
+  administrators: AdminRoster
   editor: Actor
   category: EventCategoryTypeResponse
+  thumbnail: string
   member: Actor
   participant: Actor
   guardian: Actor
 }
 
 interface TestFixtures {
+  admin: Actor
   accounts: Accounts
   seed: ContentSeeder
+  publicEvents: PublicEvents
   pageAs: (actor: Actor) => Promise<Page>
 }
 
@@ -42,10 +53,12 @@ const WORKER_SETUP = { scope: 'worker', timeout: 120_000 } as const
 
 /**
  * The suite's `test`: a visitor `page`, worker-wide actors (the initial administrator, the
- * privacy officer, an administrator, a member, a participant and a guardian with two dependents),
- * `pageAs` to open the site signed in as any of them, `accounts` for accounts a test owns and
- * `seed` to create content through the API. Each worker reports its own client address, so the
- * rate limits treat workers as different visitors.
+ * privacy officer, an editor, a member, a participant and a guardian with two dependents), an
+ * `admin` that changes every few tests, `pageAs` to open the site signed in as any of them,
+ * `accounts` for accounts a test owns, `seed` to create content through the API, `publicEvents` for
+ * events that public lists show first and that are deleted afterwards, `anonymousApi` for the API
+ * as a visitor and `mailbox` for what the API emailed. Each worker reports its own `clientAddress`,
+ * so the rate limits treat workers as different visitors.
  */
 export const test = base.extend<TestFixtures, WorkerFixtures>({
   clientAddress: [
@@ -86,19 +99,21 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     },
     { scope: 'worker' },
   ],
-  admin: [
+  administrators: [
     async ({ anonymousApi, mailbox, initialAdmin, clientAddress }, use) => {
-      const account = await createAccount(
-        { label: 'admin', type: 'member', admin: true },
-        anonymousApi,
-        mailbox,
-        initialAdmin,
-      )
-      const actor = await actorFor(account, mailbox, clientAddress)
-      await use(actor)
-      await actor.api.dispose()
+      const roster = new AdminRoster(async () => {
+        const account = await createAccount(
+          { label: 'admin', type: 'member', admin: true },
+          anonymousApi,
+          mailbox,
+          initialAdmin,
+        )
+        return actorFor(account, mailbox, clientAddress)
+      })
+      await use(roster)
+      await roster.dispose()
     },
-    WORKER_SETUP,
+    { scope: 'worker' },
   ],
   editor: [
     async ({ anonymousApi, mailbox, initialAdmin, clientAddress }, use) => {
@@ -115,8 +130,14 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     WORKER_SETUP,
   ],
   category: [
-    async ({ admin }, use) => {
-      await use(await createCategory(admin.api))
+    async ({ initialAdmin }, use) => {
+      await use(await createCategory(initialAdmin.api))
+    },
+    { scope: 'worker' },
+  ],
+  thumbnail: [
+    async ({ initialAdmin }, use) => {
+      await use(await uploadSharedThumbnail(initialAdmin.api))
     },
     { scope: 'worker' },
   ],
@@ -162,6 +183,9 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     },
     WORKER_SETUP,
   ],
+  admin: async ({ administrators }, use) => {
+    await use(await administrators.next())
+  },
   extraHTTPHeaders: async ({ clientAddress }, use) => {
     await use({ 'X-Forwarded-For': clientAddress })
   },
@@ -177,8 +201,13 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     await use({ create, signIn, actor: async (options) => signIn(await create(options)) })
     await Promise.all(opened.map((api) => api.dispose()))
   },
-  seed: async ({ admin, category }, use) => {
-    await use(new ContentSeeder(admin.api, category))
+  seed: async ({ admin, category, thumbnail }, use) => {
+    await use(new ContentSeeder(admin.api, category, thumbnail))
+  },
+  publicEvents: async ({ admin, seed }, use) => {
+    const events = new PublicEvents(admin.api, seed)
+    await use(events)
+    await events.dispose()
   },
   pageAs: async ({ browser }, use) => {
     const contexts: BrowserContext[] = []

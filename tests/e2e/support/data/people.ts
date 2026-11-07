@@ -44,9 +44,21 @@ export function emailAddress(label: string): string {
 }
 
 /** A valid Spanish DNI: eight digits and their control letter. */
-export function nationalId(): string {
+function nationalId(): string {
   const digits = randomDigits(7).padStart(8, String(randomInt(1, 10)))
   return `${digits}${NATIONAL_ID_LETTERS[Number(digits) % 23]}`
+}
+
+/** A DNI with the right shape whose control letter does not match its number. */
+export function mismatchedNationalId(): string {
+  const valid = nationalId()
+  const next = (NATIONAL_ID_LETTERS.indexOf(valid.charAt(8)) + 1) % NATIONAL_ID_LETTERS.length
+  return `${valid.slice(0, 8)}${NATIONAL_ID_LETTERS.charAt(next)}`
+}
+
+/** A gender other than `gender`, to change it in a form. */
+export function otherGender(gender: Gender): Gender {
+  return gender === 'Female' ? 'Male' : 'Female'
 }
 
 /** A Spanish mobile number. */

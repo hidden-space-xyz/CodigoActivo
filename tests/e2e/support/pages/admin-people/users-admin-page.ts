@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
+import { escapeRegExp } from '../../data/formats'
 import { fullName, type Named } from '../../data/people'
 import { DataTable } from '../../ui/data-table'
 import { AdminShell } from '../admin-shell'
@@ -58,7 +59,7 @@ export class UsersAdminPage {
    * guardian after «Tutor:».
    */
   row(person: Named): Locator {
-    return this.table.row(new RegExp(`^\\s*${escaped(fullName(person))}`))
+    return this.table.row(new RegExp(`^\\s*${escapeRegExp(fullName(person))}`))
   }
 
   /** The button that opens the row menu of `person`. */
@@ -82,8 +83,4 @@ export class UsersAdminPage {
     await this.openMenu(person)
     await this.menuItem(key).click()
   }
-}
-
-function escaped(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }

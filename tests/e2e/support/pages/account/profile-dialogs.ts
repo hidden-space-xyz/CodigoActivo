@@ -1,9 +1,4 @@
 import type { Locator, Page } from '@playwright/test'
-import type { Gender } from '@contract/gender'
-
-import { nationalId } from '../../data/people'
-
-const NATIONAL_ID_LETTERS = 'TRWAGMYFPDXBNJZSQVHLCKE'
 
 /** The dialog «Editar mis datos» of the profile. */
 export class ProfileDialog {
@@ -100,17 +95,4 @@ export class PasswordDialog {
     await this.confirmation.fill(confirmation)
     await this.save.click()
   }
-}
-
-/** A gender other than `gender`, to change it in a form. */
-export function otherGender(gender: Gender): Gender {
-  return gender === 'Female' ? 'Male' : 'Female'
-}
-
-/** A DNI shaped correctly whose control letter does not match its number. */
-export function mismatchedNationalId(): string {
-  const valid = nationalId()
-  const letter = valid.charAt(8)
-  const wrong = NATIONAL_ID_LETTERS.charAt((NATIONAL_ID_LETTERS.indexOf(letter) + 1) % 23)
-  return `${valid.slice(0, 8)}${wrong}`
 }

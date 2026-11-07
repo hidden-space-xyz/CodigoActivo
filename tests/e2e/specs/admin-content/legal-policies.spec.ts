@@ -1,12 +1,11 @@
 import { versionInForce } from '../../support/api/admin-content'
+import { LEGAL_ENTITY } from '../../support/config/environment'
 import { dayText } from '../../support/data/formats'
 import { uniqueLetters } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import { LegalPoliciesPage } from '../../support/pages/admin-content/legal-policies-page'
 import { confirm, messageBox, notification } from '../../support/ui/element-plus'
-
-const LEGAL_TAX_ID = 'G00000000'
 
 test.describe('legal policies', () => {
   test.describe.configure({ mode: 'serial' })
@@ -96,7 +95,7 @@ test.describe('legal policies', () => {
         version: next,
       }),
     )
-    await expect(policy).toContainText(LEGAL_TAX_ID)
+    await expect(policy).toContainText(LEGAL_ENTITY.taxId)
   })
 
   test('an earlier version can be read and loaded back into the editor', async ({

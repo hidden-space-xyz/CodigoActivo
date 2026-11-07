@@ -1,13 +1,10 @@
-import { CATALOG } from '../../support/api/catalogs'
+import { CATALOG, RESOURCE_TYPE_LABELS } from '../../support/api/catalogs'
 import { uniqueLetters, uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import { ContentAdminPage } from '../../support/pages/admin-content/content-admin-page'
 import { CardListPage } from '../../support/pages/public/card-list-page'
 import { chooseOption, confirm, notification } from '../../support/ui/element-plus'
-
-const INTERNAL = 'Interno'
-const EXTERNAL = 'Externo'
 
 test.describe('resource administration', () => {
   test('an internal resource needs a description and opens on its public page', async ({
@@ -36,7 +33,7 @@ test.describe('resource administration', () => {
 
     await expect(notification(page, t('pages.admin.resources.toasts.created'))).toBeVisible()
     await resources.search(title)
-    await expect(resources.table.row(title)).toContainText(INTERNAL)
+    await expect(resources.table.row(title)).toContainText(RESOURCE_TYPE_LABELS.internal)
     const list = new CardListPage(page, '/resources')
     await list.goto()
     await list.searchFor(title)
@@ -79,7 +76,7 @@ test.describe('resource administration', () => {
     await expect(notification(page, t('pages.admin.resources.toasts.created'))).toBeVisible()
     await resources.search(title)
     const row = resources.table.row(title)
-    await expect(row).toContainText(EXTERNAL)
+    await expect(row).toContainText(RESOURCE_TYPE_LABELS.external)
     await expect(row.getByTestId('admin-resources-url')).toHaveAttribute('href', url)
     const list = new CardListPage(page, '/resources')
     await list.goto()
@@ -108,14 +105,14 @@ test.describe('resource administration', () => {
 
     await resources.table.filterBy('admin-resources-type-filter', CATALOG.resourceTypes.internal)
     await expect(resources.table.chips).toContainText(
-      t('table.filterChip', { label: type, value: INTERNAL }),
+      t('table.filterChip', { label: type, value: RESOURCE_TYPE_LABELS.internal }),
     )
     await expect(resources.table.row(internal.title)).toBeVisible()
     await expect(resources.table.row(external.title)).toHaveCount(0)
 
     await resources.table.filterBy('admin-resources-type-filter', CATALOG.resourceTypes.external)
     await expect(resources.table.chips).toContainText(
-      t('table.filterChip', { label: type, value: EXTERNAL }),
+      t('table.filterChip', { label: type, value: RESOURCE_TYPE_LABELS.external }),
     )
     await expect(resources.table.row(external.title)).toBeVisible()
     await expect(resources.table.row(internal.title)).toHaveCount(0)

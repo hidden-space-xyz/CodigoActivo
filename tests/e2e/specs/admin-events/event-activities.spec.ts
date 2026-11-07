@@ -1,15 +1,13 @@
-import { CATALOG } from '../../support/api/catalogs'
+import { CATALOG, MODALITY_LABELS, ROLE_LABELS } from '../../support/api/catalogs'
+import { pickerMoment } from '../../support/data/formats'
+import { dayFromToday } from '../../support/data/time'
 import { uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import {
   ActivityFormDialog,
   EventAdminPage,
-  MODALITY_LABELS,
-  ROLE_LABELS,
 } from '../../support/pages/admin-events/event-admin-page'
-import { pickerMoment } from '../../support/data/formats'
-import { dayFromToday } from '../../support/data/time'
 import { confirm, fillPicker, notification } from '../../support/ui/element-plus'
 import { pickThumbnail } from '../../support/ui/forms'
 

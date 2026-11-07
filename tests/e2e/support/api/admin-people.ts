@@ -5,7 +5,6 @@ import type { DiagnosticLogEntryResponse } from '@contract/diagnosticLogEntryRes
 import type { DiagnosticLogEntryResponsePagedResult } from '@contract/diagnosticLogEntryResponsePagedResult'
 import type { GetApiLogsAuditParams } from '@contract/getApiLogsAuditParams'
 import type { HouseholdSignupRolesResponse } from '@contract/householdSignupRolesResponse'
-import type { UserResponse } from '@contract/userResponse'
 
 import { PASSWORD } from '../config/environment'
 import { ApiClient, ApiRequestError, type Query } from './api-client'
@@ -17,27 +16,6 @@ const LOG_DELIVERY = { timeout: 20_000, intervals: [2_500, 1_500] }
 export async function signupRoleNames(api: ApiClient, userId: string): Promise<string[]> {
   const household = await api.get<HouseholdSignupRolesResponse[]>('/api/activities/signup-roles')
   return household.find((member) => member.userId === userId)?.roles.map((role) => role.name) ?? []
-}
-
-/**
- * Changes the main phone of the signed-in person of `api` from «Mi cuenta», keeping every other
- * field, so the data history keeps the previous number.
- */
-export async function changeOwnPhone(api: ApiClient, phone: string): Promise<void> {
-  const me = await api.get<UserResponse>('/api/auth/me')
-  await api.put(`/api/users/${me.id}`, {
-    firstName: me.firstName,
-    lastName: me.lastName,
-    email: me.email ?? null,
-    phone,
-    secondaryPhone: me.secondaryPhone ?? null,
-    birthDate: me.birthDate ?? null,
-    nationalId: me.nationalId ?? null,
-    newsConsent: me.newsConsent,
-    gender: me.gender,
-    parentId: null,
-    currentPassword: PASSWORD,
-  })
 }
 
 /**

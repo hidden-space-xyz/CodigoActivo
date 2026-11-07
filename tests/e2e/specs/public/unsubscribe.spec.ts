@@ -1,7 +1,6 @@
+import { LEGAL_ENTITY } from '../../support/config/environment'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
-
-const LEGAL_EMAIL = 'contacto@e2e.codigoactivo.test'
 
 test.describe('unsubscribe from the news', () => {
   test('a link without a token cannot unsubscribe anyone', async ({ page }) => {
@@ -16,7 +15,7 @@ test.describe('unsubscribe from the news', () => {
       t('pages.unsubscribe.incompleteLink'),
     )
     await expect(main.getByTestId('status-panel-hint')).toHaveText(
-      t('pages.unsubscribe.hint', { email: LEGAL_EMAIL }),
+      t('pages.unsubscribe.hint', { email: LEGAL_ENTITY.email }),
     )
     await main.getByTestId('unsubscribe-home').click()
     await expect(page).toHaveURL('/')

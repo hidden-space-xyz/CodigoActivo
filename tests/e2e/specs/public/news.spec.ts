@@ -1,8 +1,8 @@
+import { cardDate, dayText } from '../../support/data/formats'
 import { uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
-import { CardListPage } from '../../support/pages/public/card-list-page'
-import { cardDate, dayText } from '../../support/data/formats'
 import { t } from '../../support/i18n'
+import { CardListPage } from '../../support/pages/public/card-list-page'
 
 test.describe('news archive', () => {
   test('the archive opens on the newest year and lists its news as cards', async ({

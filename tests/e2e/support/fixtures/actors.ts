@@ -1,6 +1,5 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import type { UserResponse } from '@contract/userResponse'
 
 import {
   changeUserType,
@@ -12,6 +11,7 @@ import {
 } from '../api/accounts'
 import { ApiClient, type StorageState } from '../api/api-client'
 import type { UserTypeName } from '../api/catalogs'
+import { currentUser } from '../api/my-account'
 import { STATE_DIRECTORY } from '../config/environment'
 import type { Mailbox } from '../mail/mailbox'
 
@@ -32,6 +32,8 @@ export interface ActorOptions extends Registration {
   readonly editor?: boolean
 }
 
+const TESTS_PER_ADMINISTRATOR = 5
+
 interface SavedActor {
   readonly account: Account
   readonly state: StorageState
@@ -43,7 +45,7 @@ function stateFile(name: SharedActorName): string {
 
 /** The account the API knows for the session of `api`. */
 export async function accountOf(api: ApiClient, password: string): Promise<Account> {
-  const user = await api.get<UserResponse>('/api/auth/me')
+  const user = await currentUser(api)
   return {
     id: user.id,
     firstName: user.firstName,
@@ -80,6 +82,33 @@ export async function actorFor(
   const api = await ApiClient.open({ clientAddress })
   await signIn(api, mailbox, account)
   return { account, api, state: await api.storageState() }
+}
+
+/**
+ * The administrators of a worker. The API limits the requests of each account per minute and the
+ * tests of an administrator make many, so a new account takes over every few tests.
+ */
+export class AdminRoster {
+  private current: Actor | undefined
+  private tests = 0
+
+  constructor(private readonly create: () => Promise<Actor>) {}
+
+  /** The administrator of the next test. */
+  async next(): Promise<Actor> {
+    if (!this.current || this.tests === TESTS_PER_ADMINISTRATOR) {
+      await this.dispose()
+      this.current = await this.create()
+      this.tests = 0
+    }
+    this.tests += 1
+    return this.current
+  }
+
+  /** Closes the session of the current administrator. */
+  async dispose(): Promise<void> {
+    await this.current?.api.dispose()
+  }
 }
 
 /**

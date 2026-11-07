@@ -1,21 +1,10 @@
-import { PublicEvents } from '../../support/api/public'
+import { cardDate, dayRangeText } from '../../support/data/formats'
 import { uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
-import { cardDate, dayRangeText } from '../../support/data/formats'
 import { t } from '../../support/i18n'
 import { EventsPage } from '../../support/pages/public/events-page'
 
 test.describe('events page', () => {
-  let events: PublicEvents
-
-  test.beforeEach(({ admin, seed }) => {
-    events = new PublicEvents(admin.api, seed)
-  })
-
-  test.afterEach(async () => {
-    await events.dispose()
-  })
-
   test('an upcoming event card shows its date, status and categories', async ({ page, seed }) => {
     const category = await seed.category()
     const event = await seed.event({ startsIn: 3, categories: [category] })
@@ -40,8 +29,8 @@ test.describe('events page', () => {
     await expect(page).toHaveURL(`/events/${event.id}`)
   })
 
-  test('the upcoming events load 25 at a time', async ({ page, seed }) => {
-    await events.many(26, { startsIn: 200, categories: [await seed.category()] })
+  test('the upcoming events load 25 at a time', async ({ page, seed, publicEvents }) => {
+    await publicEvents.many(26, { startsIn: 200, categories: [await seed.category()] })
     const eventsPage = new EventsPage(page)
     await eventsPage.goto()
 
@@ -51,9 +40,9 @@ test.describe('events page', () => {
     await expect.poll(() => eventsPage.upcomingCards.count()).toBeGreaterThan(25)
   })
 
-  test('past events are grouped by year, the newest one first', async ({ page }) => {
-    const lastYear = await events.past(-400)
-    const thisYear = await events.past(-1)
+  test('past events are grouped by year, the newest one first', async ({ page, publicEvents }) => {
+    const lastYear = await publicEvents.past(-400)
+    const thisYear = await publicEvents.past(-1)
     const newest = thisYear.eventStartsAt.slice(0, 4)
     const older = lastYear.eventStartsAt.slice(0, 4)
     const eventsPage = new EventsPage(page)
@@ -83,9 +72,9 @@ test.describe('events page', () => {
     await expect(card).toHaveAttribute('href', `/events/${lastYear.id}`)
   })
 
-  test('past events can be searched by title', async ({ page }) => {
-    const event = await events.past(-20)
-    const other = await events.past(-21)
+  test('past events can be searched by title', async ({ page, publicEvents }) => {
+    const event = await publicEvents.past(-20)
+    const other = await publicEvents.past(-21)
     const eventsPage = new EventsPage(page)
     await eventsPage.goto()
 
@@ -98,12 +87,16 @@ test.describe('events page', () => {
   test('the category filter offers the categories of past events and narrows the list', async ({
     page,
     seed,
+    publicEvents,
   }) => {
     const workshops = await seed.category(uniqueTitle('Talleres'))
     const robotics = await seed.category(uniqueTitle('Robótica'))
     const prefix = uniqueTitle('Pasado')
-    const workshop = await events.past(-15, { title: `${prefix} taller`, categories: [workshops] })
-    const robot = await events.past(-16, { title: `${prefix} robot`, categories: [robotics] })
+    const workshop = await publicEvents.past(-15, {
+      title: `${prefix} taller`,
+      categories: [workshops],
+    })
+    const robot = await publicEvents.past(-16, { title: `${prefix} robot`, categories: [robotics] })
     const eventsPage = new EventsPage(page)
     await eventsPage.goto()
     await eventsPage.searchPast(prefix)
@@ -115,18 +108,5 @@ test.describe('events page', () => {
     await expect(eventsPage.card(eventsPage.past, robot.title)).toBeVisible()
     await expect(eventsPage.card(eventsPage.past, workshop.title)).toBeHidden()
     await expect(eventsPage.card(eventsPage.past, robot.title)).toContainText(robotics.name)
-  })
-
-  test('filters that match no past event say so', async ({ page }) => {
-    await events.past(-10)
-    const eventsPage = new EventsPage(page)
-    await eventsPage.goto()
-
-    await eventsPage.searchPast(uniqueTitle('Ningún evento'))
-
-    await expect(eventsPage.past.getByTestId('events-empty')).toHaveText(
-      t('pages.events.noResults'),
-    )
-    await expect(eventsPage.past.getByTestId('event-card')).toHaveCount(0)
   })
 })

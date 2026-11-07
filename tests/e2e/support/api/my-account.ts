@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { AuthenticatorSetupResponse } from '@contract/authenticatorSetupResponse'
 import type { EventCertificateResponse } from '@contract/eventCertificateResponse'
 import type { EventHistoryResponse } from '@contract/eventHistoryResponse'
 import type { MyConsentResponse } from '@contract/myConsentResponse'
@@ -6,6 +7,10 @@ import type { UserResponse } from '@contract/userResponse'
 import type { UserResponsePagedResult } from '@contract/userResponsePagedResult'
 import { Secret, TOTP } from 'otpauth'
 
+import { PASSWORD } from '../config/environment'
+import { birthDateForAge } from '../data/time'
+import type { Actor } from '../fixtures/actors'
+import type { Dependent } from './accounts'
 import type { ApiClient } from './api-client'
 
 const STEP_SECONDS = 30
@@ -53,6 +58,49 @@ export async function consentsFor(
 }
 
 /**
+ * Changes the main phone of the signed-in person of `api` from «Mi cuenta», keeping every other
+ * field, so the data history keeps the previous number.
+ */
+export async function changeOwnPhone(api: ApiClient, phone: string): Promise<void> {
+  const me = await currentUser(api)
+  await api.put(`/api/users/${me.id}`, {
+    firstName: me.firstName,
+    lastName: me.lastName,
+    email: me.email ?? null,
+    phone,
+    secondaryPhone: me.secondaryPhone ?? null,
+    birthDate: me.birthDate ?? null,
+    nationalId: me.nationalId ?? null,
+    newsConsent: me.newsConsent,
+    gender: me.gender,
+    parentId: null,
+    currentPassword: PASSWORD,
+  })
+}
+
+/**
+ * Adds to the household of `guardian` a minor of `age` named `firstName` with the guardian's last
+ * name, the way the account page does, and returns it.
+ */
+export async function addMinor(
+  guardian: Actor,
+  firstName: string,
+  age: number,
+): Promise<Dependent> {
+  const minor = {
+    firstName,
+    lastName: guardian.account.lastName,
+    birthDate: birthDateForAge(age, -30),
+    gender: 'PreferNotToSay',
+  } as const
+  const child = await guardian.api.post<UserResponse>(
+    `/api/users/${guardian.account.id}/children`,
+    { ...minor, declaresGuardianship: true },
+  )
+  return { ...minor, id: child.id }
+}
+
+/**
  * An authenticator application enrolled with the shared key the account page shows, generating its
  * codes through `otpauth`. The API refuses a time step it already accepted, so every code it hands
  * out belongs to a newer 30-second step than the previous one, waiting for it when needed.
@@ -91,4 +139,15 @@ export class AuthenticatorApp {
     if (this.last === undefined) throw new Error('The application has not generated a code yet')
     return this.last
   }
+}
+
+/** Replaces the emailed code of the signed-in person of `api` with an authenticator application. */
+export async function enrollAuthenticator(api: ApiClient): Promise<AuthenticatorApp> {
+  const { sharedKey } = await api.post<AuthenticatorSetupResponse>(
+    '/api/auth/two-factor/authenticator/setup',
+    { currentPassword: PASSWORD },
+  )
+  const app = new AuthenticatorApp(sharedKey)
+  await api.post('/api/auth/two-factor/authenticator/confirm', { code: await app.nextCode() })
+  return app
 }

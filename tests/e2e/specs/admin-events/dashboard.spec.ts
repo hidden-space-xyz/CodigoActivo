@@ -1,4 +1,6 @@
 import { signUp } from '../../support/api/signups'
+import { escapeRegExp } from '../../support/data/formats'
+import { dayFromToday } from '../../support/data/time'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import { DashboardPage, type KpiKey } from '../../support/pages/admin-events/dashboard-page'
@@ -16,13 +18,11 @@ const KPIS: readonly KpiKey[] = [
 ]
 
 const IN_PERIOD = new RegExp(
-  `^${t('pages.admin.dashboard.kpi.inRange', { n: '#' })
-    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    .replace('#', '[\\d.]+')}$`,
+  `^${escapeRegExp(t('pages.admin.dashboard.kpi.inRange', { n: '#' })).replace('#', '[\\d.]+')}$`,
 )
 
 test.describe('admin dashboard', () => {
-  test('the metrics show every key figure and switch between time ranges', async ({
+  test('the metrics show every key figure and ask the API for the chosen range', async ({
     pageAs,
     admin,
   }) => {
@@ -36,16 +36,21 @@ test.describe('admin dashboard', () => {
     await expect(dashboard.rangeButton('12m')).toHaveAttribute('aria-pressed', 'true')
     await expect(dashboard.kpiPeriod('users')).toHaveText(IN_PERIOD)
 
-    await dashboard.rangeButton('30d').click()
+    for (const [preset, days] of [
+      ['30d', 29],
+      ['90d', 89],
+    ] as const) {
+      const request = dashboard.analyticsRequest()
 
-    await expect(dashboard.rangeButton('30d')).toHaveAttribute('aria-pressed', 'true')
+      await dashboard.rangeButton(preset).click()
+
+      const range = new URL((await request).url()).searchParams
+      expect(range.get('from')).toBe(dayFromToday(-days))
+      expect(range.get('to')).toBe(dayFromToday(0))
+      await expect(dashboard.rangeButton(preset)).toHaveAttribute('aria-pressed', 'true')
+      await expect(dashboard.kpiPeriod('users')).toHaveText(IN_PERIOD)
+    }
     await expect(dashboard.rangeButton('12m')).toHaveAttribute('aria-pressed', 'false')
-    await expect(dashboard.kpiPeriod('users')).toHaveText(IN_PERIOD)
-
-    await dashboard.rangeButton('90d').click()
-
-    await expect(dashboard.rangeButton('90d')).toHaveAttribute('aria-pressed', 'true')
-    await expect(dashboard.rangeButton('30d')).toHaveAttribute('aria-pressed', 'false')
   })
 
   test('an upcoming event with requested signups is pending and its occupancy listed', async ({

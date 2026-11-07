@@ -1,3 +1,4 @@
+import { LEGAL_ENTITY } from '../../support/config/environment'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import { MenuDrawer, SiteTheme } from '../../support/pages/public/site-chrome'
@@ -10,9 +11,6 @@ const SECTIONS = [
   { section: 'resources', path: '/resources' },
   { section: 'about', path: '/about' },
 ] as const
-
-const LEGAL_EMAIL = 'contacto@e2e.codigoactivo.test'
-const LEGAL_PHONE = '600 00 00 00'
 
 test.describe('site navigation', () => {
   test('the header links to every section and marks the current one', async ({ page }) => {
@@ -73,24 +71,6 @@ test.describe('site navigation', () => {
     await expect(page).toHaveURL('/admin/dashboard')
   })
 
-  test('signing out from the header turns the person back into a visitor', async ({
-    pageAs,
-    accounts,
-  }) => {
-    const actor = await accounts.actor({ label: 'header-logout' })
-    const page = await pageAs(actor)
-    const header = new SiteHeader(page)
-    await page.goto('/news')
-    await expect(header.greeting(actor.account.firstName)).toBeVisible()
-
-    await header.logout.click()
-
-    await expect(page).toHaveURL('/login')
-    await expect(header.login).toBeVisible()
-    await expect(header.account).toBeHidden()
-    await expect(header.greeting(actor.account.firstName)).toBeHidden()
-  })
-
   test('the footer links to the legal pages', async ({ page }) => {
     const footer = page.getByTestId('site-footer')
     await page.goto('/')
@@ -112,11 +92,11 @@ test.describe('site navigation', () => {
     await page.goto('/')
 
     const email = footer.getByTestId('site-footer-email')
-    await expect(email).toHaveText(LEGAL_EMAIL)
-    await expect(email).toHaveAttribute('href', `mailto:${LEGAL_EMAIL}`)
+    await expect(email).toHaveText(LEGAL_ENTITY.email)
+    await expect(email).toHaveAttribute('href', `mailto:${LEGAL_ENTITY.email}`)
     const phone = footer.getByTestId('site-footer-phone')
-    await expect(phone).toHaveText(LEGAL_PHONE)
-    await expect(phone).toHaveAttribute('href', 'tel:600000000')
+    await expect(phone).toHaveText(LEGAL_ENTITY.phone)
+    await expect(phone).toHaveAttribute('href', LEGAL_ENTITY.phoneLink)
     for (const [channel, url] of [
       ['instagram', 'https://www.instagram.com/codigoactivo_'],
       ['facebook', 'https://www.facebook.com/codigoactivo'],
@@ -173,45 +153,18 @@ test.describe('site navigation', () => {
     }
   })
 
-  test('the about page presents the association and how to join it', async ({ page }) => {
+  test('the about page tells how to contact the association to join it', async ({ page }) => {
     await page.goto('/about')
-    const main = page.getByTestId('page-about')
 
-    await expect(main.getByTestId('about-hero-title')).toContainText(
-      `${t('pages.about.hero.titleLine2')} ${t('pages.about.hero.titleHighlight')}`,
-    )
-    for (const [value, description] of [
-      [
-        t('pages.about.organization.values.free.title'),
-        t('pages.about.organization.values.free.description'),
-      ],
-      [
-        t('pages.about.organization.values.inclusive.title'),
-        t('pages.about.organization.values.inclusive.description'),
-      ],
-      [
-        t('pages.about.organization.values.community.title'),
-        t('pages.about.organization.values.community.description'),
-      ],
-      [
-        t('pages.about.organization.values.fun.title'),
-        t('pages.about.organization.values.fun.description'),
-      ],
-    ] as const) {
-      const card = main.getByTestId('value-card').filter({ hasText: value })
-      await expect(card.getByTestId('value-card-title')).toHaveText(value)
-      await expect(card.getByTestId('value-card-description')).toHaveText(description)
-      await expect(card).toBeVisible()
-    }
-    await main.getByTestId('about-join').click()
+    await page.getByTestId('page-about').getByTestId('about-join').click()
 
     const join = page.getByTestId('about-join-dialog')
     const email = join.getByTestId('about-join-email')
-    await expect(email).toHaveText(LEGAL_EMAIL)
-    await expect(email).toHaveAttribute('href', `mailto:${LEGAL_EMAIL}`)
+    await expect(email).toHaveText(LEGAL_ENTITY.email)
+    await expect(email).toHaveAttribute('href', `mailto:${LEGAL_ENTITY.email}`)
     const phone = join.getByTestId('about-join-phone')
-    await expect(phone).toHaveText(LEGAL_PHONE)
-    await expect(phone).toHaveAttribute('href', 'tel:600000000')
+    await expect(phone).toHaveText(LEGAL_ENTITY.phone)
+    await expect(phone).toHaveAttribute('href', LEGAL_ENTITY.phoneLink)
   })
 
   test('on a phone the navigation lives in the menu drawer @mobile', async ({ page }) => {

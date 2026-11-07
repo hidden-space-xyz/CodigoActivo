@@ -1,4 +1,6 @@
 import { eventById, eventTitled, findEvent } from '../../support/api/admin-events'
+import { pickerDate, pickerMoment } from '../../support/data/formats'
+import { dayFromToday, instantOn } from '../../support/data/time'
 import { uniqueLetters, uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
@@ -7,8 +9,6 @@ import {
   EventFormDialog,
   EventsAdminPage,
 } from '../../support/pages/admin-events/events-admin-page'
-import { pickerDate, pickerMoment } from '../../support/data/formats'
-import { dayFromToday } from '../../support/data/time'
 import { confirm, expectChecked, notification } from '../../support/ui/element-plus'
 
 test.describe('events admin', () => {
@@ -53,7 +53,9 @@ test.describe('events admin', () => {
     await expect(row).toContainText(newCategory)
     const saved = await eventTitled(admin.api, title)
     expect(saved.subtitle).toBe('Jornada abierta de programación creativa')
-    expect(saved.earlySignupStartsAt).toBeTruthy()
+    expect(Date.parse(saved.earlySignupStartsAt ?? '')).toBe(
+      instantOn(dayFromToday(-3), 9).getTime(),
+    )
     expect(saved.categories.map((item) => item.name).sort()).toStrictEqual(
       [category.name, newCategory].sort(),
     )

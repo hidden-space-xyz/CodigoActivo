@@ -1,7 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { RoleName } from '../../api/catalogs'
-import { ROLE_LABELS } from './activity-card'
+import { ROLE_LABELS, type RoleName } from '../../api/catalogs'
 
 /** A group of attendees of one role in the leader roster: adults with an account or minors. */
 export type AttendeeGroup = 'users' | 'dependents'

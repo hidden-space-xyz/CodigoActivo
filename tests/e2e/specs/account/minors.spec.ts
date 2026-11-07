@@ -1,5 +1,5 @@
-import { minorsOf } from '../../support/api/account'
-import { newMinor } from '../../support/data/people'
+import { minorsOf } from '../../support/api/my-account'
+import { fullName, newMinor } from '../../support/data/people'
 import { birthDateForAge, dayFromToday } from '../../support/data/time'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
@@ -35,7 +35,7 @@ test.describe('minors in my care', () => {
     await addDialog.save.click()
 
     await expect(notification(page, t('pages.account.minors.addedSummary'))).toBeVisible()
-    const name = `${minor.firstName} ${minor.lastName}`
+    const name = fullName(minor)
     await expect(minors.minor(name)).toContainText(GENDER_NAMES[minor.gender])
     await expect(minors.empty).toBeHidden()
     const [added] = await minorsOf(actor.api, actor.account.id)
@@ -55,7 +55,7 @@ test.describe('minors in my care', () => {
     await editDialog.save.click()
 
     await expect(notification(page, t('pages.account.minors.updatedSummary'))).toBeVisible()
-    const renamed = `Candela ${minor.lastName}`
+    const renamed = fullName({ ...minor, firstName: 'Candela' })
     await expect(minors.minor(renamed)).toBeVisible()
     expect(await minorsOf(actor.api, actor.account.id)).toStrictEqual([
       expect.objectContaining({ id: added?.id, firstName: 'Candela', birthDate: minor.birthDate }),

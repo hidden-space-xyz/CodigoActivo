@@ -1,15 +1,10 @@
 import { firstDependent } from '../../support/api/accounts'
-import { CATALOG } from '../../support/api/catalogs'
+import { CATALOG, USER_STATUS_LABELS, USER_TYPE_LABELS } from '../../support/api/catalogs'
 import { environment } from '../../support/config/environment'
+import { fullName } from '../../support/data/people'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
-import { fullName } from '../../support/data/people'
 import { UsersAdminPage } from '../../support/pages/admin-people/users-admin-page'
-import { SiteHeader } from '../../support/pages/site-header'
-
-const ACTIVE_STATUS = 'Activo'
-const PARTICIPANT_TYPE = 'Participante'
-const MEMBER_TYPE = 'Socio'
 
 test.describe('admin user list', () => {
   test('an administrator finds a new account by its name and by its email', async ({
@@ -25,8 +20,8 @@ test.describe('admin user list', () => {
 
     await expect(users.table.count).toHaveText(t('table.results', { n: 1 }))
     await expect(users.row(account)).toContainText(account.email)
-    await expect(users.row(account)).toContainText(ACTIVE_STATUS)
-    await expect(users.row(account)).toContainText(PARTICIPANT_TYPE)
+    await expect(users.row(account)).toContainText(USER_STATUS_LABELS.active)
+    await expect(users.row(account)).toContainText(USER_TYPE_LABELS.participant)
 
     await users.table.clear.click()
     await users.table.searchColumn('users-filter-email', account.email)
@@ -36,23 +31,6 @@ test.describe('admin user list', () => {
     ).toBeVisible()
     await expect(users.row(account)).toBeVisible()
     await expect(users.table.count).toHaveText(t('table.results', { n: 1 }))
-  })
-
-  test('pressing Enter in a column search applies it and closes its panel', async ({
-    pageAs,
-    admin,
-    accounts,
-  }) => {
-    const account = await accounts.create({ label: 'enter' })
-    const users = new UsersAdminPage(await pageAs(admin))
-    await users.open()
-
-    const panel = await users.table.enterColumnSearch('users-filter-email', account.email)
-
-    await expect(
-      users.table.chip(t('table.filterChip', { label: t('common.email'), value: account.email })),
-    ).toBeVisible()
-    await expect(panel).toBeHidden()
   })
 
   test('the status, type, admin and news filters narrow the list and show their chips', async ({
@@ -77,8 +55,11 @@ test.describe('admin user list', () => {
     await expect(users.row(person)).toBeVisible()
     await expect(users.table.count).toHaveText(t('table.results', { n: 1 }))
     for (const chip of [
-      t('table.filterChip', { label: t('pages.admin.users.columns.type'), value: MEMBER_TYPE }),
-      t('table.filterChip', { label: t('common.status'), value: ACTIVE_STATUS }),
+      t('table.filterChip', {
+        label: t('pages.admin.users.columns.type'),
+        value: USER_TYPE_LABELS.member,
+      }),
+      t('table.filterChip', { label: t('common.status'), value: USER_STATUS_LABELS.active }),
       t('table.filterChip', {
         label: t('pages.admin.users.columns.staffRole'),
         value: t('entities.user.staffRole.None'),
@@ -203,27 +184,5 @@ test.describe('admin user list', () => {
     )
     await expect(users.menuItem('delete')).toHaveAttribute('aria-disabled', 'true')
     await expect(users.menuItem('privacyOfficer')).not.toHaveAttribute('aria-disabled', 'true')
-  })
-
-  test('the privacy officer is marked in the list', async ({ pageAs, admin, privacyOfficer }) => {
-    const users = new UsersAdminPage(await pageAs(admin))
-    await users.open()
-    await users.find(privacyOfficer.account.lastName)
-
-    await expect(
-      users.row(privacyOfficer.account).getByTestId('users-privacy-officer'),
-    ).toBeVisible()
-  })
-
-  test('someone who is not an administrator is sent home from the user list', async ({
-    pageAs,
-    member,
-  }) => {
-    const page = await pageAs(member)
-
-    await page.goto('/admin/users')
-
-    await expect(page).toHaveURL('/')
-    await expect(new SiteHeader(page).admin).toBeHidden()
   })
 })

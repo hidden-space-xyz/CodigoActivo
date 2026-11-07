@@ -1,4 +1,6 @@
+import { firstDependent } from '../../support/api/accounts'
 import { rateEvent, signUp } from '../../support/api/signups'
+import { fullName } from '../../support/data/people'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import {
@@ -6,8 +8,6 @@ import {
   OpinionsTab,
   TermsTab,
 } from '../../support/pages/admin-events/event-admin-page'
-import { firstDependent } from '../../support/api/accounts'
-import { fullName } from '../../support/data/people'
 import { confirm, notification } from '../../support/ui/element-plus'
 
 test.describe('event opinions and terms admin', () => {

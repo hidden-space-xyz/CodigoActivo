@@ -1,10 +1,10 @@
 import { findUser } from '../../support/api/accounts'
+import { fullName } from '../../support/data/people'
 import { uniqueLetters, uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import { linkIn } from '../../support/mail/mailbox'
 import { SendEmailDialog } from '../../support/pages/admin-people/send-email-dialog'
-import { fullName } from '../../support/data/people'
 import { UsersAdminPage } from '../../support/pages/admin-people/users-admin-page'
 import { notification } from '../../support/ui/element-plus'
 
@@ -119,18 +119,6 @@ test.describe('emailing users from the admin list', () => {
       t('pages.unsubscribe.successText'),
     )
     expect((await findUser(admin.api, account.email))?.newsConsent).toBe(false)
-  })
-
-  test('an unsubscribe link without its token is refused', async ({ page }) => {
-    await page.goto('/unsubscribe')
-
-    const unsubscribe = page.getByTestId('page-unsubscribe')
-    await expect(unsubscribe.getByTestId('status-panel-title')).toHaveText(
-      t('pages.unsubscribe.errorTitle'),
-    )
-    await expect(unsubscribe.getByTestId('status-panel-text')).toHaveText(
-      t('pages.unsubscribe.incompleteLink'),
-    )
   })
 
   test('the toolbar emails every user the filters leave in the list', async ({

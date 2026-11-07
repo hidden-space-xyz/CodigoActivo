@@ -1,11 +1,11 @@
 import { randomInt } from 'node:crypto'
 
+import { dayText, pickerDate } from '../../support/data/formats'
 import { dayFromToday } from '../../support/data/time'
 import { uniqueLetters, uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import { ContentAdminPage } from '../../support/pages/admin-content/content-admin-page'
-import { dayText, pickerDate } from '../../support/data/formats'
 import { pickerCell } from '../../support/pages/admin-content/date-picker'
 import { confirm, fillPicker, notification } from '../../support/ui/element-plus'
 

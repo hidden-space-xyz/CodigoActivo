@@ -1,31 +1,38 @@
-import { changeOwnPhone } from '../../support/api/admin-people'
-import { PASSWORD } from '../../support/config/environment'
-import { phoneNumber } from '../../support/data/people'
+import { designatePrivacyOfficer } from '../../support/api/accounts'
+import { changeOwnPhone } from '../../support/api/my-account'
+import { LEGAL_ENTITY, PASSWORD } from '../../support/config/environment'
+import { fullName, phoneNumber } from '../../support/data/people'
 import { dayFromToday } from '../../support/data/time'
 import { uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import { codeIn, SUBJECTS } from '../../support/mail/mailbox'
 import { BlockedDataPage } from '../../support/pages/admin-people/blocked-data-page'
-import { fullName } from '../../support/data/people'
-import { confirm, expectChecked } from '../../support/ui/element-plus'
+import { UsersAdminPage } from '../../support/pages/admin-people/users-admin-page'
+import { AdminShell } from '../../support/pages/admin-shell'
+import { confirm, expectChecked, notification } from '../../support/ui/element-plus'
 
-test.describe('legal archive of blocked data', () => {
-  test('every administrator sees the consultations but only the privacy officer opens one', async ({
+const NOTICE_DELIVERY_MS = 75_000
+
+test.describe('data protection', () => {
+  test('the privacy officer, unlike other administrators, reads the audit and opens consultations', async ({
     pageAs,
     admin,
     privacyOfficer,
   }) => {
     const archive = new BlockedDataPage(await pageAs(admin))
     await archive.open()
-
     await expect(archive.consultations.root).toBeVisible()
     await expect(archive.openConsultation).toBeHidden()
 
-    const officerArchive = new BlockedDataPage(await pageAs(privacyOfficer))
+    const officerPage = await pageAs(privacyOfficer)
+    const officerArchive = new BlockedDataPage(officerPage)
     await officerArchive.open()
-
     await expect(officerArchive.openConsultation).toBeEnabled()
+    const shell = new AdminShell(officerPage)
+    await shell.link('admin-audit').click()
+    await expect(officerPage).toHaveURL(AdminShell.path('admin-audit'))
+    await expect(shell.view('admin-audit')).toBeVisible()
   })
 
   test('the privacy officer opens a consultation, downloads the history of an account and holds it', async ({
@@ -34,6 +41,7 @@ test.describe('legal archive of blocked data', () => {
     accounts,
     mailbox,
   }) => {
+    test.slow()
     const person = await accounts.actor({ label: 'archived' })
     await changeOwnPhone(person.api, phoneNumber())
     const reference = uniqueTitle('Diligencias')
@@ -71,6 +79,10 @@ test.describe('legal archive of blocked data', () => {
     await expect(archive.panel).toContainText(court)
     await expect(archive.panel).toContainText(reference)
     await expect(archive.openConsultation).toBeDisabled()
+    await mailbox.waitFor(
+      { to: LEGAL_ENTITY.email, subject: SUBJECTS.blockedDataConsultation, sentAfter },
+      NOTICE_DELIVERY_MS,
+    )
 
     await archive.search(person.account.phone)
 
@@ -110,5 +122,48 @@ test.describe('legal archive of blocked data', () => {
 
     await expect(hold).not.toContainText(t('pages.admin.blockedData.holds.active'))
     await expect(hold.getByTestId('row-action-lift')).toBeDisabled()
+  })
+
+  test('the superadministrator hands the designation to another administrator', async ({
+    pageAs,
+    initialAdmin,
+    privacyOfficer,
+    accounts,
+  }) => {
+    const successor = await accounts.actor({ label: 'successor', type: 'member', admin: true })
+    const page = await pageAs(initialAdmin)
+    const users = new UsersAdminPage(page)
+    await users.open()
+    await users.find(privacyOfficer.account.lastName)
+    await expect(
+      users.row(privacyOfficer.account).getByTestId('users-privacy-officer'),
+    ).toBeVisible()
+    await users.find(successor.account.lastName)
+    await users.act(successor.account, 'privacyOfficer')
+    const dialog = page.getByTestId('privacy-officer-dialog')
+    const password = dialog.getByTestId('admin-password-input')
+    await password.fill(`${PASSWORD}-wrong`)
+    await dialog.getByTestId('admin-password-confirm').click()
+    await expect(dialog.getByTestId('admin-password-error')).toHaveText(
+      t('errors.UserCurrentPasswordIncorrect'),
+    )
+
+    try {
+      await password.fill(PASSWORD)
+      await dialog.getByTestId('admin-password-confirm').click()
+
+      await expect(
+        notification(page, t('pages.admin.users.toasts.privacyOfficerDesignated')),
+      ).toBeVisible()
+      await expect(users.row(successor.account).getByTestId('users-privacy-officer')).toBeVisible()
+      const successorArchive = new BlockedDataPage(await pageAs(successor))
+      await successorArchive.open()
+      await expect(successorArchive.openConsultation).toBeEnabled()
+      const formerArchive = new BlockedDataPage(await pageAs(privacyOfficer))
+      await formerArchive.open()
+      await expect(formerArchive.openConsultation).toBeHidden()
+    } finally {
+      await designatePrivacyOfficer(initialAdmin.api, privacyOfficer.account.id)
+    }
   })
 })

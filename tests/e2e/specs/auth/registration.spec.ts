@@ -1,6 +1,6 @@
 import { findUser } from '../../support/api/accounts'
 import { PASSWORD } from '../../support/config/environment'
-import { newMinor, newPerson } from '../../support/data/people'
+import { fullName, newMinor, newPerson } from '../../support/data/people'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import { linkIn, SUBJECTS } from '../../support/mail/mailbox'
@@ -54,11 +54,29 @@ test.describe('registration', () => {
     await page.goto('/account')
     const household = new MinorsSection(new AccountPage(page))
     for (const minor of minors) {
-      await expect(household.minor(`${minor.firstName} ${minor.lastName}`)).toBeVisible()
+      await expect(household.minor(fullName(minor))).toBeVisible()
     }
     const user = await findUser(initialAdmin.api, person.email)
     expect(user?.newsConsent).toBe(true)
     expect(user?.dependentCount).toBe(2)
+  })
+
+  test('an address that has an account gets the same answer and its holder a notice', async ({
+    page,
+    accounts,
+    mailbox,
+  }) => {
+    const existing = await accounts.create({ label: 'taken' })
+    const person = { ...newPerson('taken'), email: existing.email }
+    const registration = new RegistrationPage(page)
+    await registration.open()
+    await registration.fill({ person, password: PASSWORD })
+    const sentAfter = new Date()
+
+    await registration.submit.click()
+
+    await expect(registration.success).toContainText(person.email)
+    await mailbox.waitFor({ to: person.email, subject: SUBJECTS.emailInUse, sentAfter })
   })
 
   test('the form refuses a short password and mismatching confirmation', async ({ page }) => {

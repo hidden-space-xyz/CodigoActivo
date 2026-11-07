@@ -5,10 +5,7 @@
  */
 export const CATALOG = {
   userStatuses: {
-    pending: '086e64b7-79e4-4b2d-a6c9-f69ff8243df1',
     active: '766f114c-6168-4be5-89f2-bae2a7a919e4',
-    blocked: '37e9d1e6-1cf3-4c13-a1d8-41b86986d282',
-    dependent: '45a26e12-404b-43b8-b7a7-cdf5f0fc1c4d',
   },
   userTypes: {
     member: 'b0df7ac6-1312-412f-9c2a-88e6cdfb6e1c',
@@ -43,3 +40,47 @@ export type RoleName = keyof typeof CATALOG.roles
 
 /** The state of a signup. */
 export type SignupStatusName = keyof typeof CATALOG.signupStatuses
+
+/** An activity modality: on site or online. */
+export type ModalityName = keyof typeof CATALOG.modalities
+
+/** A type of resource: internal or external. */
+export type ResourceTypeName = keyof typeof CATALOG.resourceTypes
+
+/** How the API names each user status; catalog names come from the API, not from `es.json`. */
+export const USER_STATUS_LABELS: Readonly<Record<keyof typeof CATALOG.userStatuses, string>> = {
+  active: 'Activo',
+}
+
+/** How the API names each type of user account. */
+export const USER_TYPE_LABELS: Readonly<Record<UserTypeName, string>> = {
+  member: 'Socio',
+  sponsor: 'Patrocinador',
+  participant: 'Participante',
+}
+
+/** How the API names each activity role. */
+export const ROLE_LABELS: Readonly<Record<RoleName, string>> = {
+  leader: 'Líder',
+  volunteer: 'Voluntario',
+  participant: 'Participante',
+}
+
+/** How the API names each signup status. */
+export const STATUS_LABELS: Readonly<Record<SignupStatusName, string>> = {
+  requested: 'Solicitada',
+  confirmed: 'Confirmada',
+  denied: 'Rechazada',
+}
+
+/** How the API names each activity modality. */
+export const MODALITY_LABELS: Readonly<Record<ModalityName, string>> = {
+  onSite: 'Presencial',
+  online: 'Online',
+}
+
+/** How the API names each type of resource. */
+export const RESOURCE_TYPE_LABELS: Readonly<Record<ResourceTypeName, string>> = {
+  internal: 'Interno',
+  external: 'Externo',
+}

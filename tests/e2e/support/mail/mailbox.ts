@@ -1,6 +1,7 @@
 import { expect, request, type APIRequestContext } from '@playwright/test'
 
 import { environment } from '../config/environment'
+import { escapeRegExp } from '../data/formats'
 
 /** The subjects of the automatic messages the suite reads, as `AppStrings.resx` writes them. */
 export const SUBJECTS = {
@@ -23,7 +24,6 @@ export interface Email {
   readonly subject: string
   readonly text: string
   readonly attachments: readonly string[]
-  readonly receivedAt: Date
 }
 
 /** Which message to wait for. */
@@ -70,8 +70,9 @@ export class Mailbox {
    * Waits for the newest message to `to` whose subject starts with `subject` and that arrived after
    * `sentAfter`. When the API may reuse a code it sent shortly before instead of sending a new one,
    * `reusedAfter` accepts, once a few seconds pass without a new message, one that arrived after it.
+   * A message a scheduled job sends gets a longer `timeout` than the delivery of the outbox.
    */
-  async waitFor(query: EmailQuery): Promise<Email> {
+  async waitFor(query: EmailQuery, timeout = DELIVERY_TIMEOUT_MS): Promise<Email> {
     const started = Date.now()
     let found: Email | undefined
     await expect
@@ -81,7 +82,7 @@ export class Mailbox {
           found = await this.newest(query, reusable ? query.reusedAfter : undefined)
           return found
         },
-        { message: `«${query.subject}» for ${query.to}`, timeout: DELIVERY_TIMEOUT_MS },
+        { message: `«${query.subject}» for ${query.to}`, timeout },
       )
       .toBeDefined()
     if (!found) throw new Error(`No «${query.subject}» reached ${query.to}`)
@@ -120,7 +121,6 @@ export class Mailbox {
       subject: message.Subject,
       text: message.Text,
       attachments: (message.Attachments ?? []).map((attachment) => attachment.FileName),
-      receivedAt: new Date(match.Created),
     }
   }
 }
@@ -134,8 +134,8 @@ export function codeIn(email: Email): string {
 
 /** The link to `path` an email carries, relative to the site so it opens on the suite's origin. */
 export function linkIn(email: Email, path: string): string {
-  const escaped = path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const link = new RegExp(`https?://[^/\\s]+(${escaped}[#?][^\\s<>"')\\]]+)`).exec(email.text)?.[1]
+  const target = escapeRegExp(path)
+  const link = new RegExp(`https?://[^/\\s]+(${target}[#?][^\\s<>"')\\]]+)`).exec(email.text)?.[1]
   if (!link) throw new Error(`«${email.subject}» carries no link to ${path}`)
   return link
 }

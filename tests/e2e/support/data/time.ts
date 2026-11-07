@@ -1,6 +1,7 @@
 import { TIME_ZONE } from '../config/environment'
 
-const DAY_MS = 86_400_000
+/** The milliseconds of a day. */
+export const DAY_MS = 86_400_000
 
 const madridParts = new Intl.DateTimeFormat('en-CA', {
   timeZone: TIME_ZONE,
@@ -24,8 +25,8 @@ function partsOf(instant: Date): Record<string, number> {
 
 /** The calendar day `offset` days from today in the application time zone, as `YYYY-MM-DD`. */
 export function dayFromToday(offset: number): string {
-  const { year, month, day } = partsOf(new Date(Date.now() + offset * DAY_MS))
-  return [year, month, day].map((value) => String(value).padStart(2, '0')).join('-')
+  const { year = 0, month = 1, day = 1 } = partsOf(new Date())
+  return new Date(Date.UTC(year, month - 1, day + offset)).toISOString().slice(0, 10)
 }
 
 /** The instant of the wall-clock time `hour:minute` on `day` in the application time zone. */
@@ -46,6 +47,19 @@ export function instantOn(day: string, hour: number, minute = 0): Date {
 /** The instant `hours` hours from now. */
 export function hoursFromNow(hours: number): Date {
   return new Date(Date.now() + hours * 3_600_000)
+}
+
+/** The whole days from `from` to `to`, each a `YYYY-MM-DD` day or an instant. */
+export function daysBetween(from: string, to: string): number {
+  return Math.round((Date.parse(to) - Date.parse(from)) / DAY_MS)
+}
+
+/** The age in whole years on `day` (`YYYY-MM-DD`) of someone born on `birthDate`. */
+export function ageOn(birthDate: string, day: string): number {
+  const [birthYear = 0, birthMonth = 1, birthDay = 1] = birthDate.split('-').map(Number)
+  const [year = 0, month = 1, date = 1] = day.slice(0, 10).split('-').map(Number)
+  const hadBirthday = month > birthMonth || (month === birthMonth && date >= birthDay)
+  return year - birthYear - (hadBirthday ? 0 : 1)
 }
 
 /** The birth date of someone who turns `years` years old `days` days from today. */

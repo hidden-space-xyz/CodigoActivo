@@ -1,22 +1,8 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
-import { CATALOG, type RoleName, type SignupStatusName } from '../../api/catalogs'
+import { CATALOG, ROLE_LABELS, type RoleName } from '../../api/catalogs'
 import { t } from '../../i18n'
-import { chooseOption } from '../../ui/element-plus'
-
-/** How the API names each activity role, which the event page shows as it comes. */
-export const ROLE_LABELS: Readonly<Record<RoleName, string>> = {
-  leader: 'Líder',
-  volunteer: 'Voluntario',
-  participant: 'Participante',
-}
-
-/** How the API names each signup status, which the event page shows as it comes. */
-export const STATUS_LABELS: Readonly<Record<SignupStatusName, string>> = {
-  requested: 'Solicitada',
-  confirmed: 'Confirmada',
-  denied: 'Rechazada',
-}
+import { chooseOption, openOptions } from '../../ui/element-plus'
 
 /**
  * The card of one activity in the activities tab of the event page: its signup status, the role
@@ -105,7 +91,7 @@ export async function expectSelectOptions(
   select: Locator,
   values: readonly string[],
 ): Promise<void> {
-  const shown = page.getByTestId(/^option-/).filter({ visible: true })
+  const shown = openOptions(page)
   await select.click()
   await expect
     .poll(() => shown.evaluateAll((options) => options.map((option) => option.dataset.testid)))

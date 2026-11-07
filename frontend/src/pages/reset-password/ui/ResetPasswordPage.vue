@@ -88,11 +88,19 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
             />
           </div>
 
-          <p v-if="errorMessage" class="ca-form-alert" role="alert">{{ errorMessage }}</p>
+          <p
+            v-if="errorMessage"
+            class="ca-form-alert"
+            role="alert"
+            data-testid="reset-password-error"
+          >
+            {{ errorMessage }}
+          </p>
           <RouterLink
             v-if="canRequestNewLink"
             :to="{ name: 'forgot-password' }"
             class="reset-request-link"
+            data-testid="reset-password-new-link"
           >
             {{ $t('pages.resetPassword.requestNewLink') }}
           </RouterLink>

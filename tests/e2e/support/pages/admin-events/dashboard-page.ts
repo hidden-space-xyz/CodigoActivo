@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from '@playwright/test'
+import { expect, type Locator, type Page, type Request } from '@playwright/test'
 
 import { t } from '../../i18n'
 import { AdminShell } from '../admin-shell'
@@ -51,6 +51,13 @@ export class DashboardPage {
     return this.range
       .getByTestId('range-filter-preset')
       .filter({ hasText: t(`pages.admin.dashboard.range.preset${preset}`) })
+  }
+
+  /** The next request for the analytics of a time range. */
+  analyticsRequest(): Promise<Request> {
+    return this.page.waitForRequest(
+      (request) => new URL(request.url()).pathname === '/api/reports/dashboard/analytics',
+    )
   }
 
   /** The card `name`, such as the pending signups. */

@@ -7,6 +7,17 @@ export const environment = {
   clientAddressBase: Number(process.env.CLIENT_ADDRESS_BASE ?? '1'),
 } as const
 
+/** The association's identity and contact details, which `compose.yaml` gives the API in `LEGAL_*`. */
+export const LEGAL_ENTITY = {
+  name: 'Código Activo (e2e)',
+  taxId: 'G00000000',
+  address: 'León (e2e)',
+  registry: 'Sin inscripción (e2e)',
+  email: 'contacto@e2e.codigoactivo.test',
+  phone: '600 00 00 00',
+  phoneLink: 'tel:600000000',
+} as const
+
 /** Password of every account the suite creates or takes over. */
 export const PASSWORD = 'Playwright-e2e-2026'
 

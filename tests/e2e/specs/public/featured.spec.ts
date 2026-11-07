@@ -1,10 +1,10 @@
 import type { EventResponse } from '@contract/eventResponse'
 import type { NewsItemResponse } from '@contract/newsItemResponse'
 
-import { expect, test } from '../../support/fixtures/test'
-import { AdminShell } from '../../support/pages/admin-shell'
 import { dayRangeText, dayText } from '../../support/data/formats'
+import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
+import { AdminShell } from '../../support/pages/admin-shell'
 import { HomePage } from '../../support/pages/public/home-page'
 import { DataTable } from '../../support/ui/data-table'
 import { notification } from '../../support/ui/element-plus'

@@ -1,28 +1,14 @@
-import { PublicEvents } from '../../support/api/public'
+import { cardDate, dayRangeText, dayText } from '../../support/data/formats'
 import { uniqueLetters } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
-import { cardDate, dayRangeText, dayText } from '../../support/data/formats'
 import { t } from '../../support/i18n'
 import { HomePage } from '../../support/pages/public/home-page'
 
-const SLOGAN = `${t('pages.home.hero.titleLine2')} ${t('pages.home.hero.titleHighlight')}`
-
 test.describe('home page', () => {
-  let events: PublicEvents
-
-  test.beforeEach(({ admin, seed }) => {
-    events = new PublicEvents(admin.api, seed)
-  })
-
-  test.afterEach(async () => {
-    await events.dispose()
-  })
-
   test('the hero invites visitors to register and to meet the association', async ({ page }) => {
     const home = new HomePage(page)
     await home.goto()
 
-    await expect(home.title).toContainText(SLOGAN)
     await expect(home.main.getByTestId('home-hero-events')).toBeHidden()
     await home.main.getByTestId('home-hero-register').click()
     await expect(page).toHaveURL('/register')
@@ -36,7 +22,6 @@ test.describe('home page', () => {
     const home = new HomePage(page)
     await home.goto()
 
-    await expect(home.title).toContainText(SLOGAN)
     await expect(home.main.getByTestId('home-hero-register')).toBeHidden()
     await home.main.getByTestId('home-hero-events').click()
     await expect(page).toHaveURL('/events')
@@ -68,11 +53,12 @@ test.describe('home page', () => {
   test('the events section previews the first upcoming events with their signup status', async ({
     page,
     seed,
+    publicEvents,
   }) => {
     const category = await seed.category()
-    const open = await events.running('open', { categories: [category] })
-    const soon = await events.running('upcoming', { categories: [category] })
-    const early = await events.running('early', { categories: [category] })
+    const open = await publicEvents.running('open', { categories: [category] })
+    const soon = await publicEvents.running('upcoming', { categories: [category] })
+    const early = await publicEvents.running('early', { categories: [category] })
     const home = new HomePage(page)
     await home.goto()
 

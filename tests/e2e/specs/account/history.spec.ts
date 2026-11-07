@@ -1,8 +1,8 @@
 import type { EventResponse } from '@contract/eventResponse'
 
-import { historyEntry } from '../../support/api/account'
-import type { SignupStatusName } from '../../support/api/catalogs'
+import { STATUS_LABELS, type SignupStatusName } from '../../support/api/catalogs'
 import type { ContentSeeder } from '../../support/api/content'
+import { historyEntry } from '../../support/api/my-account'
 import { signUp } from '../../support/api/signups'
 import type { Actor } from '../../support/fixtures/actors'
 import { expect, test } from '../../support/fixtures/test'
@@ -10,9 +10,6 @@ import { t } from '../../support/i18n'
 import { AccountPage } from '../../support/pages/account/account-page'
 import { HistoryTab, RatingDialog } from '../../support/pages/account/history-tab'
 import { confirm, messageBox, notification } from '../../support/ui/element-plus'
-
-/** How the API names the signup statuses the history shows, which come from its catalog. */
-const STATUS_NAMES = { requested: 'Solicitada', confirmed: 'Confirmada' } as const
 
 /** An event that started `daysAgo` days ago, with one activity `actor` signed up for. */
 async function pastEventWith(
@@ -51,8 +48,8 @@ test.describe('event history', () => {
     await expect(next.getByTestId('history-event-rate')).toBeHidden()
     await history.toggle(next).click()
     await expect(history.toggle(next)).toHaveAttribute('aria-expanded', 'true')
-    await expect(history.activity(next, requested.title)).toContainText(STATUS_NAMES.requested)
-    await expect(history.activity(next, confirmed.title)).toContainText(STATUS_NAMES.confirmed)
+    await expect(history.activity(next, requested.title)).toContainText(STATUS_LABELS.requested)
+    await expect(history.activity(next, confirmed.title)).toContainText(STATUS_LABELS.confirmed)
 
     const previous = history.event('past', attended.title)
     await expect(previous).toContainText(t('pages.account.history.activityCount', { count: 1 }))

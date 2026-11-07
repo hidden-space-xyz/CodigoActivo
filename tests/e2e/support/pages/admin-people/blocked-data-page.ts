@@ -1,7 +1,7 @@
-import { readFile } from 'node:fs/promises'
 import type { Locator, Page } from '@playwright/test'
 
 import { DataTable } from '../../ui/data-table'
+import { saveDownload } from '../../ui/download'
 import { AdminShell } from '../admin-shell'
 
 /** One history entry of a downloaded extract. */
@@ -71,11 +71,8 @@ export class BlockedDataPage {
 
   /** Downloads the extract about the picked account and reads it. */
   async downloadExtract(): Promise<DownloadedExtract> {
-    const [download] = await Promise.all([
-      this.page.waitForEvent('download'),
-      this.panel.getByTestId('blocked-data-panel-download').click(),
-    ])
-    const extract = JSON.parse(await readFile(await download.path(), 'utf8')) as Extract
-    return { fileName: download.suggestedFilename(), extract }
+    const button = this.panel.getByTestId('blocked-data-panel-download')
+    const file = await saveDownload(this.page, () => button.click())
+    return { fileName: file.name, extract: JSON.parse(file.content.toString('utf8')) as Extract }
   }
 }

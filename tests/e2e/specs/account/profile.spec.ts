@@ -1,22 +1,23 @@
-import { currentUser } from '../../support/api/account'
+import { USER_STATUS_LABELS } from '../../support/api/catalogs'
+import { currentUser } from '../../support/api/my-account'
 import { PASSWORD } from '../../support/config/environment'
-import { emailAddress, phoneNumber, uniqueLastName } from '../../support/data/people'
+import {
+  emailAddress,
+  fullName,
+  mismatchedNationalId,
+  otherGender,
+  phoneNumber,
+  uniqueLastName,
+} from '../../support/data/people'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import { linkIn, SUBJECTS } from '../../support/mail/mailbox'
 import { AccountPage } from '../../support/pages/account/account-page'
-import {
-  mismatchedNationalId,
-  otherGender,
-  ProfileDialog,
-} from '../../support/pages/account/profile-dialogs'
+import { ProfileDialog } from '../../support/pages/account/profile-dialogs'
 import { LoginPage, signInThroughPages } from '../../support/pages/login-page'
 import { GENDER_NAMES } from '../../support/pages/registration-page'
 import { SiteHeader } from '../../support/pages/site-header'
 import { chooseOption, notification, setChecked } from '../../support/ui/element-plus'
-
-/** How the API names the status of an active account, which comes from its catalog. */
-const ACTIVE_STATUS = 'Activo'
 
 test.describe('profile', () => {
   test('the profile lists the personal data and the news preference', async ({
@@ -28,10 +29,8 @@ test.describe('profile', () => {
     const memberAccount = new AccountPage(await pageAs(member))
     await memberAccount.goto()
 
-    await expect(memberAccount.profileValue('name')).toHaveText(
-      `${person.firstName} ${person.lastName}`,
-    )
-    await expect(memberAccount.profileValue('status')).toHaveText(ACTIVE_STATUS)
+    await expect(memberAccount.profileValue('name')).toHaveText(fullName(person))
+    await expect(memberAccount.profileValue('status')).toHaveText(USER_STATUS_LABELS.active)
     await expect(memberAccount.profileValue('national-id')).toHaveText(person.nationalId)
     await expect(memberAccount.profileValue('gender')).toHaveText(GENDER_NAMES[person.gender])
     await expect(memberAccount.profileValue('phone')).toHaveText(person.phone)

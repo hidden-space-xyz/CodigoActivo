@@ -1,6 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
 import { CATALOG, type RoleName } from '../../api/catalogs'
+import { escapeRegExp } from '../../data/formats'
 import { chooseOption } from '../../ui/element-plus'
 import { expectSelectOptions } from './activity-card'
 
@@ -27,8 +28,7 @@ export class HouseholdDialog {
 
   /** The row of the person shown as `name`. */
   row(name: string): Locator {
-    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    const shownAs = new RegExp(`^\\s*${escaped}\\s*$`)
+    const shownAs = new RegExp(`^\\s*${escapeRegExp(name)}\\s*$`)
     return this.root.getByTestId('household-dialog-row').filter({
       has: this.page.getByTestId('household-dialog-member').filter({ hasText: shownAs }),
     })

@@ -1,14 +1,11 @@
+import { firstDependent } from '../../support/api/accounts'
+import { ROLE_LABELS, USER_TYPE_LABELS } from '../../support/api/catalogs'
 import { signUp } from '../../support/api/signups'
+import { fullName } from '../../support/data/people'
 import { uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
-import {
-  EventAdminPage,
-  ROLE_LABELS,
-  USER_TYPE_LABELS,
-} from '../../support/pages/admin-events/event-admin-page'
-import { firstDependent } from '../../support/api/accounts'
-import { fullName } from '../../support/data/people'
+import { EventAdminPage } from '../../support/pages/admin-events/event-admin-page'
 import { BadgesPage, RosterPage, stubPrint } from '../../support/pages/admin-events/printout-pages'
 
 test.describe('event printouts', () => {

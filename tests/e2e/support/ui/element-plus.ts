@@ -1,12 +1,29 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
 /**
- * Opens an Element Plus select, given the element that carries its test id, and picks the option
- * whose test id is `option-{value}`. The option list is teleported, so it is searched in the page.
+ * The options of the Element Plus select open in `page`. Option lists are teleported, so they are
+ * searched in the page, and one that is closing stays visible during its transition.
  */
-export async function chooseOption(select: Locator, value: string): Promise<void> {
+export function openOptions(page: Page): Locator {
+  return page.locator('.el-select-dropdown__item').filter({ visible: true })
+}
+
+/**
+ * Opens an Element Plus select, given the element that carries its test id, and picks the option
+ * whose test id is `option-{value}`. It first waits for any other list to close: selects share
+ * their option ids, and a click would otherwise land on the list that is fading out and never end.
+ */
+export async function chooseOption(
+  select: Locator,
+  value: string,
+  options: { readonly timeout?: number } = {},
+): Promise<void> {
+  const page = select.page()
+  await expect(openOptions(page)).toHaveCount(0)
   await select.click()
-  await select.page().getByTestId(`option-${value}`).filter({ visible: true }).click()
+  await openOptions(page)
+    .and(page.getByTestId(`option-${value}`))
+    .click(options)
 }
 
 /**

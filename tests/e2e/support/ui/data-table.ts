@@ -1,5 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
+import { chooseOption } from './element-plus'
+
 /**
  * An admin table (`shared/ui/data-table`): a toolbar with an optional search box, filter chips, the
  * result count, the rows and their actions. `aria-busy` tells when it has finished fetching.
@@ -73,11 +75,15 @@ export class DataTable {
       .getByTestId(`row-action-${key}`)
   }
 
-  /** Opens the column or toolbar filter that carries the test id `filter` and picks `value`. */
+  /**
+   * Opens the column or toolbar filter that carries the test id `filter` and picks `value`. The rows
+   * of the previous filter may still arrive and close the popover, so that is repeated if it does.
+   */
   async filterBy(filter: string, value: string): Promise<void> {
-    const panel = await this.openFilter(filter)
-    await panel.getByTestId('column-filter-select').click()
-    await this.page.getByTestId(`option-${value}`).filter({ visible: true }).click()
+    await expect(async () => {
+      const panel = await this.openFilter(filter)
+      await chooseOption(panel.getByTestId('column-filter-select'), value, { timeout: 2_000 })
+    }).toPass({ timeout: 15_000 })
     await this.expectSettled()
   }
 
@@ -86,19 +92,13 @@ export class DataTable {
    * once the panel has focused its box, which also closes the panel.
    */
   async searchColumn(search: string, text: string): Promise<void> {
-    const panel = await this.enterColumnSearch(search, text)
-    await this.expectSettled()
-    await expect(panel).toBeHidden()
-  }
-
-  /** Opens the column search that carries the test id `search`, types `text` and presses Enter. */
-  async enterColumnSearch(search: string, text: string): Promise<Locator> {
     const panel = await this.openFilter(search)
     const box = panel.getByTestId('column-filter-search')
     await expect(box).toBeFocused()
     await box.fill(text)
     await box.press('Enter')
-    return panel
+    await this.expectSettled()
+    await expect(panel).toBeHidden()
   }
 
   /**
@@ -106,7 +106,7 @@ export class DataTable {
    * click that lands while the table re-renders can leave the popover closed, so the click is
    * repeated until it opens.
    */
-  async openFilter(filter: string): Promise<Locator> {
+  private async openFilter(filter: string): Promise<Locator> {
     const button = this.root.getByTestId(filter).getByTestId('column-filter-toggle')
     const panel = this.page.getByTestId('column-filter-panel').filter({ visible: true })
     await expect(async () => {

@@ -1,4 +1,4 @@
-import { currentUser } from '../../support/api/account'
+import { currentUser } from '../../support/api/my-account'
 import { PASSWORD } from '../../support/config/environment'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
@@ -15,19 +15,6 @@ import { notification } from '../../support/ui/element-plus'
 const INVALID_CODE = t('errors.TwoFactorCodeInvalid')
 
 test.describe('two-step verification', () => {
-  test('a person uses the emailed code until they choose an application', async ({
-    pageAs,
-    member,
-  }) => {
-    const account = new AccountPage(await pageAs(member))
-    await account.goto()
-    const twoFactor = new TwoFactorSection(account)
-
-    await expect(twoFactor.method).toHaveText(t('pages.account.twoFactor.methods.Email'))
-    await expect(twoFactor.useAuthenticator).toBeVisible()
-    await expect(twoFactor.useEmail).toBeHidden()
-  })
-
   test('the setup refuses a wrong password and a wrong first code', async ({
     accounts,
     pageAs,
