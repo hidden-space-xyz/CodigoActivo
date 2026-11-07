@@ -2,6 +2,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.BlockedData;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Seeders;
@@ -165,6 +166,76 @@ public sealed class DemoDataHistorySeederTests(CodigoActivoWebAppFactory factory
             .NotBeNull()
             .And.NotBe(account.Email!.Value)
             .And.Be(account.Email.Value.Replace(".personal@", "@", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task SeedAsyncRecordsConsultationsOfSeveralRequestersWithTheirNoticeSent()
+    {
+        await SeedDemoDataAsync();
+
+        await SeedHistoryAsync();
+
+        var consultations = await Factory.QueryAsync(db =>
+            db.BlockedDataConsultations.Include(c => c.Findings)
+                .Include(c => c.Extracts)
+                .ToListAsync(Ct)
+        );
+        consultations.Select(c => c.Requester).Distinct().Should().HaveCountGreaterThan(1);
+        consultations
+            .Should()
+            .OnlyContain(c => !c.NoticePending && c.ExpiresAt < Factory.Clock.UtcNow);
+        consultations.Should().Contain(c => c.OfficerId == InitialAdministrator.Id);
+        var officerIds = consultations.Select(c => c.OfficerId).ToList();
+        (await Factory.QueryAsync(db => db.Users.CountAsync(u => officerIds.Contains(u.Id), Ct)))
+            .Should()
+            .Be(1, "one consultation outlived the account of the officer who opened it");
+        consultations.Should().Contain(c => c.Findings.Count == 0);
+        consultations
+            .Where(c => c.Findings.Count > 0)
+            .SelectMany(c => c.Extracts)
+            .Should()
+            .NotBeEmpty()
+            .And.OnlyContain(extract => extract.EntryCount > 0);
+    }
+
+    [Fact]
+    public async Task SeedAsyncKeepsTheErasedAccountsOfTheOpenClaimsAndLiftsTheClosedOne()
+    {
+        await SeedDemoDataAsync();
+
+        await SeedHistoryAsync();
+
+        var holds = await Factory.QueryAsync(db =>
+            db.BlockedDataHolds.Include(h => h.Subjects).ToListAsync(Ct)
+        );
+        holds.Should().HaveCount(3);
+        var active = holds.Where(hold => hold.LiftedAt is null).ToList();
+        active
+            .SelectMany(hold => hold.Subjects)
+            .Select(subject => subject.AccountId.Value)
+            .Should()
+            .BeEquivalentTo([FormerGuardian, FormerChild, FormerSponsor]);
+        var lifted = holds.Single(hold => hold.LiftedAt is not null);
+        lifted.LiftedById.Should().Be(InitialAdministrator.Id);
+        lifted.LiftedAt.Should().BeAfter(lifted.PlacedAt).And.BeBefore(Factory.Clock.UtcNow);
+        lifted.Subjects.Should().HaveCountGreaterThan(1, "it keeps the account and its minors");
+    }
+
+    [Fact]
+    public async Task SeedAsyncGivesTheAdministratorAPhoneAsTheirOwnChange()
+    {
+        await SeedDemoDataAsync();
+
+        await SeedHistoryAsync();
+
+        (await FindAsync<User>(InitialAdministrator.Id.Value))!.Phone.Should().NotBeNull();
+        (await DataHistoryAsync())
+            .Should()
+            .Contain(item =>
+                item.Entry.Entity == nameof(User)
+                && item.Record.Command == "UpdateUser"
+                && item.Record.ActorId == InitialAdministrator.Id.Value
+            );
     }
 
     [Fact]

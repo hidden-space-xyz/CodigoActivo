@@ -119,7 +119,9 @@ internal sealed class DemoLogHistory : IDisposable
         history.AddProfileUpdate(adults[1 % adults.Count]);
         history.AddPersonalDataCopy(adults[1 % adults.Count]);
         history.AddEventManagement();
+        history.AddBlockedDataConsultations();
         history.AddUserTypeChange(adults);
+        history.AddStaffRoleChange(adults);
         history.AddEmailTrouble();
         history.AddSlowDashboards();
         history.AddDomainListFailures();
@@ -445,6 +447,57 @@ internal sealed class DemoLogHistory : IDisposable
         Record(at.AddMinutes(1), caller, AuditAction.GetEventBadges, EventEntity(target.Id));
     }
 
+    private void AddBlockedDataConsultations()
+    {
+        foreach (
+            var consultation in facts
+                .Consultations.Where(c => InSpan(c.OpenedAt))
+                .OrderBy(c => c.OpenedAt)
+        )
+        {
+            var at = consultation.OpenedAt;
+            var caller = SignedIn(Administrator, at.AddMinutes(-4));
+            var opened = new AuditEntity(AuditEntityType.BlockedDataConsultation, consultation.Id);
+            Record(at, caller, AuditAction.OpenBlockedDataConsultation, opened);
+            if (consultation.Found)
+            {
+                Record(at.AddMinutes(2), caller, AuditAction.SearchBlockedData, opened);
+                Record(at.AddMinutes(5), caller, AuditAction.ExportBlockedData, opened);
+            }
+
+            Record(
+                at.AddMinutes(20),
+                Caller.Scheduled,
+                AuditAction.SendBlockedDataConsultationNotices,
+                null
+            );
+        }
+
+        foreach (var hold in facts.Holds)
+        {
+            AddHoldChange(hold.Id, hold.PlacedAt, AuditAction.PlaceBlockedDataHold);
+            if (hold.LiftedAt is { } liftedAt)
+            {
+                AddHoldChange(hold.Id, liftedAt, AuditAction.LiftBlockedDataHold);
+            }
+        }
+    }
+
+    private void AddHoldChange(Guid hold, DateTimeOffset at, AuditAction action)
+    {
+        if (!InSpan(at))
+        {
+            return;
+        }
+
+        Record(
+            at,
+            SignedIn(Administrator, at),
+            action,
+            new AuditEntity(AuditEntityType.BlockedDataHold, hold)
+        );
+    }
+
     private void AddUserTypeChange(List<DemoLogUser> adults)
     {
         if (adults.FirstOrDefault(adult => adult.Type is UserType.Sponsor) is not { } sponsor)
@@ -454,6 +507,17 @@ internal sealed class DemoLogHistory : IDisposable
 
         var at = Local(Today.AddDays(-8), 10, 15);
         Record(at, SignedIn(Administrator, at), AuditAction.ChangeUserType, UserEntity(sponsor.Id));
+    }
+
+    private void AddStaffRoleChange(List<DemoLogUser> adults)
+    {
+        if (adults.FirstOrDefault(adult => adult.IsStaff) is not { } staff)
+        {
+            return;
+        }
+
+        var at = Local(Today.AddDays(-15), 10, 40);
+        Record(at, SignedIn(Administrator, at), AuditAction.SetStaffRole, UserEntity(staff.Id));
     }
 
     private void AddSecondFactorLockout(DemoLogUser adult, int maxFailedCodes)
@@ -853,12 +917,16 @@ internal sealed class DemoLogHistory : IDisposable
 /// <param name="Events">Events the demo accounts published.</param>
 /// <param name="Activities">Activities the demo accounts published.</param>
 /// <param name="News">News items the demo accounts published.</param>
+/// <param name="Consultations">Consultations of the blocked data the administrator opened.</param>
+/// <param name="Holds">Holds on the blocked data the administrator placed.</param>
 internal sealed record DemoLogFacts(
     IReadOnlyList<DemoLogUser> Users,
     IReadOnlyList<DemoLogSignup> Signups,
     IReadOnlyList<DemoLogEvent> Events,
     IReadOnlyList<DemoLogActivity> Activities,
-    IReadOnlyList<DemoLogNewsItem> News
+    IReadOnlyList<DemoLogNewsItem> News,
+    IReadOnlyList<DemoLogConsultation> Consultations,
+    IReadOnlyList<DemoLogHold> Holds
 );
 
 /// <summary>
@@ -868,11 +936,13 @@ internal sealed record DemoLogFacts(
 /// <param name="ParentId">Guardian, for a child.</param>
 /// <param name="Type">Kind of account.</param>
 /// <param name="LastLoginAt">Last sign-in the account records.</param>
+/// <param name="IsStaff">Whether the account holds a staff role.</param>
 internal sealed record DemoLogUser(
     Guid Id,
     Guid? ParentId,
     UserType Type,
-    DateTimeOffset? LastLoginAt
+    DateTimeOffset? LastLoginAt,
+    bool IsStaff = false
 );
 
 /// <summary>
@@ -934,6 +1004,22 @@ internal sealed record DemoLogNewsItem(
     Guid CreatedBy,
     DateTimeOffset CreatedAt
 );
+
+/// <summary>
+/// Describes a consultation of the blocked data.
+/// </summary>
+/// <param name="Id">Consultation.</param>
+/// <param name="OpenedAt">When it was opened.</param>
+/// <param name="Found">Whether its searches found any account.</param>
+internal sealed record DemoLogConsultation(Guid Id, DateTimeOffset OpenedAt, bool Found);
+
+/// <summary>
+/// Describes a hold on the blocked data.
+/// </summary>
+/// <param name="Id">Hold.</param>
+/// <param name="PlacedAt">When it was placed.</param>
+/// <param name="LiftedAt">When it was lifted, if it was.</param>
+internal sealed record DemoLogHold(Guid Id, DateTimeOffset PlacedAt, DateTimeOffset? LiftedAt);
 
 /// <summary>
 /// Holds the events of an invented log history, oldest first.

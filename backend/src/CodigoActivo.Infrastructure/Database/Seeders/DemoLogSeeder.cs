@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Passwords;
 using CodigoActivo.Application.Accounts.SecondFactor;
@@ -110,6 +111,7 @@ public sealed class DemoLogSeeder(
                 user.ParentId,
                 user.UserTypeId,
                 user.LastLoginAt,
+                user.StaffRole,
             })
             .ToListAsync(ct);
         var signups = await context
@@ -146,6 +148,16 @@ public sealed class DemoLogSeeder(
                 item.CreatedAt
             ))
             .ToListAsync(ct);
+        var consultations = await context
+            .BlockedDataConsultations.Select(consultation => new DemoLogConsultation(
+                consultation.Id,
+                consultation.OpenedAt,
+                consultation.Findings.Count > 0
+            ))
+            .ToListAsync(ct);
+        var holds = await context
+            .BlockedDataHolds.Select(hold => new DemoLogHold(hold.Id, hold.PlacedAt, hold.LiftedAt))
+            .ToListAsync(ct);
 
         return new DemoLogFacts(
             [
@@ -153,7 +165,8 @@ public sealed class DemoLogSeeder(
                     user.Id,
                     user.ParentId,
                     CatalogIds.UserTypes.ValueOf(user.UserTypeId),
-                    user.LastLoginAt
+                    user.LastLoginAt,
+                    user.StaffRole is not StaffRole.None
                 )),
             ],
             [
@@ -167,7 +180,9 @@ public sealed class DemoLogSeeder(
             ],
             events,
             activities,
-            news
+            news,
+            consultations,
+            holds
         );
     }
 }

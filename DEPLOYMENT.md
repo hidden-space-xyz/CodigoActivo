@@ -288,10 +288,13 @@ later starts must use the same value. The file is always written except when the
 outside a container (the API image declares `DOTNET_RUNNING_IN_CONTAINER=true`, and `1` is accepted too), so
 a local `dotnet run` still validates `DEMO_MODE` and writes nothing to the developer's filesystem, while the
 Compose development overlay still locks the mode in `api-state`.
-Demo mode seeds realistic content and invented accounts under `demo.codigoactivo.es`, which
-[cannot sign in](SECURITY.md#demo-mode), and gives the bootstrap administrator invented dependents, recorded
-like any minor as declared by their guardian, here that administrator. The demonstrator signs in with the
-bootstrap administrator, the only administrator, whose password reset and login codes arrive at
+Demo mode seeds realistic content and invented accounts of every type and staff role under
+`demo.codigoactivo.es`, which [cannot sign in](SECURITY.md#demo-mode), so every page has something to show:
+events in every stage with signups, terms decisions and ratings, and earlier versions of the conditions and the
+legal policies. The bootstrap administrator gets signups of their own and invented dependents, recorded like any
+minor as declared by their guardian, here that administrator. One registration waits for its verification: the
+purge erases it after a day and each start brings it back. The demonstrator signs in with the bootstrap
+administrator, the only account that can, whose password reset and login codes arrive at
 `BOOTSTRAP_ADMIN_EMAIL` through the configured SMTP server. Seeding downloads its sample images from
 `picsum.photos` (three attempts each, at most five minutes in total), so `api` needs outbound HTTPS there on
 the start that seeds; a failed download stops that start.
@@ -304,7 +307,8 @@ It also replays a year of changes and erasures of personal data through the data
 legal» has something to consult: demo accounts that replaced their email and phone, withdrew their news
 consent, left an activity or deleted a rating, and three former accounts erased by their holder together with
 a minor (Lozano Prieto), by the administrator (Ibáñez Robles) and by the purge of unverified accounts (Gallego
-Herrera). It runs once, in one transaction, while the history holds nothing about those former accounts; a
+Herrera). On top of that history it records consultations of several requesters and the claims they hold, two
+open and one lifted. It runs once, in one transaction, while the history holds nothing about those former accounts; a
 failure stops that start.
 
 Changing mode requires destroying all named volumes and therefore all application data:

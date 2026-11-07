@@ -4,11 +4,13 @@ using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Activities.Commands;
+using CodigoActivo.Application.BlockedData.Commands;
 using CodigoActivo.Application.Common.Messaging;
 using CodigoActivo.Application.Emails.Commands;
 using CodigoActivo.Application.Participation.Commands;
 using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.BlockedData;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
@@ -23,11 +25,13 @@ namespace CodigoActivo.Infrastructure.Database.Seeders;
 /// Replays on the demo data a year of changes and erasures of personal data, so the blocked data
 /// have a history to consult from the first start. Each change is saved through a data history
 /// recorder of its own, at the moment it would have happened and as the command and the account
-/// that would have made it: demo accounts that replaced their phone and email, withdrew their news
-/// consent, left an activity or deleted a rating, and three former accounts erased with everything
-/// that belonged to them, a household with a minor by its holder, a sponsor by the administrator
-/// and an unverified registration by the scheduled purge. It runs once, in one transaction, when
-/// the history holds nothing about the former accounts.
+/// that would have made it: the administrator added a phone, demo accounts replaced their phone
+/// and email, withdrew their news consent, left an activity or deleted a rating, and three former
+/// accounts erased with everything that belonged to them, a household with a minor by its holder, a
+/// sponsor by the administrator and an unverified registration by the scheduled purge. On top of that history it records the
+/// consultations the data protection officer opened, with the claims they keep open and one they
+/// closed. It runs once, in one transaction, when the history holds nothing about the former
+/// accounts.
 /// </summary>
 /// <param name="options">Options of the application database.</param>
 /// <param name="protector">Protector that encrypts the history records.</param>
@@ -48,6 +52,7 @@ public sealed class DemoDataHistorySeeder(
     private static readonly UserId FormerChildId = DemoDataSeeder.DemoUser(101);
     private static readonly UserId FormerSponsorId = DemoDataSeeder.DemoUser(102);
     private static readonly UserId UnverifiedId = DemoDataSeeder.DemoUser(103);
+    private static readonly UserId FormerOfficerId = DemoDataSeeder.DemoUser(104);
 
     private static readonly PersonDetails FormerGuardian = new(
         "Sergio",
@@ -115,11 +120,13 @@ public sealed class DemoDataHistorySeeder(
         await EraseHouseholdAsync(replay, events, activities, now, ct);
         await DeleteSponsorAsync(replay, events, activities, now, ct);
         await PurgeUnverifiedAsync(replay, now, ct);
+        await AddAdministratorPhoneAsync(replay, now, ct);
         await ReplaceContactAsync(replay, adults[3], now, ct);
         await WithdrawNewsConsentAsync(replay, adults.Skip(6).First(u => u.NewsConsent), now, ct);
         var adultIds = adults.Select(user => user.Id).ToHashSet();
         await LeaveActivityAsync(replay, activities, adultIds, now, ct);
         await DeleteRatingAsync(replay, ratings, events, adultIds, now, ct);
+        await RecordClaimsAsync(replay, adults[3], now, ct);
 
         await transaction.CommitAsync(ct);
     }
@@ -288,6 +295,38 @@ public sealed class DemoDataHistorySeeder(
         );
     }
 
+    private static async Task AddAdministratorPhoneAsync(
+        Replay replay,
+        DateTimeOffset now,
+        CancellationToken ct
+    )
+    {
+        var administrator = await replay.Context.Users.SingleAsync(
+            user => user.Id == InitialAdministrator.Id,
+            ct
+        );
+        var changedAt = now.AddDays(-200);
+        administrator.ApplyProfileChange(
+            administrator
+                .PlanProfileChange(
+                    new PersonDetails(
+                        administrator.FirstName,
+                        administrator.LastName,
+                        administrator.Gender,
+                        administrator.Email!.Value,
+                        "+34661000099",
+                        NationalId: administrator.NationalId!.Value,
+                        NewsConsent: administrator.NewsConsent
+                    ),
+                    null,
+                    replay.LocalDate(changedAt)
+                )
+                .Value,
+            changedAt
+        );
+        await replay.SaveAsync(changedAt, administrator.Id, typeof(UpdateUserCommand), ct);
+    }
+
     private async Task ReplaceContactAsync(
         Replay replay,
         User adult,
@@ -394,6 +433,146 @@ public sealed class DemoDataHistorySeeder(
             typeof(DeleteEventRatingCommand),
             ct
         );
+    }
+
+    private static async Task RecordClaimsAsync(
+        Replay replay,
+        User claimant,
+        DateTimeOffset now,
+        CancellationToken ct
+    )
+    {
+        var minors = await replay
+            .Context.Users.Where(user => user.ParentId == claimant.Id)
+            .Select(user => user.Id)
+            .ToListAsync(ct);
+        List<UserId> claimantHousehold = [claimant.Id, .. minors];
+
+        var byFormerOfficer = BlockedDataConsultation
+            .Open(
+                FormerOfficerId,
+                "Agencia Española de Protección de Datos",
+                "E/01976/2026",
+                replay.LocalTime(replay.LocalDate(now.AddDays(-300)), 12)
+            )
+            .Value;
+        byFormerOfficer.RecordNotice();
+        replay.Context.BlockedDataConsultations.Add(byFormerOfficer);
+
+        var closedClaim = await ConsultAsync(
+            replay,
+            "Persona reclamante",
+            "REC-2026-003",
+            replay.LocalTime(replay.LocalDate(now.AddDays(-170)), 11),
+            claimantHousehold,
+            exists: true,
+            ct
+        );
+        var agencyClaim = await ConsultAsync(
+            replay,
+            "Agencia Española de Protección de Datos",
+            "E/04218/2026",
+            replay.LocalTime(replay.LocalDate(now.AddDays(-60)), 12),
+            [FormerGuardianId, FormerChildId],
+            exists: false,
+            ct
+        );
+        var courtClaim = await ConsultAsync(
+            replay,
+            "Juzgado de Primera Instancia n.º 2 de León",
+            "Procedimiento ordinario 318/2026",
+            replay.LocalTime(replay.LocalDate(now.AddDays(-18)), 10),
+            [FormerSponsorId],
+            exists: false,
+            ct
+        );
+        await ConsultAsync(
+            replay,
+            "Fiscalía Provincial de León",
+            "Diligencias 57/2026",
+            replay.LocalTime(replay.LocalDate(now.AddDays(-9)), 13),
+            [UnverifiedId],
+            exists: false,
+            ct
+        );
+        await ConsultAsync(
+            replay,
+            "Diputación de León",
+            "Requerimiento 2026/118",
+            replay.LocalTime(replay.LocalDate(now.AddDays(-6)), 9),
+            [],
+            exists: false,
+            ct
+        );
+        var closing = await ConsultAsync(
+            replay,
+            "Persona reclamante",
+            "REC-2026-003, cierre",
+            replay.LocalTime(replay.LocalDate(now.AddDays(-3)), 12),
+            [],
+            exists: false,
+            ct
+        );
+
+        var lifted = PlaceHold(closedClaim, claimant.Id, minors);
+        lifted.Lift(InitialAdministrator.Id, closing.OpenedAt.AddMinutes(3));
+        replay.Context.BlockedDataHolds.AddRange(
+            lifted,
+            PlaceHold(agencyClaim, FormerGuardianId, [FormerChildId]),
+            PlaceHold(courtClaim, FormerSponsorId, [])
+        );
+        await replay.SaveAsync(
+            closing.OpenedAt,
+            InitialAdministrator.Id,
+            typeof(PlaceBlockedDataHoldCommand),
+            ct
+        );
+    }
+
+    private static async Task<BlockedDataConsultation> ConsultAsync(
+        Replay replay,
+        string requester,
+        string reference,
+        DateTimeOffset openedAt,
+        List<UserId> found,
+        bool exists,
+        CancellationToken ct
+    )
+    {
+        var consultation = BlockedDataConsultation
+            .Open(InitialAdministrator.Id, requester, reference, openedAt)
+            .Value;
+        consultation.RecordNotice();
+        consultation.RecordFindings(found, openedAt.AddMinutes(2));
+        if (found.Count > 0)
+        {
+            var household = found.ConvertAll(id => id.Value);
+            var entries = await replay.Context.DataHistory.CountAsync(
+                entry => entry.SubjectIds.Any(subject => household.Contains(subject)),
+                ct
+            );
+            consultation.RecordExtract(
+                found[0],
+                new BlockedDataFilter(null, null, []),
+                entries,
+                exists,
+                openedAt.AddMinutes(5)
+            );
+        }
+
+        replay.Context.BlockedDataConsultations.Add(consultation);
+        return consultation;
+    }
+
+    private static BlockedDataHold PlaceHold(
+        BlockedDataConsultation consultation,
+        UserId accountId,
+        List<UserId> minorIds
+    )
+    {
+        return BlockedDataHold
+            .Place(consultation, accountId, minorIds, consultation.OpenedAt.AddMinutes(7))
+            .Value;
     }
 
     private static async Task<User> RegisterAsync(

@@ -29,6 +29,11 @@ public sealed class DemoLogHistoryTests
     private static readonly Guid Workshop = new("a0000000-0000-0000-0000-000000000001");
     private static readonly Guid WorkshopImage = new("f0000000-0000-0000-0000-000000000002");
     private static readonly Guid OldNewsItem = new("b0000000-0000-0000-0000-000000000001");
+    private static readonly Guid FoundConsultation = new("c0000000-0000-0000-0000-000000000001");
+    private static readonly Guid EmptyConsultation = new("c0000000-0000-0000-0000-000000000002");
+    private static readonly Guid OldConsultation = new("c0000000-0000-0000-0000-000000000003");
+    private static readonly Guid RecentHold = new("d0000000-0000-0000-0000-000000000001");
+    private static readonly Guid LiftedHold = new("d0000000-0000-0000-0000-000000000002");
 
     private static readonly IPNetwork[] DocumentationNetworks =
     [
@@ -61,7 +66,7 @@ public sealed class DemoLogHistoryTests
             [
                 new(Adults[0], null, UserType.Member, Now.AddDays(-2)),
                 new(Adults[1], null, UserType.Sponsor, null),
-                new(Adults[2], null, UserType.Member, Now.AddDays(-5)),
+                new(Adults[2], null, UserType.Member, Now.AddDays(-5), IsStaff: true),
                 new(Adults[3], null, UserType.Member, null),
                 new(Adults[4], null, UserType.Member, Now.AddDays(-40)),
                 new(Adults[5], null, UserType.Member, null),
@@ -88,7 +93,16 @@ public sealed class DemoLogHistoryTests
                     Now.AddDays(-10).AddMinutes(20)
                 ),
             ],
-            [new(OldNewsItem, EventCover, Adults[0], Now.AddDays(-30))]
+            [new(OldNewsItem, EventCover, Adults[0], Now.AddDays(-30))],
+            [
+                new(FoundConsultation, Now.AddDays(-5), true),
+                new(EmptyConsultation, Now.AddDays(-4), false),
+                new(OldConsultation, Now.AddDays(-60), true),
+            ],
+            [
+                new(LiftedHold, Now.AddDays(-50), Now.AddDays(-3)),
+                new(RecentHold, Now.AddDays(-5), null),
+            ]
         );
 
     private DemoLogBatch Build(DemoLogFacts? facts = null)
@@ -377,9 +391,58 @@ public sealed class DemoLogHistoryTests
     }
 
     [Fact]
+    public void BuildConsultationsAreAuditedWithoutTheAccountsTheyFound()
+    {
+        var audit = Audit();
+
+        audit
+            .Where(entry => entry.EntityId == FoundConsultation)
+            .Select(entry => entry.Action)
+            .Should()
+            .Equal("OpenBlockedDataConsultation", "SearchBlockedData", "ExportBlockedData");
+        audit
+            .Where(entry => entry.EntityId == EmptyConsultation)
+            .Select(entry => entry.Action)
+            .Should()
+            .Equal("OpenBlockedDataConsultation");
+        audit.Should().NotContain(entry => entry.EntityId == OldConsultation);
+        audit
+            .Where(entry => entry.EntityType == "BlockedDataConsultation")
+            .Should()
+            .OnlyContain(entry => entry.ActorId == InitialAdministrator.Id.Value);
+    }
+
+    [Fact]
+    public void BuildStaffRoleChangeIsAuditedByTheAdministrator()
+    {
+        var change = Audit()
+            .Should()
+            .ContainSingle(entry => entry.Action == "SetStaffRole")
+            .Subject;
+
+        change.EntityId.Should().Be(Adults[2]);
+        change.ActorId.Should().Be(InitialAdministrator.Id.Value);
+    }
+
+    [Fact]
+    public void BuildHoldChangesAreAuditedOnlyInsideTheHistory()
+    {
+        var audit = Audit();
+
+        audit
+            .Where(entry => entry.EntityType == "BlockedDataHold")
+            .Select(entry => (entry.Action, entry.EntityId))
+            .Should()
+            .BeEquivalentTo([
+                ("PlaceBlockedDataHold", (Guid?)RecentHold),
+                ("LiftBlockedDataHold", (Guid?)LiftedHold),
+            ]);
+    }
+
+    [Fact]
     public void BuildWithoutDemoAdultsHasNoHistory()
     {
-        var batch = Build(new DemoLogFacts([], [], [], [], []));
+        var batch = Build(new DemoLogFacts([], [], [], [], [], [], []));
 
         batch.Audit.Should().BeEmpty();
         batch.Diagnostics.Should().BeEmpty();

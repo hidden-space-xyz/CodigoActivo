@@ -14,6 +14,7 @@ using CodigoActivo.Domain.Legal;
 using CodigoActivo.Domain.News;
 using CodigoActivo.Domain.Partners;
 using CodigoActivo.Domain.Resources;
+using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Context;
@@ -22,9 +23,11 @@ using Microsoft.EntityFrameworkCore;
 namespace CodigoActivo.Infrastructure.Database.Seeders;
 
 /// <summary>
-/// Creates the invented content of demo mode: accounts and their children, events with activities,
-/// signups and ratings, news, resources, partners, terms documents and legal policies, illustrated
-/// with images downloaded from picsum.photos.
+/// Creates the invented content of demo mode, so every page has something to show: accounts of every
+/// type and staff role with their children, a registration waiting for its verification, events in
+/// every stage with activities, signups, terms decisions and ratings, news, resources, partners, and
+/// terms documents and legal policies with an earlier version, illustrated with images downloaded
+/// from picsum.photos. The initial administrator gets signups of their own.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
 /// <param name="storage">Storage the encoded variants of the demo images are written to.</param>
@@ -45,17 +48,26 @@ public sealed class DemoDataSeeder(
     /// </summary>
     private const int MaxDemoImageBytes = 10 * 1024 * 1024;
 
-    private const int AdultCount = 20;
+    private const int AdultCount = 24;
+    private const int RegularAdultCount = 20;
     private const int MemberAdultCount = 14;
-    private const int ChildCount = 7;
+    private const int ChildCount = 8;
+    private const int PendingAccountIndex = 40;
 
     private const int EventSpacingDays = 14;
+    private const int PastEventSpacingDays = 28;
+    private const int ConditionsRevisedEventIndex = 12;
+    private const int AdministratorRatedEventIndex = 13;
     private const int FinishedEventCount = 15;
     private const int FeaturedEventIndex = 17;
     private const int FeaturedNewsItemIndex = 0;
     private const int ConditionsDocumentIndex = 0;
     private const int ImageConsentDocumentIndex = 1;
+    private const int ConsentPlanLength = 9;
+    private const int DeclinedConsentPlan = 4;
+    private const int WithdrawnConsentPlan = 7;
 
+    private const string UnusableAuthenticatorKey = "demo";
     private const string ModalityPresencial = "Presencial";
     private const string ModalityOnline = "Online";
     private const string CategoryFormacion = "Formación";
@@ -73,7 +85,7 @@ public sealed class DemoDataSeeder(
         int? EarlyOpensDaysBeforeStart,
         int OpensDaysBeforeStart,
         int ClosesDaysBeforeStart
-    )[] SignupWindows = [(110, 95, 5), (null, 45, 25), (65, 50, 5), (37, 30, 3)];
+    )[] SignupWindows = [(110, 95, 5), (null, 45, 25), (65, 30, 5), (37, 30, 3)];
 
     private static readonly string[] CategoryColors =
     [
@@ -95,19 +107,60 @@ public sealed class DemoDataSeeder(
     ];
 
     /// <summary>
+    /// Own signups of the initial administrator by activity, numbered across the events, so its
+    /// account shows every signup status and the leader view of an upcoming activity.
+    /// </summary>
+    private static readonly Dictionary<
+        int,
+        (ActivityRole Role, AssignmentStatus Status)
+    > AdministratorSignups = new()
+    {
+        [67] = (ActivityRole.Participant, AssignmentStatus.Confirmed),
+        [72] = (ActivityRole.Volunteer, AssignmentStatus.Confirmed),
+        [82] = (ActivityRole.Leader, AssignmentStatus.Confirmed),
+        [86] = (ActivityRole.Participant, AssignmentStatus.Requested),
+        [91] = (ActivityRole.Volunteer, AssignmentStatus.Denied),
+    };
+
+    /// <summary>
+    /// Adults without a membership who took a seat in an activity, numbered across the events, so
+    /// the recurrence of the dashboard goes from one event to many.
+    /// </summary>
+    private static readonly Dictionary<int, int> ParticipantSignups = new()
+    {
+        [71] = 20,
+        [63] = 21,
+        [68] = 21,
+        [48] = 22,
+        [53] = 22,
+        [58] = 22,
+        [8] = 23,
+        [83] = 23,
+    };
+
+    /// <summary>
     /// Adds the demo data unless the first demo account already exists, so it adds everything or
-    /// nothing. The images are downloaded and stored first and the rows are then added in one
-    /// transaction; on any failure the stored images are discarded and the exception is rethrown.
+    /// nothing, and a registration that waits for its verification unless one is waiting already:
+    /// the scheduled purge erases it a day later, so each start brings it back.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task SeedAsync(CancellationToken ct = default)
     {
-        if (await context.Users.AnyAsync(u => u.Id == DemoAuthorId, ct))
+        if (!await context.Users.AnyAsync(u => u.Id == DemoAuthorId, ct))
         {
-            return;
+            await AddContentAsync(ct);
         }
 
+        await AddPendingRegistrationAsync(ct);
+    }
+
+    /// <summary>
+    /// Downloads and stores the images first and then adds the rows in one transaction; on any
+    /// failure the stored images are discarded and the exception is rethrown.
+    /// </summary>
+    private async Task AddContentAsync(CancellationToken ct)
+    {
         var administrator = await context.Users.SingleAsync(
             u => u.Id == InitialAdministrator.Id,
             ct
@@ -134,6 +187,32 @@ public sealed class DemoDataSeeder(
         }
     }
 
+    private async Task AddPendingRegistrationAsync(CancellationToken ct)
+    {
+        var id = DemoUser(PendingAccountIndex);
+        if (await context.Users.AnyAsync(u => u.Id == id, ct))
+        {
+            return;
+        }
+
+        var account = User.CreateIndependent(
+            new PersonDetails(
+                "Rocío",
+                "Aguado Serna",
+                Gender.Female,
+                $"rocio.aguado.serna@demo.{Organization.WebDomain}",
+                BuildPhone(PendingAccountIndex),
+                NationalId: BuildNationalId(PendingAccountIndex)
+            ),
+            declaresAdult: true,
+            clock.UtcNow.AddHours(-2),
+            id
+        ).Value;
+        account.AssignPassword(UnusablePassword.Hash(passwordHasher));
+        context.Users.Add(account);
+        await context.SaveChangesAsync(ct);
+    }
+
     internal static async Task AddAsync(
         CodigoActivoDbContext context,
         DemoGraph graph,
@@ -152,6 +231,9 @@ public sealed class DemoDataSeeder(
         await context.SaveChangesAsync(ct);
 
         context.Activities.AddRange(graph.Activities);
+        await context.SaveChangesAsync(ct);
+
+        context.EventTermsAcceptances.AddRange(graph.TermsDecisions);
         await context.SaveChangesAsync(ct);
 
         context.EventRatings.AddRange(graph.Ratings);
@@ -176,7 +258,7 @@ public sealed class DemoDataSeeder(
         var users = BuildUsers(now, clock.Today, passwordHash, administrator);
         var (categoryTypes, categoryIdByName) = BuildCategoryTypes();
         var termsDocuments = BuildTermsDocuments();
-        var schedule = BuildSchedule(clock, now, files, categoryIdByName);
+        var schedule = BuildSchedule(clock, now, files, categoryIdByName, users, administrator);
         var news = BuildNews(now, files);
         var resources = BuildResources(now, files);
         var partners = BuildPartners(clock, now, files);
@@ -189,6 +271,7 @@ public sealed class DemoDataSeeder(
             termsDocuments,
             schedule.Events,
             schedule.Activities,
+            schedule.TermsDecisions,
             schedule.Ratings,
             news,
             resources,
@@ -249,8 +332,9 @@ public sealed class DemoDataSeeder(
                 seed.Gender,
                 BuildEmail(seed),
                 BuildPhone(index),
-                NationalId: BuildNationalId(index),
-                NewsConsent: index % 3 is not 0
+                index % 5 is 2 ? BuildSecondaryPhone(index) : null,
+                BuildNationalId(index),
+                index % 3 is not 0
             ),
             declaresAdult: true,
             createdAt,
@@ -259,6 +343,17 @@ public sealed class DemoDataSeeder(
         adult.AssignPassword(passwordHash);
         adult.Verify(createdAt);
         adult.ChangeType(ResolveUserType(seed.Kind), createdAt);
+        adult.ChangeStaffRole(seed.Staff, createdAt);
+        if (seed.Staff is StaffRole.Administrator)
+        {
+            adult.BeginAuthenticatorSetup(
+                UnusableAuthenticatorKey,
+                createdAt,
+                TimeSpan.FromMinutes(5)
+            );
+            adult.EnableAuthenticator(usedStep: 0, createdAt);
+        }
+
         adult.RegisterLogin(now.AddDays(-(index % 9)));
         return adult;
     }
@@ -316,13 +411,33 @@ public sealed class DemoDataSeeder(
         return DemoTermsDocuments
             .Select(
                 (seed, index) =>
-                    TermsDocument.Create(
+                {
+                    var revised = seed.Kind is TermsDocumentKind.Conditions;
+                    var document = TermsDocument.Create(
                         seed.Name,
-                        RichText.From(BuildRichText(seed.Description, null, null)),
+                        RichText.From(
+                            BuildRichText(
+                                revised ? seed.Description[..^1] : seed.Description,
+                                null,
+                                null
+                            )
+                        ),
                         seed.RequiresSignature,
                         seed.Kind,
                         DemoTermsDocument(index)
-                    )
+                    );
+                    if (revised)
+                    {
+                        document.Rewrite(
+                            seed.Name,
+                            RichText.From(BuildRichText(seed.Description, null, null)),
+                            seed.RequiresSignature,
+                            seed.Kind
+                        );
+                    }
+
+                    return document;
+                }
             )
             .ToList();
     }
@@ -331,18 +446,25 @@ public sealed class DemoDataSeeder(
         IClock clock,
         DateTimeOffset now,
         List<StoredFile> files,
-        Dictionary<string, EventCategoryTypeId> categoryIdByName
+        Dictionary<string, EventCategoryTypeId> categoryIdByName,
+        List<User> users,
+        User administrator
     )
     {
         var events = new List<Event>(DemoEvents.Length);
         var activities = new List<Activity>();
+        var termsDecisions = new List<EventTermsAcceptance>();
+        var people = users.Append(administrator).ToDictionary(user => user.Id);
         var ratings = new List<EventRating>();
 
         for (var eventIndex = 0; eventIndex < DemoEvents.Length; eventIndex++)
         {
             var seed = DemoEvents[eventIndex];
             var duration = 1 + (eventIndex % 3);
-            var start = clock.Today.AddDays((eventIndex - FinishedEventCount) * EventSpacingDays);
+            var eventsAway = eventIndex - FinishedEventCount;
+            var start = clock.Today.AddDays(
+                eventsAway * (eventsAway < 0 ? PastEventSpacingDays : EventSpacingDays)
+            );
             var end = start.AddDays(duration - 1);
             var (earlyOpensDaysBeforeStart, opensDaysBeforeStart, closesDaysBeforeStart) =
                 SignupWindows[eventIndex % SignupWindows.Length];
@@ -405,7 +527,11 @@ public sealed class DemoDataSeeder(
                 var activityStart = ToUtc(
                     clock.TimeZone,
                     start.AddDays(activityIndex % duration),
-                    10 + (activityIndex * 2),
+                    10
+                        + (
+                            (SharesPreviousSlot(globalIndex) ? activityIndex - 1 : activityIndex)
+                            * 2
+                        ),
                     0
                 );
 
@@ -430,10 +556,14 @@ public sealed class DemoDataSeeder(
                     DemoAuthorId,
                     eventCreatedAt.AddMinutes(activityIndex * 20d)
                 );
-                SignUp(created, globalIndex, signupOpensAt, signupClosesAt, now);
+                SignUp(created, globalIndex, ev.SignupWindow, now, people);
                 activities.Add(created);
                 eventAssignments.AddRange(created.Assignments);
             }
+
+            termsDecisions.AddRange(
+                BuildTermsDecisions(clock, now, eventIndex, eventId, eventAssignments, people)
+            );
 
             if (end < clock.Today)
             {
@@ -441,7 +571,7 @@ public sealed class DemoDataSeeder(
             }
         }
 
-        return new DemoSchedule(events, activities, ratings);
+        return new DemoSchedule(events, activities, termsDecisions, ratings);
     }
 
     private static List<NewsItem> BuildNews(DateTimeOffset now, List<StoredFile> files)
@@ -458,7 +588,7 @@ public sealed class DemoDataSeeder(
                             NewFile(files, now)
                         ),
                         DemoAuthorId,
-                        now.AddDays(-(index * 6) - 3)
+                        now.AddDays(-(index * 45) - 3)
                     );
                     if (index is FeaturedNewsItemIndex)
                     {
@@ -535,10 +665,17 @@ public sealed class DemoDataSeeder(
     {
         return DemoLegalPolicies
             .Select(seed =>
-                LegalPolicy
-                    .Publish(seed.Kind, RichText.From(BuildPolicyText(seed.Sections)), now)
-                    .Value
-            )
+            {
+                var policy = LegalPolicy
+                    .Publish(
+                        seed.Kind,
+                        RichText.From(BuildPolicyText(seed.Sections[..^1])),
+                        now.AddDays(-240)
+                    )
+                    .Value;
+                policy.Revise(RichText.From(BuildPolicyText(seed.Sections)), now.AddDays(-45));
+                return policy;
+            })
             .ToList();
     }
 
@@ -604,48 +741,135 @@ public sealed class DemoDataSeeder(
     private static void SignUp(
         Activity activity,
         int globalIndex,
-        DateTimeOffset signupOpensAt,
-        DateTimeOffset signupClosesAt,
-        DateTimeOffset now
+        SignupWindow window,
+        DateTimeOffset now,
+        Dictionary<UserId, User> people
     )
     {
-        var windowEnd = signupClosesAt < now ? signupClosesAt : now;
-        if (windowEnd <= signupOpensAt)
-        {
-            return;
-        }
-
-        var windowHours = Math.Max(1, (int)(windowEnd - signupOpensAt).TotalHours);
-        var leaderAdult = globalIndex * 3 % MemberAdultCount;
-        var baseAdult = globalIndex * 3 % AdultCount;
-
-        int OtherAdult(int offset)
-        {
-            var index = (baseAdult + offset) % AdultCount;
-            return index == leaderAdult ? (baseAdult + 4) % AdultCount : index;
-        }
-
-        (int UserIndex, ActivityRole Role)[] picks =
-        [
-            (leaderAdult, ActivityRole.Leader),
-            (OtherAdult(1), ActivityRole.Volunteer),
-            (OtherAdult(2), ActivityRole.Participant),
-            (AdultCount + (globalIndex % ChildCount), ActivityRole.Participant),
-            (OtherAdult(3), ActivityRole.Participant),
-        ];
+        var windowEnd = MinTime(window.EndsAt, now);
+        var picks = BuildPicks(globalIndex);
 
         for (var slot = 0; slot < picks.Length; slot++)
         {
-            var signedUpAt = signupOpensAt.AddHours(
-                ((globalIndex * 37) + (slot * 101)) % windowHours
-            );
-            var userId = DemoUser(picks[slot].UserIndex);
-            activity.RequestAssignment(userId, picks[slot].Role, signedUpAt);
-            var status = ResolveAssignmentStatus(globalIndex, slot);
+            var (userId, role) = picks[slot];
+            var person = people[userId];
+            var guardian = person.ParentId is { } guardianId ? people[guardianId] : null;
+            var opensAt = EarlySignup.IsEntitled(person, guardian)
+                ? window.EarlyStartsAt ?? window.StartsAt
+                : window.StartsAt;
+            if (windowEnd <= opensAt)
+            {
+                continue;
+            }
+
+            var windowHours = Math.Max(1, (int)(windowEnd - opensAt).TotalHours);
+            var signedUpAt = opensAt.AddHours(((globalIndex * 37) + (slot * 101)) % windowHours);
+            activity.RequestAssignment(userId, role, signedUpAt);
+            var status =
+                userId == InitialAdministrator.Id
+                    ? AdministratorSignups[globalIndex].Status
+                    : ResolveAssignmentStatus(globalIndex, slot);
             if (status != AssignmentStatus.Requested)
             {
                 activity.ChangeAssignmentStatus(userId, status);
             }
+        }
+    }
+
+    private static (UserId User, ActivityRole Role)[] BuildPicks(int globalIndex)
+    {
+        var lastAdult =
+            ParticipantSignups.TryGetValue(globalIndex, out var participant) ? participant
+            : SharesPreviousSlot(globalIndex) ? OtherAdult(globalIndex - 1, 1)
+            : OtherAdult(globalIndex, 3);
+        (UserId User, ActivityRole Role)[] picks =
+        [
+            (DemoUser(globalIndex * 3 % MemberAdultCount), ActivityRole.Leader),
+            (DemoUser(OtherAdult(globalIndex, 1)), ActivityRole.Volunteer),
+            (DemoUser(OtherAdult(globalIndex, 2)), ActivityRole.Participant),
+            (DemoUser(AdultCount + (globalIndex % ChildCount)), ActivityRole.Participant),
+            (DemoUser(lastAdult), ActivityRole.Participant),
+        ];
+        if (AdministratorSignups.TryGetValue(globalIndex, out var own))
+        {
+            picks[own.Role is ActivityRole.Leader ? 0 : picks.Length - 1] = (
+                InitialAdministrator.Id,
+                own.Role
+            );
+        }
+
+        return picks;
+    }
+
+    private static int OtherAdult(int globalIndex, int offset)
+    {
+        var baseAdult = globalIndex * 3 % RegularAdultCount;
+        var index = (baseAdult + offset) % RegularAdultCount;
+        return index == globalIndex * 3 % MemberAdultCount
+            ? (baseAdult + 4) % RegularAdultCount
+            : index;
+    }
+
+    private static bool SharesPreviousSlot(int globalIndex)
+    {
+        var eventIndex = globalIndex / 5;
+        return eventIndex >= FinishedEventCount && eventIndex % 3 is 0 && globalIndex % 5 is 4;
+    }
+
+    private static IEnumerable<EventTermsAcceptance> BuildTermsDecisions(
+        IClock clock,
+        DateTimeOffset now,
+        int eventIndex,
+        EventId eventId,
+        List<Assignment> assignments,
+        Dictionary<UserId, User> people
+    )
+    {
+        var signups = assignments
+            .GroupBy(assignment => assignment.UserId)
+            .Select(signup => (Person: people[signup.Key], At: signup.Min(a => a.CreatedAt)))
+            .ToList();
+        for (var slot = 0; slot < signups.Count; slot++)
+        {
+            var (person, signedUpAt) = signups[slot];
+            var recordedById = person.ParentId ?? person.Id;
+            var day = DateOnly.FromDateTime(
+                TimeZoneInfo.ConvertTime(signedUpAt, clock.TimeZone).DateTime
+            );
+            yield return EventTermsAcceptance.Record(
+                eventId,
+                person.Id,
+                TermsConsent.DeciderOf(person, consent: false, day),
+                DemoTermsDocument(ConditionsDocumentIndex),
+                eventIndex < ConditionsRevisedEventIndex
+                    ? TermsDocument.FirstVersion
+                    : TermsDocument.FirstVersion + 1,
+                accepted: true,
+                signature: null,
+                recordedById,
+                signedUpAt
+            );
+
+            var plan = (eventIndex + slot) % ConsentPlanLength;
+            var decidedById = TermsConsent.DeciderOf(person, consent: true, day);
+            var consent = EventTermsAcceptance.Record(
+                eventId,
+                person.Id,
+                decidedById,
+                DemoTermsDocument(ImageConsentDocumentIndex),
+                TermsDocument.FirstVersion,
+                accepted: plan is not DeclinedConsentPlan,
+                DemoSignatures[slot % DemoSignatures.Length],
+                recordedById,
+                signedUpAt
+            );
+            if (plan is WithdrawnConsentPlan)
+            {
+                consent.Withdraw(decidedById, recordedById, signedUpAt + ((now - signedUpAt) / 2));
+                consent.RecordWithdrawalNotice();
+            }
+
+            yield return consent;
         }
     }
 
@@ -667,6 +891,10 @@ public sealed class DemoDataSeeder(
             .Distinct()
             .Take(2 + (eventIndex % 4))
             .ToList();
+        if (eventIndex is AdministratorRatedEventIndex)
+        {
+            raters.Add(InitialAdministrator.Id);
+        }
 
         var ratings = new List<EventRating>(raters.Count);
         for (var slot = 0; slot < raters.Count; slot++)
@@ -828,7 +1056,12 @@ public sealed class DemoDataSeeder(
 
     private static UserType ResolveUserType(UserKind kind)
     {
-        return kind is UserKind.Sponsor ? UserType.Sponsor : UserType.Member;
+        return kind switch
+        {
+            UserKind.Sponsor => UserType.Sponsor,
+            UserKind.Participant => UserType.Participant,
+            _ => UserType.Member,
+        };
     }
 
     private static ActivityModality ResolveModality(string modality)
@@ -859,6 +1092,11 @@ public sealed class DemoDataSeeder(
     private static string BuildPhone(int index)
     {
         return string.Create(CultureInfo.InvariantCulture, $"+3466{index:D7}");
+    }
+
+    private static string BuildSecondaryPhone(int index)
+    {
+        return string.Create(CultureInfo.InvariantCulture, $"+3465{index:D7}");
     }
 
     private static string BuildNationalId(int index)
@@ -917,6 +1155,11 @@ public sealed class DemoDataSeeder(
         Sponsor,
 
         /// <summary>
+        /// Selects the participant option: an adult who registered and joined no organization.
+        /// </summary>
+        Participant,
+
+        /// <summary>
         /// Selects the child option.
         /// </summary>
         Child,
@@ -933,7 +1176,8 @@ public sealed class DemoDataSeeder(
         UserKind Kind,
         Gender Gender,
         int? Age,
-        int? ParentIndex
+        int? ParentIndex,
+        StaffRole Staff = StaffRole.None
     );
 
     private sealed record EventSeed(
@@ -952,7 +1196,7 @@ public sealed class DemoDataSeeder(
     );
 
     private sealed record RatingSeed(
-        int Score,
+        int? Score,
         string? MostLiked,
         string? LeastLiked,
         string? Suggestions
@@ -979,8 +1223,34 @@ public sealed class DemoDataSeeder(
     private sealed record DemoSchedule(
         List<Event> Events,
         List<Activity> Activities,
+        List<EventTermsAcceptance> TermsDecisions,
         List<EventRating> Ratings
     );
+
+    private static readonly HandwrittenSignature[] DemoSignatures =
+    [
+        HandwrittenSignature
+            .Create(
+                Convert.FromBase64String(
+                    "iVBORw0KGgoAAAANSUhEUgAAAPAAAABQAQAAAAAPMsXRAAAAAnRSTlMAAQGU/a4AAAGGSURBVHja7ZU7jsQgDEAZbZGSI3AUjkakLVJypRlNkWNsolyAdBQIr7ANMdloqi1DY4lnG38TBR+PuvGN/x2bjzgNH3F4kIzmEi8Ly+ESv6ND+WQvi+nwlCzKb/YyDh32mbAmL1k9Omwos2zISzKLEzhb8HhtM6pFF22PJ7oGjXlCMgInBzNdk9oKpMY4OtiK3IHUZlarGA2g6KCaB3gJHNAQ4M1S41XDOzpApwHzw/ca3hh7ui7JYwEOnBw5LbKoZGE9s7bBEtC70OFynVllPWFP4aAHzcn1uFjh+xOXhvEPDyJHXZgX2B84cBZa4IlDmrliO2QjMEddrFZqDw9WwxjShiUv4QcncK1YbWbWLznIK0dcRwHUl8S1W7FGPA4nvPNAGbkCjCPjbLO9WME6Z3XGTzg5SqhuyBlbbkHdrx7XFWjbeVpgwx2Su/1U7sCUSeRGJVVO2zGfxRdjVHya9VwTiqodc7xNH45mJkqOeA3hMLN/Ig8XZgLHI5QrnNRw/0tuXM4vBry29JzV53wAAAAASUVORK5CYII="
+                )
+            )
+            .Value,
+        HandwrittenSignature
+            .Create(
+                Convert.FromBase64String(
+                    "iVBORw0KGgoAAAANSUhEUgAAAPAAAABQAQAAAAAPMsXRAAAAAnRSTlMAAQGU/a4AAAFpSURBVHja7dUxbsMwDEBRAxk86gg8ioYOPZayefSVUnjQMRpDF5A2Dax+I8dpG9fKUKBT68nAgwySIumOh0/3z3+OXy8vDt4aPEKxkH/GA6iF1GAPKr/Mc4MnyAKhwQHy+IscxxqCuj1OkIaaQA1wn33laB7y3D/ggclDtlvOEKZ6r36Cs+xxqDzOcDIQ3T4nGAY4yS5LBDPBsYejfLDDBxAkU2Sm9AdK199YHT6BFKuu2IzKidx191wqW3XZZRft2S4BfOXlrFMbUXMkmxvbGvPCEinmhdIdKLfTxTLWoDKYBIcDHM1nYiubC4/hWpiz27KaCMOmrAvXjJ3WD7/0SxnuB1gQdfo8w9nszPfKtalkh01NKtdL3XbbwmOxxebZN5bHlb932sqD2mLj9z5d2atDktqH3FxcU3aY0OSwVrvB86XHxqnJKYH3TY4zTEOT8xME02Ttt8Nzx6UOjm0vbLlvgv8f1V/ld2+r2K+OCVo8AAAAAElFTkSuQmCC"
+                )
+            )
+            .Value,
+        HandwrittenSignature
+            .Create(
+                Convert.FromBase64String(
+                    "iVBORw0KGgoAAAANSUhEUgAAAPAAAABQAQAAAAAPMsXRAAAAAnRSTlMAAQGU/a4AAAE+SURBVHja7dU9bsMgFAfwf+Qho4/ARSpxNCxlyNgrufKQYxTLF6AbA4IWE+zHg3jJ0FYKE9LPwHuPDyMcNrz4XzNwPuABQP+QDWJTjziSLacnbNeBphhOeEzLDqLJ/t41XZPtuRXO1tN5Ui1bvPVs32C/J9Q12O4Bjw3We7pG1UyGOFHzZWffV+zpTl0qdrSUHxVbuhGmYkO3cf8280zZSc4TZS84X4sj1nMuT+CVsyh4Yuxl+CS8MHYyvBP+4qyK4AxjG8KN1qXmqVU2bIsttGw1zwc8k2hTngUvz7L9u/xEYgdVixeS1TzEmnu1soaK+7+w59RDptGAsqo4DqsijQ4A3iQ76e7n+cyhARDFDQ426T3y+NTSk66BE01soE+xR9btloxxAplXRcevP2jrGy/yhqeDnwXF1y/2N/gbHGTF8Qtprd4AAAAASUVORK5CYII="
+                )
+            )
+            .Value,
+    ];
 
     private static readonly RatingSeed[] DemoRatings =
     [
@@ -1062,6 +1332,12 @@ public sealed class DemoDataSeeder(
             "Que fuera gratuito y abierto a cualquiera. Ojalá haya más cosas así.",
             "Poco tiempo para las preguntas del final.",
             "Reservar los últimos quince minutos solo para dudas."
+        ),
+        new(
+            null,
+            "Prefiero no puntuar, pero me llevo varias ideas para aplicar en casa con mis hijos.",
+            null,
+            "Publicar una lista de lecturas para seguir aprendiendo."
         ),
     ];
 
@@ -2253,6 +2529,16 @@ public sealed class DemoDataSeeder(
                 ),
             ]
         ),
+        new(
+            "Encuentro anual de la comunidad",
+            "Una jornada abierta para conocernos, repasar el año y decidir juntos qué talleres queremos el próximo curso.",
+            [CategoryComunidad],
+            [
+                "Reservad la fecha: estamos preparando un encuentro para todas las familias, personas voluntarias y entidades "
+                    + "colaboradoras de la asociación. Publicaremos las actividades del programa en cuanto cerremos los detalles.",
+            ],
+            []
+        ),
     ];
 
     private static readonly ContentSeed[] DemoNews =
@@ -2642,6 +2928,36 @@ public sealed class DemoDataSeeder(
             "Retos gratuitos en decenas de lenguajes con revisión de mentores voluntarios, perfectos para consolidar lo aprendido.",
             "https://exercism.org/"
         ),
+        new(
+            "Pro Git: el libro para dominar el control de versiones",
+            "Guía completa y gratuita de Git, traducida al español, desde el primer commit hasta el trabajo en equipo.",
+            "https://git-scm.com/book/es/v2"
+        ),
+        new(
+            "The Odin Project: currículo abierto de desarrollo web",
+            "Itinerario gratuito y mantenido por la comunidad que lleva de cero a construir aplicaciones web completas.",
+            "https://www.theodinproject.com/"
+        ),
+        new(
+            "Arduino: documentación para empezar con electrónica",
+            "Guías y ejemplos oficiales para dar los primeros pasos con placas programables y sensores.",
+            "https://docs.arduino.cc/"
+        ),
+        new(
+            "OpenStreetMap: el mapa libre que construimos entre todos",
+            "Un proyecto colaborativo para aprender sobre datos abiertos cartografiando tu propio barrio.",
+            "https://www.openstreetmap.org/"
+        ),
+        new(
+            "Blockly Games: programación visual para los más pequeños",
+            "Juegos gratuitos que enseñan bucles y condicionales con bloques, sin necesidad de instalar nada.",
+            "https://blockly.games/?lang=es"
+        ),
+        new(
+            "Wikipedia: cómo colaborar en la enciclopedia libre",
+            "Tutorial para aprender a editar y a citar fuentes, una forma práctica de entender el conocimiento abierto.",
+            "https://es.wikipedia.org/wiki/Ayuda:Tutorial"
+        ),
     ];
 
     private static readonly PartnerSeed[] DemoPartners =
@@ -2659,12 +2975,28 @@ public sealed class DemoDataSeeder(
     ];
     private static readonly UserSeed[] UserSeeds =
     [
-        new("Lucía", "Fernández Ruiz", UserKind.Member, Gender.Female, null, null),
+        new(
+            "Lucía",
+            "Fernández Ruiz",
+            UserKind.Member,
+            Gender.Female,
+            null,
+            null,
+            StaffRole.Editor
+        ),
         new("Marcos", "Serrano Vidal", UserKind.Member, Gender.Male, null, null),
-        new("Elena", "Navarro Gil", UserKind.Member, Gender.Female, null, null),
+        new(
+            "Elena",
+            "Navarro Gil",
+            UserKind.Member,
+            Gender.Female,
+            null,
+            null,
+            StaffRole.Administrator
+        ),
         new("Javier", "Molina Castro", UserKind.Member, Gender.Male, null, null),
         new("Sara", "Ortega Peña", UserKind.Member, Gender.Female, null, null),
-        new("Daniel", "Ramos León", UserKind.Member, Gender.Male, null, null),
+        new("Daniel", "Ramos León", UserKind.Member, Gender.Male, null, null, StaffRole.Editor),
         new("Carmen", "Delgado Soto", UserKind.Member, Gender.Female, null, null),
         new("Pablo", "Ibáñez Marín", UserKind.Member, Gender.Male, null, null),
         new("Ana", "Herrera Cano", UserKind.Member, Gender.Female, null, null),
@@ -2679,11 +3011,16 @@ public sealed class DemoDataSeeder(
         new("Rubén", "Márquez Fuentes", UserKind.Sponsor, Gender.Male, null, null),
         new("Laura", "Domínguez Pardo", UserKind.Sponsor, Gender.Female, null, null),
         new("Adrián", "Bautista Nogueira", UserKind.Sponsor, Gender.Male, null, null),
+        new("Natalia", "Rojas Medina", UserKind.Participant, Gender.Female, null, null),
+        new("Óscar", "Pascual Benítez", UserKind.Participant, Gender.Male, null, null),
+        new("Irene", "Calvo Arias", UserKind.Participant, Gender.Female, null, null),
+        new("Gonzalo", "Esteban Rey", UserKind.Participant, Gender.Male, null, null),
         new("Mateo", "Serrano Ferrer", UserKind.Child, Gender.Male, 13, 1),
         new("Valeria", "Navarro Gil", UserKind.Child, Gender.Female, 12, 2),
         new("Hugo", "Molina Ríos", UserKind.Child, Gender.Male, 14, 3),
         new("Daniela", "Delgado Soto", UserKind.Child, Gender.Female, 11, 6),
         new("Leo", "Ortega Peña", UserKind.Child, Gender.Other, 10, 4),
+        new("Emma", "Herrera Cano", UserKind.Child, Gender.PreferNotToSay, 5, 8),
         new("Alba", "Moreno Sanz", UserKind.AdministratorChild, Gender.Female, 10, null),
         new("Bruno", "Moreno Sanz", UserKind.AdministratorChild, Gender.Male, 13, null),
     ];
@@ -2696,6 +3033,7 @@ internal sealed record DemoGraph(
     List<TermsDocument> TermsDocuments,
     List<Event> Events,
     List<Activity> Activities,
+    List<EventTermsAcceptance> TermsDecisions,
     List<EventRating> Ratings,
     List<NewsItem> News,
     List<Resource> Resources,

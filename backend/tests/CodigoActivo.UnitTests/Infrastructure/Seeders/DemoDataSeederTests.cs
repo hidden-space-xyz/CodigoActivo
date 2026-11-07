@@ -8,6 +8,7 @@ using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Legal;
 using CodigoActivo.Domain.Resources;
+using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Seeders;
@@ -77,6 +78,11 @@ public sealed class DemoDataSeederTests
             .NotBe(hashes[0], "the password must not be predictable across runs");
     }
 
+    private static DateTimeOffset OpensAt(Event ev)
+    {
+        return ev.SignupWindow.EarlyStartsAt ?? ev.SignupWindow.StartsAt;
+    }
+
     private DateOnly LocalDate(DateTimeOffset value)
     {
         return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(value, clock.TimeZone).DateTime);
@@ -85,22 +91,22 @@ public sealed class DemoDataSeederTests
     [Fact]
     public void BuildGraphDefaultProducesExpectedCounts()
     {
-        graph.Users.Should().HaveCount(27);
-        graph.Events.Should().HaveCount(20);
+        graph.Users.Should().HaveCount(32);
+        graph.Events.Should().HaveCount(21);
         graph.Activities.Should().HaveCount(100);
         Assignments.Should().HaveCount(475, "the last event has not opened its signup yet");
-        graph.Ratings.Should().HaveCount(36);
+        graph.Ratings.Should().HaveCount(37);
         graph.News.Should().HaveCount(10);
-        graph.Resources.Should().HaveCount(20);
+        graph.Resources.Should().HaveCount(26);
         graph.Partners.Should().HaveCount(10);
         graph.CategoryTypes.Should().HaveCount(8);
         graph.TermsDocuments.Should().HaveCount(2);
         graph.LegalPolicies.Should().HaveCount(2);
-        graph.Files.Should().HaveCount(180);
+        graph.Files.Should().HaveCount(188);
     }
 
     [Fact]
-    public void BuildGraphDefaultPublishesOneTextOnlyExampleOfEachLegalPolicy()
+    public void BuildGraphDefaultPublishesTwoTextOnlyVersionsOfEachLegalPolicy()
     {
         graph
             .LegalPolicies.Select(policy => policy.Kind)
@@ -110,8 +116,9 @@ public sealed class DemoDataSeederTests
             .LegalPolicies.Should()
             .AllSatisfy(policy =>
             {
-                policy.Version.Should().Be(LegalPolicy.FirstVersion);
-                policy.PublishedAt.Should().Be(clock.UtcNow);
+                policy.Version.Should().Be(LegalPolicy.FirstVersion + 1);
+                policy.PreviousVersions.Should().ContainSingle();
+                policy.PublishedAt.Should().BeBefore(clock.UtcNow);
                 RichTextAllowlist
                     .IsAllowed(policy.Content.Json, allowImages: false)
                     .Should()
@@ -121,12 +128,18 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraphDefaultEachEventHasFiveActivities()
+    public void BuildGraphDefaultOneUpcomingEventWaitsForItsActivitiesAndTheRestHaveFive()
     {
         var activitiesPerEvent = graph.Activities.GroupBy(a => a.EventId).ToList();
 
-        activitiesPerEvent.Should().HaveSameCount(graph.Events);
+        activitiesPerEvent.Should().HaveCount(graph.Events.Count - 1);
         activitiesPerEvent.Should().OnlyContain(g => g.Take(6).Count() == 5);
+        var withActivities = activitiesPerEvent.Select(g => g.Key).ToHashSet();
+        graph
+            .Events.Should()
+            .ContainSingle(ev => !withActivities.Contains(ev.Id))
+            .Which.Calendar.Start.Should()
+            .BeAfter(clock.Today);
     }
 
     [Fact]
@@ -139,19 +152,133 @@ public sealed class DemoDataSeederTests
                 ev.Calendar.End.Should().BeOnOrAfter(ev.Calendar.Start);
                 ev.SignupWindow.EndsAt.Should().BeAfter(ev.SignupWindow.StartsAt);
                 LocalDate(ev.SignupWindow.StartsAt).Should().BeOnOrBefore(ev.Calendar.End);
-                ev.CreatedAt.Should().BeOnOrBefore(ev.SignupWindow.StartsAt);
+                ev.CreatedAt.Should().BeOnOrBefore(OpensAt(ev));
                 ev.CreatedAt.Should().BeOnOrBefore(clock.UtcNow);
             });
     }
 
     [Fact]
-    public void BuildGraphDefaultLeavesFiveUpcomingEventsAndFinishesTheRest()
+    public void BuildGraphDefaultLeavesSixUpcomingEventsAndFinishesTheRest()
     {
         var upcoming = graph.Events.Where(e => e.Calendar.End >= clock.Today).ToList();
         var finished = graph.Events.Where(e => e.Calendar.End < clock.Today).ToList();
 
-        upcoming.Should().HaveCount(5);
+        upcoming.Should().HaveCount(6);
         finished.Should().HaveCount(15);
+    }
+
+    [Fact]
+    public void BuildGraphDefaultReachesEveryEventStage()
+    {
+        graph
+            .Events.Select(ev =>
+                EventTimeline.StageAt(
+                    ev.Calendar.End,
+                    ev.SignupWindow.EarlyStartsAt,
+                    ev.SignupWindow.StartsAt,
+                    ev.SignupWindow.EndsAt,
+                    clock.UtcNow,
+                    clock.Today
+                )
+            )
+            .Distinct()
+            .Should()
+            .BeEquivalentTo(Enum.GetValues<EventStage>());
+    }
+
+    [Fact]
+    public void BuildGraphAnyDayShowsTheEventsAndNewsOfTwoYears()
+    {
+        graph
+            .Events.Select(ev => ev.Calendar.Start.Year)
+            .Distinct()
+            .Should()
+            .HaveCountGreaterThan(1);
+        graph.News.Select(item => item.CreatedAt.Year).Distinct().Should().HaveCountGreaterThan(1);
+    }
+
+    [Fact]
+    public void BuildGraphDefaultKeepsMoreResourcesThanOnePublicPage()
+    {
+        graph.Resources.Should().HaveCountGreaterThan(25);
+    }
+
+    [Fact]
+    public void BuildGraphDefaultEarlySignupsBelongToEntitledPeople()
+    {
+        var earlyOnly = graph
+            .Events.Where(ev => ev.SignupPhaseAt(clock.UtcNow) is SignupPhase.EarlyOnly)
+            .Select(ev => ev.Id)
+            .ToHashSet();
+        var activities = graph
+            .Activities.Where(activity => earlyOnly.Contains(activity.EventId))
+            .ToList();
+        var people = graph.Users.Append(administrator).ToDictionary(user => user.Id);
+
+        activities.SelectMany(activity => activity.Assignments).Should().NotBeEmpty();
+        activities
+            .SelectMany(activity => activity.Assignments)
+            .Select(assignment => people[assignment.UserId])
+            .Should()
+            .AllSatisfy(person =>
+                EarlySignup
+                    .IsEntitled(person, person.ParentId is { } guardian ? people[guardian] : null)
+                    .Should()
+                    .BeTrue()
+            );
+    }
+
+    [Fact]
+    public void BuildGraphDefaultActivitiesOfAnUpcomingEventOverlapWithAPersonInBoth()
+    {
+        var eventsById = graph.Events.ToDictionary(ev => ev.Id);
+        var upcoming = graph
+            .Activities.Where(activity =>
+                activity.Assignments.Count > 0
+                && eventsById[activity.EventId].Calendar.End >= clock.Today
+            )
+            .ToList();
+
+        var overlapping = upcoming.SelectMany(first =>
+            upcoming.Where(second =>
+                first.Id != second.Id
+                && first.EventId == second.EventId
+                && first.Schedule.StartsAt < second.Schedule.EndsAt
+                && second.Schedule.StartsAt < first.Schedule.EndsAt
+                && first
+                    .Assignments.Where(a => a.Status != AssignmentStatus.Denied)
+                    .Select(a => a.UserId)
+                    .Intersect(
+                        second
+                            .Assignments.Where(a => a.Status != AssignmentStatus.Denied)
+                            .Select(a => a.UserId)
+                    )
+                    .Any()
+            )
+        );
+
+        overlapping.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public void BuildGraphDefaultPeopleTookPartInOneEventOrInMany()
+    {
+        var since = clock.Today.AddMonths(-12);
+        var eventByActivity = graph.Activities.ToDictionary(a => a.Id, a => a.EventId);
+        var eventsById = graph.Events.ToDictionary(ev => ev.Id);
+        var eventsPerPerson = Assignments
+            .Where(a =>
+                a.Status == AssignmentStatus.Confirmed
+                && eventsById[eventByActivity[a.ActivityId]].Calendar.End < clock.Today
+                && eventsById[eventByActivity[a.ActivityId]].Calendar.Start >= since
+            )
+            .GroupBy(a => a.UserId)
+            .Select(person => person.Select(a => eventByActivity[a.ActivityId]).Distinct().Count())
+            .ToList();
+
+        eventsPerPerson.Should().Contain(1).And.Contain(2);
+        eventsPerPerson.Should().Contain(count => count >= 3 && count <= 5);
+        eventsPerPerson.Should().Contain(count => count >= 6);
     }
 
     [Fact]
@@ -257,7 +384,7 @@ public sealed class DemoDataSeederTests
     public void BuildGraphDefaultEachActivityHasFiveDistinctUsers()
     {
         var openEventIds = graph
-            .Events.Where(ev => ev.SignupWindow.StartsAt < clock.UtcNow)
+            .Events.Where(ev => OpensAt(ev) < clock.UtcNow)
             .Select(ev => ev.Id)
             .ToHashSet();
         var byActivity = Assignments.GroupBy(x => x.ActivityId).ToList();
@@ -279,17 +406,15 @@ public sealed class DemoDataSeederTests
             .Activities.Where(activity => activity.Assignments.Count > 0)
             .Should()
             .OnlyContain(activity =>
-                events[activity.EventId].SignupWindow.StartsAt < clock.UtcNow
+                OpensAt(events[activity.EventId]) < clock.UtcNow
                 && activity.Assignments.All(assignment =>
-                    assignment.CreatedAt >= events[activity.EventId].SignupWindow.StartsAt
+                    assignment.CreatedAt >= OpensAt(events[activity.EventId])
                     && assignment.CreatedAt <= events[activity.EventId].SignupWindow.EndsAt
                     && assignment.CreatedAt <= clock.UtcNow
                 )
             );
         graph
-            .Activities.Where(activity =>
-                events[activity.EventId].SignupWindow.StartsAt >= clock.UtcNow
-            )
+            .Activities.Where(activity => OpensAt(events[activity.EventId]) >= clock.UtcNow)
             .Should()
             .OnlyContain(activity => activity.Assignments.Count == 0);
     }
@@ -310,6 +435,7 @@ public sealed class DemoDataSeederTests
         var memberIds = graph
             .Users.Where(u => u.UserType == UserType.Member)
             .Select(u => u.Id)
+            .Append(administrator.Id)
             .ToHashSet();
 
         var leaders = Assignments.Where(x => x.Role == ActivityRole.Leader).ToList();
@@ -321,7 +447,7 @@ public sealed class DemoDataSeederTests
     [Fact]
     public void BuildGraphDefaultAssignmentsHaveUniqueKeysAndKnownUsers()
     {
-        var userIds = graph.Users.Select(u => u.Id).ToHashSet();
+        var userIds = graph.Users.Select(u => u.Id).Append(administrator.Id).ToHashSet();
 
         Assignments.Select(x => (x.UserId, x.ActivityId, x.Role)).Should().OnlyHaveUniqueItems();
         Assignments.Should().OnlyContain(x => userIds.Contains(x.UserId));
@@ -369,9 +495,29 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraphDefaultContainsNoStaff()
+    public void BuildGraphDefaultStaffAreMembersAndTheAdministratorKeepsDataProtection()
     {
-        graph.Users.Should().NotContain(u => u.StaffRole != StaffRole.None || u.IsPrivacyOfficer);
+        var staff = graph.Users.Where(u => u.StaffRole != StaffRole.None).ToList();
+
+        staff
+            .Select(u => u.StaffRole)
+            .Should()
+            .Contain(StaffRole.Editor)
+            .And.Contain(StaffRole.Administrator);
+        staff
+            .Should()
+            .OnlyContain(u => u.UserType == UserType.Member && u.Status == UserStatus.Active);
+        graph.Users.Should().NotContain(u => u.IsPrivacyOfficer);
+    }
+
+    [Fact]
+    public void BuildGraphDefaultOnlyStaffUseAnAuthenticator()
+    {
+        graph
+            .Users.Where(u => u.TwoFactorMethod == TwoFactorMethod.Authenticator)
+            .Should()
+            .NotBeEmpty()
+            .And.OnlyContain(u => u.StaffRole == StaffRole.Administrator);
     }
 
     [Fact]
@@ -409,7 +555,7 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
-    public void BuildGraphDefaultAdultsAreVerifiedMembersOrSponsorsThatCanSignIn()
+    public void BuildGraphDefaultAdultsAreVerifiedAccountsOfEveryTypeThatCanSignIn()
     {
         var adults = graph.Users.Where(u => u.ParentId is null).ToList();
 
@@ -427,7 +573,7 @@ public sealed class DemoDataSeederTests
             .Select(u => u.UserType)
             .Distinct()
             .Should()
-            .BeEquivalentTo([UserType.Member, UserType.Sponsor]);
+            .BeEquivalentTo([UserType.Member, UserType.Sponsor, UserType.Participant]);
     }
 
     [Fact]
@@ -450,7 +596,7 @@ public sealed class DemoDataSeederTests
             {
                 child.BirthDate.Should().NotBeNull();
                 child.BirthDate!.Value.IsMinor(later.Today).Should().BeTrue();
-                child.BirthDate.Value.AgeOn(later.Today).Should().BeInRange(9, 14);
+                child.BirthDate.Value.AgeOn(later.Today).Should().BeInRange(4, 14);
             });
     }
 
@@ -518,12 +664,172 @@ public sealed class DemoDataSeederTests
     }
 
     [Fact]
+    public void BuildGraphDefaultAdministratorSignsUpWithEveryStatusAndLeadsAnUpcomingActivity()
+    {
+        var eventsById = graph.Events.ToDictionary(e => e.Id);
+        var own = graph
+            .Activities.SelectMany(activity =>
+                activity
+                    .Assignments.Where(a => a.UserId == administrator.Id)
+                    .Select(a => (a.Status, a.Role, Event: eventsById[activity.EventId]))
+            )
+            .ToList();
+
+        own.Select(signup => signup.Status)
+            .Distinct()
+            .Should()
+            .BeEquivalentTo(Enum.GetValues<AssignmentStatus>());
+        own.Should()
+            .Contain(signup =>
+                signup.Role == ActivityRole.Leader
+                && signup.Status == AssignmentStatus.Confirmed
+                && signup.Event.Calendar.End >= clock.Today
+            );
+    }
+
+    [Fact]
+    public void BuildGraphDefaultAdministratorRatedAFinishedEventAndAnotherWaitsForItsRating()
+    {
+        var eventsById = graph.Events.ToDictionary(e => e.Id);
+        var attended = graph
+            .Activities.Where(activity =>
+                eventsById[activity.EventId].Calendar.End < clock.Today
+                && activity.Assignments.Any(a =>
+                    a.UserId == administrator.Id && a.Status == AssignmentStatus.Confirmed
+                )
+            )
+            .Select(activity => activity.EventId)
+            .Distinct()
+            .ToList();
+        var rated = graph
+            .Ratings.Where(rating => rating.UserId == administrator.Id)
+            .Select(rating => rating.EventId)
+            .ToList();
+
+        rated.Should().ContainSingle();
+        attended.Should().Contain(rated).And.HaveCountGreaterThan(rated.Count);
+    }
+
+    [Fact]
+    public void BuildGraphDefaultEverySignedUpPersonDecidedBothDocumentsOfTheirEvent()
+    {
+        var eventByActivity = graph.Activities.ToDictionary(a => a.Id, a => a.EventId);
+        var signedUp = Assignments
+            .Select(a => (EventId: eventByActivity[a.ActivityId], a.UserId))
+            .Distinct()
+            .ToList();
+
+        graph.TermsDecisions.Should().HaveCount(signedUp.Count * graph.TermsDocuments.Count);
+        graph
+            .TermsDecisions.Select(d => (d.EventId, d.UserId))
+            .Distinct()
+            .Should()
+            .BeEquivalentTo(signedUp);
+        graph
+            .TermsDecisions.Select(d => (d.EventId, d.UserId, d.TermsDocumentId))
+            .Should()
+            .OnlyHaveUniqueItems();
+    }
+
+    [Fact]
+    public void BuildGraphDefaultConditionsAreAcceptedWithoutSignatureOnTheVersionOfTheirTime()
+    {
+        var conditions = graph.TermsDocuments.Single(t => t.Kind == TermsDocumentKind.Conditions);
+        var decisions = graph
+            .TermsDecisions.Where(d => d.TermsDocumentId == conditions.Id)
+            .ToList();
+
+        conditions.Version.Should().Be(TermsDocument.FirstVersion + 1);
+        conditions.PreviousVersions.Should().ContainSingle();
+        decisions.Should().OnlyContain(d => d.Accepted && d.Signature == null);
+        decisions
+            .Select(d => d.TermsDocumentVersion)
+            .Distinct()
+            .Should()
+            .BeEquivalentTo([TermsDocument.FirstVersion, conditions.Version]);
+    }
+
+    [Fact]
+    public void BuildGraphDefaultConsentsAreGivenDeclinedOrWithdrawnWithTheNoticeAlreadySent()
+    {
+        var consent = graph.TermsDocuments.Single(t => t.Kind == TermsDocumentKind.Consent);
+        var decisions = graph.TermsDecisions.Where(d => d.TermsDocumentId == consent.Id).ToList();
+
+        decisions.Should().OnlyContain(d => !d.WithdrawalNoticePending);
+        decisions.Should().OnlyContain(d => d.Accepted == (d.Signature != null));
+        decisions.Should().OnlyContain(d => d.DecidedAt <= clock.UtcNow);
+        decisions.Should().Contain(d => d.Accepted);
+        decisions.Should().Contain(d => !d.Accepted && d.Changes.Count == 1);
+        decisions
+            .Should()
+            .Contain(d => !d.Accepted && d.Changes.Count == 2 && d.Changes.First().Accepted);
+    }
+
+    [Fact]
+    public void BuildGraphDefaultGuardiansDecideForMinorsExceptTheConsentsFromFourteen()
+    {
+        var people = graph.Users.Append(administrator).ToDictionary(user => user.Id);
+        var ofMinors = graph
+            .TermsDecisions.Where(d => people[d.UserId].ParentId is not null)
+            .ToList();
+
+        ofMinors.Should().NotBeEmpty();
+        ofMinors
+            .Where(d => d.TermsDocumentId == graph.TermsDocuments[0].Id)
+            .Should()
+            .OnlyContain(d => d.DecidedById == people[d.UserId].ParentId);
+        ofMinors.Should().Contain(d => d.DecidedById == d.UserId);
+        graph
+            .TermsDecisions.Where(d => people[d.UserId].ParentId is null)
+            .Should()
+            .OnlyContain(d => d.DecidedById == d.UserId);
+    }
+
+    [Fact]
+    public void BuildGraphDefaultAdministratorHouseholdShowsEveryConsentState()
+    {
+        var household = graph
+            .Users.Where(user => user.ParentId == administrator.Id)
+            .Select(user => user.Id)
+            .Append(administrator.Id)
+            .ToHashSet();
+        var consent = graph.TermsDocuments.Single(t => t.Kind == TermsDocumentKind.Consent);
+        var decisions = graph
+            .TermsDecisions.Where(d =>
+                household.Contains(d.UserId) && d.TermsDocumentId == consent.Id
+            )
+            .ToList();
+
+        decisions.Should().Contain(d => d.Accepted);
+        decisions.Should().Contain(d => !d.Accepted && d.Changes.Count == 1);
+        decisions.Should().Contain(d => !d.Accepted && d.Changes.Count == 2);
+    }
+
+    [Fact]
+    public void BuildGraphDefaultChildrenReachTheYoungestProfileOfTheDashboard()
+    {
+        var children = graph.Users.Where(u => u.ParentId is not null).ToList();
+
+        children.Should().Contain(child => child.BirthDate!.Value.AgeOn(clock.Today) <= 5);
+        children.Should().Contain(child => child.Gender == Gender.PreferNotToSay);
+    }
+
+    [Fact]
+    public void BuildGraphDefaultSomeAdultsHaveASecondaryPhone()
+    {
+        var adults = graph.Users.Where(u => u.ParentId is null).ToList();
+
+        adults.Should().Contain(u => u.SecondaryPhone != null);
+        adults.Should().Contain(u => u.SecondaryPhone == null);
+    }
+
+    [Fact]
     public void BuildGraphDefaultFileIdsAreUniqueAndUploadedByTheDemoContentAuthor()
     {
         var demoAuthor = graph.Users.Single(u => u.FirstName == "Lucía");
 
         graph.Files.Select(f => f.Id).Should().OnlyHaveUniqueItems();
-        demoAuthor.StaffRole.Should().Be(StaffRole.None);
+        demoAuthor.StaffRole.Should().Be(StaffRole.Editor);
         graph.Files.Should().OnlyContain(f => f.UploadedBy == demoAuthor.Id);
     }
 
@@ -600,6 +906,7 @@ public sealed class DemoDataSeederTests
     {
         graph.Ratings.Should().Contain(r => r.MostLiked == null);
         graph.Ratings.Should().Contain(r => r.MostLiked != null);
+        graph.Ratings.Should().Contain(r => r.Score == null);
     }
 
     [Fact]
@@ -608,7 +915,6 @@ public sealed class DemoDataSeederTests
         var external = graph.Resources.Where(r => r.Url is not null).ToList();
         var internals = graph.Resources.Where(r => r.Url is null).ToList();
 
-        external.Should().HaveSameCount(internals);
         external.Should().NotBeEmpty();
         external
             .Should()

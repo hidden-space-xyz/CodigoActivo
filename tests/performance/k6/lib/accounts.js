@@ -161,7 +161,9 @@ export function takeOverDemoMembers(admin, count, firstIpIndex) {
       query: { scope: 'Independent', email: DEMO_EMAIL_DOMAIN, pageSize: 100 },
     }),
   )
-  const demo = (found?.items ?? []).filter((user) => user.staffRole === 'None').slice(0, count)
+  const demo = (found?.items ?? [])
+    .filter((user) => user.staffRole === 'None' && user.status.name === 'Activo')
+    .slice(0, count)
   if (demo.length < count) {
     fail(`Only ${demo.length} demo members found, ${count} needed`)
   }
