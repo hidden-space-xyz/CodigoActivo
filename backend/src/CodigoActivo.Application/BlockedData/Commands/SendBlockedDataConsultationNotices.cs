@@ -82,7 +82,7 @@ public sealed class SendBlockedDataConsultationNoticesCommandHandler(
                     c.Id,
                     Consultation = new OpenedConsultation(
                         c.OfficerName ?? string.Empty,
-                        c.Authority,
+                        c.Requester,
                         c.Reference,
                         c.OpenedAt
                     ),

@@ -17,7 +17,7 @@ public sealed class BlockedDataHoldTests
     private static BlockedDataConsultation Consultation()
     {
         var consultation = BlockedDataConsultation
-            .Open(Officer, BlockedDataAuthority.Claim, "Reclamación 7/2026", Opened)
+            .Open(Officer, "Persona reclamante", "Reclamación 7/2026", Opened)
             .Value;
         consultation.RecordFindings([Account, Minor], Opened);
         return consultation;
@@ -36,7 +36,7 @@ public sealed class BlockedDataHoldTests
             .Value;
 
         hold.AccountId.Should().Be(Account);
-        hold.Authority.Should().Be(BlockedDataAuthority.Claim);
+        hold.Requester.Should().Be("Persona reclamante");
         hold.Reference.Should().Be("Reclamación 7/2026");
         hold.PlacedById.Should().Be(Officer);
         hold.PlacedAt.Should().Be(Opened.AddMinutes(1));

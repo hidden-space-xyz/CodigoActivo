@@ -24,7 +24,7 @@ public sealed record PlaceBlockedDataHoldCommand(
 
 /// <summary>
 /// Executes the command that places a hold on the data history of an account a search of the
-/// consultation found and of its minors, existing and erased, with the authority and the
+/// consultation found and of its minors, existing and erased, with who asked for the data and the
 /// reference of the consultation, so the purge keeps it until the hold is lifted.
 /// </summary>
 /// <param name="officer">Policy that tells who may consult the blocked data.</param>

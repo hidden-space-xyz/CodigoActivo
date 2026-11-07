@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { watch } from 'vue'
 
 import {
   BLOCKED_DATA_REFERENCE_MAX_LENGTH,
+  BLOCKED_DATA_REQUESTER_MAX_LENGTH,
   PASSWORD_MAX_LENGTH,
   TWO_FACTOR_CODE_MAX_LENGTH,
 } from '@/shared/config'
 import { useForm } from '@/shared/lib/form'
 import { ActionButton } from '@/shared/ui/action-button'
 
-import { AUTHORITIES, authorityLabelKey } from '../lib/labels'
 import {
   readConsultationCodeDraft,
   readConsultationRequestDraft,
@@ -46,7 +45,6 @@ const emit = defineEmits<{
   submit: [code: string]
 }>()
 
-const { t } = useI18n()
 const requestForm = useForm({
   initial: toConsultationRequestDraft,
   read: readConsultationRequestDraft,
@@ -54,10 +52,6 @@ const requestForm = useForm({
 const codeForm = useForm({ initial: toConsultationCodeDraft, read: readConsultationCodeDraft })
 const { draft, errors, invalid } = requestForm
 const { draft: codeDraft, errors: codeErrors, invalid: codeInvalid } = codeForm
-
-const authorityOptions = computed(() =>
-  AUTHORITIES.map((authority) => ({ value: authority, label: t(authorityLabelKey(authority)) })),
-)
 
 watch(visible, () => {
   requestForm.reset()
@@ -88,28 +82,20 @@ function confirm(): void {
         <p class="form__message">{{ $t('pages.admin.blockedData.open.intro') }}</p>
 
         <div class="ca-field">
-          <label class="ca-field__label" for="blocked-authority">{{
-            $t('pages.admin.blockedData.open.authority')
+          <label class="ca-field__label" for="blocked-requester">{{
+            $t('pages.admin.blockedData.open.requester')
           }}</label>
-          <el-select
-            id="blocked-authority"
-            v-model="draft.authority"
-            data-testid="blocked-data-dialog-authority"
-            :placeholder="$t('pages.admin.blockedData.open.authorityPlaceholder')"
-            :class="{ 'ca-invalid': invalid('authority') }"
-            :aria-invalid="invalid('authority')"
-            :aria-describedby="errors.authority ? 'blocked-authority-error' : undefined"
-          >
-            <el-option
-              v-for="option in authorityOptions"
-              :key="option.value"
-              :label="option.label"
-              :value="option.value"
-              :data-testid="`option-${option.value}`"
-            />
-          </el-select>
-          <small v-if="errors.authority" id="blocked-authority-error" class="ca-field__error">{{
-            errors.authority
+          <el-input
+            id="blocked-requester"
+            v-model="draft.requester"
+            data-testid="blocked-data-dialog-requester"
+            :maxlength="BLOCKED_DATA_REQUESTER_MAX_LENGTH"
+            :class="{ 'ca-invalid': invalid('requester') }"
+            :aria-invalid="invalid('requester')"
+            :aria-describedby="errors.requester ? 'blocked-requester-error' : undefined"
+          />
+          <small v-if="errors.requester" id="blocked-requester-error" class="ca-field__error">{{
+            errors.requester
           }}</small>
         </div>
 

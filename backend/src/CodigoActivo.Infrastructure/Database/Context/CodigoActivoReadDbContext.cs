@@ -286,7 +286,6 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
             "blocked_data_consultations"
         );
         consultations.HasKey(c => c.Id);
-        consultations.Property(c => c.Authority).HasConversion<string>();
 
         var findings = Table<BlockedDataFindingRow>(modelBuilder, "blocked_data_findings");
         findings.HasKey(f => new { f.ConsultationId, f.AccountId });
@@ -304,7 +303,6 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
 
         var holds = Table<BlockedDataHoldRow>(modelBuilder, "blocked_data_holds");
         holds.HasKey(h => h.Id);
-        holds.Property(h => h.Authority).HasConversion<string>();
 
         var subjects = Table<BlockedDataHoldSubjectRow>(modelBuilder, "blocked_data_hold_subjects");
         subjects.HasKey(s => new { s.HoldId, s.AccountId });

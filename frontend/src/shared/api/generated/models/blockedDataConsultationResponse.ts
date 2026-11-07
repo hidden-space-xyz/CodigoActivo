@@ -4,14 +4,13 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import type { BlockedDataAuthority } from './blockedDataAuthority';
 
 export interface BlockedDataConsultationResponse {
   id: string;
   officerId: string;
   /** @nullable */
   officerName?: string | null;
-  authority: BlockedDataAuthority;
+  requester: string;
   reference: string;
   openedAt: string;
   expiresAt: string;

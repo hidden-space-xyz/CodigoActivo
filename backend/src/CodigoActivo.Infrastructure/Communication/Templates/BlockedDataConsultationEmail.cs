@@ -3,7 +3,6 @@ using System.Net;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.BlockedData;
 using CodigoActivo.Application.Common.Localization;
-using CodigoActivo.Domain.BlockedData;
 
 namespace CodigoActivo.Infrastructure.Communication.Templates;
 
@@ -16,8 +15,8 @@ public static class BlockedDataConsultationEmail
 
     /// <summary>
     /// Creates the notice for the association's legal contact: for every consultation, who opened
-    /// it, for which authority and reference, and when, then a note on who may receive the blocked
-    /// data. One consultation reads in the singular, several in the plural.
+    /// it, who asks for the data, the reference and when, then a note on what to do if nobody
+    /// expected it. One consultation reads in the singular, several in the plural.
     /// </summary>
     /// <param name="toAddress">Legal contact email of the association.</param>
     /// <param name="toName">Name the message greets.</param>
@@ -81,7 +80,7 @@ public static class BlockedDataConsultationEmail
     {
         return AppStrings.EmailsBlockedDataConsultationIntroText(
             consultation.OfficerName,
-            AuthorityName(consultation.Authority),
+            consultation.Requester,
             consultation.Reference
         );
     }
@@ -98,26 +97,11 @@ public static class BlockedDataConsultationEmail
         yield return EmailBlocks.Prose(
             AppStrings.EmailsBlockedDataConsultationIntroHtml(
                 WebUtility.HtmlEncode(consultation.OfficerName),
-                WebUtility.HtmlEncode(AuthorityName(consultation.Authority)),
+                WebUtility.HtmlEncode(consultation.Requester),
                 WebUtility.HtmlEncode(consultation.Reference)
             ),
             IntroText(consultation)
         );
         yield return EmailBlocks.Prose(AppStrings.EmailsBlockedDataConsultationOpened(openedAt));
-    }
-
-    private static string AuthorityName(BlockedDataAuthority authority)
-    {
-        return authority switch
-        {
-            BlockedDataAuthority.Court => AppStrings.EmailsBlockedDataConsultationAuthorityCourt,
-            BlockedDataAuthority.Prosecutor =>
-                AppStrings.EmailsBlockedDataConsultationAuthorityProsecutor,
-            BlockedDataAuthority.DataProtectionAuthority =>
-                AppStrings.EmailsBlockedDataConsultationAuthorityDataProtectionAuthority,
-            BlockedDataAuthority.PublicAdministration =>
-                AppStrings.EmailsBlockedDataConsultationAuthorityPublicAdministration,
-            _ => AppStrings.EmailsBlockedDataConsultationAuthorityClaim,
-        };
     }
 }

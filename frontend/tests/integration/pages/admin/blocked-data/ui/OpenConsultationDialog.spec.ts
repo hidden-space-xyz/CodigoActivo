@@ -1,5 +1,4 @@
 import { flushPromises } from '@vue/test-utils'
-import { ElSelect } from 'element-plus'
 import { describe, expect, it } from 'vitest'
 import { h } from 'vue'
 
@@ -43,7 +42,7 @@ describe('OpenConsultationDialog', () => {
 
     expect(emitted.continue).toEqual([])
     expect(dialog.textContent).toContain(
-      t('pages.admin.blockedData.open.form.problems.authorityRequired'),
+      t('pages.admin.blockedData.open.form.problems.requesterRequired'),
     )
     expect(dialog.textContent).toContain(
       t('pages.admin.blockedData.open.form.problems.passwordRequired'),
@@ -51,15 +50,19 @@ describe('OpenConsultationDialog', () => {
   })
 
   it('continues with the request it read', async () => {
-    const { wrapper, emitted } = await renderDialog({ usesAuthenticator: true })
+    const { emitted } = await renderDialog({ usesAuthenticator: true })
 
-    wrapper.findComponent(ElSelect).vm.$emit('update:modelValue', 'Prosecutor')
+    await typeInto('#blocked-requester', ' Fiscalía Provincial de León ')
     await typeInto('#blocked-reference', ' Diligencias 9/2026 ')
     await typeInto('#blocked-password', 'secret')
     await click(findButton(t('pages.admin.blockedData.open.continue'), document.body))
 
     expect(emitted.continue).toEqual([
-      { authority: 'Prosecutor', reference: 'Diligencias 9/2026', currentPassword: 'secret' },
+      {
+        requester: 'Fiscalía Provincial de León',
+        reference: 'Diligencias 9/2026',
+        currentPassword: 'secret',
+      },
     ])
   })
 

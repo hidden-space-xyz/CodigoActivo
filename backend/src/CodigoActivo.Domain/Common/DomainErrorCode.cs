@@ -311,8 +311,8 @@ public enum DomainErrorCode
     LegalPolicyContentRequired,
 
     /// <summary>
-    /// A consultation of the blocked data was to be opened without the authority or the
-    /// reference of the request.
+    /// A consultation of the blocked data was to be opened without who asks for the data or
+    /// the reference of the request.
     /// </summary>
     BlockedDataReferenceRequired,
 

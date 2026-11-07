@@ -253,10 +253,9 @@ erasing the designated account returns it to the initial administrator in the er
 `GET /api/blocked-data/access` tells the signed-in administrator whether they are that person; every
 administrator reaches the list of consultations, and only that person opens them.
 
-- `POST /api/blocked-data/consultations` (credentials rate limit) opens a consultation for 15 minutes with the
-  authority it is for (court, prosecutor, data protection authority, another public administration or a claim
-  against the association) and the reference of the request, after the current password and a code of the
-  second factor, counted like logins and spent by the opening. An emailed code comes from
+- `POST /api/blocked-data/consultations` (credentials rate limit) opens a consultation for 15 minutes with who
+  asks for the data and the reference of the request, both typed by the officer, after the current password
+  and a code of the second factor, counted like logins and spent by the opening. An emailed code comes from
   `POST /api/blocked-data/consultations/code`, which checks the password first and shares the stored login code,
   lifetime and cooldown, like the account deletion code. The consultation is opened with its notice pending,
   and `SendBlockedDataConsultationNotices` emails `LEGAL_EMAIL` within a minute, so an access nobody expected
@@ -271,7 +270,7 @@ administrator reaches the list of consultations, and only that person opens them
   (account, filters, moment and number of entries, enough to find the same entries again). An entry that no longer
   decrypts is returned without content and logged (`DataHistoryEntryUnreadable`).
 - `POST .../{id}/holds` places a hold for an open claim on an account the consultation found: it names that
-  account and its minors, existing and erased, without a foreign key, and copies the authority and the reference
+  account and its minors, existing and erased, without a foreign key, and copies the requester and the reference
   of the consultation. `POST .../{id}/holds/{holdId}/lift`, from any open consultation, lifts it once the claim
   is closed (`BlockedDataHoldLifted` the second time); lifting lets the next purge destroy what the claim needed,
   so it takes the same password, second factor and notice as reading. `GET /api/blocked-data/holds` lists the

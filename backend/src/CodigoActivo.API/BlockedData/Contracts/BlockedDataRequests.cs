@@ -25,12 +25,12 @@ public record BlockedDataConsultationCodeRequest([Required] [MaxLength(128)] str
 /// <summary>
 /// Request to open a consultation of the blocked data.
 /// </summary>
-/// <param name="Authority">Who the data is made available to.</param>
+/// <param name="Requester">Who asks for the data.</param>
 /// <param name="Reference">Reference of the request, such as the number of the proceedings.</param>
 /// <param name="CurrentPassword">Password of the signed-in user.</param>
 /// <param name="Code">Code of the second factor.</param>
 public record OpenBlockedDataConsultationRequest(
-    [Required] [EnumDataType(typeof(BlockedDataAuthority))] BlockedDataAuthority Authority,
+    [Required] [MaxLength(BlockedDataConsultation.RequesterMaxLength)] string Requester,
     [Required] [MaxLength(BlockedDataConsultation.ReferenceMaxLength)] string Reference,
     [Required] [MaxLength(128)] string CurrentPassword,
     [Required] [MaxLength(16)] string Code
@@ -42,7 +42,7 @@ public record OpenBlockedDataConsultationRequest(
     /// <returns>The command.</returns>
     public OpenBlockedDataConsultationCommand ToCommand()
     {
-        return new OpenBlockedDataConsultationCommand(Authority, Reference, CurrentPassword, Code);
+        return new OpenBlockedDataConsultationCommand(Requester, Reference, CurrentPassword, Code);
     }
 }
 

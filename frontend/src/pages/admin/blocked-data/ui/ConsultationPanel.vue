@@ -7,7 +7,7 @@ import { formatDateTime } from '@/shared/lib/date'
 import { ActionButton } from '@/shared/ui/action-button'
 import { ColumnFilterDate } from '@/shared/ui/column-filter'
 
-import { authorityLabelKey, entityLabelKey } from '../lib/labels'
+import { entityLabelKey } from '../lib/labels'
 import type { Candidate, Consultation } from '../model/types'
 
 /** Text the search looks up. */
@@ -78,7 +78,7 @@ function summary(candidate: Candidate): string {
         <p class="panel__meta">
           {{
             $t('pages.admin.blockedData.consultation.meta', {
-              authority: $t(authorityLabelKey(consultation.authority)),
+              requester: consultation.requester,
               reference: consultation.reference,
               expiresAt: formatDateTime(consultation.expiresAt),
             })

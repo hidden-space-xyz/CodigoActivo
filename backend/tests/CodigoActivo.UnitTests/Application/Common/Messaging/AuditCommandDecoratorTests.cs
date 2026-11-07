@@ -223,7 +223,7 @@ public sealed class AuditCommandDecoratorTests
             new ExportBlockedDataCommand(consultation, account, null, null, []),
             _ => new BlockedDataExport(
                 DateTimeOffset.UnixEpoch,
-                BlockedDataAuthority.Court,
+                "Juzgado de León",
                 "Diligencias previas 123/2026",
                 account.Value,
                 null,

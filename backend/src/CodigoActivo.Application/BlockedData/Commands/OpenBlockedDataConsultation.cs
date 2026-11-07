@@ -14,12 +14,18 @@ namespace CodigoActivo.Application.BlockedData.Commands;
 /// <summary>
 /// Carries the input required to open a consultation of the blocked data.
 /// </summary>
-/// <param name="Authority">Who the data is made available to.</param>
+/// <param name="Requester">Who asks for the data.</param>
 /// <param name="Reference">Reference of the request, such as the number of the proceedings.</param>
 /// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize it.</param>
 /// <param name="Code">Code from the consultation email or the authenticator application.</param>
 public sealed record OpenBlockedDataConsultationCommand(
-    [property: EnumDataType(typeof(BlockedDataAuthority))] BlockedDataAuthority Authority,
+    [property:
+        Required,
+        MaxLength(BlockedDataConsultation.RequesterMaxLength),
+        NotBlank,
+        SingleLine
+    ]
+        string Requester,
     [property:
         Required,
         MaxLength(BlockedDataConsultation.ReferenceMaxLength),
@@ -32,8 +38,8 @@ public sealed record OpenBlockedDataConsultationCommand(
 ) : ICommand<Result<BlockedDataConsultationId>>;
 
 /// <summary>
-/// Executes the command that opens a consultation of the blocked data for a request of an
-/// authority. Only the account designated for data protection opens one, after its current
+/// Executes the command that opens a consultation of the blocked data for a request.
+/// Only the account designated for data protection opens one, after its current
 /// password and a code of its second factor, emailed on demand or read from its authenticator app.
 /// The code is checked and spent with the account locked, so it opens a single consultation, and
 /// wrong codes count towards the same lockout as logins. The consultation stays open for
@@ -100,7 +106,7 @@ public sealed class OpenBlockedDataConsultationCommandHandler(
 
         var opened = BlockedDataConsultation.Open(
             user.Id,
-            command.Authority,
+            command.Requester,
             command.Reference,
             clock.UtcNow
         );

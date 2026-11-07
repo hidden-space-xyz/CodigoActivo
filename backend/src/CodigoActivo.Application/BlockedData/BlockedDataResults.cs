@@ -14,7 +14,7 @@ public sealed record BlockedDataSearch(IReadOnlyList<BlockedDataCandidateRespons
 /// Extract of the blocked data about an account and its minors, ready to be handed over.
 /// </summary>
 /// <param name="GeneratedAt">When it was taken.</param>
-/// <param name="Authority">Who the data is made available to.</param>
+/// <param name="Requester">Who asks for the data.</param>
 /// <param name="Reference">Reference of the request.</param>
 /// <param name="AccountId">Identifier of the account.</param>
 /// <param name="From">First day covered, or <see langword="null"/> for no limit.</param>
@@ -24,7 +24,7 @@ public sealed record BlockedDataSearch(IReadOnlyList<BlockedDataCandidateRespons
 /// <param name="CurrentData">Current personal data, while the account exists.</param>
 public sealed record BlockedDataExport(
     DateTimeOffset GeneratedAt,
-    BlockedDataAuthority Authority,
+    string Requester,
     string Reference,
     Guid AccountId,
     DateOnly? From,

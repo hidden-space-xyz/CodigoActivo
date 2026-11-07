@@ -76,7 +76,7 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
         return client.PostJsonAsync(
             ConsultationsUrl,
             new OpenBlockedDataConsultationRequest(
-                BlockedDataAuthority.Court,
+                "Juzgado de León",
                 Reference,
                 TestSeedData.Password,
                 code
@@ -197,7 +197,7 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
     private BlockedDataConsultation ErasedOfficerConsultation(string reference)
     {
         return BlockedDataConsultation
-            .Open(UserId.New(), BlockedDataAuthority.Claim, reference, Factory.Clock.UtcNow)
+            .Open(UserId.New(), "Persona reclamante", reference, Factory.Clock.UtcNow)
             .Value;
     }
 
@@ -309,7 +309,7 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
         using var response = await officer.PostJsonAsync(
             ConsultationsUrl,
             new OpenBlockedDataConsultationRequest(
-                BlockedDataAuthority.Court,
+                "Juzgado de León",
                 Reference,
                 "wrong-password",
                 CurrentCode()
@@ -364,7 +364,7 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
 
         extracted.StatusCode.Should().Be(HttpStatusCode.OK);
         var extract = (await extracted.ReadJsonAsync<BlockedDataExport>(Ct))!;
-        extract.Authority.Should().Be(BlockedDataAuthority.Court);
+        extract.Requester.Should().Be("Juzgado de León");
         extract.Reference.Should().Be(Reference);
         extract.CurrentData.Should().BeNull("the account no longer exists");
         extract
@@ -672,7 +672,7 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
             .Be(
                 new BlockedDataHoldResponse(
                     holdId,
-                    BlockedDataAuthority.Court,
+                    "Juzgado de León",
                     Reference,
                     2,
                     Factory.Clock.UtcNow,

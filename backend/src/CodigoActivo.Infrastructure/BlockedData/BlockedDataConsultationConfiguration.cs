@@ -24,7 +24,10 @@ public sealed class BlockedDataConsultationConfiguration
 
         builder.Property(c => c.Id).ValueGeneratedNever();
         builder.Property(c => c.OfficerId).IsRequired();
-        builder.Property(c => c.Authority).HasConversion<string>().HasMaxLength(32).IsRequired();
+        builder
+            .Property(c => c.Requester)
+            .HasMaxLength(BlockedDataConsultation.RequesterMaxLength)
+            .IsRequired();
         builder
             .Property(c => c.Reference)
             .HasMaxLength(BlockedDataConsultation.ReferenceMaxLength)

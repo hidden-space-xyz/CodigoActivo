@@ -7,7 +7,6 @@ import { AdminPageHeader } from '@/shared/ui/admin-page-header'
 import { DataTable } from '@/shared/ui/data-table'
 import { RowActions, type RowAction } from '@/shared/ui/row-actions'
 
-import { authorityLabelKey } from '../lib/labels'
 import type { Hold } from '../model/types'
 import { useBlockedData } from '../model/use-blocked-data'
 import ConsultationPanel from './ConsultationPanel.vue'
@@ -121,9 +120,11 @@ function holdActions(hold: Hold): RowAction[] {
           row.officerName ?? $t('pages.admin.blockedData.columns.erasedOfficer')
         }}</template>
       </el-table-column>
-      <el-table-column :label="$t('pages.admin.blockedData.columns.authority')" min-width="200">
-        <template #default="{ row }">{{ $t(authorityLabelKey(row.authority)) }}</template>
-      </el-table-column>
+      <el-table-column
+        prop="requester"
+        :label="$t('pages.admin.blockedData.columns.requester')"
+        min-width="200"
+      />
       <el-table-column
         prop="reference"
         :label="$t('pages.admin.blockedData.columns.reference')"
@@ -177,9 +178,11 @@ function holdActions(hold: Hold): RowAction[] {
             row.placedByName ?? $t('pages.admin.blockedData.columns.erasedOfficer')
           }}</template>
         </el-table-column>
-        <el-table-column :label="$t('pages.admin.blockedData.columns.authority')" min-width="200">
-          <template #default="{ row }">{{ $t(authorityLabelKey(row.authority)) }}</template>
-        </el-table-column>
+        <el-table-column
+          prop="requester"
+          :label="$t('pages.admin.blockedData.columns.requester')"
+          min-width="200"
+        />
         <el-table-column
           prop="reference"
           :label="$t('pages.admin.blockedData.columns.reference')"

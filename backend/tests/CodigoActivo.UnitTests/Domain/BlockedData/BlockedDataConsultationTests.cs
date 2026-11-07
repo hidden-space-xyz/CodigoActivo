@@ -15,7 +15,7 @@ public sealed class BlockedDataConsultationTests
     private static BlockedDataConsultation Open()
     {
         return BlockedDataConsultation
-            .Open(Officer, BlockedDataAuthority.Court, "  Diligencias 123/2026  ", Opened)
+            .Open(Officer, "  Juzgado de León  ", "  Diligencias 123/2026  ", Opened)
             .Value;
     }
 
@@ -25,7 +25,7 @@ public sealed class BlockedDataConsultationTests
         var consultation = Open();
 
         consultation.OfficerId.Should().Be(Officer);
-        consultation.Authority.Should().Be(BlockedDataAuthority.Court);
+        consultation.Requester.Should().Be("Juzgado de León");
         consultation.Reference.Should().Be("Diligencias 123/2026");
         consultation.OpenedAt.Should().Be(Opened);
         consultation.ExpiresAt.Should().Be(Opened.AddMinutes(15));
@@ -48,15 +48,17 @@ public sealed class BlockedDataConsultationTests
     public void OpenWithoutReferenceIsRefused(string? reference)
     {
         BlockedDataConsultation
-            .Open(Officer, BlockedDataAuthority.Claim, reference, Opened)
+            .Open(Officer, "Persona reclamante", reference, Opened)
             .ShouldFail(ErrorKind.Validation, DomainErrorCode.BlockedDataReferenceRequired);
     }
 
-    [Fact]
-    public void OpenUnknownAuthorityIsRefused()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("   ")]
+    public void OpenWithoutRequesterIsRefused(string? requester)
     {
         BlockedDataConsultation
-            .Open(Officer, (BlockedDataAuthority)99, "Ref", Opened)
+            .Open(Officer, requester, "Ref", Opened)
             .ShouldFail(ErrorKind.Validation, DomainErrorCode.BlockedDataReferenceRequired);
     }
 

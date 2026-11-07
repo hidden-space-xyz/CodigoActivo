@@ -425,7 +425,7 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
         var consultation = BlockedDataConsultation
             .Open(
                 UserId.From(TestSeedData.Users.AdminId),
-                BlockedDataAuthority.Court,
+                "Juzgado de León",
                 "Diligencias previas 123/2026",
                 Morning
             )

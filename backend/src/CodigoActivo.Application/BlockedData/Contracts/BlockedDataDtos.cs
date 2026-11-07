@@ -19,7 +19,7 @@ public sealed record BlockedDataAccessResponse(
 /// <param name="Id">Identifier of the consultation.</param>
 /// <param name="OfficerId">Identifier of the account that opened it.</param>
 /// <param name="OfficerName">Name of that account, while it exists.</param>
-/// <param name="Authority">Who the data is made available to.</param>
+/// <param name="Requester">Who asks for the data.</param>
 /// <param name="Reference">Reference of the request.</param>
 /// <param name="OpenedAt">When it was opened.</param>
 /// <param name="ExpiresAt">When it stops accepting searches and extracts.</param>
@@ -29,7 +29,7 @@ public sealed record BlockedDataConsultationResponse(
     Guid Id,
     Guid OfficerId,
     string? OfficerName,
-    BlockedDataAuthority Authority,
+    string Requester,
     string Reference,
     DateTimeOffset OpenedAt,
     DateTimeOffset ExpiresAt,
@@ -99,7 +99,7 @@ public sealed record BlockedDataEntryResponse(
 /// A hold on the blocked data, without the accounts it keeps.
 /// </summary>
 /// <param name="Id">Identifier of the hold.</param>
-/// <param name="Authority">Who the claim is answered before.</param>
+/// <param name="Requester">Who asked for the data.</param>
 /// <param name="Reference">Reference of the claim.</param>
 /// <param name="Accounts">How many accounts it keeps the history of: the account and its minors.</param>
 /// <param name="PlacedAt">When it was placed.</param>
@@ -108,7 +108,7 @@ public sealed record BlockedDataEntryResponse(
 /// <param name="LiftedByName">Name of the account that lifted it, while it exists.</param>
 public sealed record BlockedDataHoldResponse(
     Guid Id,
-    BlockedDataAuthority Authority,
+    string Requester,
     string Reference,
     int Accounts,
     DateTimeOffset PlacedAt,

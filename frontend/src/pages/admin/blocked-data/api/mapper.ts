@@ -7,7 +7,7 @@ import type {
 } from '@/shared/api/generated/models'
 import type { Translate } from '@/shared/i18n'
 
-import { authorityLabelKey, entityLabelKey } from '../lib/labels'
+import { entityLabelKey } from '../lib/labels'
 import type { BlockedDataAccess, Candidate, Consultation, ExtractFile, Hold } from '../model/types'
 
 /** Maps what the signed-in administrator may do with the blocked data. */
@@ -23,7 +23,7 @@ export function toConsultation(response: BlockedDataConsultationResponse): Consu
   return {
     id: response.id,
     officerName: response.officerName ?? null,
-    authority: response.authority,
+    requester: response.requester,
     reference: response.reference,
     openedAt: response.openedAt,
     expiresAt: response.expiresAt,
@@ -36,7 +36,7 @@ export function toConsultation(response: BlockedDataConsultationResponse): Consu
 export function toHold(response: BlockedDataHoldResponse): Hold {
   return {
     id: response.id,
-    authority: response.authority,
+    requester: response.requester,
     reference: response.reference,
     accounts: response.accounts,
     placedAt: response.placedAt,
@@ -63,7 +63,7 @@ export function toCandidate(response: BlockedDataCandidateResponse): Candidate {
 export function toExtractFile(data: BlockedDataExport, t: Translate): ExtractFile {
   return {
     generadoEl: data.generatedAt,
-    destinatario: t(authorityLabelKey(data.authority)),
+    destinatario: data.requester,
     referencia: data.reference,
     cuenta: data.accountId,
     desde: data.from ?? null,

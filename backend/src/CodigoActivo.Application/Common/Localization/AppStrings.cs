@@ -148,36 +148,6 @@ public static class AppStrings
         Get("emails.blockedDataConsultation.noteMany");
 
     /// <summary>
-    /// Gets the name of a court as the authority of a consultation of the blocked data.
-    /// </summary>
-    public static string EmailsBlockedDataConsultationAuthorityCourt =>
-        Get("emails.blockedDataConsultation.authority.Court");
-
-    /// <summary>
-    /// Gets the name of the public prosecutor as the authority of a consultation.
-    /// </summary>
-    public static string EmailsBlockedDataConsultationAuthorityProsecutor =>
-        Get("emails.blockedDataConsultation.authority.Prosecutor");
-
-    /// <summary>
-    /// Gets the name of the data protection authority as the authority of a consultation.
-    /// </summary>
-    public static string EmailsBlockedDataConsultationAuthorityDataProtectionAuthority =>
-        Get("emails.blockedDataConsultation.authority.DataProtectionAuthority");
-
-    /// <summary>
-    /// Gets the name of another public administration as the authority of a consultation.
-    /// </summary>
-    public static string EmailsBlockedDataConsultationAuthorityPublicAdministration =>
-        Get("emails.blockedDataConsultation.authority.PublicAdministration");
-
-    /// <summary>
-    /// Gets the name of a claim against the association as the reason of a consultation.
-    /// </summary>
-    public static string EmailsBlockedDataConsultationAuthorityClaim =>
-        Get("emails.blockedDataConsultation.authority.Claim");
-
-    /// <summary>
     /// Gets the subject of the code that confirms opening a consultation of the blocked data.
     /// </summary>
     public static string EmailsBlockedDataConsultationCodeSubject =>
@@ -828,19 +798,19 @@ public static class AppStrings
     /// Formats the opening line of the notice of a consultation of the blocked data, as text.
     /// </summary>
     /// <param name="officerName">Name of the account that opened it.</param>
-    /// <param name="authority">Who the data is made available to, already named.</param>
+    /// <param name="requester">Who asks for the data.</param>
     /// <param name="reference">Reference of the request.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsBlockedDataConsultationIntroText(
         string officerName,
-        string authority,
+        string requester,
         string reference
     )
     {
         return Format(
             "emails.blockedDataConsultation.introText",
             officerName,
-            authority,
+            requester,
             reference
         );
     }
@@ -849,19 +819,19 @@ public static class AppStrings
     /// Formats the opening line of the notice of a consultation of the blocked data, as HTML.
     /// </summary>
     /// <param name="officerName">Name of the account that opened it, already encoded.</param>
-    /// <param name="authority">Who the data is made available to, already encoded.</param>
+    /// <param name="requester">Who asks for the data, already encoded.</param>
     /// <param name="reference">Reference of the request, already encoded.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsBlockedDataConsultationIntroHtml(
         string officerName,
-        string authority,
+        string requester,
         string reference
     )
     {
         return Format(
             "emails.blockedDataConsultation.introHtml",
             officerName,
-            authority,
+            requester,
             reference
         );
     }

@@ -4,10 +4,9 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import type { BlockedDataAuthority } from './blockedDataAuthority';
 
 export interface OpenBlockedDataConsultationRequest {
-  authority: BlockedDataAuthority;
+  requester: string;
   reference: string;
   currentPassword: string;
   code: string;

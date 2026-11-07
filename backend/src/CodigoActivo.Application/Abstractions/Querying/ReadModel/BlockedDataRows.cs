@@ -16,8 +16,8 @@ public sealed class BlockedDataConsultationRow
     /// </summary>
     public Guid OfficerId { get; init; }
 
-    /// <summary>Gets who the data is made available to.</summary>
-    public BlockedDataAuthority Authority { get; init; }
+    /// <summary>Gets who asks for the data.</summary>
+    public string Requester { get; init; } = string.Empty;
 
     /// <summary>Gets the reference of the request.</summary>
     public string Reference { get; init; } = string.Empty;
@@ -79,8 +79,8 @@ public sealed class BlockedDataHoldRow
     /// <summary>Gets the identifier of the account the claim is about.</summary>
     public Guid AccountId { get; init; }
 
-    /// <summary>Gets who the claim is answered before.</summary>
-    public BlockedDataAuthority Authority { get; init; }
+    /// <summary>Gets who asked for the data.</summary>
+    public string Requester { get; init; } = string.Empty;
 
     /// <summary>Gets the reference of the claim.</summary>
     public string Reference { get; init; } = string.Empty;

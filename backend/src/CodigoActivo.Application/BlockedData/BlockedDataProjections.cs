@@ -30,7 +30,7 @@ public static class BlockedDataProjections
                     consultation.Id,
                     consultation.OfficerId,
                     officer == null ? null : officer.FirstName + " " + officer.LastName,
-                    consultation.Authority,
+                    consultation.Requester,
                     consultation.Reference,
                     consultation.OpenedAt,
                     consultation.ExpiresAt,
@@ -55,7 +55,7 @@ public static class BlockedDataProjections
     {
         return holds.Select(hold => new BlockedDataHoldResponse(
             hold.Id,
-            hold.Authority,
+            hold.Requester,
             hold.Reference,
             hold.Subjects.Count,
             hold.PlacedAt,

@@ -22,7 +22,10 @@ public sealed class BlockedDataHoldConfiguration : IEntityTypeConfiguration<Bloc
 
         builder.Property(h => h.Id).ValueGeneratedNever();
         builder.Property(h => h.AccountId).IsRequired();
-        builder.Property(h => h.Authority).HasConversion<string>().HasMaxLength(32).IsRequired();
+        builder
+            .Property(h => h.Requester)
+            .HasMaxLength(BlockedDataConsultation.RequesterMaxLength)
+            .IsRequired();
         builder
             .Property(h => h.Reference)
             .HasMaxLength(BlockedDataConsultation.ReferenceMaxLength)

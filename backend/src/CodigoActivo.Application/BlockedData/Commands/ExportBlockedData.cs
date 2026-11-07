@@ -135,7 +135,7 @@ public sealed class ExportBlockedDataCommandHandler(
 
         return new BlockedDataExport(
             now,
-            consultation.Authority,
+            consultation.Requester,
             consultation.Reference,
             accountId,
             command.From,

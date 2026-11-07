@@ -80,7 +80,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     officer_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    authority = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    requester = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     reference = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     opened_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
@@ -97,7 +97,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     account_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    authority = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
+                    requester = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     reference = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     placed_by_id = table.Column<Guid>(type: "uuid", nullable: false),
                     placed_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),

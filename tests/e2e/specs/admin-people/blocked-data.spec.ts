@@ -8,7 +8,7 @@ import { t } from '../../support/i18n'
 import { codeIn, SUBJECTS } from '../../support/mail/mailbox'
 import { BlockedDataPage } from '../../support/pages/admin-people/blocked-data-page'
 import { fullName } from '../../support/data/people'
-import { chooseOption, confirm, expectChecked } from '../../support/ui/element-plus'
+import { confirm, expectChecked } from '../../support/ui/element-plus'
 
 test.describe('legal archive of blocked data', () => {
   test('every administrator sees the consultations but only the privacy officer opens one', async ({
@@ -37,13 +37,13 @@ test.describe('legal archive of blocked data', () => {
     const person = await accounts.actor({ label: 'archived' })
     await changeOwnPhone(person.api, phoneNumber())
     const reference = uniqueTitle('Diligencias')
-    const court = t('pages.admin.blockedData.authorities.Court')
+    const court = 'Juzgado de Primera Instancia n.º 2 de León'
     const page = await pageAs(privacyOfficer)
     const archive = new BlockedDataPage(page)
     await archive.open()
     await archive.openConsultation.click()
     const dialog = archive.dialog
-    await chooseOption(dialog.getByTestId('blocked-data-dialog-authority'), 'Court')
+    await dialog.getByTestId('blocked-data-dialog-requester').fill(court)
     await dialog.getByTestId('blocked-data-dialog-reference').fill(reference)
     const password = dialog.getByTestId('blocked-data-dialog-password')
     await password.fill(`${PASSWORD}-wrong`)

@@ -25,12 +25,12 @@ public interface IBlockedDataEmailComposer
 /// Consultation of the blocked data as its notice describes it.
 /// </summary>
 /// <param name="OfficerName">Name of the account that opened it.</param>
-/// <param name="Authority">Who the data is made available to.</param>
+/// <param name="Requester">Who asks for the data.</param>
 /// <param name="Reference">Reference of the request.</param>
 /// <param name="OpenedAt">When it was opened.</param>
 public sealed record OpenedConsultation(
     string OfficerName,
-    BlockedDataAuthority Authority,
+    string Requester,
     string Reference,
     DateTimeOffset OpenedAt
 );

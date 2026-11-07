@@ -4,6 +4,9 @@ export const MAX_SEARCH_LENGTH = 200
 /** Fewest characters a search of the blocked data takes (`SearchBlockedDataCommand.MinQueryLength`). */
 export const BLOCKED_DATA_MIN_SEARCH_LENGTH = 3
 
+/** Longest text naming who asks for blocked data (`BlockedDataConsultation.RequesterMaxLength`). */
+export const BLOCKED_DATA_REQUESTER_MAX_LENGTH = 200
+
 /** Longest reference of a blocked data consultation (`BlockedDataConsultation.ReferenceMaxLength`). */
 export const BLOCKED_DATA_REFERENCE_MAX_LENGTH = 200
 

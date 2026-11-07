@@ -9,13 +9,13 @@ import {
 
 describe('readConsultationRequestDraft', () => {
   it('starts blank', () => {
-    expect(toConsultationRequestDraft()).toEqual({ authority: '', reference: '', password: '' })
+    expect(toConsultationRequestDraft()).toEqual({ requester: '', reference: '', password: '' })
   })
 
   it('asks for every field of a blank request', () => {
     expect(readConsultationRequestDraft(toConsultationRequestDraft())).toEqual({
       problems: {
-        authority: 'pages.admin.blockedData.open.form.problems.authorityRequired',
+        requester: 'pages.admin.blockedData.open.form.problems.requesterRequired',
         reference: 'pages.admin.blockedData.open.form.problems.referenceRequired',
         password: 'pages.admin.blockedData.open.form.problems.passwordRequired',
       },
@@ -23,17 +23,17 @@ describe('readConsultationRequestDraft', () => {
     })
   })
 
-  it('trims the reference and sends the password as typed', () => {
+  it('trims who asks and the reference and sends the password as typed', () => {
     expect(
       readConsultationRequestDraft({
-        authority: 'DataProtectionAuthority',
+        requester: ' Agencia Española de Protección de Datos ',
         reference: '  E/01234/2026  ',
         password: ' secret ',
       }),
     ).toEqual({
       problems: {},
       value: {
-        authority: 'DataProtectionAuthority',
+        requester: 'Agencia Española de Protección de Datos',
         reference: 'E/01234/2026',
         currentPassword: ' secret ',
       },

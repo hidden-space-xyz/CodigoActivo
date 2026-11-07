@@ -4,13 +4,12 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import type { BlockedDataAuthority } from './blockedDataAuthority';
 import type { BlockedDataEntryResponse } from './blockedDataEntryResponse';
 import type { PersonalDataResponse } from './personalDataResponse';
 
 export interface BlockedDataExport {
   generatedAt: string;
-  authority: BlockedDataAuthority;
+  requester: string;
   reference: string;
   accountId: string;
   /** @nullable */

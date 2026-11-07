@@ -5715,16 +5715,6 @@
         },
         "additionalProperties": false
       },
-      "BlockedDataAuthority": {
-        "enum": [
-          "Court",
-          "Prosecutor",
-          "DataProtectionAuthority",
-          "PublicAdministration",
-          "Claim"
-        ],
-        "type": "string"
-      },
       "BlockedDataCandidateResponse": {
         "required": [
           "accountId",
@@ -5781,14 +5771,14 @@
       },
       "BlockedDataConsultationResponse": {
         "required": [
-          "authority",
           "expiresAt",
           "extracts",
           "foundAccounts",
           "id",
           "officerId",
           "openedAt",
-          "reference"
+          "reference",
+          "requester"
         ],
         "type": "object",
         "properties": {
@@ -5804,8 +5794,8 @@
             "type": "string",
             "nullable": true
           },
-          "authority": {
-            "$ref": "#/components/schemas/BlockedDataAuthority"
+          "requester": {
+            "type": "string"
           },
           "reference": {
             "type": "string"
@@ -5933,11 +5923,11 @@
       "BlockedDataExport": {
         "required": [
           "accountId",
-          "authority",
           "entities",
           "entries",
           "generatedAt",
-          "reference"
+          "reference",
+          "requester"
         ],
         "type": "object",
         "properties": {
@@ -5945,8 +5935,8 @@
             "type": "string",
             "format": "date-time"
           },
-          "authority": {
-            "$ref": "#/components/schemas/BlockedDataAuthority"
+          "requester": {
+            "type": "string"
           },
           "reference": {
             "type": "string"
@@ -5986,10 +5976,10 @@
       "BlockedDataHoldResponse": {
         "required": [
           "accounts",
-          "authority",
           "id",
           "placedAt",
-          "reference"
+          "reference",
+          "requester"
         ],
         "type": "object",
         "properties": {
@@ -5997,8 +5987,8 @@
             "type": "string",
             "format": "uuid"
           },
-          "authority": {
-            "$ref": "#/components/schemas/BlockedDataAuthority"
+          "requester": {
+            "type": "string"
           },
           "reference": {
             "type": "string"
@@ -9084,15 +9074,15 @@
       },
       "OpenBlockedDataConsultationRequest": {
         "required": [
-          "authority",
           "code",
           "currentPassword",
-          "reference"
+          "reference",
+          "requester"
         ],
         "type": "object",
         "properties": {
-          "authority": {
-            "$ref": "#/components/schemas/BlockedDataAuthority"
+          "requester": {
+            "type": "string"
           },
           "reference": {
             "type": "string"

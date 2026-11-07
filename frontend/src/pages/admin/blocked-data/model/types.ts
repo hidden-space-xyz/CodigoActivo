@@ -1,7 +1,3 @@
-/** Who the blocked data is made available to. */
-export type BlockedDataAuthority =
-  'Court' | 'Prosecutor' | 'DataProtectionAuthority' | 'PublicAdministration' | 'Claim'
-
 /** What the signed-in administrator may do with the blocked data. */
 export interface BlockedDataAccess {
   readonly isPrivacyOfficer: boolean
@@ -12,7 +8,7 @@ export interface BlockedDataAccess {
 export interface Consultation {
   readonly id: string
   readonly officerName: string | null
-  readonly authority: BlockedDataAuthority
+  readonly requester: string
   readonly reference: string
   readonly openedAt: string
   readonly expiresAt: string
@@ -34,7 +30,7 @@ export interface BlockedDataListParams {
  */
 export interface Hold {
   readonly id: string
-  readonly authority: BlockedDataAuthority
+  readonly requester: string
   readonly reference: string
   readonly accounts: number
   readonly placedAt: string
@@ -64,7 +60,7 @@ export interface Candidate {
 
 /** The request a consultation is opened for, with the password that authorizes it. */
 export interface ConsultationRequest {
-  readonly authority: BlockedDataAuthority
+  readonly requester: string
   readonly reference: string
   readonly currentPassword: string
 }

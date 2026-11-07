@@ -178,12 +178,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<string>("Authority")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("authority");
-
                     b.Property<DateTimeOffset>("ExpiresAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
@@ -205,6 +199,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("reference");
+
+                    b.Property<string>("Requester")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("requester");
 
                     b.HasKey("Id")
                         .HasName("pk_blocked_data_consultations");
@@ -306,12 +306,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("account_id");
 
-                    b.Property<string>("Authority")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)")
-                        .HasColumnName("authority");
-
                     b.Property<DateTimeOffset?>("LiftedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("lifted_at");
@@ -333,6 +327,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)")
                         .HasColumnName("reference");
+
+                    b.Property<string>("Requester")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("requester");
 
                     b.HasKey("Id")
                         .HasName("pk_blocked_data_holds");

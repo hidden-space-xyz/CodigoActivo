@@ -42,14 +42,14 @@ public sealed class SendBlockedDataConsultationNoticesCommandHandlerTests
     private BlockedDataConsultation Opened(string reference)
     {
         var consultation = BlockedDataConsultation
-            .Open(UserId.From(officer.Id), BlockedDataAuthority.Court, reference, OpenedAt)
+            .Open(UserId.From(officer.Id), "Juzgado de León", reference, OpenedAt)
             .Value;
         store.BlockedDataConsultations.Add(
             new BlockedDataConsultationRow
             {
                 Id = consultation.Id.Value,
                 OfficerId = officer.Id,
-                Authority = BlockedDataAuthority.Court,
+                Requester = "Juzgado de León",
                 Reference = reference,
                 OpenedAt = OpenedAt,
                 ExpiresAt = consultation.ExpiresAt,

@@ -27,11 +27,14 @@ import {
   typeInto,
 } from '../../../../../support/dom'
 
+const COURT = 'Juzgado de León'
+const CLAIMANT = 'Persona reclamante'
+
 const CONSULTATION: BlockedDataConsultationResponse = {
   id: '0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4b01',
   officerId: '0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4b02',
   officerName: 'Dana Delegada',
-  authority: 'Court',
+  requester: COURT,
   reference: 'Diligencias 123/2026',
   openedAt: '2026-10-25T09:00:00Z',
   expiresAt: '2026-10-25T09:15:00Z',
@@ -56,7 +59,7 @@ const FOUND: BlockedDataSearch = {
 
 const EXTRACT: BlockedDataExport = {
   generatedAt: '2026-10-25T09:05:00Z',
-  authority: 'Court',
+  requester: COURT,
   reference: 'Diligencias 123/2026',
   accountId: ACCOUNT,
   entities: [],
@@ -75,7 +78,7 @@ const EXTRACT: BlockedDataExport = {
 
 const HOLD: BlockedDataHoldResponse = {
   id: '0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4b04',
-  authority: 'Claim',
+  requester: CLAIMANT,
   reference: 'Reclamación 7/2026',
   accounts: 2,
   placedAt: '2026-10-25T09:05:00Z',
@@ -138,7 +141,7 @@ function serve(
 
 async function openAndFind(wrapper: Awaited<ReturnType<typeof renderPage>>['wrapper']) {
   await click(findButton(t('pages.admin.blockedData.open.action')))
-  await fillDialog(wrapper, 'Court', CONSULTATION.reference, '123456')
+  await fillDialog(COURT, CONSULTATION.reference, '123456')
   await vi.waitFor(() => expect(document.querySelector('#blocked-query')).not.toBeNull())
   await typeInto('#blocked-query', 'marta@example.test')
   await click(findButton(t('pages.admin.blockedData.consultation.searchAction')))
@@ -152,16 +155,12 @@ function liftButton(): HTMLButtonElement {
 }
 
 async function fillDialog(
-  wrapper: Awaited<ReturnType<typeof renderPage>>['wrapper'],
-  authority: string,
+  requester: string,
   reference: string,
   code: string,
   next = t('pages.admin.blockedData.open.continue'),
 ) {
-  wrapper
-    .findComponent(OpenConsultationDialog)
-    .findComponent(ElSelect)
-    .vm.$emit('update:modelValue', authority)
+  await typeInto('#blocked-requester', requester)
   await typeInto('#blocked-reference', reference)
   await typeInto('#blocked-password', 'secret')
   await click(findButton(next))
@@ -211,7 +210,7 @@ describe('BlockedDataPage', () => {
 
     expect(wrapper.text()).toContain('Dana Delegada')
     expect(wrapper.text()).toContain('Diligencias 123/2026')
-    expect(wrapper.text()).toContain(t('pages.admin.blockedData.authorities.Court'))
+    expect(wrapper.text()).toContain(COURT)
     expect(wrapper.text()).not.toContain(t('pages.admin.blockedData.open.action'))
   })
 
@@ -221,8 +220,7 @@ describe('BlockedDataPage', () => {
 
     await click(findButton(t('pages.admin.blockedData.open.action')))
     await fillDialog(
-      wrapper,
-      'Court',
+      COURT,
       'Diligencias 123/2026',
       '123456',
       t('pages.admin.blockedData.open.sendCode'),
@@ -232,7 +230,7 @@ describe('BlockedDataPage', () => {
     expect(bodies.code).toEqual([{ currentPassword: 'secret' }])
     expect(bodies.open).toEqual([
       {
-        authority: 'Court',
+        requester: COURT,
         reference: 'Diligencias 123/2026',
         currentPassword: 'secret',
         code: '123456',
@@ -252,7 +250,7 @@ describe('BlockedDataPage', () => {
     const dialog = wrapper.findComponent(OpenConsultationDialog)
 
     await click(findButton(t('pages.admin.blockedData.open.action')))
-    dialog.findComponent(ElSelect).vm.$emit('update:modelValue', 'Claim')
+    await typeInto('#blocked-requester', CLAIMANT)
     await typeInto('#blocked-reference', 'Ref')
     await typeInto('#blocked-password', 'wrong')
     await click(findButton(t('pages.admin.blockedData.open.sendCode')))
@@ -268,12 +266,12 @@ describe('BlockedDataPage', () => {
     const { wrapper } = await renderPage()
 
     await click(findButton(t('pages.admin.blockedData.open.action')))
-    await fillDialog(wrapper, 'Court', 'Diligencias 123/2026', '123456')
+    await fillDialog(COURT, 'Diligencias 123/2026', '123456')
     await vi.waitFor(() => expect(bodies.open).toHaveLength(1))
 
     expect(bodies.open).toEqual([
       {
-        authority: 'Court',
+        requester: COURT,
         reference: 'Diligencias 123/2026',
         currentPassword: 'secret',
         code: '123456',
@@ -301,7 +299,7 @@ describe('BlockedDataPage', () => {
     const file = JSON.parse(await files.blobs[0]!.text())
     expect(file).toMatchObject({
       referencia: 'Diligencias 123/2026',
-      destinatario: t('pages.admin.blockedData.authorities.Court'),
+      destinatario: COURT,
       entradas: [{ tipo: t('pages.admin.blockedData.entities.User'), legible: true }],
     })
   })
@@ -315,7 +313,7 @@ describe('BlockedDataPage', () => {
     const dialog = wrapper.findComponent(OpenConsultationDialog)
 
     await click(findButton(t('pages.admin.blockedData.open.action')))
-    await fillDialog(wrapper, 'Court', 'Ref', '000000', t('pages.admin.blockedData.open.sendCode'))
+    await fillDialog(COURT, 'Ref', '000000', t('pages.admin.blockedData.open.sendCode'))
     await vi.waitFor(() => expect(dialog.props('error')).toBe(t('errors.TwoFactorCodeInvalid')))
 
     await click(findButton(t('pages.admin.blockedData.open.resend')))
@@ -331,7 +329,7 @@ describe('BlockedDataPage', () => {
     saved()
     const { wrapper } = await renderPage()
     await click(findButton(t('pages.admin.blockedData.open.action')))
-    await fillDialog(wrapper, 'Court', 'Ref', '123456')
+    await fillDialog(COURT, 'Ref', '123456')
     await vi.waitFor(() => expect(document.querySelector('#blocked-query')).not.toBeNull())
     await typeInto('#blocked-query', 'marta@example.test')
     await click(findButton(t('pages.admin.blockedData.consultation.searchAction')))
@@ -359,7 +357,7 @@ describe('BlockedDataPage', () => {
     const { wrapper } = await renderPage()
 
     await click(findButton(t('pages.admin.blockedData.open.action')))
-    await fillDialog(wrapper, 'Claim', 'Ref', '000000')
+    await fillDialog(CLAIMANT, 'Ref', '000000')
     await vi.waitFor(() =>
       expect(wrapper.findComponent(OpenConsultationDialog).props('error')).not.toBe(''),
     )
@@ -384,7 +382,7 @@ describe('BlockedDataPage', () => {
 
     const holds = wrapper.find('[data-testid="blocked-data-holds"]')
     expect(holds.text()).toContain('Reclamación 7/2026')
-    expect(holds.text()).toContain(t('pages.admin.blockedData.authorities.Claim'))
+    expect(holds.text()).toContain(CLAIMANT)
     expect(holds.text()).toContain(t('pages.admin.blockedData.holds.active'))
     expect(holds.text()).toContain('Dana Delegada')
     expect(holds.text()).toContain(
@@ -428,7 +426,7 @@ describe('BlockedDataPage', () => {
     expect(liftButton().disabled).toBe(true)
 
     await click(findButton(t('pages.admin.blockedData.open.action')))
-    await fillDialog(wrapper, 'Court', 'Sentencia firme 1/2027', '123456')
+    await fillDialog(COURT, 'Sentencia firme 1/2027', '123456')
     await vi.waitFor(() => expect(liftButton().disabled).toBe(false))
     expect(wrapper.text()).not.toContain(t('pages.admin.blockedData.holds.liftHint'))
 
@@ -448,7 +446,7 @@ describe('BlockedDataPage', () => {
     const { wrapper } = await renderPage()
 
     await click(findButton(t('pages.admin.blockedData.open.action')))
-    await fillDialog(wrapper, 'Court', 'Ref', '123456')
+    await fillDialog(COURT, 'Ref', '123456')
     await vi.waitFor(() =>
       expect(wrapper.text()).toContain(t('pages.admin.blockedData.consultation.title')),
     )
@@ -471,7 +469,7 @@ describe('BlockedDataPage', () => {
     )
     const { wrapper } = await renderPage()
     await click(findButton(t('pages.admin.blockedData.open.action')))
-    await fillDialog(wrapper, 'Court', 'Ref', '123456')
+    await fillDialog(COURT, 'Ref', '123456')
     await vi.waitFor(() => expect(document.querySelector('#blocked-query')).not.toBeNull())
 
     await typeInto('#blocked-query', 'marta')

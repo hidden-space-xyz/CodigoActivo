@@ -5,13 +5,18 @@ namespace CodigoActivo.Domain.BlockedData;
 
 /// <summary>
 /// One consultation of the blocked data (article 32 LOPDGDD) by the person designated for data
-/// protection, opened for a request of the authority it names: it lasts
+/// protection, opened for the request of whoever asks for the data: it lasts
 /// <see cref="Validity"/> and records the accounts its searches found and every extract taken.
 /// It is kept as long as the data history, so each access can be proven, and waits in
 /// <see cref="NoticePending"/> until the association's legal contact is told it was opened.
 /// </summary>
 public class BlockedDataConsultation : AggregateRoot<BlockedDataConsultationId>
 {
+    /// <summary>
+    /// Longest text accepted as who asks for the data.
+    /// </summary>
+    public const int RequesterMaxLength = 200;
+
     /// <summary>
     /// Longest text accepted as the reference of the request.
     /// </summary>
@@ -39,9 +44,9 @@ public class BlockedDataConsultation : AggregateRoot<BlockedDataConsultationId>
     public UserId OfficerId { get; private set; }
 
     /// <summary>
-    /// Gets who the data is made available to.
+    /// Gets who asks for the data, as the person designated for data protection wrote it.
     /// </summary>
-    public BlockedDataAuthority Authority { get; private set; }
+    public string Requester { get; private set; } = string.Empty;
 
     /// <summary>
     /// Gets the reference of the request, such as the number of the proceedings.
@@ -79,22 +84,23 @@ public class BlockedDataConsultation : AggregateRoot<BlockedDataConsultationId>
     /// association's legal contact pending.
     /// </summary>
     /// <param name="officerId">Identifier of the designated account that opens it.</param>
-    /// <param name="authority">Who the data is made available to.</param>
+    /// <param name="requester">Who asks for the data; surrounding spaces are removed.</param>
     /// <param name="reference">Reference of the request; surrounding spaces are removed.</param>
     /// <param name="now">Current time.</param>
     /// <returns>
-    /// The consultation, or <see cref="DomainErrorCode.BlockedDataReferenceRequired"/> when the
-    /// reference is blank or the authority is not one of the defined values.
+    /// The consultation, or <see cref="DomainErrorCode.BlockedDataReferenceRequired"/> when who
+    /// asks for the data or the reference is blank.
     /// </returns>
     public static Result<BlockedDataConsultation> Open(
         UserId officerId,
-        BlockedDataAuthority authority,
+        string? requester,
         string? reference,
         DateTimeOffset now
     )
     {
-        var trimmed = reference?.Trim();
-        if (string.IsNullOrEmpty(trimmed) || !Enum.IsDefined(authority))
+        var trimmedRequester = requester?.Trim();
+        var trimmedReference = reference?.Trim();
+        if (string.IsNullOrEmpty(trimmedRequester) || string.IsNullOrEmpty(trimmedReference))
         {
             return Error.Validation(DomainErrorCode.BlockedDataReferenceRequired);
         }
@@ -102,8 +108,8 @@ public class BlockedDataConsultation : AggregateRoot<BlockedDataConsultationId>
         return new BlockedDataConsultation
         {
             OfficerId = officerId,
-            Authority = authority,
-            Reference = trimmed,
+            Requester = trimmedRequester,
+            Reference = trimmedReference,
             OpenedAt = now,
             ExpiresAt = now + Validity,
             NoticePending = true,

@@ -23,7 +23,7 @@ describe('blocked data mapper', () => {
       toConsultation({
         id: 'c1',
         officerId: 'o1',
-        authority: 'Court',
+        requester: 'Juzgado de León',
         reference: 'Ref',
         openedAt: '2026-10-25T09:00:00Z',
         expiresAt: '2026-10-25T09:15:00Z',
@@ -33,7 +33,7 @@ describe('blocked data mapper', () => {
     ).toEqual({
       id: 'c1',
       officerName: null,
-      authority: 'Court',
+      requester: 'Juzgado de León',
       reference: 'Ref',
       openedAt: '2026-10-25T09:00:00Z',
       expiresAt: '2026-10-25T09:15:00Z',
@@ -46,14 +46,14 @@ describe('blocked data mapper', () => {
     expect(
       toHold({
         id: 'h1',
-        authority: 'Claim',
+        requester: 'Persona reclamante',
         reference: 'Reclamación 7/2026',
         accounts: 2,
         placedAt: '2026-10-25T09:05:00Z',
       }),
     ).toEqual({
       id: 'h1',
-      authority: 'Claim',
+      requester: 'Persona reclamante',
       reference: 'Reclamación 7/2026',
       accounts: 2,
       placedAt: '2026-10-25T09:05:00Z',
@@ -67,7 +67,7 @@ describe('blocked data mapper', () => {
     expect(
       toHold({
         id: 'h1',
-        authority: 'Court',
+        requester: 'Juzgado de León',
         reference: 'Ref',
         accounts: 1,
         placedAt: '2026-10-25T09:05:00Z',
@@ -109,7 +109,7 @@ describe('blocked data mapper', () => {
     const file = toExtractFile(
       {
         generatedAt: '2026-10-25T09:05:00Z',
-        authority: 'DataProtectionAuthority',
+        requester: 'Agencia Española de Protección de Datos',
         reference: 'E/1/2026',
         accountId: 'a1',
         from: '2026-01-01',
@@ -140,7 +140,7 @@ describe('blocked data mapper', () => {
 
     expect(file).toEqual({
       generadoEl: '2026-10-25T09:05:00Z',
-      destinatario: t('pages.admin.blockedData.authorities.DataProtectionAuthority'),
+      destinatario: 'Agencia Española de Protección de Datos',
       referencia: 'E/1/2026',
       cuenta: 'a1',
       desde: '2026-01-01',

@@ -1592,21 +1592,20 @@
           "EventRatingScoreOutOfRange": "La puntuación está fuera de rango.",
           "EventRatingAnswerTooLong": "Una respuesta de la valoración es demasiado larga.",
           "EventTermsSignatureInvalid": "La firma no es válida.",
-          "BlockedDataReferenceRequired": "Falta la autoridad o la referencia de la consulta.",
+          "BlockedDataReferenceRequired": "Falta quién pide los datos o la referencia de la consulta.",
           "BlockedDataEntityUnknown": "Se pidió un tipo de dato que no tiene historial."
         }
       },
       "blockedData": {
         "header": {
           "title": "Archivo legal",
-          "subtitle": "Historial cifrado de lo que se modificó o eliminó. Solo se entrega a juzgados, al Ministerio Fiscal o a la autoridad de protección de datos (art. 32 LOPDGDD)."
+          "subtitle": "Historial cifrado de lo que se modificó o eliminó (art. 32 LOPDGDD)."
         },
         "open": {
           "action": "Abrir consulta",
           "title": "Abrir una consulta de datos bloqueados",
           "intro": "Indica quién pide los datos y la referencia de la petición. La consulta dura 15 minutos, queda registrada y se avisa al contacto legal de la asociación. Después te pediremos tu código de verificación en dos pasos.",
-          "authority": "Quién pide los datos",
-          "authorityPlaceholder": "Elige una autoridad",
+          "requester": "Quién pide los datos",
           "reference": "Referencia de la petición",
           "password": "Tu contraseña",
           "sendCode": "Enviar código",
@@ -1619,7 +1618,7 @@
           "confirm": "Confirmar y abrir",
           "form": {
             "problems": {
-              "authorityRequired": "Elige quién pide los datos.",
+              "requesterRequired": "Escribe quién pide los datos.",
               "referenceRequired": "Escribe la referencia de la petición.",
               "passwordRequired": "Escribe tu contraseña.",
               "codeInvalid": "Escribe los 6 dígitos del código."
@@ -1628,7 +1627,7 @@
         },
         "consultation": {
           "title": "Consulta abierta",
-          "meta": "Para {authority} · referencia «{reference}» · abierta hasta {expiresAt}",
+          "meta": "Para «{requester}» · referencia «{reference}» · abierta hasta {expiresAt}",
           "close": "Cerrar consulta",
           "search": "Buscar una cuenta",
           "searchPlaceholder": "Email, DNI/NIE, teléfono, nombre o identificador",
@@ -1684,7 +1683,7 @@
           "openedAt": "Abierta",
           "officer": "Abierta por",
           "erasedOfficer": "Cuenta eliminada",
-          "authority": "Para",
+          "requester": "Para",
           "reference": "Referencia",
           "foundAccounts": "Cuentas",
           "extracts": "Extractos"
@@ -1692,13 +1691,6 @@
         "empty": {
           "none": "Nadie ha consultado aún los datos bloqueados.",
           "error": "No se pudieron cargar las consultas."
-        },
-        "authorities": {
-          "Court": "Un juzgado o tribunal",
-          "Prosecutor": "El Ministerio Fiscal",
-          "DataProtectionAuthority": "La autoridad de protección de datos",
-          "PublicAdministration": "Otra administración pública competente",
-          "Claim": "Una reclamación contra la asociación"
         },
         "entities": {
           "Activity": "Actividades",
