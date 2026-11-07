@@ -513,7 +513,7 @@ public sealed class DemoDataHistorySeeder(
         {
             UtcNow = at;
             Id = actor;
-            using (commands.Enter(CommandAudit.NameOf(command)))
+            using (commands.Enter(MessageAudit.NameOf(command)))
             {
                 await Context.SaveChangesAsync(ct);
             }

@@ -46,7 +46,7 @@ internal sealed class DemoLogHistory : IDisposable
     /// </summary>
     internal static readonly TimeSpan Span = TimeSpan.FromDays(21);
 
-    private const string ConcurrentUpdate = "ConcurrentUpdate";
+    private const string AccessDenied = "AccessDenied";
 
     private static readonly TimeSpan SessionLength = TimeSpan.FromHours(2);
     private static readonly IPAddress AdministratorAddress = IPAddress.Parse("203.0.113.10");
@@ -115,14 +115,15 @@ internal sealed class DemoLogHistory : IDisposable
         history.AddAdministratorMornings();
         history.AddPasswordAttack(adults[3 % adults.Count], maxFailedLogins);
         history.AddSecondFactorLockout(adults[4 % adults.Count], maxFailedCodes);
-        history.AddClosedSignup(adults[5 % adults.Count]);
+        history.AddRefusedAccess(adults[5 % adults.Count]);
         history.AddProfileUpdate(adults[1 % adults.Count]);
+        history.AddPersonalDataCopy(adults[1 % adults.Count]);
         history.AddEventManagement();
         history.AddUserTypeChange(adults);
         history.AddEmailTrouble();
         history.AddSlowDashboards();
         history.AddDomainListFailures();
-        history.AddSessionCleanups();
+        history.AddAccountPurges();
         return history.ToBatch();
     }
 
@@ -311,6 +312,13 @@ internal sealed class DemoLogHistory : IDisposable
             lockingTrace,
             logger => logger.PasswordLockoutTriggered(maxFailedLogins)
         );
+        Record(
+            lockedAt.AddMilliseconds(-40),
+            attacker,
+            AuditAction.PasswordLocked,
+            account,
+            sharedTrace: lockingTrace
+        );
 
         var morning = Local(Today.AddDays(-11), 8, 41);
         var owner = Caller.Visitor(AddressOf(victim.Id));
@@ -333,23 +341,22 @@ internal sealed class DemoLogHistory : IDisposable
         Record(at, SignedIn(adult.Id, at), AuditAction.UpdateUser, UserEntity(adult.Id));
     }
 
-    private void AddClosedSignup(DemoLogUser adult)
+    private void AddPersonalDataCopy(DemoLogUser adult)
     {
-        var closed = facts.Signups.OrderBy(s => s.CreatedAt).FirstOrDefault();
-        if (closed is null)
-        {
-            return;
-        }
+        var at = Local(Today.AddDays(-1), 19, 26);
+        Record(at, SignedIn(adult.Id, at), AuditAction.GetPersonalData, null);
+    }
 
+    private void AddRefusedAccess(DemoLogUser adult)
+    {
         var at = Local(Today.AddDays(-3), 21, 47);
         Record(
             at,
             SignedIn(adult.Id, at),
-            AuditAction.AssignActivity,
-            ActivityEntity(closed.ActivityId),
+            AuditAction.AccessDenied,
+            null,
             AuditOutcome.Rejected,
-            nameof(DomainErrorCode.ActivitySignupClosed),
-            [UserEntity(adult.Id)]
+            AccessDenied
         );
     }
 
@@ -366,18 +373,8 @@ internal sealed class DemoLogHistory : IDisposable
         if (target is not null)
         {
             AddAttendeeEmail(target);
-            AddConcurrentEdit(target);
-        }
-
-        if (facts.Events.FirstOrDefault(ev => ev.Featured) is { } featured)
-        {
-            var at = Local(Today.AddDays(-2), 9, 52);
-            Record(
-                at,
-                SignedIn(Administrator, at),
-                AuditAction.SetEventFeatured,
-                EventEntity(featured.Id)
-            );
+            AddEventEdit(target);
+            AddEventSheets(target);
         }
     }
 
@@ -428,27 +425,24 @@ internal sealed class DemoLogHistory : IDisposable
         );
     }
 
-    private void AddConcurrentEdit(DemoLogEvent target)
+    private void AddEventEdit(DemoLogEvent target)
     {
         var at = Local(Today.AddDays(-4), 10, 31);
-        var caller = SignedIn(Administrator, at);
-        AuditEntity[] thumbnail = [new(AuditEntityType.StoredFile, target.ThumbnailId)];
         Record(
             at,
-            caller,
+            SignedIn(Administrator, at),
             AuditAction.UpdateEvent,
             EventEntity(target.Id),
-            AuditOutcome.Rejected,
-            ConcurrentUpdate,
-            thumbnail
+            related: [new(AuditEntityType.StoredFile, target.ThumbnailId)]
         );
-        Record(
-            at.AddSeconds(70),
-            caller,
-            AuditAction.UpdateEvent,
-            EventEntity(target.Id),
-            related: thumbnail
-        );
+    }
+
+    private void AddEventSheets(DemoLogEvent target)
+    {
+        var at = Local(Today.AddDays(-2), 17, 40);
+        var caller = SignedIn(Administrator, at);
+        Record(at, caller, AuditAction.GetEventRoster, EventEntity(target.Id));
+        Record(at.AddMinutes(1), caller, AuditAction.GetEventBadges, EventEntity(target.Id));
     }
 
     private void AddUserTypeChange(List<DemoLogUser> adults)
@@ -487,6 +481,13 @@ internal sealed class DemoLogHistory : IDisposable
             lockedAt.AddMilliseconds(-40),
             lockingTrace,
             logger => logger.TwoFactorLockoutTriggered(maxFailedCodes)
+        );
+        Record(
+            lockedAt.AddMilliseconds(-40),
+            visitor,
+            AuditAction.TwoFactorLocked,
+            account,
+            sharedTrace: lockingTrace
         );
         Record(
             lockedAt.AddMinutes(2),
@@ -600,11 +601,11 @@ internal sealed class DemoLogHistory : IDisposable
         );
     }
 
-    private void AddSessionCleanups()
+    private void AddAccountPurges()
     {
-        foreach (var day in Days())
+        foreach (var day in Days().Where(day => day.DayNumber % 6 is 0))
         {
-            Record(Local(day, 3, 30), Caller.Scheduled, AuditAction.RemoveExpiredSessions, null);
+            Record(Local(day, 3, 30), Caller.Scheduled, AuditAction.PurgeUnverifiedAccounts, null);
         }
     }
 
@@ -652,10 +653,13 @@ internal sealed class DemoLogHistory : IDisposable
         AuditEntity? entity,
         AuditOutcome outcome = AuditOutcome.Succeeded,
         string? errorCode = null,
-        IReadOnlyList<AuditEntity>? related = null
+        IReadOnlyList<AuditEntity>? related = null,
+        ActivityTraceId? sharedTrace = null
     )
     {
-        var trace = caller.Type is AuditActorType.System ? default : ActivityTraceId.CreateRandom();
+        var trace =
+            sharedTrace
+            ?? (caller.Type is AuditActorType.System ? default : ActivityTraceId.CreateRandom());
         if (InSpan(at))
         {
             var record = new AuditRecord(
@@ -892,13 +896,11 @@ internal sealed record DemoLogSignup(
 /// </summary>
 /// <param name="Id">Event.</param>
 /// <param name="ThumbnailId">Cover image.</param>
-/// <param name="Featured">Whether it is the featured event.</param>
 /// <param name="CreatedBy">Author.</param>
 /// <param name="CreatedAt">When it was created.</param>
 internal sealed record DemoLogEvent(
     Guid Id,
     Guid ThumbnailId,
-    bool Featured,
     Guid CreatedBy,
     DateTimeOffset CreatedAt
 );

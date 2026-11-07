@@ -2,9 +2,11 @@ using System.Net;
 using AwesomeAssertions;
 using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.API.Contracts;
+using CodigoActivo.API.Errors;
 using CodigoActivo.API.Participation.Contracts;
 using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Abstractions.Auditing;
+using CodigoActivo.Application.Accounts.Passwords;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.DataHistory;
 using CodigoActivo.Infrastructure.Users;
@@ -85,6 +87,92 @@ public sealed class AuditTrailTests(CodigoActivoWebAppFactory factory)
         record.Entity.Should().Be(Member);
         record.Outcome.Should().Be(AuditOutcome.Succeeded);
         record.ToString().Should().NotContain(TestSeedData.Password);
+    }
+
+    [Fact]
+    public async Task PasswordResetRequestIsRecordedOnlyForAnAddressWithAnAccount()
+    {
+        using var client = ClientBehindTheProxy();
+
+        using var unknown = await client.PostJsonAsync(
+            "/api/auth/forgot-password",
+            new ForgotPasswordRequest("nadie@example.com"),
+            Ct
+        );
+        using var known = await client.PostJsonAsync(
+            "/api/auth/forgot-password",
+            new ForgotPasswordRequest(TestSeedData.MemberEmail),
+            Ct
+        );
+
+        unknown.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        known.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Factory
+            .Audit.Records.Should()
+            .ContainSingle(record => record.Action == AuditAction.ForgotPassword)
+            .Which.Entity.Should()
+            .Be(Member);
+    }
+
+    [Fact]
+    public async Task WrongPasswordsRecordTheLockOfTheAccountWithTheCallerAddress()
+    {
+        var attempts = Factory.Services.GetRequiredService<PasswordLockoutOptions>();
+        using var client = ClientBehindTheProxy();
+
+        for (var attempt = 0; attempt < attempts.MaxFailedAttempts; attempt++)
+        {
+            using var refused = await client.PostJsonAsync(
+                "/api/auth/login",
+                new LoginRequest(TestSeedData.MemberEmail, "Wr0ngPass!23", false),
+                Ct
+            );
+            refused.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        }
+
+        var record = Factory
+            .Audit.Records.Should()
+            .ContainSingle(record => record.Action == AuditAction.PasswordLocked)
+            .Subject;
+        record.ActorType.Should().Be(AuditActorType.Anonymous);
+        record.Entity.Should().Be(Member);
+        record.ClientAddress.Should().Be(IPAddress.Parse(ForwardedAddress));
+    }
+
+    [Fact]
+    public async Task AnEndpointTheRoleDoesNotAllowRecordsTheAccountThatTriedIt()
+    {
+        var client = await LoginAsMemberAsync();
+
+        using var response = await client.GetAsync(TestUri.Rel("/api/reports/dashboard"), Ct);
+
+        await response.ShouldBeForbiddenAsync(ErrorCode.AccessDenied);
+        var record = Factory
+            .Audit.Records.Should()
+            .ContainSingle(record => record.Action == AuditAction.AccessDenied)
+            .Subject;
+        record.ActorType.Should().Be(AuditActorType.User);
+        record.ActorId.Should().Be(UserId.From(TestSeedData.Users.MemberId));
+        record.Outcome.Should().Be(AuditOutcome.Rejected);
+        record.ErrorCode.Should().Be(nameof(ErrorCode.AccessDenied));
+    }
+
+    [Fact]
+    public async Task ACopyOfThePersonalDataIsRecordedButAnEverydayReadIsNot()
+    {
+        var client = await LoginAsMemberAsync();
+
+        using var everyday = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
+        using var copy = await client.GetAsync(TestUri.Rel("/api/me/personal-data"), Ct);
+
+        everyday.StatusCode.Should().Be(HttpStatusCode.OK);
+        copy.StatusCode.Should().Be(HttpStatusCode.OK);
+        var record = Factory
+            .Audit.Records.Should()
+            .ContainSingle(record => record.Action == AuditAction.GetPersonalData)
+            .Subject;
+        record.ActorId.Should().Be(UserId.From(TestSeedData.Users.MemberId));
+        record.Outcome.Should().Be(AuditOutcome.Succeeded);
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Common.Errors;
@@ -18,7 +19,7 @@ public sealed record GetEventTermsSignatureQuery(
     EventId EventId,
     UserId UserId,
     TermsDocumentId TermsDocumentId
-) : IQuery<Result<byte[]>>;
+) : IQuery<Result<byte[]>>, IAuditedQuery;
 
 /// <summary>
 /// Executes the query to retrieve the signature drawn to accept a terms document of an event.

@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -15,7 +16,8 @@ namespace CodigoActivo.Application.Activities.Commands;
 /// <param name="ActivityId">Identifier of the activity.</param>
 /// <param name="Activity">New details, schedule and capacities of the activity.</param>
 public sealed record UpdateActivityCommand(ActivityId ActivityId, ActivityDraft Activity)
-    : ICommand<Result>;
+    : ICommand<Result>,
+        IRoutineCommand;
 
 /// <summary>
 /// Executes the command to update the activity, keeping its signups. A replaced thumbnail is

@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
@@ -10,7 +11,9 @@ namespace CodigoActivo.Application.News.Commands;
 /// Carries the input required to delete the news item.
 /// </summary>
 /// <param name="NewsItemId">Identifier of the news item.</param>
-public sealed record DeleteNewsItemCommand(NewsItemId NewsItemId) : ICommand<Result>;
+public sealed record DeleteNewsItemCommand(NewsItemId NewsItemId)
+    : ICommand<Result>,
+        IRoutineCommand;
 
 /// <summary>
 /// Executes the command to delete the news item. Its thumbnail and body images are removed after

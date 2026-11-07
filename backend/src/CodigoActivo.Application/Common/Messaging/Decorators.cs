@@ -3,7 +3,6 @@ using System.Reflection;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Common.Diagnostics;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Validation;
@@ -94,34 +93,30 @@ public sealed class UnitOfWorkCommandDecorator<TCommand, TResult>(
 }
 
 /// <summary>
-/// Records every command in the audit log: who ran it and from where, what it acted on and how it
-/// ended. Registered outside validation and the commit, it queues the entry once both are over: a
-/// failed result, a concurrent update or a unique constraint violation is recorded as rejected and
-/// any other exception as failed. The main thing is the one the handler named through
-/// <see cref="IAuditSubject"/>, else the one a successful result created, else the first typed
-/// identifier of the command; every other identifier it names is related. Auditing never changes
-/// the outcome of a command: a failure to record is logged, and the result or exception of the
-/// command goes on as is. Commands marked <see cref="IUnaudited"/> are never recorded, and a
-/// <see cref="IScheduledCommand"/> only when it changed something. Every command, audited or not,
-/// runs inside <see cref="ICommandScope"/>, so the data history names it.
+/// Records the commands worth keeping in the audit log: who ran them and from where, what they acted
+/// on and how they ended. Registered outside validation and the commit, it queues the entry once
+/// both are over: a failed result, a concurrent update or a unique constraint violation is recorded
+/// as rejected and any other exception as failed. The main thing is the one the handler named
+/// through <see cref="IAuditSubject"/>, else the one a successful result created, else the first
+/// typed identifier of the command; every other identifier it names is related. Auditing never
+/// changes the outcome of a command. Commands marked <see cref="IUnaudited"/> are never recorded, a
+/// <see cref="IScheduledCommand"/> only when it changed something, a
+/// <see cref="IPreparatoryCommand"/> only when refused, a <see cref="IAccountLookupCommand"/> only
+/// when it found the account, and a <see cref="IRoutineCommand"/> refused only for lack of
+/// permission. Every command, audited or not, runs inside <see cref="ICommandScope"/>, so the data
+/// history names it.
 /// </summary>
 /// <typeparam name="TCommand">Type of command handled.</typeparam>
 /// <typeparam name="TResult">Result type of the command.</typeparam>
 /// <param name="inner">Decorated handler.</param>
-/// <param name="trail">Audit log the entries are queued to.</param>
+/// <param name="writer">Writer of the audit entries.</param>
 /// <param name="subject">Main thing the handler named, if any.</param>
 /// <param name="commandScope">Name of the running command for the data history.</param>
-/// <param name="currentUser">Signed-in user, if any.</param>
-/// <param name="origin">Origin of the request, if any.</param>
-/// <param name="logger">Logger of entries that could not be recorded.</param>
 public sealed class AuditCommandDecorator<TCommand, TResult>(
     ICommandHandler<TCommand, TResult> inner,
-    IAuditTrail trail,
+    AuditWriter writer,
     IAuditSubject subject,
-    ICommandScope commandScope,
-    ICurrentUser currentUser,
-    IRequestOrigin origin,
-    ILogger<AuditCommandDecorator<TCommand, TResult>> logger
+    ICommandScope commandScope
 ) : ICommandHandler<TCommand, TResult>
     where TCommand : ICommand<TResult>
     where TResult : Result
@@ -129,15 +124,27 @@ public sealed class AuditCommandDecorator<TCommand, TResult>(
     private const string ConcurrentUpdate = "ConcurrentUpdate";
     private const string UniqueConstraintViolation = "UniqueConstraintViolation";
 
-    private static readonly string CommandName = CommandAudit.NameOf(typeof(TCommand));
+    private static readonly string CommandName = MessageAudit.NameOf(typeof(TCommand));
 
     private static readonly AuditAction? Action = typeof(IUnaudited).IsAssignableFrom(
         typeof(TCommand)
     )
         ? null
-        : CommandAudit.ActionOf(typeof(TCommand));
+        : MessageAudit.ActionOf(typeof(TCommand));
 
     private static readonly bool Scheduled = typeof(IScheduledCommand).IsAssignableFrom(
+        typeof(TCommand)
+    );
+
+    private static readonly bool Preparatory = typeof(IPreparatoryCommand).IsAssignableFrom(
+        typeof(TCommand)
+    );
+
+    private static readonly bool AccountLookup = typeof(IAccountLookupCommand).IsAssignableFrom(
+        typeof(TCommand)
+    );
+
+    private static readonly bool Routine = typeof(IRoutineCommand).IsAssignableFrom(
         typeof(TCommand)
     );
 
@@ -190,6 +197,18 @@ public sealed class AuditCommandDecorator<TCommand, TResult>(
         }
     }
 
+    private bool IsWorthRecording(AuditOutcome outcome, ErrorKind? refusal, object? value)
+    {
+        return outcome switch
+        {
+            AuditOutcome.Succeeded => !Preparatory
+                && !(Scheduled && value is 0)
+                && !(AccountLookup && subject.Entity is null),
+            AuditOutcome.Rejected => !Routine || refusal is ErrorKind.Forbidden,
+            _ => true,
+        };
+    }
+
     private void Record(
         AuditAction action,
         TCommand command,
@@ -198,39 +217,55 @@ public sealed class AuditCommandDecorator<TCommand, TResult>(
         string? errorCode
     )
     {
-        try
+        var value = result is { IsSuccess: true } ? ResultValue?.GetValue(result) : null;
+        if (IsWorthRecording(outcome, result?.Error?.Kind, value))
         {
-            var value = result is { IsSuccess: true } ? ResultValue?.GetValue(result) : null;
-            if (Scheduled && value is 0)
-            {
-                return;
-            }
-
-            var named = CommandAudit.EntitiesOf(command);
-            var entity =
-                subject.Entity
-                ?? CommandAudit.EntityOfResult(value)
-                ?? (named.Count > 0 ? named[0] : null);
-            var actor = currentUser.Id;
-            trail.Record(
-                new AuditRecord(
-                    action,
-                    actor is not null ? AuditActorType.User
-                        : Scheduled ? AuditActorType.System
-                        : AuditActorType.Anonymous,
-                    actor,
-                    origin.ClientAddress,
-                    entity,
-                    [.. named.Where(related => related != entity)],
-                    outcome,
-                    errorCode
-                )
+            writer.Write(
+                new AuditDraft(action, outcome)
+                {
+                    Message = command,
+                    Subject = subject.Entity,
+                    ResultValue = value,
+                    ErrorCode = errorCode,
+                    Scheduled = Scheduled,
+                }
             );
         }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
+    }
+}
+
+/// <summary>
+/// Records the reads marked <see cref="IAuditedQuery"/> that handed their data over; every other
+/// query goes through untouched. Registered outside the cache, so a cached answer is recorded too.
+/// </summary>
+/// <typeparam name="TQuery">Type of query handled.</typeparam>
+/// <typeparam name="TResult">Result type of the query.</typeparam>
+/// <param name="inner">Decorated handler.</param>
+/// <param name="writer">Writer of the audit entries.</param>
+public sealed class AuditQueryDecorator<TQuery, TResult>(
+    IQueryHandler<TQuery, TResult> inner,
+    AuditWriter writer
+) : IQueryHandler<TQuery, TResult>
+    where TQuery : IQuery<TResult>
+{
+    private static readonly AuditAction? Action = typeof(IAuditedQuery).IsAssignableFrom(
+        typeof(TQuery)
+    )
+        ? MessageAudit.ActionOf(typeof(TQuery))
+        : null;
+
+    /// <inheritdoc />
+    public async Task<TResult> HandleAsync(TQuery query, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        var result = await inner.HandleAsync(query, ct);
+        if (Action is { } action && result is Result { IsSuccess: true })
         {
-            logger.AuditEntryLost(typeof(TCommand).Name, ex);
+            writer.Write(new AuditDraft(action, AuditOutcome.Succeeded) { Message = query });
         }
+
+        return result;
     }
 }
 

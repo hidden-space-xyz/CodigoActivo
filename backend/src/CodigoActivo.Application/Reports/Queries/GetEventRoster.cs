@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Activities;
@@ -13,7 +14,9 @@ namespace CodigoActivo.Application.Reports.Queries;
 /// Carries the criteria used to retrieve the roster of an event.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
-public sealed record GetEventRosterQuery(EventId EventId) : IQuery<Result<EventRosterResponse>>;
+public sealed record GetEventRosterQuery(EventId EventId)
+    : IQuery<Result<EventRosterResponse>>,
+        IAuditedQuery;
 
 /// <summary>
 /// Executes the query to retrieve the roster of an event: its activities with confirmed signups,

@@ -11,7 +11,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// Carries the request to drop the email changes and authenticator enrollments that can no longer
 /// be confirmed.
 /// </summary>
-public sealed record DiscardExpiredAccountChangesCommand : ICommand<Result<int>>, IScheduledCommand;
+public sealed record DiscardExpiredAccountChangesCommand : ICommand<Result<int>>, IUnaudited;
 
 /// <summary>
 /// Executes the command that drops, through <see cref="User.DiscardExpiredChanges"/>, the address

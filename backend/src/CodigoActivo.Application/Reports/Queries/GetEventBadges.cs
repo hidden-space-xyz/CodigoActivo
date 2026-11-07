@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Activities;
@@ -13,7 +14,9 @@ namespace CodigoActivo.Application.Reports.Queries;
 /// Carries the criteria used to retrieve the badges of an event.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
-public sealed record GetEventBadgesQuery(EventId EventId) : IQuery<Result<EventBadgesResponse>>;
+public sealed record GetEventBadgesQuery(EventId EventId)
+    : IQuery<Result<EventBadgesResponse>>,
+        IAuditedQuery;
 
 /// <summary>
 /// Executes the query to retrieve one badge per person with a confirmed signup to the event,

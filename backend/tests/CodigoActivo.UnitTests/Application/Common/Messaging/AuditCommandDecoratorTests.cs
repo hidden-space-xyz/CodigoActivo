@@ -46,19 +46,21 @@ public sealed class AuditCommandDecoratorTests
     private Task<TResult> HandleAsync<TCommand, TResult>(
         TCommand command,
         Func<IAuditSubject, TResult> answer,
-        RecordingLogger<AuditCommandDecorator<TCommand, TResult>>? logger = null
+        RecordingLogger<AuditWriter>? logger = null
     )
         where TCommand : ICommand<TResult>
         where TResult : Result
     {
         var sut = new AuditCommandDecorator<TCommand, TResult>(
             new AnsweringHandler<TCommand, TResult>(() => answer(subject)),
-            trail,
+            new AuditWriter(
+                trail,
+                currentUser,
+                origin,
+                logger ?? new RecordingLogger<AuditWriter>()
+            ),
             subject,
-            commandScope,
-            currentUser,
-            origin,
-            logger ?? new RecordingLogger<AuditCommandDecorator<TCommand, TResult>>()
+            commandScope
         );
         return sut.HandleAsync(command, TestContext.Current.CancellationToken);
     }
@@ -149,9 +151,12 @@ public sealed class AuditCommandDecoratorTests
     {
         var account = UserId.New();
 
-        await HandleAsync<ResendTwoFactorCodeCommand, Result>(
-            new ResendTwoFactorCodeCommand(new LoginChallengeKey(account, LoginChallengeId.New())),
-            _ => Result.Success()
+        await HandleAsync<CompleteLoginCommand, Result<UserSessionId>>(
+            new CompleteLoginCommand(
+                new LoginChallengeKey(account, LoginChallengeId.New()),
+                "123456"
+            ),
+            _ => UserSessionId.New()
         );
 
         var record = trail.Records.Should().ContainSingle().Subject;
@@ -288,7 +293,7 @@ public sealed class AuditCommandDecoratorTests
     {
         trail.Failure = new InvalidOperationException("queue gone");
         var answer = Result.Success();
-        var logger = new RecordingLogger<AuditCommandDecorator<DeleteUserCommand, Result>>();
+        var logger = new RecordingLogger<AuditWriter>();
 
         var result = await HandleAsync(new DeleteUserCommand(UserId.New()), _ => answer, logger);
 
@@ -297,7 +302,7 @@ public sealed class AuditCommandDecoratorTests
             .Entries.Should()
             .ContainSingle()
             .Which.Should()
-            .StartWith("The audit entry of a DeleteUserCommand could not be recorded");
+            .StartWith("The audit entry of a DeleteUser could not be recorded");
     }
 
     [Fact]
@@ -372,6 +377,104 @@ public sealed class AuditCommandDecoratorTests
         var record = trail.Records.Should().ContainSingle().Subject;
         record.ActorType.Should().Be(AuditActorType.System);
         record.Entity.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task HandleAsyncRoutineCommandIsRecordedWhenItSucceeds()
+    {
+        await HandleAsync<DeleteActivityCommand, Result>(
+            new DeleteActivityCommand(ActivityId.New()),
+            _ => Result.Success()
+        );
+
+        trail.Records.Should().ContainSingle().Which.Outcome.Should().Be(AuditOutcome.Succeeded);
+    }
+
+    [Fact]
+    public async Task HandleAsyncRoutineCommandRefusedInEverydayUseIsNotRecorded()
+    {
+        await HandleAsync<DeleteActivityCommand, Result>(
+            new DeleteActivityCommand(ActivityId.New()),
+            _ => Error.NotFound(ApplicationErrorCode.ActivityNotFound)
+        );
+        var act = () =>
+            FailAsync<DeleteActivityCommand, Result>(
+                new DeleteActivityCommand(ActivityId.New()),
+                new ConcurrentUpdateException()
+            );
+        await act.Should().ThrowAsync<ConcurrentUpdateException>();
+
+        trail.Records.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsyncRoutineCommandRefusedForLackOfPermissionIsRecorded()
+    {
+        await HandleAsync<DeleteActivityCommand, Result>(
+            new DeleteActivityCommand(ActivityId.New()),
+            _ => Error.Forbidden(ApplicationErrorCode.ActingForAnotherUserForbidden)
+        );
+
+        var record = trail.Records.Should().ContainSingle().Subject;
+        record.Outcome.Should().Be(AuditOutcome.Rejected);
+        record.ErrorCode.Should().Be(nameof(ApplicationErrorCode.ActingForAnotherUserForbidden));
+    }
+
+    [Fact]
+    public async Task HandleAsyncRoutineCommandThatFailsIsRecorded()
+    {
+        var act = () =>
+            FailAsync<DeleteActivityCommand, Result>(
+                new DeleteActivityCommand(ActivityId.New()),
+                new InvalidOperationException("boom")
+            );
+
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        trail.Records.Should().ContainSingle().Which.Outcome.Should().Be(AuditOutcome.Failed);
+    }
+
+    [Fact]
+    public async Task HandleAsyncPreparatoryCommandIsRecordedOnlyWhenRefused()
+    {
+        await HandleAsync<RequestAccountDeletionCodeCommand, Result>(
+            new RequestAccountDeletionCodeCommand("right-password"),
+            _ => Result.Success()
+        );
+        await HandleAsync<RequestAccountDeletionCodeCommand, Result>(
+            new RequestAccountDeletionCodeCommand("wrong-password"),
+            _ => Error.Validation(ApplicationErrorCode.UserCurrentPasswordIncorrect)
+        );
+
+        var record = trail.Records.Should().ContainSingle().Subject;
+        record.Outcome.Should().Be(AuditOutcome.Rejected);
+        record.ErrorCode.Should().Be(nameof(ApplicationErrorCode.UserCurrentPasswordIncorrect));
+        record.ToString().Should().NotContain("wrong-password");
+    }
+
+    [Fact]
+    public async Task HandleAsyncAccountLookupIsRecordedOnlyWhenItFoundTheAccount()
+    {
+        currentUser.Id = null;
+        var account = UserId.New();
+
+        await HandleAsync<ForgotPasswordCommand, Result>(
+            new ForgotPasswordCommand("nadie@test.com"),
+            _ => Result.Success()
+        );
+        await HandleAsync<ForgotPasswordCommand, Result>(
+            new ForgotPasswordCommand("ana@test.com"),
+            named =>
+            {
+                named.Name(account);
+                return Result.Success();
+            }
+        );
+
+        trail
+            .Records.Should()
+            .ContainSingle()
+            .Which.Entity.Should()
+            .Be(new AuditEntity(AuditEntityType.User, account.Value));
     }
 
     [Fact]

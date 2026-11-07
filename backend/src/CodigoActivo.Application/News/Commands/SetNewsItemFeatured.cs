@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
@@ -10,7 +11,9 @@ namespace CodigoActivo.Application.News.Commands;
 /// Carries the input required to make a news item the featured one.
 /// </summary>
 /// <param name="NewsItemId">Identifier of the news item to feature.</param>
-public sealed record SetNewsItemFeaturedCommand(NewsItemId NewsItemId) : ICommand<Result>;
+public sealed record SetNewsItemFeaturedCommand(NewsItemId NewsItemId)
+    : ICommand<Result>,
+        IUnaudited;
 
 /// <summary>
 /// Executes the command to make a news item the featured one: every other featured item stops

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
@@ -25,7 +26,7 @@ public sealed record UpdateTermsDocumentCommand(
         string Description,
     bool RequiresSignature,
     TermsDocumentKind Kind
-) : ICommand<Result>;
+) : ICommand<Result>, IRoutineCommand;
 
 /// <summary>
 /// Executes the command to update the terms document. The document is locked and reloaded first, so

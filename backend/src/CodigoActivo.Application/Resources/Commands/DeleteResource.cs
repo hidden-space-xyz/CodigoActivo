@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
@@ -10,7 +11,9 @@ namespace CodigoActivo.Application.Resources.Commands;
 /// Carries the input required to delete the resource.
 /// </summary>
 /// <param name="ResourceId">Identifier of the resource.</param>
-public sealed record DeleteResourceCommand(ResourceId ResourceId) : ICommand<Result>;
+public sealed record DeleteResourceCommand(ResourceId ResourceId)
+    : ICommand<Result>,
+        IRoutineCommand;
 
 /// <summary>
 /// Executes the command to delete the resource. Its thumbnail and body images are removed after the

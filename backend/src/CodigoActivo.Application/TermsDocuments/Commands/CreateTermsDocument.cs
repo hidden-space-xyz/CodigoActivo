@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
@@ -21,7 +22,7 @@ public sealed record CreateTermsDocumentCommand(
         string Description,
     bool RequiresSignature,
     TermsDocumentKind Kind
-) : ICommand<Result<TermsDocumentId>>;
+) : ICommand<Result<TermsDocumentId>>, IRoutineCommand;
 
 /// <summary>
 /// Executes the command to create a terms document.

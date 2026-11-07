@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -28,7 +29,7 @@ public sealed record AssignActivityCommand(
     UserId UserId,
     ActivityRole Role,
     [property: MaxLength(50)] IReadOnlyList<TermsDecision>? TermsDecisions
-) : ICommand<Result>;
+) : ICommand<Result>, IRoutineCommand;
 
 /// <summary>
 /// Executes the command to sign a person up to an activity, pending a decision. The signed-in user

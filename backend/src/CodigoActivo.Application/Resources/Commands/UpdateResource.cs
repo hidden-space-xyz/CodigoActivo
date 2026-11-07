@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -36,7 +37,7 @@ public sealed record UpdateResourceCommand(
     [property: HttpUrl, MaxLength(500)] string? Url,
     ResourceType Type,
     StoredFileId ThumbnailId
-) : ICommand<Result>;
+) : ICommand<Result>, IRoutineCommand;
 
 /// <summary>
 /// Executes the command to update the resource. A thumbnail or body image it no longer references

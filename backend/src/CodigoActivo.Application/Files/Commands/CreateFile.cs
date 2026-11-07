@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -15,7 +16,9 @@ namespace CodigoActivo.Application.Files.Commands;
 /// <param name="Upload">
 /// Image uploaded, or <see langword="null"/> when the request carried none.
 /// </param>
-public sealed record CreateFileCommand(FileUpload? Upload) : ICommand<Result<StoredFileId>>;
+public sealed record CreateFileCommand(FileUpload? Upload)
+    : ICommand<Result<StoredFileId>>,
+        IRoutineCommand;
 
 /// <summary>
 /// Executes the command to create a file: the upload is validated, turned into its variants by

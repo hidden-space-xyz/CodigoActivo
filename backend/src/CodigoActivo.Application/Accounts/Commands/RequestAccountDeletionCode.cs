@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -19,7 +20,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize the change.</param>
 public sealed record RequestAccountDeletionCodeCommand(
     [property: Required, MaxLength(128), NotBlank] string CurrentPassword
-) : ICommand<Result>;
+) : ICommand<Result>, IPreparatoryCommand;
 
 /// <summary>
 /// Executes the command that emails the one-time code confirming an account deletion. The

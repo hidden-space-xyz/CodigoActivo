@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.SecondFactor;
@@ -11,7 +12,9 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// Carries the input required to email a new login code for an open challenge.
 /// </summary>
 /// <param name="Challenge">Challenge the password step opened, named by the challenge cookie.</param>
-public sealed record ResendTwoFactorCodeCommand(LoginChallengeKey Challenge) : ICommand<Result>;
+public sealed record ResendTwoFactorCodeCommand(LoginChallengeKey Challenge)
+    : ICommand<Result>,
+        IUnaudited;
 
 /// <summary>
 /// Executes the command to email a new login code, replacing the previous one, while the challenge

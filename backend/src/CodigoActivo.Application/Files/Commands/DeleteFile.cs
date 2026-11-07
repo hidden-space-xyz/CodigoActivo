@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
@@ -9,7 +10,7 @@ namespace CodigoActivo.Application.Files.Commands;
 /// Carries the input required to delete the file.
 /// </summary>
 /// <param name="FileId">Identifier of the file.</param>
-public sealed record DeleteFileCommand(StoredFileId FileId) : ICommand<Result>;
+public sealed record DeleteFileCommand(StoredFileId FileId) : ICommand<Result>, IRoutineCommand;
 
 /// <summary>
 /// Executes the command to delete the file through <see cref="IOrphanFileCleaner"/>, which locks it

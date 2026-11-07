@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Domain.Activities;
@@ -16,7 +17,7 @@ public sealed record ChangeAssignmentStatusCommand(
     ActivityId ActivityId,
     UserId UserId,
     AssignmentStatus Status
-) : ICommand<Result>;
+) : ICommand<Result>, IRoutineCommand;
 
 /// <summary>
 /// Executes the command to change the status of a person signed up to an activity. When the status

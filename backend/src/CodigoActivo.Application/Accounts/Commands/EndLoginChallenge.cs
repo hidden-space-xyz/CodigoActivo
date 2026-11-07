@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Domain.Common;
@@ -9,7 +10,9 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// Carries the second-factor challenge named by a pending second-factor cookie.
 /// </summary>
 /// <param name="Challenge">Challenge named by the cookie.</param>
-public sealed record EndLoginChallengeCommand(LoginChallengeKey Challenge) : ICommand<Result>;
+public sealed record EndLoginChallengeCommand(LoginChallengeKey Challenge)
+    : ICommand<Result>,
+        IUnaudited;
 
 /// <summary>
 /// Closes the pending second-factor challenge of an account, when it is still the one presented.

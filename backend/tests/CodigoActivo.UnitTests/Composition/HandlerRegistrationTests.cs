@@ -138,7 +138,7 @@ public sealed class HandlerRegistrationTests
     }
 
     [Fact]
-    public void AddCodigoActivoQueriesRunThroughLoggingValidationAndCaching()
+    public void AddCodigoActivoQueriesRunThroughLoggingAuditValidationAndCaching()
     {
         using var provider = BuildServices().BuildServiceProvider();
         using var scope = provider.CreateScope();
@@ -154,6 +154,7 @@ public sealed class HandlerRegistrationTests
             .Should()
             .Equal(
                 typeof(LoggingQueryDecorator<,>),
+                typeof(AuditQueryDecorator<,>),
                 typeof(ValidationQueryDecorator<,>),
                 typeof(CachingQueryDecorator<,>)
             );

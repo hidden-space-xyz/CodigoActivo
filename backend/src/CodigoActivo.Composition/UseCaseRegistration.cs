@@ -54,6 +54,7 @@ public static class UseCaseRegistration
         services.AddScoped<IDomainEventPublisher, DomainEventPublisher>();
         services.AddScoped<MessageValidator>();
         services.AddScoped<IAuditSubject, AuditSubject>();
+        services.AddScoped<AuditWriter>();
         services.AddScoped<ICommandScope, CommandScope>();
 
         services.Decorate(typeof(ICommandHandler<,>), typeof(UnitOfWorkCommandDecorator<,>));
@@ -62,6 +63,7 @@ public static class UseCaseRegistration
         services.Decorate(typeof(ICommandHandler<,>), typeof(LoggingCommandDecorator<,>));
         services.Decorate(typeof(IQueryHandler<,>), typeof(CachingQueryDecorator<,>));
         services.Decorate(typeof(IQueryHandler<,>), typeof(ValidationQueryDecorator<,>));
+        services.Decorate(typeof(IQueryHandler<,>), typeof(AuditQueryDecorator<,>));
         services.Decorate(typeof(IQueryHandler<,>), typeof(LoggingQueryDecorator<,>));
         return services;
     }

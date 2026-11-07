@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -34,7 +35,7 @@ public sealed record CreateResourceCommand(
     [property: HttpUrl, MaxLength(500)] string? Url,
     ResourceType Type,
     StoredFileId ThumbnailId
-) : ICommand<Result<ResourceId>>;
+) : ICommand<Result<ResourceId>>, IRoutineCommand;
 
 /// <summary>
 /// Executes the command to create a resource.

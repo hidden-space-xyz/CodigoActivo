@@ -1,9 +1,10 @@
 namespace CodigoActivo.Application.Abstractions.Auditing;
 
 /// <summary>
-/// Names the command an audit entry records: one member per audited command, named after it
-/// without the <c>Command</c> suffix. Entries store the member name, so members are only ever
-/// added, never renamed or removed.
+/// Names what an audit entry records: one member per audited command or query, named after it
+/// without its <c>Command</c> or <c>Query</c> suffix, and one per security event the application
+/// detects on its own. Entries store the member name, so members are only ever added, never renamed
+/// or removed.
 /// </summary>
 public enum AuditAction
 {
@@ -28,9 +29,6 @@ public enum AuditAction
     /// <summary>Disabled the authenticator app.</summary>
     DisableAuthenticator,
 
-    /// <summary>Abandoned a pending login.</summary>
-    EndLoginChallenge,
-
     /// <summary>Signed out.</summary>
     EndSession,
 
@@ -43,23 +41,11 @@ public enum AuditAction
     /// <summary>Registered an account.</summary>
     Register,
 
-    /// <summary>Removed the expired sessions.</summary>
-    RemoveExpiredSessions,
-
     /// <summary>Erased the accounts nobody verified in time.</summary>
     PurgeUnverifiedAccounts,
 
-    /// <summary>Deleted the uploads no content used in time.</summary>
-    PurgeUnusedFiles,
-
     /// <summary>Asked for the code that confirms deleting the own account.</summary>
     RequestAccountDeletionCode,
-
-    /// <summary>Asked for a new login code.</summary>
-    ResendTwoFactorCode,
-
-    /// <summary>Asked for a new verification link.</summary>
-    ResendVerification,
 
     /// <summary>Reset a password with an emailed code.</summary>
     ResetPassword,
@@ -118,9 +104,6 @@ public enum AuditAction
     /// <summary>Deleted an event.</summary>
     DeleteEvent,
 
-    /// <summary>Featured an event.</summary>
-    SetEventFeatured,
-
     /// <summary>Updated an event.</summary>
     UpdateEvent,
 
@@ -138,9 +121,6 @@ public enum AuditAction
 
     /// <summary>Deleted a news item.</summary>
     DeleteNewsItem,
-
-    /// <summary>Featured a news item.</summary>
-    SetNewsItemFeatured,
 
     /// <summary>Updated a news item.</summary>
     UpdateNewsItem,
@@ -229,6 +209,24 @@ public enum AuditAction
     /// <summary>Told the legal contact about the consultations of the blocked data opened.</summary>
     SendBlockedDataConsultationNotices,
 
-    /// <summary>Dropped the email changes and authenticator enrollments that expired.</summary>
-    DiscardExpiredAccountChanges,
+    /// <summary>Too many wrong passwords locked an account.</summary>
+    PasswordLocked,
+
+    /// <summary>Too many wrong codes locked the second factor of an account.</summary>
+    TwoFactorLocked,
+
+    /// <summary>A signed-in account was refused something its role or ties do not allow.</summary>
+    AccessDenied,
+
+    /// <summary>Took the copy of the own personal data.</summary>
+    GetPersonalData,
+
+    /// <summary>Opened the signature of a terms decision.</summary>
+    GetEventTermsSignature,
+
+    /// <summary>Opened the roster of an event, with the contact details of its attendees.</summary>
+    GetEventRoster,
+
+    /// <summary>Opened the badges of an event.</summary>
+    GetEventBadges,
 }

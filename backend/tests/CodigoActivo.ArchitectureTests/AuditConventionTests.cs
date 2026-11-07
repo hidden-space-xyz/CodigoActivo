@@ -17,7 +17,23 @@ public sealed class AuditConventionTests
         "UserSessionId",
     ];
 
-    private static List<Type> Commands()
+    private static readonly AuditAction[] DetectedEvents =
+    [
+        AuditAction.PasswordLocked,
+        AuditAction.TwoFactorLocked,
+        AuditAction.AccessDenied,
+    ];
+
+    private static readonly string[] CredentialProperties =
+    [
+        "Password",
+        "CurrentPassword",
+        "NewPassword",
+        "Code",
+        "Token",
+    ];
+
+    private static List<Type> Implementing(Type message)
     {
         return
         [
@@ -27,11 +43,20 @@ public sealed class AuditConventionTests
                     type is { IsClass: true, IsAbstract: false }
                     && type.GetInterfaces()
                         .Any(contract =>
-                            contract.IsGenericType
-                            && contract.GetGenericTypeDefinition() == typeof(ICommand<>)
+                            contract.IsGenericType && contract.GetGenericTypeDefinition() == message
                         )
                 ),
         ];
+    }
+
+    private static List<Type> Commands()
+    {
+        return Implementing(typeof(ICommand<>));
+    }
+
+    private static List<Type> Queries()
+    {
+        return Implementing(typeof(IQuery<>));
     }
 
     [Fact]
@@ -39,7 +64,7 @@ public sealed class AuditConventionTests
     {
         var offenders = Commands()
             .Where(command =>
-                (CommandAudit.ActionOf(command) is null)
+                (MessageAudit.ActionOf(command) is null)
                 != typeof(IUnaudited).IsAssignableFrom(command)
             )
             .Select(command => command.Name)
@@ -54,31 +79,122 @@ public sealed class AuditConventionTests
     }
 
     [Fact]
-    public void EveryAuditActionNamesAnExistingCommand()
+    public void EveryAuditActionNamesACommandAnAuditedQueryOrADetectedEvent()
     {
-        var actions = Commands().Select(CommandAudit.ActionOf).OfType<AuditAction>().ToHashSet();
+        var actions = Commands()
+            .Concat(Queries().Where(typeof(IAuditedQuery).IsAssignableFrom))
+            .Select(MessageAudit.ActionOf)
+            .OfType<AuditAction>()
+            .ToHashSet();
 
-        Enum.GetValues<AuditAction>().Should().OnlyContain(action => actions.Contains(action));
+        Enum.GetValues<AuditAction>()
+            .Where(action => !actions.Contains(action))
+            .Should()
+            .BeEquivalentTo(DetectedEvents);
     }
 
     [Fact]
-    public void OnlyTheRatingCommandsAreUnauditedAndOnlyThePurgesAndNoticesAreScheduled()
+    public void OnlyTheReadsThatHandOverPersonalDataAreAudited()
+    {
+        var audited = Queries().Where(typeof(IAuditedQuery).IsAssignableFrom).ToList();
+
+        audited
+            .Select(query => query.Name)
+            .Should()
+            .BeEquivalentTo(
+                "GetPersonalDataQuery",
+                "GetEventTermsSignatureQuery",
+                "GetEventRosterQuery",
+                "GetEventBadgesQuery"
+            );
+        Queries()
+            .Where(query => MessageAudit.ActionOf(query) is not null)
+            .Should()
+            .BeEquivalentTo(audited);
+    }
+
+    [Fact]
+    public void NoCommandThatProvesACredentialIsRoutine()
+    {
+        Commands()
+            .Where(typeof(IRoutineCommand).IsAssignableFrom)
+            .Where(command =>
+                command.GetProperties().Any(p => CredentialProperties.Contains(p.Name))
+            )
+            .Select(command => command.Name)
+            .Should()
+            .BeEmpty("a refused credential is what the audit log is for");
+    }
+
+    [Fact]
+    public void AnAuditedCommandFollowsAtMostOneRecordingRule()
+    {
+        Type[] rules =
+        [
+            typeof(IUnaudited),
+            typeof(IScheduledCommand),
+            typeof(IRoutineCommand),
+            typeof(IPreparatoryCommand),
+            typeof(IAccountLookupCommand),
+        ];
+
+        Commands()
+            .Where(command => rules.Count(rule => rule.IsAssignableFrom(command)) > 1)
+            .Select(command => command.Name)
+            .Should()
+            .BeEmpty();
+    }
+
+    [Fact]
+    public void OnlyThePasswordResetRequestDependsOnFindingItsAccount()
+    {
+        Commands()
+            .Where(typeof(IAccountLookupCommand).IsAssignableFrom)
+            .Select(command => command.Name)
+            .Should()
+            .BeEquivalentTo("ForgotPasswordCommand");
+    }
+
+    [Fact]
+    public void OnlyTheStepsThatPrepareAChangeArePreparatory()
+    {
+        Commands()
+            .Where(typeof(IPreparatoryCommand).IsAssignableFrom)
+            .Select(command => command.Name)
+            .Should()
+            .BeEquivalentTo(
+                "BeginAuthenticatorSetupCommand",
+                "RequestAccountDeletionCodeCommand",
+                "RequestBlockedDataConsultationCodeCommand"
+            );
+    }
+
+    [Fact]
+    public void OnlyTheRatingsAndWhatSaysNothingOfSecurityAreUnauditedAndPurgesAndNoticesScheduled()
     {
         Commands()
             .Where(typeof(IUnaudited).IsAssignableFrom)
             .Select(command => command.Name)
             .Should()
-            .BeEquivalentTo("SaveEventRatingCommand", "DeleteEventRatingCommand");
+            .BeEquivalentTo(
+                "SaveEventRatingCommand",
+                "DeleteEventRatingCommand",
+                "EndLoginChallengeCommand",
+                "ResendTwoFactorCodeCommand",
+                "ResendVerificationCommand",
+                "SetEventFeaturedCommand",
+                "SetNewsItemFeaturedCommand",
+                "RemoveExpiredSessionsCommand",
+                "DiscardExpiredAccountChangesCommand",
+                "PurgeUnusedFilesCommand"
+            );
         Commands()
             .Where(typeof(IScheduledCommand).IsAssignableFrom)
             .Select(command => command.Name)
             .Should()
             .BeEquivalentTo(
-                "RemoveExpiredSessionsCommand",
-                "DiscardExpiredAccountChangesCommand",
                 "PurgeDataHistoryCommand",
                 "PurgeUnverifiedAccountsCommand",
-                "PurgeUnusedFilesCommand",
                 "PurgeAdultDependentsCommand",
                 "SendComingOfAgeNoticesCommand",
                 "SendConsentWithdrawalNoticesCommand",

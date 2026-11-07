@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Activities.Erasure;
@@ -11,7 +12,9 @@ namespace CodigoActivo.Application.Activities.Commands;
 /// Carries the input required to delete the activity.
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
-public sealed record DeleteActivityCommand(ActivityId ActivityId) : ICommand<Result>;
+public sealed record DeleteActivityCommand(ActivityId ActivityId)
+    : ICommand<Result>,
+        IRoutineCommand;
 
 /// <summary>
 /// Executes the command to delete the activity with its signups, keeping their data history. Its

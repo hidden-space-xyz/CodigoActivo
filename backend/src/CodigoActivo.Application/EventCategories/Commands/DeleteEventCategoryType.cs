@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
@@ -12,7 +13,8 @@ namespace CodigoActivo.Application.EventCategories.Commands;
 /// </summary>
 /// <param name="CategoryTypeId">Identifier of the category type.</param>
 public sealed record DeleteEventCategoryTypeCommand(EventCategoryTypeId CategoryTypeId)
-    : ICommand<Result>;
+    : ICommand<Result>,
+        IRoutineCommand;
 
 /// <summary>
 /// Executes the command to delete the event category type. Each event tagged with it loses the

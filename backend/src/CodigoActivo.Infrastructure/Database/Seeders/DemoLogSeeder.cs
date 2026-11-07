@@ -125,13 +125,7 @@ public sealed class DemoLogSeeder(
             .ToListAsync(ct);
         var events = await context
             .Events.Where(ev => accounts.Contains(ev.CreatedBy))
-            .Select(ev => new DemoLogEvent(
-                ev.Id,
-                ev.ThumbnailId,
-                ev.Featured,
-                ev.CreatedBy,
-                ev.CreatedAt
-            ))
+            .Select(ev => new DemoLogEvent(ev.Id, ev.ThumbnailId, ev.CreatedBy, ev.CreatedAt))
             .ToListAsync(ct);
         var activities = await context
             .Activities.Where(activity => accounts.Contains(activity.CreatedBy))

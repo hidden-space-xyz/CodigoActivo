@@ -254,15 +254,17 @@ they and the listeners may read the read store only for lookups that change noth
 `HandlerConventionTests`: email audiences, the names a notification shows, the guardianship `ActingUserPolicy`
 checks, and the accounts a blocked data consultation searches, exports or holds, with their personal data copy.
 
-`AuditCommandDecorator` hands every command to `IAuditTrail` (`Application/Abstractions/Auditing`) as an
-`AuditRecord`: the actor (`ICurrentUser`, or the system for an `IScheduledCommand`), the caller address
-(`IRequestOrigin`, implemented by `HttpRequestOrigin` in the API), the `AuditAction` named after the command,
-the main entity (the one the handler named through `IAuditSubject`, as login does with the account it found by
-email, else the typed ID a `Result<TId>` created, else the first typed ID of the command), the other typed IDs
-as related entities and the outcome. `CommandAudit` reads only the typed IDs, never another value; `IUnaudited`
-keeps a command out and `[Unaudited]` a property. `SerilogAuditTrail` (Infrastructure) queues the record to
-`audit_log_entries`. What an entry holds, which commands and properties stay out and why is in
-[SECURITY.md](SECURITY.md#audit-log).
+`AuditCommandDecorator` hands the commands worth keeping to `AuditWriter`, which builds the `AuditRecord` for
+`IAuditTrail` (`Application/Abstractions/Auditing`): the actor (`ICurrentUser`, or the system for an
+`IScheduledCommand`), the caller address (`IRequestOrigin`, implemented by `HttpRequestOrigin` in the API), the
+`AuditAction` named after the command, the main entity (the one the handler named through `IAuditSubject`, as
+login does with the account it found by email, else the typed ID a `Result<TId>` created, else the first typed
+ID of the command), the other typed IDs as related entities and the outcome. `AuditQueryDecorator` does the same
+for a query marked `IAuditedQuery`, `AccountLockoutLog` for the locks of an account and the access denied event
+of the session cookie for a refused account. `MessageAudit` reads only the typed IDs, never another value;
+`IUnaudited` keeps a command out, `[Unaudited]` a property, and `IScheduledCommand`, `IPreparatoryCommand`,
+`IAccountLookupCommand` and `IRoutineCommand` limit the outcomes recorded. `SerilogAuditTrail` (Infrastructure) queues the record to
+`audit_log_entries`. What an entry holds, what stays out and why is in [SECURITY.md](SECURITY.md#audit-log).
 
 Use cases decide who may run them on whose behalf. `ICurrentUser` (implemented by `HttpCurrentUser` in the API)
 tells who is signed in; commands and queries take the author, the acting user and whether they are an administrator

@@ -45,7 +45,8 @@ pinned in `dotnet-tools.json`; no build or CI step checks it.
   `DataHistoryModelTests` and `DataHistoryConventionTests` enforce it. Personal data a user may see also goes
   into `PersonalDataReader`, the copy they download from «Mi cuenta».
 - `AuditAction` and `AuditEntityType` are stored as text, so their members are only ever added. A handler that
-  finds its main entity itself, such as an account by email, names it through `IAuditSubject`.
+  finds its main entity itself, such as an account by email, names it through `IAuditSubject`. A new command is
+  audited in full unless it takes one rule of `AuditMarkers`; one that proves a credential is never routine.
   `audit_log_entries` keeps user GUIDs without a foreign key on purpose: its entries outlive an erased account
   until their retention ends, so the table keeps no data history and is not handed over.
 - Expected failures return `Result`/`Result<T>` with a `DomainErrorCode` or an `ApplicationErrorCode`. Do not

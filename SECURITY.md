@@ -564,7 +564,8 @@ such as the path of a file under `/app/files`; it is written as is.
 - **Security events**: only two events exist, both `Warning` and free of any user id —
   `PasswordLockoutTriggered` and `TwoFactorLockoutTriggered` (an account or its second factor was locked;
   written once the lock commits). Security-change emails are never dropped by a limiter. Logins, logouts,
-  password changes and staff role changes are not diagnostic events: the audit log records them.
+  password changes and staff role changes are not diagnostic events: the audit log records them, and the same
+  locks with their account.
 - **API log output**: every event the level policy lets through is stored in the `diagnostic_log_entries`
   table of the application database by a batching Serilog sink (`DatabaseLoggerProvider`): the UTC instant,
   the level, the category, the event name, the rendered message (up to 4,000 characters), the exception with
@@ -610,17 +611,36 @@ such as the path of a file under `/app/files`; it is written as is.
 
 ### Audit log
 
-`AuditCommandDecorator` records every command the application runs in `audit_log_entries`, through the same
-batching pipeline and failure guarantees as the diagnostic log: a failure to record never changes the
-command's result. An entry keeps the instant, who ran it (a user with their account id, an anonymous caller or
+The audit log keeps what protects the site or resolves an incident in `audit_log_entries`, through the same
+batching pipeline and failure guarantees as the diagnostic log: a failure to record never changes a result.
+`AuditWriter` writes every entry: the instant, who caused it (a user with their account id, an anonymous caller or
 the system), the caller's IP as the trusted proxy forwarded it (the address the rate limits use, see
-[Transport and proxy trust](#transport-and-proxy-trust)), the command, the main entity and the other entities
+[Transport and proxy trust](#transport-and-proxy-trust)), the action, the main entity and the other entities
 it named by type and GUID, how it ended (succeeded, rejected with the error code, or failed) and the trace id
 that error responses show as their reference. It never stores anything typed by the client: names, emails,
-passwords, one-time codes, signatures, secrets and free text stay out, and so does the requested path. Login,
-password reset and verification requests record the account the email belongs to, so failed logins are
-attributed to their account. Saving or deleting an event rating is never recorded, and the scheduled purges are recorded
-only when they removed something. An extract of the blocked data or a hold on it never names its account (`[Unaudited]`), so only the
+passwords, one-time codes, signatures, secrets and free text stay out, and so does the requested path. Login
+and password reset requests record the account the email belongs to, so failed logins are attributed to their
+account.
+
+- **Recorded**: every command, as `AuditCommandDecorator` sees it, unless a rule below limits it; the reads that
+  hand over personal data on request (`IAuditedQuery`, `AuditQueryDecorator`), once they succeeded: the copy of
+  an account, a signature, the roster and the badges of an event; and what the application detects by itself:
+  an account or a second factor locked by wrong attempts (`PasswordLocked`, `TwoFactorLocked`) and a signed-in
+  account an authorization attribute refused (`AccessDenied`, without the endpoint, since no path is stored).
+- **Never recorded** (`IUnaudited`): saving or deleting an event rating, and what says nothing about security or
+  an incident: abandoning a pending login, resending a login code or a verification link, featuring an event
+  or a news item and the housekeeping of expired sessions, expired account changes and unused uploads.
+- **Recorded in part**: scheduled purges and notices when they changed something (`IScheduledCommand`); a
+  password reset request when its email has an account (`IAccountLookupCommand`); the steps that only prepare
+  a change another command records when refused (`IPreparatoryCommand`: starting an
+  authenticator enrollment, asking for the code that deletes an account or opens a consultation); and the
+  everyday commands on content and signups (`IRoutineCommand`), refused only when the caller lacked permission,
+  since a closed activity or a lost concurrent edit changes nothing. A command that proves a credential is
+  never routine (`AuditConventionTests`).
+- **Not recorded on purpose**: the everyday reads of people (the user and attendee lists, the terms decisions)
+  and of the audit log itself, where every page and filter would add an entry.
+
+An extract of the blocked data or a hold on it never names its account (`[Unaudited]`), so only the
 privacy officer knows whose blocked data was handed over or held: neither the other administrators nor that person read
 it in the audit log or the personal data copy (LOPDGDD article 32). The account ids have no foreign key, so an erased account's entries remain
 until the audit retention ends; they are not part of the data history.

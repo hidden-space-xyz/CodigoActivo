@@ -15,7 +15,7 @@ type OutcomeTagType = 'success' | 'warning' | 'danger'
 /** Tells whether a message exists, like `te` of `useI18n`. */
 export type HasMessage = (key: string) => boolean
 
-/** Every command the audit log names, in the order the API declares them. */
+/** Every action the audit log names, in the order the API declares them. */
 export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'BeginAuthenticatorSetup',
   'ChangePassword',
@@ -24,17 +24,12 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'ConfirmEmailChange',
   'DeleteOwnAccount',
   'DisableAuthenticator',
-  'EndLoginChallenge',
   'EndSession',
   'ForgotPassword',
   'Login',
   'Register',
-  'RemoveExpiredSessions',
   'PurgeUnverifiedAccounts',
-  'PurgeUnusedFiles',
   'RequestAccountDeletionCode',
-  'ResendTwoFactorCode',
-  'ResendVerification',
   'ResetPassword',
   'VerifyUser',
   'AssignActivity',
@@ -54,14 +49,12 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'UpdateEventCategoryType',
   'CreateEvent',
   'DeleteEvent',
-  'SetEventFeatured',
   'UpdateEvent',
   'WithdrawTermsConsent',
   'CreateFile',
   'DeleteFile',
   'CreateNewsItem',
   'DeleteNewsItem',
-  'SetNewsItemFeatured',
   'UpdateNewsItem',
   'CreatePartner',
   'DeletePartner',
@@ -91,7 +84,13 @@ export const AUDIT_ACTIONS: readonly AuditAction[] = [
   'LiftBlockedDataHold',
   'SendConsentWithdrawalNotices',
   'SendBlockedDataConsultationNotices',
-  'DiscardExpiredAccountChanges',
+  'PasswordLocked',
+  'TwoFactorLocked',
+  'AccessDenied',
+  'GetPersonalData',
+  'GetEventTermsSignature',
+  'GetEventRoster',
+  'GetEventBadges',
 ]
 
 /** Every kind of actor, in the order the actor filter lists them. */

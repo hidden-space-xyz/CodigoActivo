@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Accounts.Contracts;
@@ -10,7 +11,7 @@ namespace CodigoActivo.Application.Accounts.Queries;
 /// <summary>
 /// Carries the request for a copy of the signed-in user's personal data.
 /// </summary>
-public sealed record GetPersonalDataQuery : IQuery<Result<PersonalDataResponse>>;
+public sealed record GetPersonalDataQuery : IQuery<Result<PersonalDataResponse>>, IAuditedQuery;
 
 /// <summary>
 /// Executes the query that copies the personal data kept about the signed-in user and the minors

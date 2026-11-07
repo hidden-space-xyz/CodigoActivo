@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -16,7 +17,9 @@ namespace CodigoActivo.Application.Events.Commands;
 /// Carries the input required to create an event.
 /// </summary>
 /// <param name="Event">Content, schedule, categories and terms of the new event.</param>
-public sealed record CreateEventCommand(EventDraft Event) : ICommand<Result<EventId>>;
+public sealed record CreateEventCommand(EventDraft Event)
+    : ICommand<Result<EventId>>,
+        IRoutineCommand;
 
 /// <summary>
 /// Executes the command to create an event.

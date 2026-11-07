@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -14,7 +15,9 @@ namespace CodigoActivo.Application.Users.Commands;
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
 /// <param name="UserType">New membership type.</param>
-public sealed record ChangeUserTypeCommand(UserId UserId, UserType UserType) : ICommand<Result>;
+public sealed record ChangeUserTypeCommand(UserId UserId, UserType UserType)
+    : ICommand<Result>,
+        IRoutineCommand;
 
 /// <summary>
 /// Executes the command to change the membership type of a user. Nobody changes their own type,

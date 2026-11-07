@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
@@ -18,7 +19,7 @@ public sealed record UpdateEventCategoryTypeCommand(
     EventCategoryTypeId CategoryTypeId,
     [property: Required, MaxLength(120), NotBlank] string Name,
     [property: Required, MaxLength(9), RegularExpression("^#[0-9A-Fa-f]{6}$")] string Color
-) : ICommand<Result>;
+) : ICommand<Result>, IRoutineCommand;
 
 /// <summary>
 /// Executes the command to update the event category type.

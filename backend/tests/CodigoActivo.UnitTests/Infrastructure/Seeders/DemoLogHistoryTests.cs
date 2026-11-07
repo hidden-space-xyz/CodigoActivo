@@ -78,7 +78,7 @@ public sealed class DemoLogHistoryTests
                     Now.AddDays(-40)
                 ),
             ],
-            [new(FeaturedEvent, EventCover, true, Adults[0], Now.AddDays(-10))],
+            [new(FeaturedEvent, EventCover, Adults[0], Now.AddDays(-10))],
             [
                 new(
                     Workshop,
@@ -235,6 +235,13 @@ public sealed class DemoLogHistoryTests
         lockout.TraceId.Should().Be(attempts[^1].TraceId);
         lockout.Category.Should().Be("CodigoActivo.Application.Accounts.AccountLockoutLog");
         lockout.Message.Should().Be("An account was locked after 4 wrong passwords");
+        var locked = batch
+            .Audit.Select(AuditLogEvents.ToEntry)
+            .Should()
+            .ContainSingle(entry => entry.Action == "PasswordLocked")
+            .Subject;
+        locked.EntityId.Should().Be(Adults[3]);
+        locked.TraceId.Should().Be(attempts[^1].TraceId);
     }
 
     [Fact]
@@ -302,16 +309,30 @@ public sealed class DemoLogHistoryTests
     }
 
     [Fact]
-    public void BuildScheduledCleanupsRunDailyWithoutTraceOrAddress()
+    public void BuildScheduledPurgesRunWithoutTraceOrAddress()
     {
-        var cleanups = Audit().Where(entry => entry.Action == "RemoveExpiredSessions").ToList();
+        var purges = Audit().Where(entry => entry.Action == "PurgeUnverifiedAccounts").ToList();
 
-        cleanups.Should().HaveCountGreaterThanOrEqualTo(DemoLogHistory.Span.Days);
-        cleanups
+        purges.Should().HaveCountGreaterThanOrEqualTo(DemoLogHistory.Span.Days / 6);
+        purges
             .Should()
             .OnlyContain(entry =>
                 entry.ActorType == "System" && entry.ClientIp == null && entry.TraceId == null
             );
+    }
+
+    [Fact]
+    public void BuildNeverWritesWhatTheAuditLogLeavesOut()
+    {
+        Audit()
+            .Should()
+            .NotContain(entry =>
+                entry.Action == "RequestBlockedDataConsultationCode" && entry.Outcome == "Succeeded"
+            )
+            .And.NotContain(entry =>
+                entry.Action == "AssignActivity" && entry.Outcome == "Rejected"
+            )
+            .And.NotContain(entry => entry.Action == "UpdateEvent" && entry.Outcome == "Rejected");
     }
 
     [Fact]

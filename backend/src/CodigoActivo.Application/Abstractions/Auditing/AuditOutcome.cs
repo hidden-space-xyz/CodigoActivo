@@ -1,7 +1,7 @@
 namespace CodigoActivo.Application.Abstractions.Auditing;
 
 /// <summary>
-/// Tells how an audited command ended.
+/// Tells how an audited event ended.
 /// </summary>
 public enum AuditOutcome
 {

@@ -19,7 +19,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <param name="Email">Email of the account.</param>
 public sealed record ForgotPasswordCommand(
     [property: Required, EmailAddress, MaxLength(256)] string Email
-) : ICommand<Result>;
+) : ICommand<Result>, IAccountLookupCommand;
 
 /// <summary>
 /// Executes the command that emails a password reset link, replacing the previous one, to an

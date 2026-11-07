@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
@@ -14,7 +15,9 @@ namespace CodigoActivo.Application.Users.Commands;
 /// </summary>
 /// <param name="ParentId">Identifier of the guardian.</param>
 /// <param name="Child">Details of the minor.</param>
-public sealed record AddChildCommand(UserId ParentId, MinorDraft Child) : ICommand<Result<UserId>>;
+public sealed record AddChildCommand(UserId ParentId, MinorDraft Child)
+    : ICommand<Result<UserId>>,
+        IRoutineCommand;
 
 /// <summary>
 /// Executes the command to add a minor to a household. Only the guardian may add one to their own

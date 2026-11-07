@@ -1,7 +1,7 @@
 namespace CodigoActivo.Application.Abstractions.Auditing;
 
 /// <summary>
-/// Tells who ran an audited command.
+/// Tells who caused an audit entry.
 /// </summary>
 public enum AuditActorType
 {

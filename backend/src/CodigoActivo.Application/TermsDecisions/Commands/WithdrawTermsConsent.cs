@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
@@ -21,7 +22,7 @@ public sealed record WithdrawTermsConsentCommand(
     EventId EventId,
     UserId UserId,
     TermsDocumentId TermsDocumentId
-) : ICommand<Result>;
+) : ICommand<Result>, IRoutineCommand;
 
 /// <summary>
 /// Executes the command to withdraw a consent. The person withdraws their own, a guardian those of

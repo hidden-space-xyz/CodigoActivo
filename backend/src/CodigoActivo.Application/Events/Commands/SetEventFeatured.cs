@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
@@ -10,7 +11,7 @@ namespace CodigoActivo.Application.Events.Commands;
 /// Carries the input required to make an event the featured one.
 /// </summary>
 /// <param name="EventId">Identifier of the event to feature.</param>
-public sealed record SetEventFeaturedCommand(EventId EventId) : ICommand<Result>;
+public sealed record SetEventFeaturedCommand(EventId EventId) : ICommand<Result>, IUnaudited;
 
 /// <summary>
 /// Executes the command to make an event the featured one: every other featured event stops being

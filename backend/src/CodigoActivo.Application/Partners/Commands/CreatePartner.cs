@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -29,7 +30,7 @@ public sealed record CreatePartnerCommand(
     [property: Range(0, int.MaxValue)] int Tier,
     [property: HttpUrl, MaxLength(500)] string? Website,
     StoredFileId ThumbnailId
-) : ICommand<Result<PartnerId>>;
+) : ICommand<Result<PartnerId>>, IRoutineCommand;
 
 /// <summary>
 /// Executes the command to create a partner.

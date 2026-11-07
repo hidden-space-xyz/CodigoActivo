@@ -19,7 +19,7 @@ public sealed record PublishLegalPolicyCommand(
     LegalPolicyKind Kind,
     [property: Required, RichText(AllowImages = false), MaxLength(RichTextAllowlist.MaxJsonLength)]
         string Content
-) : ICommand<Result>;
+) : ICommand<Result>, IRoutineCommand;
 
 /// <summary>
 /// Executes the command to publish a new version of a legal policy: the first publication creates

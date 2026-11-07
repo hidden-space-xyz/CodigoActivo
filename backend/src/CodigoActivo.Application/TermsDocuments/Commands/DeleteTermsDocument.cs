@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
@@ -12,7 +13,9 @@ namespace CodigoActivo.Application.TermsDocuments.Commands;
 /// Carries the input required to delete the terms document.
 /// </summary>
 /// <param name="TermsDocumentId">Identifier of the terms document.</param>
-public sealed record DeleteTermsDocumentCommand(TermsDocumentId TermsDocumentId) : ICommand<Result>;
+public sealed record DeleteTermsDocumentCommand(TermsDocumentId TermsDocumentId)
+    : ICommand<Result>,
+        IRoutineCommand;
 
 /// <summary>
 /// Executes the command to delete the terms document, which is refused while an event links it or

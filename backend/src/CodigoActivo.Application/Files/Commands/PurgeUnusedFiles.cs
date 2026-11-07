@@ -10,7 +10,7 @@ namespace CodigoActivo.Application.Files.Commands;
 /// <summary>
 /// Carries the request to delete the uploads no content used in time.
 /// </summary>
-public sealed record PurgeUnusedFilesCommand : ICommand<Result<int>>, IScheduledCommand;
+public sealed record PurgeUnusedFilesCommand : ICommand<Result<int>>, IUnaudited;
 
 /// <summary>
 /// Executes the command that deletes the uploads that no content references

@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
@@ -10,7 +11,7 @@ namespace CodigoActivo.Application.Partners.Commands;
 /// Carries the input required to delete the partner.
 /// </summary>
 /// <param name="PartnerId">Identifier of the partner.</param>
-public sealed record DeletePartnerCommand(PartnerId PartnerId) : ICommand<Result>;
+public sealed record DeletePartnerCommand(PartnerId PartnerId) : ICommand<Result>, IRoutineCommand;
 
 /// <summary>
 /// Executes the command to delete the partner. Its logo is removed after the commit when nothing

@@ -19,7 +19,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <param name="Email">Email of the account waiting for its verification.</param>
 public sealed record ResendVerificationCommand(
     [property: Required, EmailAddress, MaxLength(256)] string Email
-) : ICommand<Result>;
+) : ICommand<Result>, IUnaudited;
 
 /// <summary>
 /// Executes the command that emails a new verification link, replacing the previous one.
@@ -31,7 +31,6 @@ public sealed record ResendVerificationCommand(
 /// <param name="verification">Account verification configuration: code lifetime and resend cooldown.</param>
 /// <param name="accountEmails">Sender of the verification link.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
-/// <param name="auditSubject">Names the account the request found for the audit log.</param>
 public sealed class ResendVerificationCommandHandler(
     IUserRepository users,
     AccountLock accountLock,
@@ -39,8 +38,7 @@ public sealed class ResendVerificationCommandHandler(
     IOneTimeCodeHasher codeHasher,
     AccountVerificationOptions verification,
     AccountEmails accountEmails,
-    ILogger<ResendVerificationCommandHandler> logger,
-    IAuditSubject auditSubject
+    ILogger<ResendVerificationCommandHandler> logger
 ) : ICommandHandler<ResendVerificationCommand, Result>
 {
     /// <summary>
@@ -62,11 +60,6 @@ public sealed class ResendVerificationCommandHandler(
     {
         var email = EmailAddress.Create(command.Email);
         var user = email.IsSuccess ? await users.GetByEmailAsync(email.Value, ct) : null;
-        if (user is not null)
-        {
-            auditSubject.Name(user.Id);
-        }
-
         return user is not null && MayResend(user)
             ? await accountLock.RunAsync(
                 user,

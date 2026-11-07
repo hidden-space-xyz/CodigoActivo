@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -25,7 +26,7 @@ public sealed record CreateNewsItemCommand(
     [property: Required, MaxLength(300), NotBlank] string Subtitle,
     [property: RichText, MaxLength(RichTextAllowlist.MaxJsonLength)] string Description,
     StoredFileId ThumbnailId
-) : ICommand<Result<NewsItemId>>;
+) : ICommand<Result<NewsItemId>>, IRoutineCommand;
 
 /// <summary>
 /// Executes the command to create a news item.

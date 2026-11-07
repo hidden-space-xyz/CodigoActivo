@@ -9,7 +9,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the request to remove the sessions that are no longer accepted.
 /// </summary>
-public sealed record RemoveExpiredSessionsCommand : ICommand<Result<int>>, IScheduledCommand;
+public sealed record RemoveExpiredSessionsCommand : ICommand<Result<int>>, IUnaudited;
 
 /// <summary>
 /// Executes the command that removes the sessions past their expiry.

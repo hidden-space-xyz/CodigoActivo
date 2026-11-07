@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -15,7 +16,8 @@ namespace CodigoActivo.Application.Activities.Commands;
 /// <param name="EventId">Identifier of the event the activity belongs to.</param>
 /// <param name="Activity">Details, schedule and capacities of the new activity.</param>
 public sealed record CreateActivityCommand(EventId EventId, ActivityDraft Activity)
-    : ICommand<Result<ActivityId>>;
+    : ICommand<Result<ActivityId>>,
+        IRoutineCommand;
 
 /// <summary>
 /// Executes the command to create an activity.

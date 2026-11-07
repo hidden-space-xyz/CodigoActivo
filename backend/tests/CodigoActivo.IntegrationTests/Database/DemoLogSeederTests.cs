@@ -80,7 +80,7 @@ public sealed class DemoLogSeederTests(CodigoActivoWebAppFactory factory)
         audit
             .Should()
             .Contain(entry => entry.Action == "EndSession" && entry.ActorId == DemoAdults[0]);
-        audit.Should().Contain(entry => entry.Action == "RemoveExpiredSessions");
+        audit.Should().Contain(entry => entry.Action == "PurgeUnverifiedAccounts");
         diagnostics.Should().Contain(entry => entry.EventName == "PasswordLockoutTriggered");
         (await LogTables.AuditEntriesAsync(Factory.Database)).Should().HaveCount(audit.Count);
         (await LogTables.DiagnosticEntriesAsync(Factory.Database))

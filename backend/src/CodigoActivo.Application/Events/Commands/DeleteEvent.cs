@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Activities.Erasure;
@@ -12,7 +13,7 @@ namespace CodigoActivo.Application.Events.Commands;
 /// Carries the input required to delete the event.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
-public sealed record DeleteEventCommand(EventId EventId) : ICommand<Result>;
+public sealed record DeleteEventCommand(EventId EventId) : ICommand<Result>, IRoutineCommand;
 
 /// <summary>
 /// Executes the command to delete the event together with its activities, their signups and the

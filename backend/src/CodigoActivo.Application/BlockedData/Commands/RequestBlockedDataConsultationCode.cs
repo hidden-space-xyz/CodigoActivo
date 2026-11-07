@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts;
@@ -18,7 +19,7 @@ namespace CodigoActivo.Application.BlockedData.Commands;
 /// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize it.</param>
 public sealed record RequestBlockedDataConsultationCodeCommand(
     [property: Required, MaxLength(128), NotBlank] string CurrentPassword
-) : ICommand<Result>;
+) : ICommand<Result>, IPreparatoryCommand;
 
 /// <summary>
 /// Executes the command that emails the one-time code confirming the opening of a consultation of

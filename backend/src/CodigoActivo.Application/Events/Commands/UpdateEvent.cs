@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -18,7 +19,9 @@ namespace CodigoActivo.Application.Events.Commands;
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 /// <param name="Event">New content, schedule, categories and terms of the event.</param>
-public sealed record UpdateEventCommand(EventId EventId, EventDraft Event) : ICommand<Result>;
+public sealed record UpdateEventCommand(EventId EventId, EventDraft Event)
+    : ICommand<Result>,
+        IRoutineCommand;
 
 /// <summary>
 /// Executes the command to update the event. The event stays locked from the moment it is loaded

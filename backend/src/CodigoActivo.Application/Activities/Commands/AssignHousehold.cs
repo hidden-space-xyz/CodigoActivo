@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -25,7 +26,7 @@ namespace CodigoActivo.Application.Activities.Commands;
 public sealed record AssignHouseholdCommand(
     ActivityId ActivityId,
     [property: MaxLength(Household.MaxMembers)] IReadOnlyList<HouseholdMemberSignup> Assignments
-) : ICommand<Result<IReadOnlyList<UserId>>>;
+) : ICommand<Result<IReadOnlyList<UserId>>>, IRoutineCommand;
 
 /// <summary>
 /// Executes the command to sign members of the signed-in user's household up to an activity.

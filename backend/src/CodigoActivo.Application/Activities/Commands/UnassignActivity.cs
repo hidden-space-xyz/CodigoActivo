@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
@@ -16,7 +17,8 @@ namespace CodigoActivo.Application.Activities.Commands;
 /// <param name="ActivityId">Identifier of the activity.</param>
 /// <param name="UserId">Identifier of the person withdrawn.</param>
 public sealed record UnassignActivityCommand(ActivityId ActivityId, UserId UserId)
-    : ICommand<Result>;
+    : ICommand<Result>,
+        IRoutineCommand;
 
 /// <summary>
 /// Executes the command to withdraw a person from an activity. The signed-in user may withdraw

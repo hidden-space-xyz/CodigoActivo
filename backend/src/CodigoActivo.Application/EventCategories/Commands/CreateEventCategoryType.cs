@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
@@ -16,7 +17,7 @@ namespace CodigoActivo.Application.EventCategories.Commands;
 public sealed record CreateEventCategoryTypeCommand(
     [property: Required, MaxLength(120), NotBlank] string Name,
     [property: Required, MaxLength(9), RegularExpression("^#[0-9A-Fa-f]{6}$")] string Color
-) : ICommand<Result<EventCategoryTypeId>>;
+) : ICommand<Result<EventCategoryTypeId>>, IRoutineCommand;
 
 /// <summary>
 /// Executes the command to create an event category type.

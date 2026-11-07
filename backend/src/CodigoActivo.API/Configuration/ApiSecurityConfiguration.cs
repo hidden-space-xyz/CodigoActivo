@@ -1,8 +1,10 @@
 using CodigoActivo.API.Errors;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.API.Security;
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Application.Accounts.Sessions;
+using CodigoActivo.Application.Common.Messaging;
 using CodigoActivo.Domain.Common;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -57,9 +59,19 @@ internal static class ApiSecurityConfiguration
                         ApiError.Unauthorized(ErrorCode.AuthenticationRequired)
                     );
                 options.Events.OnRedirectToAccessDenied = context =>
-                    context.HttpContext.WriteApiErrorAsync(
+                {
+                    context
+                        .HttpContext.RequestServices.GetRequiredService<AuditWriter>()
+                        .Write(
+                            new AuditDraft(AuditAction.AccessDenied, AuditOutcome.Rejected)
+                            {
+                                ErrorCode = nameof(ErrorCode.AccessDenied),
+                            }
+                        );
+                    return context.HttpContext.WriteApiErrorAsync(
                         ApiError.Forbidden(ErrorCode.AccessDenied)
                     );
+                };
                 options.Events.OnValidatePrincipal = context =>
                     context
                         .HttpContext.RequestServices.GetRequiredService<SessionTicketValidator>()

@@ -83,7 +83,7 @@ public static partial class ApplicationLog
     /// misses it; the command itself ended as it would have without auditing.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="useCase">Type name of the command.</param>
+    /// <param name="useCase">Name of what the entry records.</param>
     /// <param name="exception">Failure raised while recording the entry.</param>
     [LoggerMessage(
         Level = LogLevel.Error,

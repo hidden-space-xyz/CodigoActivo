@@ -1,3 +1,4 @@
+using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Domain.Activities;
@@ -16,7 +17,7 @@ public sealed record ChangeAssignmentRoleCommand(
     ActivityId ActivityId,
     UserId UserId,
     ActivityRole Role
-) : ICommand<Result>;
+) : ICommand<Result>, IRoutineCommand;
 
 /// <summary>
 /// Executes the command to change the role of a person signed up to an activity, keeping the status
