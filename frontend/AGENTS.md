@@ -27,8 +27,9 @@ conventions that this file leaves out, and each failure names the rule it guards
   `extraFilters`; build row actions with `RowActions` (no per-action colours).
 - Elements the end-to-end suite drives carry a literal kebab-case `data-testid` named after their component
   (`login-submit`), the same on every item of a list. Keyed ones: `page-<route>` (set on `main` by the
-  layouts), `nav-<route>` on navigation links, `option-<value>` on `el-option` and `row-action-<key>` from
-  `RowActions`. On an Element Plus date picker it goes on the field around it, since the picker hands it to
+  layouts), `nav-<route>` on navigation links, `option-<value>` on `el-option`, `row-action-<key>` from
+  `RowActions`, and `users-scope-<value>`, `history-group-<key>` and `minor-dialog-<mode>` in their pages. On
+  an Element Plus date picker it goes on the field around it, since the picker hands it to
   its teleported panel. Rename one only together with `tests/e2e`.
 
 ## Tests

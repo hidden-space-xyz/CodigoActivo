@@ -51,10 +51,10 @@ outbox for events or event sourcing.
 | `CodigoActivo.Composition`    | The composition root: registrations by feature, strict configuration-to-options mapping checked on start, data protection and database initialization | Domain, Application, Infrastructure |
 | `CodigoActivo.API`            | HTTP controllers and request contracts by feature, the wire `ErrorCode`, middleware, claims and cookies, rate and concurrency limits, output caching, OpenAPI, SEO documents and startup | Composition                         |
 
-The `ProjectReference` graph is the source of truth for these boundaries. `tests/CodigoActivo.ArchitectureTests`
-enforces the layer and feature dependencies (the API reaches neither Infrastructure nor EF Core) and further
-conventions over the compiled assemblies and the sources; [backend/AGENTS.md](backend/AGENTS.md) lists the ones
-no check enforces.
+The `ProjectReference` graph is the source of truth for these boundaries.
+`backend/tests/CodigoActivo.ArchitectureTests` enforces the layer and feature dependencies (the API reaches
+neither Infrastructure nor EF Core) and further conventions over the compiled assemblies and the sources;
+[backend/AGENTS.md](backend/AGENTS.md) lists the conventions to follow when writing code.
 
 ### Domain and persistence
 
@@ -158,17 +158,17 @@ no check enforces.
   then the events tagged with it in identifier order, and `UpdateEvent` locks its event before loading it
   (`FOR NO KEY UPDATE`, which leaves signups, ratings and activities referencing the event free), so no event loses
   its last category.
-- Users are deleted only through `AccountEraser`, used by `DeleteUser`, `DeleteOwnAccount` and `EmailClaims`,
-  which replaces an unverified account whose email a registration or a confirmed email change takes. It refuses
-  the initial administrator and, in one `ExecuteInTransactionAsync` transaction, locks (`FOR UPDATE`) and loads
-  the household and what belongs to it, signups, terms decisions and ratings included (`IAccountErasureStore`),
-  hands the content credited to the household over to the initial administrator, discards the email still
-  waiting about its members, whatever address it waits for (`EmailTopics.AboutPersonSuffix`), and removes the
-  account; any other change staged in the unit of work commits with it. `InitialAdministratorGuard`, a
-  `SaveChangesInterceptor` that `CodigoActivoDbContext` adds to itself, refuses any deletion of the initial
-  administrator. Deleting an event, an activity or a rating, or cancelling a signup, commits through
-  `ParticipationEraser`, which locks and loads what the removal takes away (`IParticipationErasureStore`) in the
-  same transaction.
+- Users are deleted only through `AccountEraser`, used by `DeleteUser`, `DeleteOwnAccount`, the account purges
+  and `EmailClaims`, which replaces an unverified account whose email a registration or a confirmed email change
+  takes. It refuses the initial administrator and, in one `ExecuteInTransactionAsync` transaction, locks
+  (`FOR UPDATE`) and loads the household and what belongs to it, signups, terms decisions and ratings included
+  (`IAccountErasureStore`), hands the content credited to the household over to the initial administrator,
+  discards the email still waiting about its members, whatever address it waits for
+  (`EmailTopics.AboutPersonSuffix`), and removes the account; any other change staged in the unit of work
+  commits with it. `InitialAdministratorGuard`, a `SaveChangesInterceptor` that `CodigoActivoDbContext` adds to
+  itself, refuses any deletion of the initial administrator. Deleting an event, an activity or a rating, or
+  cancelling a signup, commits through `ParticipationEraser`, which locks and loads what the removal takes away
+  (`IParticipationErasureStore`) in the same transaction.
 - Historized entities change only through the change tracker: `DataHistoryRecorder`, the other interceptor
   `CodigoActivoDbContext` adds to itself, keeps the previous state of every historized row a save changes or
   deletes, encrypted, in `data_history`, so their dependents use `ClientCascade` (the database refuses to delete
@@ -211,9 +211,9 @@ at the `Accounts` root. `Activities` keeps the signup collaborators in `Signups/
 handlers in decorators: a command runs through `LoggingCommandDecorator` (warns about slow use cases),
 `AuditCommandDecorator` (records it in the audit log), `ValidationCommandDecorator` and
 `UnitOfWorkCommandDecorator` (commits once the handler succeeds); a query through `LoggingQueryDecorator`,
-`ValidationQueryDecorator` and `CachingQueryDecorator`. Controllers inject the handler contract
-(`ICommandHandler<TCommand, TResult>`) with `[FromServices]`, the only way an action receives a service
-(implicit service binding is disabled); there is no MediatR dispatcher.
+`AuditQueryDecorator` (records an `IAuditedQuery`), `ValidationQueryDecorator` and `CachingQueryDecorator`.
+Controllers inject the handler contract (`ICommandHandler<TCommand, TResult>`) with `[FromServices]`, the only
+way an action receives a service (implicit service binding is disabled); there is no MediatR dispatcher.
 
 Commands and queries are application messages, not HTTP contracts: they carry typed identifiers and domain
 values, and their fields carry the DataAnnotations of their rules (`[property: Required, MaxLength(200),
@@ -268,8 +268,8 @@ of the session cookie for a refused account. `MessageAudit` reads only the typed
 
 Use cases decide who may run them on whose behalf. `ICurrentUser` (implemented by `HttpCurrentUser` in the API)
 tells who is signed in; commands and queries take the author, the acting user and whether they are an administrator
-from it, never from their input. `GetAccountQuery` is the one query that reads the caller's own account by its id:
-email verification and two-factor login completion answer before the session exists. `ActingUserPolicy` lets
+from it, never from their input. `GetAccountQuery` is the one query that reads an account by an id it is given:
+two-factor login completion answers with it before the session exists. `ActingUserPolicy` lets
 the signed-in user act for themselves or one of their dependents, and an administrator for anyone, reading the
 guardianship from the read side so commands and queries share it, and answers anything else with
 `ActingForAnotherUserForbidden` (403 `AccessDenied` on the wire); withdrawing a person, checking their agenda and
@@ -281,7 +281,8 @@ exception: it only takes the signed-in user and their own dependents (`Household
 included, and answers anyone else with `ActivityHouseholdMemberNotAllowed`. The `[AllowOnlySelf]` and
 `[AllowOnlyStaff]` attributes refuse early at the HTTP edge; `[AllowOnlySelf]` asks the same policy, and
 `[AllowOnlyStaff]` the role claims the session carries for the account's `StaffRole` (an administrator's include
-the editor's) and its data protection designation.
+the editor's) and its data protection designation; `[AllowOnlySuperAdministrator]` admits only the initial
+administrator and, with `PrivacyOfficerAllowed`, the account designated for data protection.
 
 An event can link several terms documents (`event_terms_documents`, each `is_required`/`display_order`); a
 document holds conditions or a consent (`kind`) and may ask for a handwritten signature (`requires_signature`).
@@ -357,8 +358,9 @@ Mapping is handwritten.
 Each kind of value has one home. Deployment configuration (addresses, credentials, SMTP, the demo choice and
 the association's legal identity and contact details, which stay out of the public repository) is the flat
 uppercase variables of `.env` and `secrets/`, read once in the composition root (`AddCodigoActivo`) into
-options registered with `AddValidatedOptions` and `ValidateOnStart`: a missing setting takes its default, and
-a setting that is present but unusable stops the application at start with a message naming the key. Security,
+options registered with `AddValidatedOptions` and `ValidateOnStart`: a missing optional setting takes its
+default, and a missing required one or any setting that is present but unusable stops the application at start
+with a message naming the key. Security,
 abuse and retention values are fixed in their `*Options` classes, registered with `AddFixedOptions` so no
 setting reaches them (tests replace the instance). The association's public identity is `Organization`
 (Domain) and `shared/config/organization.ts` (frontend); user-facing text is in the i18n resources. Data
@@ -412,9 +414,9 @@ moves down to a feature or entity only when a second slice needs it. Steiger (`n
 structure, including that a widget, feature or entity slice is used by at least two slices or by `app`.
 `eslint.config.js` enforces most coding rules and `frontend/tests/architecture/` what neither tool sees: the
 slice and segment layout, the roles of `api` segment files, where query and mutation options are built, lazy
-page routing, the ownership of `shared/config` values, theme variables and global classes, admin table columns,
-the error messages, the test layout and the reviewed `@x` list. [frontend/AGENTS.md](frontend/AGENTS.md) lists
-the rules no check enforces.
+page routing, the runtime dependencies (no store library), the ownership of `shared/config` values, theme
+variables and global classes, admin table columns, the error messages, the test layout and the reviewed `@x`
+list. [frontend/AGENTS.md](frontend/AGENTS.md) lists the conventions to follow when writing code.
 
 | Layer       | Responsibility                                                                                |
 | ----------- | --------------------------------------------------------------------------------------------- |
@@ -446,8 +448,8 @@ blocked data consultations and holds live in that page's `api` segment.
 
 Person field rules mirror the backend `User` rules in one place, `entities/user`: `usePersonForm` (and the
 `parseIndependentPerson`/`parseDependentPerson` functions behind it) validates and normalizes an independent
-account or a dependent and decides when a change needs the caller's password; the registration, profile,
-dependents and admin user forms only bind fields and show its messages.
+account or a dependent and decides when a change needs the caller's password; the registration, profile and
+dependents forms only bind fields and show its messages.
 
 ### Views, forms, routing and session
 

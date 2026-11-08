@@ -16,10 +16,10 @@ pinned in `dotnet-tools.json`; no build or CI step checks it.
   typed identifiers like `EventTermsAcceptance`; never pass a raw `Guid` across the domain. Values with rules are
   value objects. Both map onto plain columns through the EF conventions or, like the security state of `User`, as
   complex properties with `HasColumnName`.
-- Closed value sets are domain enums; their catalog tables only hold the name, description and color shown to
-  people.
+- Closed value sets are domain enums; their catalog tables only hold what is shown to people (name,
+  description and color, and whether a resource type is external).
 - Aggregates keep foreign keys and cascades to each other with `HasOne<T>().WithMany().HasForeignKey(...)`.
-  Repository methods name their intention; there is no generic repository.
+  Beyond the `AddAsync` and `Remove` of `IRepository<T>`, repository methods name their intention.
 - Aggregates raise domain events for what other parts react to; effects (emails, alerts, cache eviction,
   file cleanup, sign-out) run in `IDomainEventListener<T>` or `ICommittedEventsHandler` after the commit. A
   notice that must never be lost is pending state of the aggregate instead, sent and cleared by a scheduled
@@ -46,9 +46,10 @@ pinned in `dotnet-tools.json`; no build or CI step checks it.
   into `PersonalDataReader`, the copy they download from «Mi cuenta».
 - `AuditAction` and `AuditEntityType` are stored as text, so their members are only ever added. A handler that
   finds its main entity itself, such as an account by email, names it through `IAuditSubject`. A new command is
-  audited in full unless it takes one rule of `AuditMarkers`; one that proves a credential is never routine.
-  `audit_log_entries` keeps user GUIDs without a foreign key on purpose: its entries outlive an erased account
-  until their retention ends, so the table keeps no data history and is not handed over.
+  audited in full unless it takes one marker of `Abstractions/Auditing/AuditMarkers.cs`; one that proves a
+  credential is never routine. `audit_log_entries` keeps user GUIDs without a foreign key on purpose: its
+  entries outlive an erased account until their retention ends, so the table keeps no data history and is not
+  handed over.
 - Expected failures return `Result`/`Result<T>` with a `DomainErrorCode` or an `ApplicationErrorCode`. Do not
   throw for business outcomes.
 - Shared binding primitives live in `Application/Common/Querying`. Mapping is handwritten.
@@ -60,12 +61,13 @@ pinned in `dotnet-tools.json`; no build or CI step checks it.
   the exception messages you throw never carry a user id, personal data, a value typed by the client, a
   credential, a code, a token or a third-party reply that may quote them. See
   [SECURITY.md](../SECURITY.md#logging).
-- Handlers and listeners need no registration. Register other services and options in the registration under
+- Register services and options other than handlers and listeners in the registration under
   `CodigoActivo.Composition/` that covers their feature (`Events/` also covers activities, event categories,
   ratings and terms; `Content/` covers news, partners, resources, files and reports). Read deployment settings
   through `Settings` and `AddValidatedOptions` so an unusable value stops the start instead of falling back;
   register options whose values are fixed in code with `AddFixedOptions`, which no setting can reach
-  (`FixedOptionsTests`).
+  (`FixedOptionsTests`). `AddFixedOptions` is internal to Composition, so the API registers its
+  `ApiRateLimitOptions` as a plain singleton.
 
 ## Tests
 

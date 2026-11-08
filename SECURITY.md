@@ -41,27 +41,28 @@ authentication are not supported.
   administrator, each including the rights of the one before, carried by the session as role claims (`editor`,
   `administrator`). `[AllowOnlyStaff(StaffRole.Editor)]` protects the content endpoints: events and activities
   with their catalogs and terms documents, news, partners, resources and files.
-  `[AllowOnlyStaff(StaffRole.Administrator)]` protects everything about people: users, signups, terms
-  decisions, ratings, reports, every manual email, the diagnostic log and the legal policies; the audit log is
-  [read](#audit-log) only by the initial administrator and the account designated for data protection. The
-  initial administrator is the superadministrator: only it changes staff roles, designates the account for data protection and
-  deletes other accounts; those endpoints admit administrators and their use cases refuse anyone else (`SuperAdministratorOnly`, answered as
-  `AccessDenied`). `[AllowOnlySelf]` accepts the target user, that user's guardian or an
-  administrator, except on `PUT /api/users/{id}`, `POST /api/users/{id}/children` and
-  `PATCH /api/activities/{activityId}/{userId}/assign` (`AdministratorsAllowed = false`): personal data,
-  consents, dependents and signups change only through their holder or guardian, never an administrator. Catalog values
-  such as `UserType` are not authorization roles. Activity leadership grants one read, decided on every
-  request from the session user's own signups: `GET /api/events/{eventId}/leader-roster` returns only
-  the event's activities that have not ended and in which the caller holds a confirmed leader signup,
-  each with its confirmed attendees by role. Anyone else, administrators and guardians of a leading dependent
-  included, gets an empty list; the client sends no activity id. Only members may hold a leader signup,
-  checked on signup and on an administrator's role change. Each attendee carries only names and
-  signup time, plus their own email and primary phone (independent accounts) or their age on the
-  activity's day, computed on the server, and the guardian's names, email and primary phone (dependents):
-  never ids, DNI/NIE, birth dates or secondary phones. The SPA keys the cached list by user id. A person
-  holds at most one signup per activity, enforced by the primary key (`user_id`, `activity_id`), so
-  concurrent signups cannot leave a spare leader row and an administrator's status or role change always
-  hits the row they see.
+  `[AllowOnlyStaff(StaffRole.Administrator)]` protects everything about people beyond the caller's own
+  household: other users, signups, terms decisions, ratings, reports, every manual email, the diagnostic log
+  and the legal policies; the audit log is [read](#audit-log) only by the initial administrator and the account
+  designated for data protection. The initial administrator is the superadministrator: only it changes staff
+  roles and designates the account for data protection, whose endpoints admit administrators and whose use
+  cases refuse anyone else (`SuperAdministratorOnly`, answered as `AccessDenied`), and only it deletes accounts
+  other than a guardian's own dependents ([Account deletion](#account-deletion)). `[AllowOnlySelf]` accepts the
+  target user, that user's guardian or an administrator, except on `PUT /api/users/{id}`,
+  `POST /api/users/{id}/children` and `PATCH /api/activities/{activityId}/{userId}/assign`
+  (`AdministratorsAllowed = false`): personal data, consents, dependents and signups change only through their
+  holder or guardian, never an administrator. Catalog values such as `UserType` are not authorization roles.
+  Activity leadership grants one read, decided on every request from the session user's own signups:
+  `GET /api/events/{eventId}/leader-roster` returns only the event's activities that have not ended and in which
+  the caller holds a confirmed leader signup, each with its confirmed attendees by role. Anyone else,
+  administrators and guardians of a leading dependent included, gets an empty list; the client sends no activity
+  id. Only members may hold a leader signup, checked on signup and on an administrator's role change. Each
+  attendee carries only names and signup time, plus their own email and primary phone (independent accounts) or
+  their age on the activity's day, computed on the server, and the guardian's names, email and primary phone
+  (dependents): never ids, DNI/NIE, birth dates or secondary phones. The SPA keys the cached list by user id. A
+  person holds at most one signup per activity, enforced by the primary key (`user_id`, `activity_id`), so
+  concurrent signups cannot leave a spare leader row and an administrator's status or role change always hits
+  the row they see.
 - The email is the only login identifier and the only unique personal value. The DNI/NIE, the phone and
   the optional secondary phone are not unique, so no route checks them against other accounts and neither
   registration nor profile updates reveal whether someone else uses them; the secondary phone only has to
@@ -163,8 +164,8 @@ Each user chooses one second factor from their account:
 
 - **Email (default)**: a 6-digit code, emailed on the password step, stored as a keyed hash, expiring
   with the challenge, single use. The password step reuses a code sent within the last minute instead of
-  resending; `POST /api/auth/login/two-factor/resend` enforces the same 60-second cooldown. These emails
-  count as credential mail in the automatic-message limiter.
+  resending; `POST /api/auth/login/two-factor/resend` enforces the same 60-second cooldown. These codes pass
+  the [email guard](#email-abuse-controls) under the second-factor budgets.
 - **Authenticator application**: RFC 6238 TOTP (HMAC-SHA1, six digits, 30-second steps, one step of clock
   drift) via Otp.NET; the project implements no cryptographic algorithm itself. Enrollment starts with the
   user's password, stores the shared secret encrypted with ASP.NET Data Protection, and only activates once
@@ -200,7 +201,7 @@ administrator, whom its session identifies.
 `DELETE /api/users/{id}` refuses the initial administrator and the caller's own id
 (`UserSelfDeleteRequiresVerification`); the SPA disables that action on both rows. Only the initial administrator
 deletes other accounts, administrators included, without re-entering a password, and a guardian deletes their
-own minors; any other administrator gets `AccessDenied`. Every deletion credits the
+own dependents; any other administrator gets `AccessDenied`. Every deletion credits the
 initial administrator instead of the household as author, last editor or uploader of events, activities, news,
 partners, resources and files, and as the account that recorded a terms decision about someone else, in the same
 transaction; the [data history](#data-history) keeps the original credit. Each erasure of an account or of a
@@ -262,20 +263,20 @@ administrator reaches the list of consultations, and only that person opens them
   is noticed.
 - `POST .../{id}/searches` takes an identifier, email, DNI/NIE, phone or part of the name (at least three
   characters) in the body, never in the URL; finds existing accounts and, decrypting only past states of
-  accounts, erased ones; adds their minors; and returns each with only its id, name and guardian, whether it
+  accounts, erased ones; adds their dependents; and returns each with only its id, name and guardian, whether it
   exists or when it was erased and how many entries of each kind concern it, counted without decrypting. The
   consultation, locked meanwhile, records the accounts found, never the text.
-- `POST .../{id}/extracts` decrypts the entries about an account the consultation found and its minors, narrowed
-  to days and kinds of data, adds the current personal data of an existing account and records the extract
-  (account, filters, moment and number of entries, enough to find the same entries again). An entry that no longer
-  decrypts is returned without content and logged (`DataHistoryEntryUnreadable`).
+- `POST .../{id}/extracts` decrypts the entries about an account the consultation found and its dependents,
+  narrowed to days and kinds of data, adds the current personal data of an existing account and records the
+  extract (account, filters, moment and number of entries, enough to find the same entries again). An entry that
+  no longer decrypts is returned without content and logged (`DataHistoryEntryUnreadable`).
 - `POST .../{id}/holds` places a hold for an open claim on an account the consultation found: it names that
-  account and its minors, existing and erased, without a foreign key, and copies the requester and the reference
-  of the consultation. `POST .../{id}/holds/{holdId}/lift`, from any open consultation, lifts it once the claim
-  is closed (`BlockedDataHoldLifted` the second time); lifting lets the next purge destroy what the claim needed,
-  so it takes the same password, second factor and notice as reading. `GET /api/blocked-data/holds` lists the
-  holds to every administrator with how many accounts each keeps, never which. Erasing an account is never
-  refused for a hold: the erasure only adds to the history the hold keeps.
+  account and its dependents, existing and erased, without a foreign key, and copies the requester and the
+  reference of the consultation. `POST .../{id}/holds/{holdId}/lift`, from any open consultation, lifts it once
+  the claim is closed (`BlockedDataHoldLifted` the second time); lifting lets the next purge destroy what the
+  claim needed, so it takes the same password, second factor and notice as reading.
+  `GET /api/blocked-data/holds` lists the holds to every administrator with how many accounts each keeps, never
+  which. Erasing an account is never refused for a hold: the erasure only adds to the history the hold keeps.
 - `GET /api/blocked-data/consultations` lists who consulted, when, for what request, how many accounts were found
   and how many extracts taken, to every administrator and the designated account, without any of the data. A
   consultation keeps its officer without a foreign key, so it stays listed after that account is erased.
@@ -287,11 +288,12 @@ copy of «Mi cuenta» leaves the history out.
 
 `CsrfValidationMiddleware` validates every unsafe HTTP method with ASP.NET antiforgery. The client obtains a
 token from `GET /api/auth/csrf`, which also sets the `HttpOnly`, `SameSite=Lax` CSRF cookie
-(`__Host-CodigoActivo.Csrf` in Production), and returns it in `X-CSRF-TOKEN`; the SPA client handles this
-automatically. A missing or invalid token answers 400 `InvalidCsrfToken` and is not logged. The only
-exception is `POST /api/emails/unsubscribe/one-click` (`[RequireAntiforgeryToken(false)]`), which mail clients
-call without cookies; it uses no session or other ambient credential, only the unforgeable token in its own
-URL, so a forged cross-site request can do nothing that the token's holder could not already do.
+(`__Host-CodigoActivo.Csrf` in Production) and returns the token in its body; the client sends it back in
+`X-CSRF-TOKEN`, which the SPA client handles automatically. A missing or invalid token answers 400
+`InvalidCsrfToken` and is not logged. The only exception is `POST /api/emails/unsubscribe/one-click`
+(`[RequireAntiforgeryToken(false)]`), which mail clients call without cookies; it uses no session or other
+ambient credential, only the unforgeable token in its own URL, so a forged cross-site request can do nothing
+that the token's holder could not already do.
 
 ### Passwords and credential endpoints
 
@@ -321,8 +323,8 @@ both unsubscribe endpoints) have layered controls:
 
 - nginx caps `login`, `register`, `forgot-password`, `resend-verification`,
   `/api/auth/{id}/(verify|reset-password|confirm-email)` and
-  `/api/users/{id}/(password|admin)` at 10 requests/second per client IP, burst 100; the remaining
-  credential routes (two-factor login/resend/authenticator/email, `users/{id}`,
+  `/api/users/{id}/(password|staff-role|privacy-officer)` at 10 requests/second per client IP, burst 100; the
+  remaining credential routes (two-factor login/resend/authenticator/email, `users/{id}`,
   `users/{id}/two-factor/reset`, `me/deletion*`, `blocked-data/consultations` and its `/code`,
   `emails/unsubscribe*`) rely only on nginx's general 200 requests/second limit and the API controls below.
 - the API enforces 120 requests/minute per client IP in every environment on every credential route;
@@ -381,7 +383,8 @@ TLS ends at an external proxy; its requirements (overwriting forwarded headers, 
 [DEPLOYMENT.md](DEPLOYMENT.md#tls-and-proxy-boundary). The API accepts one forwarded hop and honours
 `X-Forwarded-For`/`X-Forwarded-Proto` only from IPv4 loopback and private ranges (`127.0.0.0/8`, `10.0.0.0/8`,
 `172.16.0.0/12`, `192.168.0.0/16`). nginx takes the client address from `X-Forwarded-For` only from peers in
-those same ranges, but reads `X-Forwarded-Proto` from any peer and counts only an exact `https` as HTTPS. IPv6
+those same ranges, but reads `X-Forwarded-Proto` from any peer and counts only an exact `https`
+(case-insensitive) as HTTPS. IPv6
 stays disabled on both networks and nginx answers 403 to IPv6 clients, because Docker would relay IPv6 clients
 from its bridge gateway, a private address whose `X-Forwarded-For` nginx trusts.
 
@@ -712,17 +715,16 @@ attachments of 8 MiB in all.
 
 ### Email abuse controls
 
-New accounts must always confirm an emailed OTP before their first login, and holders confirm their own new
-email the same way; there is no switch. Mail to an address nobody has verified yet greets nobody, so neither
-registration nor an email change relays a name typed by someone else to that mailbox, and opening the
-verification link (`PATCH /api/auth/{id}/verify`) answers 204 without any of the account's data.
-Verification and password-reset codes expire after 15 minutes with a 60-second resend cooldown; an
-email-change link also lasts 15 minutes, and each new one needs the password again. Login and
-account-deletion codes share storage and expire after 10 minutes with the same cooldown. SMTP must be
-configured everywhere or the API refuses to start. Activity signup sends no message;
-confirming or rejecting one queues an outcome email after commit, always to the guardian address for a
-dependent. Delivery errors never roll back registration, recovery, activity decisions or security
-changes.
+New accounts must always open an emailed verification link before their first login, and holders confirm
+their own new email the same way; there is no switch. Mail to an address nobody has verified yet greets nobody,
+so neither registration nor an email change relays a name typed by someone else to that mailbox, and opening the
+verification link (`PATCH /api/auth/{id}/verify`) answers 204 without any of the account's data. Verification
+and password-reset codes expire after 15 minutes with a 60-second resend cooldown; an email-change link also
+lasts 15 minutes, and each new one needs the password again. Login and account-deletion codes share storage and
+expire after 10 minutes with the same cooldown. SMTP must be configured everywhere or the API refuses to start.
+Activity signup sends no message; confirming or denying one queues an outcome email after commit, always to the
+guardian address for a dependent. Delivery errors never roll back registration, recovery, activity decisions or
+security changes.
 
 Registration and email changes (`PUT /api/users/{id}`) refuse addresses of disposable (temporary) mailbox
 providers with `DisposableEmailNotAllowed` (400), which the SPA presents as a security measure. An address
@@ -739,11 +741,12 @@ iCloud and Proton, plus `Organization.WebDomain`).
 Changing an account's password (by the user or through recovery), its second factor (authenticator confirmed,
 returned to email, or reset by an administrator), its staff role, its data protection designation or its email
 or phones queues a
-notification to the affected account after commit, from the handler, whoever asked for the change. The notice
+notification to the affected account after commit (`AccountSecurityNotifications`), whoever asked for the
+change. The notice
 names the change and its timestamp and carries no code, secret or link that performs an action; an email
 change is reported to the **previous** address once it applies (for a holder's own change, when the new
 address is confirmed) and only ever quotes the new one masked, and a phone change only states that the phone
-changed, without quoting it. These messages are notices, not credential mail: they are never refused, a new
+changed, without quoting it. These messages are notices, not codes: the email guard never refuses them, a new
 alert about the same kind of change replaces the one still waiting, and they leave at the pace of their
 recipient.
 
@@ -776,38 +779,35 @@ Both automatic and administrator-written mail wait in a PostgreSQL outbox until 
 [delivered](DEPLOYMENT.md#email-delivery). The stored subject, bodies and attachments are protected with
 Data Protection (purpose `CodigoActivo.EmailOutbox.v1`); recipient address/name, unsubscribe link and one-click
 unsubscribe address, kind and attachment names are stored in clear. Recreating the Data Protection key ring
-makes pending rows unreadable: each attempt fails like any other delivery failure, and a row is discarded after
-its last attempt.
+makes pending rows unreadable: each one is removed and logged on its first delivery attempt.
 
 Only administrators may send through `/api/emails/...`; recipients are resolved on the server from the same
 filters as user/attendee lists, never client-supplied addresses. Each recipient gets a separate message,
 dependents without their own address are skipped, and so are accounts still pending verification, whose
 address may be someone else's (a single one is refused with `EmailRecipientNotVerified`); attachments remain
-transient. Signup decision emails skip those addresses too, and administrator rights are refused to such an
-account (`UserPendingVerificationCannotBeAdmin`). The verification email of a registration that accepted news
-says so. Every send carries a required `purpose`: `Notice` reaches every addressable recipient; `News`
-reaches only those with news consent, enforced by the server (`ManualEmailAudience.ReachedBy`; a single
+transient. Signup decision emails skip those addresses too. The verification email of a registration that
+accepted news says so. Every send carries a required `purpose`: `Notice` reaches every addressable recipient;
+`News` reaches only those with news consent, enforced by the server (`ManualEmailAudience.ReachedBy`; a single
 recipient without it is refused with `EmailRecipientWithoutConsent`), and its footer carries the contact address
-(`LEGAL_EMAIL`, the same one the site shows) and the recipient's own unsubscribe
-link, `/unsubscribe#token=…`. The token is the user id protected with Data Protection (purpose
-`CodigoActivo.Unsubscribe.v1`), so it cannot be forged and never expires while its key stays in the ring;
-recreating the ring invalidates the links already sent. The stored content is shared by the batch and each
-outbox row holds its recipient's link in clear (`unsubscribe_url`), put in place at delivery. The SPA page
-posts the token to the anonymous `POST /api/emails/unsubscribe` (credential rate limit), which withdraws the
-consent and answers 204 again for a withdrawn consent or an erased account, or `EmailUnsubscribeLinkInvalid`
-for an altered token. Each news message also carries the one-click unsubscribe of RFC 8058:
+(`LEGAL_EMAIL`, the same one the site shows) and the recipient's own unsubscribe link, `/unsubscribe#token=…`.
+The token is the user id protected with Data Protection (purpose `CodigoActivo.Unsubscribe.v1`), so it cannot be
+forged and never expires while its key stays in the ring; recreating the ring invalidates the links already
+sent. The stored content is shared by the batch and each outbox row holds its recipient's link in clear
+(`unsubscribe_url`), put in place at delivery. The SPA page posts the token to the anonymous
+`POST /api/emails/unsubscribe` (credential rate limit), which withdraws the consent and answers 204 again for a
+withdrawn consent or an erased account, or `EmailUnsubscribeLinkInvalid` for an altered token. Each news message
+also carries the one-click unsubscribe of RFC 8058:
 `List-Unsubscribe: <…/api/emails/unsubscribe/one-click?token=…>` with the same token (stored per row in
-`one_click_unsubscribe_url`) and `List-Unsubscribe-Post: List-Unsubscribe=One-Click`. The mail client posts
-that pair as `application/x-www-form-urlencoded` or `multipart/form-data`, without cookies or an antiforgery
-token; the endpoint is anonymous, kept out of the OpenAPI document, shares the credential rate limit, answers
-204 without redirecting, and records the withdrawal as `OneClickUnsubscribe`. The token in that URL never
-reaches a log: nginx keeps no access log, and the API keeps nothing below `Warning`, the level of ASP.NET's
-request lines. This mail bypasses the
-automatic-message limiter; the endpoint reports how many messages were queued and how many recipients were
-skipped, not what SMTP later did with them. Single-recipient messages allow 30 requests/minute
-per administrator (10 executing, 10 waiting); bulk messages allow 5 requests/minute (2 active, no waiting
-queue). All requests remain subject to nginx's general API limit, application recipient/attachment limits and
-the five-minute nginx upstream timeout.
+`one_click_unsubscribe_url`) and `List-Unsubscribe-Post: List-Unsubscribe=One-Click`. The mail client posts that
+pair as `application/x-www-form-urlencoded` or `multipart/form-data`, without cookies or an antiforgery token;
+the endpoint is anonymous, kept out of the OpenAPI document, shares the credential rate limit, answers 204
+without redirecting, and records the withdrawal as `OneClickUnsubscribe`. The token in that URL never reaches a
+log: nginx keeps no access log, and the API keeps nothing below `Warning`, so ASP.NET's `Information` request
+lines are never stored. The email guard never refuses this mail; the endpoint reports how many messages were
+queued and how many recipients were skipped, not what SMTP later did with them. Single-recipient messages allow
+30 requests/minute per administrator (10 executing, 10 waiting); bulk messages allow 5 requests/minute (2
+active, no waiting queue). All requests remain subject to nginx's general API limit, application
+recipient/attachment limits and the five-minute nginx upstream timeout.
 
 `GET /api/emails/users/audience` and `GET /api/emails/events/{eventId}/attendees/audience` let an
 administrator preview a send before committing to it: given the same filters as `POST /api/emails/users` or
@@ -821,7 +821,7 @@ the general API limits of nginx and the API.
 
 [Demo deployments](DEPLOYMENT.md#demo-mode-and-initial-administrator) are disposable and must never contain
 private data. Their invented accounts have a random, hashed and discarded 32-byte password, fictitious
-addresses and the second factor still required, so only the bootstrap administrator can sign in. Seeding
+addresses and the second factor still required, so only the initial administrator can sign in. Seeding
 downloads its sample images from `picsum.photos`, at most 10 MiB each, in requests that carry no user data, and
 the callers of the invented log history use the IP ranges reserved for documentation (`192.0.2.0/24`,
 `198.51.100.0/24`, `203.0.113.0/24`, `2001:db8::/32`).

@@ -34,13 +34,13 @@ people. The interface is Spanish, managed through Vue I18n.
 
 ## Technology
 
-| Area     | Main technologies                                                                         |
-| -------- | ----------------------------------------------------------------------------------------- |
-| Backend  | ASP.NET Core on .NET 10, EF Core, PostgreSQL 18, Argon2id, Otp.NET, MailKit, OpenAPI      |
-| Frontend | Vue 3, Vite, TypeScript, Element Plus, TanStack Query, Vue I18n, TipTap, Chart.js, Orval  |
-| Quality  | .NET analyzers, CSharpier, ESLint, Stylelint, Steiger, Knip, Prettier, `vue-tsc`          |
-| Tests    | xUnit v3, AwesomeAssertions, NSubstitute, Testcontainers, Vitest, Vue Test Utils, MSW, k6 |
-| Runtime  | Docker Compose and unprivileged nginx                                                     |
+| Area     | Main technologies                                                                                     |
+| -------- | ----------------------------------------------------------------------------------------------------- |
+| Backend  | ASP.NET Core on .NET 10, EF Core, PostgreSQL 18, Argon2id, Otp.NET, MailKit, OpenAPI                  |
+| Frontend | Vue 3, Vite, TypeScript, Element Plus, TanStack Query, Vue I18n, TipTap, Chart.js, Orval              |
+| Quality  | .NET analyzers, CSharpier, ESLint, Stylelint, Steiger, Knip, Prettier, `vue-tsc`                      |
+| Tests    | xUnit v3, AwesomeAssertions, NSubstitute, Testcontainers, Vitest, Vue Test Utils, MSW, Playwright, k6 |
+| Runtime  | Docker Compose and unprivileged nginx                                                                 |
 
 ## Repository
 
@@ -89,15 +89,17 @@ To run the applications directly with hot reload instead of full containers, see
 
 ## Documentation
 
-| Document                                 | Purpose                                                   |
-| ---------------------------------------- | --------------------------------------------------------- |
-| [ARCHITECTURE.md](ARCHITECTURE.md)       | System structure, dependency rules and API contract       |
-| [CONTRIBUTING.md](CONTRIBUTING.md)       | Development setup, commands, migrations and pull requests |
-| [DEPLOYMENT.md](DEPLOYMENT.md)           | Production topology, configuration and releases           |
-| [SECURITY.md](SECURITY.md)               | Vulnerability reporting and the security model            |
-| [AGENTS.md](AGENTS.md)                   | Repository guidance for coding agents                     |
-| [backend/AGENTS.md](backend/AGENTS.md)   | Backend coding conventions and tests                      |
-| [frontend/AGENTS.md](frontend/AGENTS.md) | Frontend coding conventions and tests                     |
+| Document                                                   | Purpose                                                                |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------- |
+| [ARCHITECTURE.md](ARCHITECTURE.md)                         | System structure, dependency rules and API contract                    |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                         | Development setup, commands, migrations, test suites and pull requests |
+| [DEPLOYMENT.md](DEPLOYMENT.md)                             | Production topology, configuration and releases                        |
+| [SECURITY.md](SECURITY.md)                                 | Vulnerability reporting and the security model                         |
+| [AGENTS.md](AGENTS.md)                                     | Repository guidance for coding agents                                  |
+| [backend/AGENTS.md](backend/AGENTS.md)                     | Backend coding conventions and tests                                   |
+| [frontend/AGENTS.md](frontend/AGENTS.md)                   | Frontend coding conventions and tests                                  |
+| [tests/e2e/AGENTS.md](tests/e2e/AGENTS.md)                 | End-to-end suite conventions                                           |
+| [tests/performance/AGENTS.md](tests/performance/AGENTS.md) | Performance suite conventions                                          |
 
 ## License
 

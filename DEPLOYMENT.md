@@ -96,9 +96,9 @@ ring. Production startup (`ProductionConfiguration`) also fails when:
 
 These settings and every application setting, `DEMO_MODE` included, are checked before anything is written to
 `api-state` or the database, and so is a `DEMO_MODE` other than the locked one. `BOOTSTRAP_ADMIN_EMAIL` is
-checked once the database is migrated and the mode is locked only after that check, so a start it stops has
-migrated the database but written no mode lock. Demo seeding runs after the lock; a start it stops keeps the
-lock and seeds again on the next start.
+checked once the database is migrated and its catalogs seeded, and the mode is locked only after that check,
+so a start it stops has migrated the database but written no mode lock. Demo seeding runs after the lock; a
+start it stops keeps the lock and seeds again on the next start.
 
 The privacy and cookie policies are not in the repository: administrators write and publish them in
 «Políticas» of the administration panel, and the database keeps every version. A new installation without demo
@@ -124,13 +124,13 @@ email and the URLs generated in `/sitemap.xml` and `/robots.txt`; it must match 
 
 These variables are the whole deployment configuration: the base Compose file forwards exactly this list to
 the API, and every other value is fixed in code (see [Fixed settings](#fixed-settings)). Compose fixes the
-database connection itself (host `db`, port `5432`, database and user `codigoactivo`), so the API only
-reaches PostgreSQL over the internal `backend` network. Optional variables take the listed default when empty
-or missing. `.env.example` lists every variable with an empty value.
+database connection itself (host `db`, database and user `codigoactivo`, on the default port `5432`), so the API
+only reaches PostgreSQL over the internal `backend` network. Optional variables take the listed default when
+empty or missing. `.env.example` lists every variable with an empty value.
 
 | Variable                | Meaning                                                                       | Default                                     |
 | ----------------------- | ----------------------------------------------------------------------------- | ------------------------------------------- |
-| `APP_BASE_URL`          | Public origin for links and SEO output                                        | Required                                    |
+| `APP_BASE_URL`          | Public origin for links and SEO output                                        | Required in Production                      |
 | `APP_TIMEZONE`          | IANA time-zone ID used by the application clock                               | `Europe/Madrid`                             |
 | `DEMO_MODE`             | `true` or `false`; locked on first start                                      | Required                                    |
 | `BOOTSTRAP_ADMIN_EMAIL` | Initial administrator email for an empty database                             | Required on an empty database               |
@@ -150,11 +150,11 @@ or missing. `.env.example` lists every variable with an empty value.
 | `LEGAL_PHONE`           | Contact phone published in the footer, the about page and the privacy policy  | Not published                               |
 
 The site and news email read the association's legal identity and contact details from the `LEGAL_*`
-variables (the site through `GET /api/legal-entity`); a `LEGAL_EMAIL` that is not a single address or a
-`LEGAL_PHONE` that is not a phone number of 7 to 15 digits stops the start. They are deployment settings
-rather than code so that personal details, such as a home address or a private phone, never reach the public
-repository; the association's public identity (name, domain, social profiles) is code, in `Organization`
-(backend) and `shared/config` (frontend).
+variables (the site through `GET /api/legal-entity`); a `LEGAL_EMAIL` that is not a single address, a
+`LEGAL_PHONE` that is not a phone number of 7 to 15 digits or another `LEGAL_*` value over 300 characters stops
+the start. They are deployment settings rather than code so that personal details, such as a home address or a
+private phone, never reach the public repository; the association's public identity (name, domain, social
+profiles) is code, in `Organization` (backend) and `shared/config` (frontend).
 
 The account designated for data protection, the only one that may consult the blocked data (see
 [SECURITY.md](SECURITY.md#blocked-data-consultations)), is chosen in the application by the initial
@@ -212,9 +212,9 @@ background by the `EmailOutboxDeliveryWorker` hosted service; a request that que
 is committed, not once SMTP accepts it. Only codes pass the email guard first (limits in
 [SECURITY.md](SECURITY.md#email-abuse-controls)); notices are always stored, and a new message on the same
 topic to the same address (a new code, a new alert of one kind, a new decision on one signup) replaces the one
-still waiting. Administrator bulk email is refused with `EmailSendFailed` when 2000 such messages already wait,
-or with `EmailAttachmentsTooLarge` when it is larger than the `SIZE` the SMTP server announced; its response
-(`{ queued, skipped }`) reports what was accepted, not what was delivered.
+still waiting. Administrator bulk email is refused with `EmailSendFailed` when it would leave more than 2000
+such messages waiting, or with `EmailAttachmentsTooLarge` when it is larger than the `SIZE` the SMTP server
+announced; its response (`{ queued, skipped }`) reports what was accepted, not what was delivered.
 
 One API instance delivers at a time: the worker holds a PostgreSQL session lock and another instance takes over
 when it is released. It polls every 5 seconds, is woken at once by same-process enqueues, and claims up to 10
@@ -223,8 +223,9 @@ then verification, email-in-use and password-reset mail, then notices, then admi
 sends them one after another over one SMTP connection, each within 60 seconds, never faster than
 `SMTP_MAX_PER_MINUTE`. Over a rolling 24 hours, counted in `email_delivery_hours` so restarts keep it, notices
 and bulk mail stop at 80 % of `SMTP_MAX_PER_DAY`, anonymous codes at 90 % and identified codes at 100 %.
-Notices and bulk mail are also paced per recipient (20 at once, 10 per hour, 50 per day): a message over its
-recipient's share waits, without spending an attempt.
+Notices and bulk mail are also paced per recipient with the per-address budgets of the
+[email guard](SECURITY.md#email-abuse-controls): a message over its recipient's share waits, without spending
+an attempt.
 
 A recipient whose address or mailbox is refused for good (5xx with enhanced status 5.1 or 5.2), a message too
 large or content the key ring cannot read is removed and logged. A failure that may pass, such as a recipient
@@ -291,13 +292,14 @@ Compose development overlay still locks the mode in `api-state`.
 Demo mode seeds realistic content and invented accounts of every type and staff role under
 `demo.codigoactivo.es`, which [cannot sign in](SECURITY.md#demo-mode), so every page has something to show:
 events in every stage with signups, terms decisions and ratings, and earlier versions of the conditions and the
-legal policies. The bootstrap administrator gets signups of their own and invented dependents, recorded like any
+legal policies. The initial administrator gets signups of their own and invented dependents, recorded like any
 minor as declared by their guardian, here that administrator. One registration waits for its verification: the
-purge erases it after a day and each start brings it back. The demonstrator signs in with the bootstrap
+purge erases it after a day and each start brings it back. The demonstrator signs in with the initial
 administrator, the only account that can, whose password reset and login codes arrive at
 `BOOTSTRAP_ADMIN_EMAIL` through the configured SMTP server. Seeding downloads its sample images from
-`picsum.photos` (three attempts each, at most five minutes in total), so `api` needs outbound HTTPS there on
-the start that seeds; a failed download stops that start.
+`picsum.photos` (three attempts each), so `api` needs outbound HTTPS there on the start that seeds; a failed
+download stops that start, and so does demo seeding, logs and data history included, that has not finished
+within five minutes.
 Demo mode also fills the diagnostic and audit logs with an invented three-week history that follows the demo
 data: logins, signups, published content, a password attack, email outages and slow requests. A later start
 writes a new one once the audit log holds no entry of a demo account younger than the diagnostic retention;
@@ -306,10 +308,10 @@ and does not stop the start.
 It also replays a year of changes and erasures of personal data through the data history, so «Archivo
 legal» has something to consult: demo accounts that replaced their email and phone, withdrew their news
 consent, left an activity or deleted a rating, and three former accounts erased by their holder together with
-a minor (Lozano Prieto), by the administrator (Ibáñez Robles) and by the purge of unverified accounts (Gallego
-Herrera). On top of that history it records consultations of several requesters and the claims they hold, two
-open and one lifted. It runs once, in one transaction, while the history holds nothing about those former accounts; a
-failure stops that start.
+a dependent (Lozano Prieto), by the administrator (Ibáñez Robles) and by the purge of unverified accounts
+(Gallego Herrera). On top of that history it records consultations of several requesters and the claims they
+hold, two open and one lifted. It runs once, in one transaction, while the history holds nothing about those
+former accounts; a failure stops that start.
 
 Changing mode requires destroying all named volumes and therefore all application data:
 
@@ -334,8 +336,8 @@ of deleted accounts; startup refuses a database that has users but not that acco
 
 Inside the repository, `docker compose up --build` merges `docker-compose.override.yml`: it builds `api` and
 `web` from the working tree, sets the API to Development and exposes port `5150`, adds a Mailpit service
-publishing SMTP on port `1025` and its inbox UI on port `8025` and points every `SMTP_*` value at it, fixes
-`APP_BASE_URL`, `APP_TIMEZONE`, `DEMO_MODE=true` and every `LEGAL_*` value (so `.env` only needs
+publishing SMTP on port `1025` and its inbox UI on port `8025` and points the SMTP connection and sender at it,
+fixes `APP_BASE_URL`, `APP_TIMEZONE`, `DEMO_MODE=true` and every `LEGAL_*` value (so `.env` only needs
 `BOOTSTRAP_ADMIN_EMAIL`), exposes PostgreSQL on port `5432` and makes the backend network non-internal, and
 disables the API read-only root filesystem in favor of debugger-oriented privileges. Visual Studio uses the same
 Compose project through `backend/docker-compose.dcproj`. In Development the API also writes its log to the

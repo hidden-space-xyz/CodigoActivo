@@ -41,7 +41,7 @@ Compose needs all three [secret files](DEPLOYMENT.md#secrets). As in the contain
 Protection key ring in `/home/app/.aspnet/DataProtection-Keys` (`C:\home\app\.aspnet\DataProtection-Keys` on
 Windows); delete that folder after changing `DATA_PROTECTION_KEY`. In PowerShell, set the same variables with
 `$env:NAME="..."`. Mailpit catches every email at <http://localhost:8025>: login codes, verification links
-and the password reset that sets the bootstrap administrator's first password.
+and the password reset that sets the initial administrator's first password.
 
 The API listens on <http://localhost:5150> (the `https` launch profile adds <https://localhost:7039>) and
 serves Swagger at `/swagger` in Development, where it logs to the console as well as to the log tables of its
@@ -69,6 +69,7 @@ Run backend commands from `backend/`. The folder holds both `CodigoActivo.slnx` 
 name the solution or project:
 
 ```bash
+dotnet csharpier format .
 dotnet build CodigoActivo.slnx
 dotnet test --solution CodigoActivo.slnx
 dotnet test tests/CodigoActivo.ArchitectureTests
@@ -131,7 +132,7 @@ The remaining scripts are in `package.json`.
 ### End-to-end tests
 
 `tests/e2e/` is a [Playwright](https://playwright.dev/) suite in TypeScript that drives the SPA in Chromium
-through every page as each kind of user: visitors, participants, members, sponsors, guardians, activity
+through the journeys of each kind of user: visitors, participants, members, sponsors, guardians, activity
 leaders, editors, administrators, the privacy officer and the initial administrator. Like the performance suite
 it runs in Docker as its own Compose project with its own volumes: PostgreSQL, Mailpit, the API (`Development`, without
 demo data) and the nginx image built from the working tree, plus the Playwright runner. From the repository root:
@@ -150,11 +151,11 @@ the host (`npm ci`, `npx playwright install chromium`, then `npm test` or `npm r
 The `setup` project takes over the initial administrator through a password reset and has it designate the
 privacy officer, a member it makes an administrator; every other account and all content are created through
 the API by the tests that need them, so the suite runs again on the same volumes. Logins complete the second factor with
-the code read from Mailpit. The `desktop` project runs every spec and `mobile` the ones tagged `@mobile`; a
-full run takes about three minutes with the default four workers. Each
-worker sends its own `X-Forwarded-For`, so the rate limits treat workers as different visitors. The email guard
-allows 1,000 verification and reset emails per hour and only resets with a new API process: after several runs
-in an hour, restart `api` or run `down -v`. The HTML report and the traces of failed tests are written to
+the code read from Mailpit. The `desktop` project runs every test except those tagged `@mobile`, which only
+`mobile` runs; a full run takes about three minutes with the default four workers. Each worker sends its own
+`X-Forwarded-For`, so the rate limits treat workers as different visitors. The email guard allows 1,000
+verification and reset emails per hour and only resets with a new API process: after several runs in an hour,
+restart `api` or run `down -v`. The HTML report and the traces of failed tests are written to
 `tests/e2e/results/`; conventions are in [tests/e2e/AGENTS.md](tests/e2e/AGENTS.md).
 
 ### Performance tests
@@ -179,10 +180,11 @@ replace them when real ones exist.
 Each scenario sends the requests the SPA sends when its pages open: anonymous visitors (home, events, an event
 and its activities, news, resources), members (home, an event with their signups, profile, history,
 certificates), accounts signing up for the shared event, alone or with their household, members signing in, new
-families that register, confirm their email and sign in, and administrators who manage an event, its signups
-and news, read reports and logs (the audit log as the bootstrap administrator, its only administrator reader),
-upload images and send email. The suite measures only the requests that carry the site's traffic or its heavy
-work; the rare account, authenticator, unsubscribe and blocked data flows are left to the integration tests.
+families that register, confirm their email and sign in, and administrators who manage an event, its signups and
+news, read reports and logs (the audit log as the initial administrator, which holds the data protection
+designation in this stack), upload images and send email. The suite measures only the requests that carry the
+site's traffic or its heavy work; the rare account, authenticator, unsubscribe and blocked data flows are left
+to the integration tests.
 
 `PROFILE` selects the load and what it must prove. A window is a stretch of steady load; its objective is p95
 under 500 ms, p99 under 1.5 s and failures under 1% on the API, with at least 95% of the iterations its load
@@ -191,7 +193,7 @@ promises actually started, so a slow k6 cannot pass for a fast API.
 | Profile    | Load                                                                                        | k6 exits with code 99 unless                                                                                                 |
 | ---------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `smoke`    | One or two iterations per scenario, to check the suite                                      | Every catalogued endpoint is requested and fails under 1%                                                                    |
-| `load`     | The expected peak for ten minutes; the default                                              | The same, every endpoint keeps the p95 budget of `k6/lib/catalog.js`, `peak` meets the objective and codes arrive within 5 s |
+| `load`     | The expected peak for eight minutes after a one-minute ramp; the default                    | The same, every endpoint keeps the p95 budget of `k6/lib/catalog.js`, `peak` meets the objective and codes arrive within 5 s |
 | `spike`    | Signups open: signups, logins and new families jump to ten times the peak for three minutes | The same as `smoke`, every window gets its load, `recovery` meets the objective and codes arrive within 5 s                  |
 | `capacity` | From 1,000 to 10,000 people using the site at once, in eight two-minute steps               | Every catalogued endpoint is requested; the summary reports the largest step that met the objective                          |
 
@@ -199,7 +201,7 @@ In `capacity`, 70% of the people browse anonymously, 25% as members and 5% sign 
 every ten seconds, and one member visit in ten starts with a login. k6 replays those visits at the matching
 arrival rate with short pauses of its own, while new families and administrators keep a fixed pace.
 
-Setup signs in the bootstrap administrator, registers administrators and members, takes over demo members
+Setup signs in the initial administrator, registers administrators and members, takes over demo members
 through a password reset and creates the events the scenarios share, reading every code from Mailpit. Its
 requests stay out of the results, and any unexpected answer stops the run. k6 calls the API directly as its
 trusted proxy, sending a private `X-Forwarded-For` per simulated client and `X-Forwarded-Proto: https`, so nginx

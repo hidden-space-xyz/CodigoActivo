@@ -37,7 +37,7 @@ const proxiedLocationHeaders = [
   'location = /sitemap.xml',
   'location = /robots.txt',
   'location ~* ^/api/auth/(login|register|forgot-password|resend-verification|[^/]+/(verify|reset-password|confirm-email))/?$',
-  'location ~* ^/api/users/[^/]+/(password|admin)/?$',
+  'location ~* ^/api/users/[^/]+/(password|staff-role|privacy-officer)/?$',
   'location /api/',
 ]
 

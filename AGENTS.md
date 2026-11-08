@@ -5,8 +5,8 @@
 
 - [ARCHITECTURE.md](ARCHITECTURE.md): domain language, boundaries, data flow and API contract.
 - [CONTRIBUTING.md](CONTRIBUTING.md): local setup, commands and pull requests.
-- [DEPLOYMENT.md](DEPLOYMENT.md): Compose, environment variables and releases.
-- [SECURITY.md](SECURITY.md): authentication, trust boundaries and abuse controls.
+- [DEPLOYMENT.md](DEPLOYMENT.md): Compose, environment variables, email delivery and releases.
+- [SECURITY.md](SECURITY.md): authentication, trust boundaries, abuse controls, privacy, logging and retention.
 
 Update the owning document in the same change when behavior, architecture, configuration or security changes.
 Do not copy the same explanation into every file. Documentation must stay short and factual. Do not grow a
@@ -25,7 +25,8 @@ change code and stored structures freely. Keep no legacy code, compatibility shi
 earlier versions.
 
 When the user announces a deployment, remove this section, the regeneration paragraph in CONTRIBUTING.md and
-`MigrationsAlwaysAreTheSingleInitialCreate`: from then on every model change adds a migration and stays
+`MigrationsAlwaysAreTheSingleInitialCreate`, and reword the reason in
+`MigrationSnapshotAlwaysMatchesCurrentModel`: from then on every model change adds a migration and stays
 compatible with the deployed version and its data.
 
 ## Non-negotiable rules

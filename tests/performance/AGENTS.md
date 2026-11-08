@@ -13,6 +13,8 @@ These are the conventions of the k6 suite. How to run it and what each profile p
   `thresholds.js` the objective and the gates, and `summary.js` the report.
 - `k6/lib/http.js` holds `Session`, the simulated browser; `accounts.js`, `mail.js` and `fixtures.js` serve setup
   and the sign-in flows; `pool.js` deals accounts to iterations.
+- `k6/lib/config.js` reads the environment, `data.js` holds catalog ids and shared values, and `windows.js`
+  tells setup from the measured windows and counts arrivals.
 - `volume.sql` fills the database between the demo seed and setup.
 
 ## Rules
@@ -32,5 +34,6 @@ These are the conventions of the k6 suite. How to run it and what each profile p
   makes it wait for a new code.
 - `volume.sql` writes the tables directly, so a schema change that breaks it stops the run. It only adds rows
   and leaves the demo data alone, because setup and the scenarios read it.
-- Format with the Prettier configuration of `tests/e2e/`. Exported functions carry a JSDoc line; code carries
-  no other comments.
+- Format with the Prettier configuration of `tests/e2e/`, from that folder:
+  `npx prettier --config .prettierrc.json --write ../performance/k6`. Exported functions carry a JSDoc line;
+  code carries no other comments.
