@@ -44,7 +44,7 @@ public sealed class SetNewsItemFeaturedCommandHandlerTests
     {
         var chosen = NewNewsItem();
         news.Finds(chosen);
-        news.GetFeaturedAsync(Arg.Any<CancellationToken>()).Returns((NewsItem?)null);
+        news.GetFeaturedAsync(Arg.Any<CancellationToken>()).Returns(default(NewsItem));
 
         var result = await sut.HandleAsync(
             new SetNewsItemFeaturedCommand(chosen.Id),

@@ -295,9 +295,11 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
         lock (messages)
         {
             return Task.FromResult(
-                messages.Count(message =>
-                    message.ExpiresAt is null && message.CreatedAt < acceptedBefore
-                )
+                messages
+                    .FindAll(message =>
+                        message.ExpiresAt is null && message.CreatedAt < acceptedBefore
+                    )
+                    .Count
             );
         }
     }

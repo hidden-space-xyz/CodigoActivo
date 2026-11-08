@@ -32,7 +32,7 @@ public sealed class AccountErasureStore(CodigoActivoDbContext context) : IAccoun
     /// <inheritdoc />
     public async Task DiscardPendingEmailAsync(UserId accountId, CancellationToken ct = default)
     {
-        var aboutHousehold = (await HouseholdAsync(accountId, ct))
+        IReadOnlyList<string> aboutHousehold = (await HouseholdAsync(accountId, ct))
             .Select(id => "%" + EmailTopics.AboutPersonSuffix(id.Value))
             .ToArray();
         await context.Database.ExecuteSqlAsync(

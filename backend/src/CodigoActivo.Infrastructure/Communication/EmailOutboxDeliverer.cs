@@ -340,9 +340,9 @@ public sealed class EmailOutboxDeliverer(
         try
         {
             var expired = await store.RemoveExpiredAsync(now, ct);
-            foreach (var kind in expired.GroupBy(kind => kind))
+            foreach (var (kind, count) in expired.CountBy(kind => kind))
             {
-                logger.EmailsExpired(kind.Count(), kind.Key);
+                logger.EmailsExpired(count, kind);
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

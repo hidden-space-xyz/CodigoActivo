@@ -150,7 +150,7 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
             .Equal(
                 ("aviso@example.test", now + EmailQueueOptions.MessageLifetime),
                 ("codigo@example.test", now.AddMinutes(10)),
-                ("legal@example.test", (DateTimeOffset?)null)
+                ("legal@example.test", null)
             );
     }
 

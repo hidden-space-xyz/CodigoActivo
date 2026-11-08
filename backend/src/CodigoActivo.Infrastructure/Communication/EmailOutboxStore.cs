@@ -376,10 +376,12 @@ public sealed class EmailOutboxStore(
         await using var scope = scopes.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
 
-        return await db.EmailOutboxMessages.CountAsync(
-            message => message.ExpiresAt == null && message.CreatedAt < acceptedBefore,
-            ct
-        );
+        FormattableString sql = $"""
+            SELECT count(*)::int AS "Value"
+            FROM email_outbox_messages
+            WHERE expires_at IS NULL AND created_at < {acceptedBefore.ToUniversalTime()}
+            """;
+        return await db.Database.SqlQuery<int>(sql).SingleAsync(ct);
     }
 
     /// <inheritdoc />
@@ -441,9 +443,8 @@ public sealed class EmailOutboxStore(
             .Order(StringComparer.Ordinal)
             .ToList();
 
-        foreach (var address in addresses)
+        foreach (var key in addresses.Select(address => $"{topic}\n{address}"))
         {
-            var key = $"{topic}\n{address}";
             await db.Database.ExecuteSqlAsync(
                 $"SELECT pg_advisory_xact_lock(hashtextextended({key}, 0))",
                 ct

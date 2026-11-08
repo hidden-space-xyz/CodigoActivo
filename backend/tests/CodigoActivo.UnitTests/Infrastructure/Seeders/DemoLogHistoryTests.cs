@@ -434,8 +434,8 @@ public sealed class DemoLogHistoryTests
             .Select(entry => (entry.Action, entry.EntityId))
             .Should()
             .BeEquivalentTo([
-                ("PlaceBlockedDataHold", (Guid?)RecentHold),
-                ("LiftBlockedDataHold", (Guid?)LiftedHold),
+                ("PlaceBlockedDataHold", RecentHold),
+                ("LiftBlockedDataHold", LiftedHold),
             ]);
     }
 
