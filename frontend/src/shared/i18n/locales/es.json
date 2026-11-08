@@ -1962,7 +1962,7 @@
       "selfMember": "Yo",
       "terms": {
         "header": "Términos y condiciones",
-        "lead": "Antes de completar la inscripción, indica qué documentos se aceptan para cada persona. Las condiciones de los menores a tu cargo las aceptas tú. Los consentimientos, como el de uso de imágenes, son opcionales y se deciden por cada persona: por un menor de 14 años decides tú y, desde los 14, decide el propio menor. Un consentimiento se puede retirar cuando se quiera desde «Mi cuenta» o escribiéndonos.",
+        "lead": "Antes de completar la inscripción, indica qué documentos se aceptan para cada persona. Las condiciones de los menores a tu cargo las aceptas tú. Los consentimientos de un menor de 14 años los decides tú y, desde los 14, los decide el propio menor. Puedes retirarlos cuando quieras desde «Mi cuenta».",
         "selfHeader": "Tú",
         "decidedByUser": "Decides tú por {name}",
         "decidedByPerson": "Decide {name}",
