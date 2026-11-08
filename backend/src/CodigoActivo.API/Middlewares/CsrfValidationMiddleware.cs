@@ -13,7 +13,9 @@ namespace CodigoActivo.API.Middlewares;
 /// in another tab recovers.
 /// </summary>
 /// <param name="next">Next middleware of the pipeline.</param>
-/// <param name="antiforgery">Antiforgery service that validates the cookie and header token pair.</param>
+/// <param name="antiforgery">
+/// Antiforgery service that validates the cookie and header token pair.
+/// </param>
 public sealed class CsrfValidationMiddleware(RequestDelegate next, IAntiforgery antiforgery)
 {
     private static readonly HashSet<string> SafeMethods = new(StringComparer.OrdinalIgnoreCase)

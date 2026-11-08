@@ -17,7 +17,9 @@ public sealed class PrivacyOfficer(IUserRepository users, ICurrentUser currentUs
     /// <summary>
     /// Tells whether an account is the designated one.
     /// </summary>
-    /// <param name="isPrivacyOfficer">Whether the account is designated for data protection.</param>
+    /// <param name="isPrivacyOfficer">
+    /// Whether the account is designated for data protection.
+    /// </param>
     /// <param name="isActive">Whether the account is active.</param>
     /// <returns><see langword="true"/> when it is the designated account.</returns>
     public static bool Designates(bool isPrivacyOfficer, bool isActive)

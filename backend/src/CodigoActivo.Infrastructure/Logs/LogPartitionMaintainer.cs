@@ -88,7 +88,7 @@ public sealed class LogPartitionMaintainer(
     /// <summary>
     /// Creates the missing partitions of a table for the days of a batch that may still have one.
     /// </summary>
-    /// <param name="connection">Open connection of the log database the batch is written on.</param>
+    /// <param name="connection">Open logging connection the batch is written on.</param>
     /// <param name="table">Log table the batch is written to.</param>
     /// <param name="days">UTC days the batch holds, repeats allowed.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

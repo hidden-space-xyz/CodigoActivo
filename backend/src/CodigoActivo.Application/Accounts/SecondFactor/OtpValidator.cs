@@ -14,8 +14,12 @@ public sealed class OtpValidator(IOneTimeCodeHasher codeHasher)
     /// are ignored.
     /// </summary>
     /// <param name="code">Code as typed.</param>
-    /// <param name="usableCodeHash">Hash of the stored code, or <see langword="null"/> when there is no usable code.</param>
-    /// <returns><see langword="true"/> when the code matches; otherwise, <see langword="false"/>.</returns>
+    /// <param name="usableCodeHash">
+    /// Hash of the stored code, or <see langword="null"/> when there is no usable code.
+    /// </param>
+    /// <returns>
+    /// <see langword="true"/> when the code matches; otherwise, <see langword="false"/>.
+    /// </returns>
     public bool IsCodeValid(string code, string? usableCodeHash)
     {
         return !string.IsNullOrWhiteSpace(code)

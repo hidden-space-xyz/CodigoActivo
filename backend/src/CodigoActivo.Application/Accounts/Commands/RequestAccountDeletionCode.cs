@@ -17,7 +17,9 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the input required to email the code that confirms deleting an account.
 /// </summary>
-/// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize the change.</param>
+/// <param name="CurrentPassword">
+/// Password of the signed-in user, re-entered to authorize the change.
+/// </param>
 public sealed record RequestAccountDeletionCodeCommand(
     [property: Required, MaxLength(128), NotBlank] string CurrentPassword
 ) : ICommand<Result>, IPreparatoryCommand;
@@ -27,9 +29,9 @@ public sealed record RequestAccountDeletionCodeCommand(
 /// password is demanded first so a stolen session cannot start the flow, and wrong passwords count
 /// towards the same account lock as logins. The code reuses the storage, lifetime, cooldown and
 /// lockout of the emailed login code. Users whose second factor is an authenticator application
-/// read their code from it and never reach this command, and the initial administrator, which can
-/// never be deleted, is refused before its password is checked. The code is issued with the account
-/// locked, so parallel requests run one after another and the later ones find the resend cooldown.
+/// read their code from it and are refused here, and the initial administrator, which can never be
+/// deleted, is refused before its password is checked. The code is issued with the account locked,
+/// so parallel requests run one after another and the later ones find the resend cooldown.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="accountLock">Runs the issue of the code with the account locked.</param>

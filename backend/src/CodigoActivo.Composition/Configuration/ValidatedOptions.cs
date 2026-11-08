@@ -12,7 +12,8 @@ internal static class ValidatedOptions
 {
     /// <summary>
     /// Adds options that keep the values written in their class, out of reach of configuration,
-    /// and lets consumers take the options object itself as well as <see cref="IOptions{TOptions}"/>.
+    /// and lets consumers take the options object itself as well as
+    /// <see cref="IOptions{TOptions}"/>.
     /// </summary>
     /// <typeparam name="TOptions">Options added.</typeparam>
     /// <param name="services">Service collection to add to.</param>
@@ -31,14 +32,16 @@ internal static class ValidatedOptions
     /// </summary>
     /// <typeparam name="TOptions">Options added.</typeparam>
     /// <param name="services">Service collection to add to.</param>
-    /// <param name="configure">Fills the options from configuration; throws on an unusable setting.</param>
+    /// <param name="configure">
+    /// Fills the options from configuration; throws on an unusable setting.
+    /// </param>
     /// <param name="validate">
-    /// Checks the filled options, such as a required setting being present; null when
-    /// <paramref name="configure"/> checks everything.
+    /// Checks the filled options, such as a required setting being present;
+    /// <see langword="null"/> when <paramref name="configure"/> checks everything.
     /// </param>
     /// <param name="failureMessage">
-    /// Message reported when <paramref name="validate"/> fails; null for a generic one naming the
-    /// options type.
+    /// Message reported when <paramref name="validate"/> fails; <see langword="null"/> for a
+    /// generic one naming the options type.
     /// </param>
     /// <returns>The same service collection.</returns>
     public static IServiceCollection AddValidatedOptions<TOptions>(

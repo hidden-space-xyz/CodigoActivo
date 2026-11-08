@@ -8,13 +8,13 @@ using CodigoActivo.Domain.Resources;
 namespace CodigoActivo.Application.Resources.Queries;
 
 /// <summary>
-/// Carries the criteria used to retrieve resource by identifier.
+/// Carries the criteria used to retrieve a resource by identifier.
 /// </summary>
 /// <param name="ResourceId">Identifier of the resource.</param>
 public sealed record GetResourceByIdQuery(ResourceId ResourceId) : IQuery<Result<ResourceResponse>>;
 
 /// <summary>
-/// Executes the query to retrieve resource by identifier.
+/// Executes the query to retrieve a resource by identifier.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -22,7 +22,7 @@ public sealed class GetResourceByIdQueryHandler(IReadStore readStore, IQueryExec
     : IQueryHandler<GetResourceByIdQuery, Result<ResourceResponse>>
 {
     /// <summary>
-    /// Handles the request to retrieve resource by identifier.
+    /// Handles the request to retrieve a resource by identifier.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

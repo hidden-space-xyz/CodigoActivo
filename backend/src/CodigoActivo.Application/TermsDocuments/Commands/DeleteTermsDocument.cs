@@ -23,7 +23,9 @@ public sealed record DeleteTermsDocumentCommand(TermsDocumentId TermsDocumentId)
 /// </summary>
 /// <param name="termsDocuments">Repository used to persist and retrieve terms documents.</param>
 /// <param name="events">Repository used to persist and retrieve events.</param>
-/// <param name="termsAcceptances">Repository used to persist and retrieve terms acceptances.</param>
+/// <param name="termsAcceptances">
+/// Repository used to persist and retrieve terms acceptances.
+/// </param>
 public sealed class DeleteTermsDocumentCommandHandler(
     ITermsDocumentRepository termsDocuments,
     IEventRepository events,

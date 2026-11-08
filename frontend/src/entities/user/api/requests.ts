@@ -48,9 +48,9 @@ export async function changeUserTypeRequest(id: string, userTypeId: string): Pro
 }
 
 /**
- * Gives a user another cargo; only the superadministrator may, and never their own. Any cargo but
- * `None` requires the caller's `currentPassword` (the API rejects it with
- * `UserCurrentPasswordIncorrect` otherwise); removing the cargo ignores it.
+ * Gives a user another staff role; only the superadministrator may, and never their own. Any staff
+ * role but `None` requires the caller's `currentPassword` (the API rejects it with
+ * `UserCurrentPasswordIncorrect` otherwise); removing the staff role ignores it.
  */
 export async function setUserStaffRoleRequest(
   id: string,

@@ -8,13 +8,13 @@ using CodigoActivo.Domain.Partners;
 namespace CodigoActivo.Application.Partners.Queries;
 
 /// <summary>
-/// Carries the criteria used to retrieve partner by identifier.
+/// Carries the criteria used to retrieve a partner by identifier.
 /// </summary>
 /// <param name="PartnerId">Identifier of the partner.</param>
 public sealed record GetPartnerByIdQuery(PartnerId PartnerId) : IQuery<Result<PartnerResponse>>;
 
 /// <summary>
-/// Executes the query to retrieve partner by identifier.
+/// Executes the query to retrieve a partner by identifier.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -22,7 +22,7 @@ public sealed class GetPartnerByIdQueryHandler(IReadStore readStore, IQueryExecu
     : IQueryHandler<GetPartnerByIdQuery, Result<PartnerResponse>>
 {
     /// <summary>
-    /// Handles the request to retrieve partner by identifier.
+    /// Handles the request to retrieve a partner by identifier.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

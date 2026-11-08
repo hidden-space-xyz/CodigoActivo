@@ -5,9 +5,9 @@ namespace CodigoActivo.Application.Accounts;
 
 /// <summary>
 /// Declares the security events the application keeps. Routine authentication outcomes are not
-/// recorded: only the lockouts that stop an account and the security notification the limiter
-/// dropped are. No template carries an identifier, an address, a name or anything typed by the
-/// client, so no entry can be traced back to a person.
+/// recorded: only the lockouts that stop an account or its second factor are. No template carries
+/// an identifier, an address, a name or anything typed by the client, so no entry can be traced
+/// back to a person.
 /// </summary>
 public static partial class SecurityLog
 {

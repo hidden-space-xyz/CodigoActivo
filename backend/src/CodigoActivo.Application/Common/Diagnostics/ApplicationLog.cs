@@ -42,7 +42,7 @@ public static partial class ApplicationLog
     /// Records that an administrator-written email could not be stored for delivery.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="count">Number of recipients the batch was queued for.</param>
+    /// <param name="count">Number of recipients of the batch.</param>
     /// <param name="exception">Failure that stopped the batch from being stored.</param>
     [LoggerMessage(
         Level = LogLevel.Error,
@@ -58,7 +58,7 @@ public static partial class ApplicationLog
     /// Records that the outbox had no room left for an administrator-written email.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="count">Number of recipients the batch was queued for.</param>
+    /// <param name="count">Number of recipients of the batch.</param>
     [LoggerMessage(
         Level = LogLevel.Error,
         Message = "The outbound email outbox has no room for a manual email to {Count} recipients"
@@ -79,11 +79,11 @@ public static partial class ApplicationLog
     );
 
     /// <summary>
-    /// Records that the audit entry of a command could not be built or queued, so the audit log
-    /// misses it; the command itself ended as it would have without auditing.
+    /// Records that an audit entry could not be built or queued, so the audit log misses it; what
+    /// it records ended as it would have without auditing.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="useCase">Name of what the entry records.</param>
+    /// <param name="useCase">Name of the audit action of the entry.</param>
     /// <param name="exception">Failure raised while recording the entry.</param>
     [LoggerMessage(
         Level = LogLevel.Error,

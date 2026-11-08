@@ -45,8 +45,8 @@ export interface TermsConsentTarget {
 }
 
 /**
- * Whether a terms document holds the conditions of taking part, which the account holder accepts for
- * each person they sign up, or a consent, which a minor decides from the age of 14.
+ * Whether a terms document holds the conditions of taking part, which the account holder accepts
+ * for each person they sign up, or a consent, which a minor decides from the age of 14.
  */
 type EventTermsKind = 'Conditions' | 'Consent'
 

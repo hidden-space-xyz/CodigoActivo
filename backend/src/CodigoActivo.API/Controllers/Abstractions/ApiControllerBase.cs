@@ -29,7 +29,9 @@ public abstract class ApiControllerBase : ControllerBase
     /// <typeparam name="T">Type of the contract returned to the client.</typeparam>
     /// <param name="result">Outcome of the operation.</param>
     /// <param name="map">Translates the operation output to the HTTP contract.</param>
-    /// <returns>An action result with the contract, or the problem describing the failure.</returns>
+    /// <returns>
+    /// An action result with the contract, or the problem describing the failure.
+    /// </returns>
     protected ActionResult<T> ToOk<TOutput, T>(Result<TOutput> result, Func<TOutput, T> map)
     {
         ArgumentNullException.ThrowIfNull(result);
@@ -44,7 +46,9 @@ public abstract class ApiControllerBase : ControllerBase
     /// <typeparam name="T">Type of the read model returned to the client.</typeparam>
     /// <param name="result">Outcome of the command.</param>
     /// <param name="read">Query that loads the read model once the command succeeded.</param>
-    /// <returns>An action result with the read model, or the problem describing the failure.</returns>
+    /// <returns>
+    /// An action result with the read model, or the problem describing the failure.
+    /// </returns>
     protected async Task<ActionResult<T>> ToOkAfterAsync<T>(
         Result result,
         Func<Task<Result<T>>> read
@@ -63,7 +67,9 @@ public abstract class ApiControllerBase : ControllerBase
     /// <typeparam name="T">Type of the read model returned to the client.</typeparam>
     /// <param name="result">Outcome of the command.</param>
     /// <param name="read">Query that loads the read model once the command succeeded.</param>
-    /// <returns>An action result with the read model, or the problem describing the failure.</returns>
+    /// <returns>
+    /// An action result with the read model, or the problem describing the failure.
+    /// </returns>
     protected async Task<ActionResult<T>> ToOkAfterAsync<TOutput, T>(
         Result<TOutput> result,
         Func<TOutput, Task<Result<T>>> read
@@ -99,9 +105,13 @@ public abstract class ApiControllerBase : ControllerBase
     /// </summary>
     /// <typeparam name="TId">Type of the identifier of the new resource.</typeparam>
     /// <typeparam name="T">Type of the read model returned to the client.</typeparam>
-    /// <param name="result">Outcome of the command, carrying the identifier of the new resource.</param>
+    /// <param name="result">
+    /// Outcome of the command, carrying the identifier of the new resource.
+    /// </param>
     /// <param name="read">Query that loads the read model of the new resource.</param>
-    /// <param name="location">Builds the relative location of the new resource from its raw id.</param>
+    /// <param name="location">
+    /// Builds the relative location of the new resource from its raw id.
+    /// </param>
     /// <returns>
     /// A 201 result with the read model and its location, or the problem describing the failure.
     /// </returns>

@@ -11,7 +11,9 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the input required to email a new login code for an open challenge.
 /// </summary>
-/// <param name="Challenge">Challenge the password step opened, named by the challenge cookie.</param>
+/// <param name="Challenge">
+/// Challenge the password step opened, named by the challenge cookie.
+/// </param>
 public sealed record ResendTwoFactorCodeCommand(LoginChallengeKey Challenge)
     : ICommand<Result>,
         IUnaudited;
@@ -46,8 +48,8 @@ public sealed class ResendTwoFactorCodeCommandHandler(
     /// <returns>
     /// A task whose result indicates success,
     /// <see cref="ApplicationErrorCode.TwoFactorChallengeExpired"/> when the challenge is no longer
-    /// open, <see cref="ApplicationErrorCode.TwoFactorResendCooldownActive"/> within the cooldown or
-    /// when the email limiter refuses the code,
+    /// open, <see cref="ApplicationErrorCode.TwoFactorResendCooldownActive"/> within the cooldown
+    /// or when the email limiter refuses the code,
     /// <see cref="DomainErrorCode.TwoFactorResendNotAllowed"/> for an account that uses an
     /// authenticator, <see cref="DomainErrorCode.TwoFactorLocked"/>, or
     /// <see cref="ApplicationErrorCode.EmailSendFailed"/>.

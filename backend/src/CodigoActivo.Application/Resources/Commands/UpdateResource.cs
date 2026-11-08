@@ -47,7 +47,9 @@ public sealed record UpdateResourceCommand(
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="currentUser">Person the use case runs for, recorded as the editor.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="uow">Unit of work that saves the resource in the transaction that locks its files.</param>
+/// <param name="uow">
+/// Unit of work that saves the resource in the transaction that locks its files.
+/// </param>
 public sealed class UpdateResourceCommandHandler(
     IResourceRepository resources,
     IStoredFileRepository files,

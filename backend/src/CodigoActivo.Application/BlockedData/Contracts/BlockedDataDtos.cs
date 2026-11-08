@@ -6,7 +6,9 @@ namespace CodigoActivo.Application.BlockedData.Contracts;
 /// <summary>
 /// Tells the signed-in administrator whether they may consult the blocked data.
 /// </summary>
-/// <param name="IsPrivacyOfficer">Whether the account is the one designated for data protection.</param>
+/// <param name="IsPrivacyOfficer">
+/// Whether the account is the one designated for data protection.
+/// </param>
 /// <param name="Entities">Kinds of data an extract can be narrowed to.</param>
 public sealed record BlockedDataAccessResponse(
     bool IsPrivacyOfficer,
@@ -101,7 +103,9 @@ public sealed record BlockedDataEntryResponse(
 /// <param name="Id">Identifier of the hold.</param>
 /// <param name="Requester">Who asked for the data.</param>
 /// <param name="Reference">Reference of the claim.</param>
-/// <param name="Accounts">How many accounts it keeps the history of: the account and its minors.</param>
+/// <param name="Accounts">
+/// How many accounts it keeps the history of: the account and its minors.
+/// </param>
 /// <param name="PlacedAt">When it was placed.</param>
 /// <param name="PlacedByName">Name of the account that placed it, while it exists.</param>
 /// <param name="LiftedAt">When it was lifted, or <see langword="null"/> while it is active.</param>

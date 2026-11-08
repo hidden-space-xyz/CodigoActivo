@@ -5,7 +5,10 @@ import { poster } from '../lib/pages.js'
 
 let image = null
 
-/** An editor picks a new image for a form: the upload, its preview and the generated thumbnail. */
+/**
+ * An administrator picks a new image for a form: the upload, its preview and the generated
+ * thumbnail.
+ */
 export function uploads(data) {
   const { account } = nextAccount(data.admins.uploads)
   const session = sessionFor(account)

@@ -26,7 +26,9 @@ public sealed record DeleteUserCommand(UserId UserId) : ICommand<Result>;
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="actingUser">Policy that decides for whom the signed-in user may act.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
-/// <param name="accountEraser">Eraser that deletes the account and its dependents, keeping their data history.</param>
+/// <param name="accountEraser">
+/// Eraser that deletes the account and its dependents, keeping their data history.
+/// </param>
 public sealed class DeleteUserCommandHandler(
     IUserRepository users,
     ActingUserPolicy actingUser,
@@ -41,9 +43,9 @@ public sealed class DeleteUserCommandHandler(
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
     /// A task whose result reports success;
-    /// <see cref="ApplicationErrorCode.ActingForAnotherUserForbidden"/> when the caller is neither the
-    /// initial administrator nor the guardian, <see cref="DomainErrorCode.UserDeleteInitialAdminForbidden"/>
-    /// for the initial administrator,
+    /// <see cref="ApplicationErrorCode.ActingForAnotherUserForbidden"/> when the caller is neither
+    /// the initial administrator nor the guardian,
+    /// <see cref="DomainErrorCode.UserDeleteInitialAdminForbidden"/> for the initial administrator,
     /// <see cref="ApplicationErrorCode.UserSelfDeleteRequiresVerification"/> for the caller's own
     /// account, or <see cref="ApplicationErrorCode.UserNotFound"/> when the user is missing or was
     /// erased meanwhile.

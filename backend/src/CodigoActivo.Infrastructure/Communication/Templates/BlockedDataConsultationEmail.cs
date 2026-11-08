@@ -25,7 +25,9 @@ public static class BlockedDataConsultationEmail
     /// </param>
     /// <param name="timeZone">Time zone used to calculate local dates.</param>
     /// <param name="siteUrl">Public base URL of the site, linked from the footer.</param>
-    /// <returns>The message, of kind <see cref="EmailKind.BlockedDataConsultationNotice"/>.</returns>
+    /// <returns>
+    /// The message, of kind <see cref="EmailKind.BlockedDataConsultationNotice"/>.
+    /// </returns>
     /// <exception cref="ArgumentException">No consultation was given.</exception>
     public static EmailMessage Create(
         string toAddress,

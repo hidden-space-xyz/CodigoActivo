@@ -49,7 +49,9 @@ public static class FileNaming
     /// </summary>
     /// <param name="storedName">Storage name to read.</param>
     /// <param name="id">Identifier of the file, when the name starts with one.</param>
-    /// <returns><see langword="true"/> when the name starts with a file identifier and a dot.</returns>
+    /// <returns>
+    /// <see langword="true"/> when the name starts with a file identifier and a dot.
+    /// </returns>
     public static bool TryReadId(string storedName, out StoredFileId id)
     {
         ArgumentNullException.ThrowIfNull(storedName);

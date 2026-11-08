@@ -15,15 +15,17 @@ namespace CodigoActivo.API.Attributes;
 public sealed class AllowOnlySuperAdministratorAttribute : AuthorizeAttribute, IAuthorizationFilter
 {
     /// <summary>
-    /// Gets or sets whether the administrator designated for data protection passes too. Defaults
-    /// to <see langword="false"/>.
+    /// Gets or sets a value indicating whether the administrator designated for data protection
+    /// passes too. Defaults to <see langword="false"/>.
     /// </summary>
     public bool PrivacyOfficerAllowed { get; set; }
 
     /// <summary>
     /// Challenges a request without a signed-in user and forbids one from any other account.
     /// </summary>
-    /// <param name="context">Authorization context of the request; its result is set to refuse it.</param>
+    /// <param name="context">
+    /// Authorization context of the request; its result is set to refuse it.
+    /// </param>
     public void OnAuthorization(AuthorizationFilterContext context)
     {
         var user = context.HttpContext.User;

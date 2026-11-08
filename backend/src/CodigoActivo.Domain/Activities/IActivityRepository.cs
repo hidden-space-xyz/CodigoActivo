@@ -15,7 +15,9 @@ public interface IActivityRepository : IRepository<Activity>
     /// </summary>
     /// <param name="id">Identifier of the activity.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is the activity, or <see langword="null"/> when it does not exist.</returns>
+    /// <returns>
+    /// A task whose result is the activity, or <see langword="null"/> when it does not exist.
+    /// </returns>
     public Task<Activity?> GetByIdAsync(ActivityId id, CancellationToken ct = default);
 
     /// <summary>
@@ -25,7 +27,9 @@ public interface IActivityRepository : IRepository<Activity>
     /// <param name="lowerInclusive">Earliest start allowed, in UTC.</param>
     /// <param name="upperExclusive">Moment every activity must end before, in UTC.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="true"/> when some activity falls outside.</returns>
+    /// <returns>
+    /// A task whose result is <see langword="true"/> when some activity falls outside.
+    /// </returns>
     public Task<bool> AnyOutsideRangeAsync(
         EventId eventId,
         DateTimeOffset lowerInclusive,
@@ -50,7 +54,9 @@ public interface IActivityRepository : IRepository<Activity>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="userIds">Identifiers of the people.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="true"/> when one of them was confirmed.</returns>
+    /// <returns>
+    /// A task whose result is <see langword="true"/> when one of them was confirmed.
+    /// </returns>
     public Task<bool> AnyConfirmedSignupAsync(
         EventId eventId,
         IReadOnlyCollection<UserId> userIds,

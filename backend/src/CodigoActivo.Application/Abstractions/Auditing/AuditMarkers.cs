@@ -30,15 +30,15 @@ public interface IRoutineCommand;
 
 /// <summary>
 /// Marks a step that only prepares a change another command records, such as emailing the code
-/// that confirms deleting an account: it is recorded only when refused, because then a wrong
-/// password is all that happened.
+/// that confirms deleting an account: its success is never recorded, only its refusal, because
+/// then a wrong password is all that happened.
 /// </summary>
 public interface IPreparatoryCommand;
 
 /// <summary>
 /// Marks a command that finds its account by an address any caller can type and answers the same
-/// whether it exists, such as asking for a password reset. It is recorded only when its handler
-/// found the account: otherwise nothing happened.
+/// whether it exists, such as asking for a password reset. Its success is recorded only when its
+/// handler found the account: otherwise nothing happened.
 /// </summary>
 public interface IAccountLookupCommand;
 

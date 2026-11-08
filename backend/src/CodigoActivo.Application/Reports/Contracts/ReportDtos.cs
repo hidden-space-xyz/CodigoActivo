@@ -16,8 +16,12 @@ namespace CodigoActivo.Application.Reports.Contracts;
 /// Number of different people signed up to any activity, whatever their role or status.
 /// </param>
 /// <param name="RatingsCount">Number of ratings received, with or without a score.</param>
-/// <param name="ScoredRatingsCount">Number of ratings that carry a score, the ones the average covers.</param>
-/// <param name="RatingsAverage">Mean score of the scored ratings, or <see langword="null"/> without any.</param>
+/// <param name="ScoredRatingsCount">
+/// Number of ratings that carry a score, the ones the average covers.
+/// </param>
+/// <param name="RatingsAverage">
+/// Mean score of the scored ratings, or <see langword="null"/> without any.
+/// </param>
 /// <param name="RoleTypeBreakdown">Confirmed signups per role, every role listed by name.</param>
 public record EventSummaryResponse(
     Guid EventId,
@@ -76,9 +80,9 @@ public record EventAttendeeAssignmentResponse(
 );
 
 /// <summary>
-/// Full contact details of the guardian of a dependent, the administrator's view in the attendee list
-/// and the event roster; the leader roster and the badges show less on purpose and keep their own
-/// shapes.
+/// Full contact details of the guardian of a dependent, the administrator's view in the attendee
+/// list and the event roster; the leader roster and the badges show less on purpose and keep their
+/// own shapes.
 /// </summary>
 /// <param name="FirstName">Guardian's given name.</param>
 /// <param name="LastName">Guardian's family name.</param>
@@ -292,7 +296,9 @@ public record DashboardSliceResponse(string Key, string? Label, string? Color, i
 /// Groups of a breakdown, each with one value per series, such as people per age group and gender.
 /// </summary>
 /// <param name="Groups">Keys of the groups, in display order.</param>
-/// <param name="Series">One series per key, with a value per group in the order of <paramref name="Groups"/>.</param>
+/// <param name="Series">
+/// One series per key, with a value per group in the order of <paramref name="Groups"/>.
+/// </param>
 public record DashboardBreakdownResponse(
     IReadOnlyList<string> Groups,
     IReadOnlyList<DashboardSeriesResponse> Series
@@ -304,8 +310,12 @@ public record DashboardBreakdownResponse(
 /// <param name="EventId">Identifier of the event.</param>
 /// <param name="Title">Title of the event.</param>
 /// <param name="Confirmed">Confirmed signups in its activities of the range, in any role.</param>
-/// <param name="SeatsFilled">Seats those activities filled, counting each role up to its desired number.</param>
-/// <param name="SeatsDesired">Seats those activities wanted, summed over the roles with a desired number.</param>
+/// <param name="SeatsFilled">
+/// Seats those activities filled, counting each role up to its desired number.
+/// </param>
+/// <param name="SeatsDesired">
+/// Seats those activities wanted, summed over the roles with a desired number.
+/// </param>
 public record DashboardTopEventResponse(
     Guid EventId,
     string Title,
@@ -344,8 +354,12 @@ public record DashboardPendingSignupsResponse(
 /// Seats of one role filled versus wanted across the upcoming activities.
 /// </summary>
 /// <param name="Key">Role: <c>leader</c>, <c>volunteer</c> or <c>participant</c>.</param>
-/// <param name="Confirmed">Seats filled by confirmed people, counting each activity up to its desired number.</param>
-/// <param name="Desired">Seats wanted, summed over the activities that set a desired number for the role.</param>
+/// <param name="Confirmed">
+/// Seats filled by confirmed people, counting each activity up to its desired number.
+/// </param>
+/// <param name="Desired">
+/// Seats wanted, summed over the activities that set a desired number for the role.
+/// </param>
 public record DashboardRoleCoverageResponse(string Key, int Confirmed, int Desired);
 
 /// <summary>
@@ -365,7 +379,9 @@ public record DashboardEventSatisfactionResponse(
 /// <summary>
 /// Scores of the events that ended in the range.
 /// </summary>
-/// <param name="Average">Mean of every scored rating of those events, or <see langword="null"/> without any.</param>
+/// <param name="Average">
+/// Mean of every scored rating of those events, or <see langword="null"/> without any.
+/// </param>
 /// <param name="Scored">Number of their ratings that carry a score.</param>
 /// <param name="Events">
 /// Up to eight of those events with a score, the most recently ended first.
@@ -377,12 +393,15 @@ public record DashboardSatisfactionResponse(
 );
 
 /// <summary>
-/// Contains the seats of an upcoming activity with a desired number of people, returned by the API.
+/// Contains the seats of an upcoming activity with a desired number of people, returned by the
+/// API.
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
 /// <param name="Title">Title of the activity.</param>
 /// <param name="StartsAt">When it starts, in UTC.</param>
-/// <param name="Confirmed">Seats filled by confirmed people, counting each role up to its desired number.</param>
+/// <param name="Confirmed">
+/// Seats filled by confirmed people, counting each role up to its desired number.
+/// </param>
 /// <param name="Desired">Seats wanted, summed over the roles with a desired number.</param>
 public record DashboardOccupancyActivityResponse(
     Guid ActivityId,
@@ -397,7 +416,9 @@ public record DashboardOccupancyActivityResponse(
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 /// <param name="Title">Title of the event.</param>
-/// <param name="Confirmed">Seats filled across its activities, never above each role's desired number.</param>
+/// <param name="Confirmed">
+/// Seats filled across its activities, never above each role's desired number.
+/// </param>
 /// <param name="Desired">Seats wanted across its activities.</param>
 /// <param name="Activities">
 /// Its upcoming activities with a desired number, in chronological order.
@@ -414,7 +435,9 @@ public record DashboardOccupancyEventResponse(
 /// Contains the seats filled versus wanted in the upcoming activities, whatever the range, returned
 /// by the API.
 /// </summary>
-/// <param name="Confirmed">Seats filled across every upcoming activity, never above each role's desired number.</param>
+/// <param name="Confirmed">
+/// Seats filled across every upcoming activity, never above each role's desired number.
+/// </param>
 /// <param name="Desired">Seats wanted across every upcoming activity.</param>
 /// <param name="Events">Events with such activities, the one with the soonest first.</param>
 public record DashboardOccupancyResponse(
@@ -439,11 +462,22 @@ public record DashboardOccupancyResponse(
 /// <param name="TopEvents">
 /// Up to eight events with the most confirmed signups in their activities of the range.
 /// </param>
-/// <param name="PendingSignups">Signups waiting for a decision in upcoming activities, whatever the range.</param>
-/// <param name="RoleCoverage">Seats filled versus wanted per role in upcoming activities, whatever the range.</param>
-/// <param name="ParticipantProfile">Distinct people confirmed in activities of the range, per age group (on the last day of the range) and gender.</param>
-/// <param name="CategoryDemand">Confirmed signups in activities of the range per event category, the busiest first.</param>
-/// <param name="Recurrence">Distinct people confirmed in activities of the range, by how many events they joined.</param>
+/// <param name="PendingSignups">
+/// Signups waiting for a decision in upcoming activities, whatever the range.
+/// </param>
+/// <param name="RoleCoverage">
+/// Seats filled versus wanted per role in upcoming activities, whatever the range.
+/// </param>
+/// <param name="ParticipantProfile">
+/// Distinct people confirmed in activities of the range, per age group (on the last day of the
+/// range) and gender.
+/// </param>
+/// <param name="CategoryDemand">
+/// Confirmed signups in activities of the range per event category, the busiest first.
+/// </param>
+/// <param name="Recurrence">
+/// Distinct people confirmed in activities of the range, by how many events they joined.
+/// </param>
 /// <param name="Satisfaction">Scores of the events that ended in the range.</param>
 /// <param name="Occupancy">
 /// Seats filled versus wanted in upcoming activities, whatever the range.

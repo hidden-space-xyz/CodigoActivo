@@ -8,7 +8,7 @@ import { AppIcon } from '@/shared/ui/app-icon'
 import type { RowAction } from './row-action'
 
 const props = defineProps<{
-  /** Commands of the row in display order; inline ones become icon buttons, the rest fill the menu. */
+  /** Row commands in display order; inline ones become icon buttons, the rest fill the menu. */
   actions: readonly RowAction[]
   /** Accessible name of the "more actions" trigger; defaults to the generic localized text. */
   menuLabel?: string

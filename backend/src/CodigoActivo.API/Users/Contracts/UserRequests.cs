@@ -37,10 +37,12 @@ public record SetStaffRoleRequest(
 }
 
 /// <summary>
-/// Contains the client-supplied data used by the initial administrator to designate the account for
-/// data protection.
+/// Contains the client-supplied data used by the initial administrator to designate the account
+/// for data protection.
 /// </summary>
-/// <param name="CurrentPassword">Password of the initial administrator, re-entered to authorize it.</param>
+/// <param name="CurrentPassword">
+/// Password of the initial administrator, re-entered to authorize it.
+/// </param>
 public record DesignatePrivacyOfficerRequest([Required] [MaxLength(128)] string CurrentPassword)
 {
     /// <summary>
@@ -57,7 +59,9 @@ public record DesignatePrivacyOfficerRequest([Required] [MaxLength(128)] string 
 /// <summary>
 /// Contains the client-supplied data used by an administrator to reset a user's second factor.
 /// </summary>
-/// <param name="CurrentPassword">Password of the acting administrator, re-entered to authorize the reset.</param>
+/// <param name="CurrentPassword">
+/// Password of the acting administrator, re-entered to authorize the reset.
+/// </param>
 public record ResetTwoFactorRequest([Required] [MaxLength(128)] string CurrentPassword)
 {
     /// <summary>
@@ -80,7 +84,9 @@ public record ResetTwoFactorRequest([Required] [MaxLength(128)] string CurrentPa
 /// Email; required for an independent account and ignored for a dependent. A new one only applies
 /// once its holder confirms it through the emailed link.
 /// </param>
-/// <param name="Phone">Phone; required for an independent account and ignored for a dependent.</param>
+/// <param name="Phone">
+/// Phone; required for an independent account and ignored for a dependent.
+/// </param>
 /// <param name="BirthDate">
 /// User's date of birth. Required for a dependent; a changed value must keep them a minor,
 /// while the stored one stays valid after they come of age. An independent account must leave it

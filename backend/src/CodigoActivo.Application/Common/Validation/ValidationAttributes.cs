@@ -4,8 +4,8 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Common.Validation;
 
 /// <summary>
-/// Refuses text that is empty or only whitespace. Null and values that are not strings are left to
-/// other attributes.
+/// Refuses text that is empty or only whitespace. A <see langword="null"/> value and values that
+/// are not strings are left to other attributes.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class NotBlankAttribute : ValidationAttribute
@@ -70,7 +70,8 @@ public sealed class PlainTextAttribute : ValidationAttribute
 public sealed class RichTextAttribute : ValidationAttribute
 {
     /// <summary>
-    /// Gets or sets whether image nodes are allowed; text-only fields set it to <see langword="false"/>.
+    /// Gets or sets a value indicating whether image nodes are allowed; text-only fields set it to
+    /// <see langword="false"/>.
     /// </summary>
     public bool AllowImages { get; set; } = true;
 
@@ -82,8 +83,9 @@ public sealed class RichTextAttribute : ValidationAttribute
 }
 
 /// <summary>
-/// Accepts text that is an absolute HTTP or HTTPS URL as <see cref="IsHttpUrl"/> checks it. Null
-/// passes, so optional members can omit it; any other value that is not a string is invalid.
+/// Accepts text that is an absolute HTTP or HTTPS URL as <see cref="IsHttpUrl"/> checks it. A
+/// <see langword="null"/> value passes, so optional members can omit it; any other value that is
+/// not a string is invalid.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class HttpUrlAttribute : ValidationAttribute
@@ -117,7 +119,8 @@ public sealed class HttpUrlAttribute : ValidationAttribute
 
 /// <summary>
 /// Accepts an IPv4 address in dotted-quad notation or an IPv6 address, without a port, a prefix
-/// length or a zone. Null passes; any other value that is not a string is invalid.
+/// length or a zone. A <see langword="null"/> value passes; any other value that is not a string
+/// is invalid.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class IpAddressAttribute : ValidationAttribute
@@ -149,8 +152,9 @@ public sealed class IpAddressAttribute : ValidationAttribute
 }
 
 /// <summary>
-/// Accepts a date that is set and is not after the current day, which <see cref="MessageValidator"/>
-/// supplies in <see cref="ValidationContext.Items"/> under <see cref="MessageValidator.TodayKey"/>.
+/// Accepts a date that is set and is not after the current day, which
+/// <see cref="MessageValidator"/> supplies in <see cref="ValidationContext.Items"/> under
+/// <see cref="MessageValidator.TodayKey"/>.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class NotDefaultOrFutureDateAttribute : ValidationAttribute
@@ -185,9 +189,10 @@ public sealed class NotDefaultOrFutureDateAttribute : ValidationAttribute
 
 /// <summary>
 /// Validates a Spanish national identity number with <see cref="SpanishNationalId.IsValid"/>.
-/// Spaces, hyphens and lowercase letters are tolerated because the value is normalized first. Null
-/// or blank values pass so optional members can omit it, while any other value that normalizes to
-/// nothing, such as a lone hyphen, is invalid. Mark the member as required when it is mandatory.
+/// Spaces, hyphens and lowercase letters are tolerated because the value is normalized first.
+/// <see langword="null"/> or blank values pass so optional members can omit it, while any other
+/// value that normalizes to nothing, such as a lone hyphen, is invalid. Mark the member as required
+/// when it is mandatory.
 /// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
 public sealed class SpanishNationalIdAttribute : ValidationAttribute

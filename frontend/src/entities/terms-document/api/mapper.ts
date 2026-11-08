@@ -17,7 +17,9 @@ export function toTermsDocument(termsDocument: TermsDocumentResponse): TermsDocu
   }
 }
 
-/** Builds the body that creates or updates a terms document; both endpoints take the same fields. */
+/**
+ * Builds the body that creates or updates a terms document; both endpoints take the same fields.
+ */
 export function toTermsDocumentRequest(input: TermsDocumentInput): CreateTermsDocumentRequest {
   return {
     name: input.name,

@@ -74,12 +74,14 @@ public sealed class ConsentWithdrawalNotifier(
     }
 
     /// <summary>
-    /// Queues one email for every <see cref="MaxPerNotice"/> consents given that an erasure deletes,
-    /// among the accepted decisions it takes away, about events that have already started, the
-    /// only ones whose images or names may have been published. Without a legal contact nothing is
-    /// sent.
+    /// Queues one email for every <see cref="MaxPerNotice"/> consents given that an erasure
+    /// deletes, among the accepted decisions it takes away, about events that have already started,
+    /// the only ones whose images or names may have been published. Without a legal contact nothing
+    /// is sent.
     /// </summary>
-    /// <param name="accepted">Accepted decisions the erasure deletes, of any kind of document.</param>
+    /// <param name="accepted">
+    /// Accepted decisions the erasure deletes, of any kind of document.
+    /// </param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is the number of consents told.</returns>
     public async Task<int> NotifyErasedAsync(

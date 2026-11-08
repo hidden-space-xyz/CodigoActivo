@@ -5,8 +5,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace CodigoActivo.Infrastructure.Communication;
 
 /// <summary>
-/// Counts the messages handed to the SMTP server in one UTC hour, so the daily limit of the provider
-/// is checked over a rolling window that survives restarts. Rows older than two windows are removed.
+/// Counts the messages handed to the SMTP server in one UTC hour, so the daily limit of the
+/// provider is checked over a rolling window that survives restarts. Rows older than two windows
+/// are removed.
 /// </summary>
 public class EmailDeliveryHour
 {

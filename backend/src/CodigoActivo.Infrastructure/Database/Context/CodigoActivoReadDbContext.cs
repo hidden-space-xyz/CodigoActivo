@@ -10,7 +10,10 @@ namespace CodigoActivo.Infrastructure.Database.Context;
 /// Untracked Entity Framework session behind the read side: it maps the read models onto the
 /// tables owned by <see cref="CodigoActivoDbContext"/> and never takes part in migrations.
 /// </summary>
-/// <param name="options">Configuration values used by the component.</param>
+/// <param name="options">
+/// Options that point the context at the database, as set by
+/// <see cref="PostgresContexts.UseReadDatabase"/>.
+/// </param>
 public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadDbContext> options)
     : DbContext(options),
         IReadStore

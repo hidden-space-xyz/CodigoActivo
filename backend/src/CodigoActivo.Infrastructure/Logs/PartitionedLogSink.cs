@@ -9,8 +9,8 @@ namespace CodigoActivo.Infrastructure.Logs;
 /// <summary>
 /// Writes batches of log events into a partitioned log table with one binary <c>COPY</c>. The
 /// batching sink of Serilog calls it from its own background loop, so nothing here ever runs on a
-/// request. The first time a batch holds a day, it creates the partition of that day when the day is
-/// inside the window of the table, so a history of past days, such as the one of demo mode, or
+/// request. The first time a batch holds a day, it creates the partition of that day when the day
+/// is inside the window of the table, so a history of past days, such as the one of demo mode, or
 /// a start after the partitions ahead ran out is written without a failed copy first. A batch the
 /// database refuses for its data is written again row by row and only the refused rows are
 /// dropped; a batch that still finds no partition for its day, because one was dropped since,

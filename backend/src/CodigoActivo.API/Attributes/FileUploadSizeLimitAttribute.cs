@@ -13,14 +13,17 @@ namespace CodigoActivo.API.Attributes;
 public sealed class FileUploadSizeLimitAttribute : Attribute, IFilterFactory
 {
     /// <summary>
-    /// Gets whether the created filter may be reused across requests; it always may.
+    /// Gets a value indicating whether the created filter may be reused across requests; it always
+    /// may.
     /// </summary>
     public bool IsReusable => true;
 
     /// <summary>
     /// Creates the filter that applies the upload size limit.
     /// </summary>
-    /// <param name="serviceProvider">Service provider used to resolve the filter dependencies.</param>
+    /// <param name="serviceProvider">
+    /// Service provider used to resolve the filter dependencies.
+    /// </param>
     /// <returns>The filter that sets the body size limits of the request.</returns>
     public IFilterMetadata CreateInstance(IServiceProvider serviceProvider)
     {

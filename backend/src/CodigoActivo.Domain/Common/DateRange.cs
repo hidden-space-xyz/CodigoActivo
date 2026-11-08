@@ -47,7 +47,9 @@ public sealed record DateRange
     /// Tells whether a day falls within the range.
     /// </summary>
     /// <param name="day">Day to check.</param>
-    /// <returns><see langword="true"/> when the day is between the first and the last day.</returns>
+    /// <returns>
+    /// <see langword="true"/> when the day is between the first and the last day.
+    /// </returns>
     public bool Contains(DateOnly day)
     {
         return day >= Start && day <= End;
@@ -57,7 +59,9 @@ public sealed record DateRange
     /// Tells whether the whole range lies before a day.
     /// </summary>
     /// <param name="day">Day to compare with.</param>
-    /// <returns><see langword="true"/> when the last day is before <paramref name="day"/>.</returns>
+    /// <returns>
+    /// <see langword="true"/> when the last day is before <paramref name="day"/>.
+    /// </returns>
     public bool EndsBefore(DateOnly day)
     {
         return End < day;
@@ -67,7 +71,9 @@ public sealed record DateRange
     /// Calculates the instants the days of the range cover in a time zone.
     /// </summary>
     /// <param name="zone">Time zone the days are counted in.</param>
-    /// <returns>The first instant of the first day and the first instant after the last day.</returns>
+    /// <returns>
+    /// The first instant of the first day and the first instant after the last day.
+    /// </returns>
     public (DateTimeOffset LowerInclusive, DateTimeOffset UpperExclusive) InstantsIn(
         TimeZoneInfo zone
     )

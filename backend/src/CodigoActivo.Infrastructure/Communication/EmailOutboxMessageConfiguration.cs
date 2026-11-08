@@ -7,8 +7,8 @@ namespace CodigoActivo.Infrastructure.Communication;
 
 /// <summary>
 /// Defines the Entity Framework mapping for email outbox message, which keeps no data history. The
-/// kind is stored by name, the rows are indexed by priority and schedule, the order of the claim, by
-/// topic and address, the key a newer message replaces, and by expiry, and a content cannot be
+/// kind is stored by name, the rows are indexed by priority and schedule, the order of the claim,
+/// by topic and address, the key a newer message replaces, and by expiry, and a content cannot be
 /// deleted while a message references it.
 /// </summary>
 public sealed class EmailOutboxMessageConfiguration : IEntityTypeConfiguration<EmailOutboxMessage>

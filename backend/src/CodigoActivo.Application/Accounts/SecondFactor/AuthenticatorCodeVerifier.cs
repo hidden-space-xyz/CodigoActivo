@@ -19,9 +19,13 @@ public sealed class AuthenticatorCodeVerifier(
     /// <summary>
     /// Finds the time step that produced the code.
     /// </summary>
-    /// <param name="protectedKey">Protected shared secret; <see langword="null"/> never matches.</param>
+    /// <param name="protectedKey">
+    /// Protected shared secret; <see langword="null"/> never matches.
+    /// </param>
     /// <param name="code">Code typed by the user.</param>
-    /// <returns>The matching time step, or <see langword="null"/> when the code matches none.</returns>
+    /// <returns>
+    /// The matching time step, or <see langword="null"/> when the code matches none.
+    /// </returns>
     public long? Match(string? protectedKey, string code)
     {
         if (protectedKey is null)

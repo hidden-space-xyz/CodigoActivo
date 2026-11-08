@@ -28,7 +28,8 @@ public class NewsConsentChange
     public UserId UserId { get; private set; }
 
     /// <summary>
-    /// Gets whether the holder gave the consent; <see langword="false"/> when they withdrew it.
+    /// Gets a value indicating whether the holder gave the consent; <see langword="false"/> when
+    /// they withdrew it.
     /// </summary>
     public bool Granted { get; private set; }
 

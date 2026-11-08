@@ -38,7 +38,7 @@ function capitalized(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
-/** A unique address in the suite's domain, such as `e2e-member-qwerty@e2e.codigoactivo.test`. */
+/** A unique address in the suite's domain, such as `e2e-member-qwertyui@e2e.codigoactivo.test`. */
 export function emailAddress(label: string): string {
   return `e2e-${label}-${uniqueLetters(8)}@${EMAIL_DOMAIN}`
 }

@@ -1,4 +1,4 @@
-/** PNG data URL every fake pad exports once something is drawn on it. */
+/** PNG data URL every fake pad's `toDataURL` returns, drawn on or not. */
 export const FAKE_SIGNATURE = 'data:image/png;base64,ZmFrZS1zaWduYXR1cmU='
 
 /** Every fake pad created since the last `resetFakePads()`, in creation order. */

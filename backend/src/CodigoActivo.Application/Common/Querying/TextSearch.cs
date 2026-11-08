@@ -50,9 +50,9 @@ public static class TextSearch
     }
 
     /// <summary>
-    /// Builds a predicate, translatable to SQL, that tells whether the selected text, lowercased with
-    /// the acute accent of its vowels dropped, contains the term. A null text counts as empty, and
-    /// the term is sent as a query parameter.
+    /// Builds a predicate, translatable to SQL, that tells whether the selected text, lowercased
+    /// with the acute accent of its vowels dropped, contains the term. A <see langword="null"/>
+    /// text counts as empty, and the term is sent as a query parameter.
     /// </summary>
     /// <typeparam name="T">Type of the rows filtered.</typeparam>
     /// <param name="selector">Text of the row searched.</param>
@@ -92,7 +92,9 @@ public static class TextSearch
     /// <typeparam name="T">Type of the rows filtered.</typeparam>
     /// <param name="source">Rows to filter.</param>
     /// <param name="selector">Text of the row searched.</param>
-    /// <param name="term">Term typed by the client; null or blank keeps every row.</param>
+    /// <param name="term">
+    /// Term typed by the client; <see langword="null"/> or blank keeps every row.
+    /// </param>
     /// <returns>The matching rows.</returns>
     public static IQueryable<T> WhereContains<T>(
         this IQueryable<T> source,

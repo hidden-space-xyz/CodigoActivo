@@ -20,7 +20,7 @@ public sealed class DatabaseLoggerProvider
     private readonly SerilogLoggerProvider provider;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="DatabaseLoggerProvider"/> class.
+    /// Initializes the provider with its own batching pipeline over the diagnostic sink.
     /// </summary>
     /// <param name="database">Connections of the log tables.</param>
     /// <param name="partitions">Maintenance of the log partitions.</param>

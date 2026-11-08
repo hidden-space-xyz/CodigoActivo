@@ -9,11 +9,13 @@ namespace CodigoActivo.Infrastructure.Communication.Templates;
 /// </summary>
 /// <param name="Subject">Subject as the administrator wrote it.</param>
 /// <param name="HtmlBody">
-/// HTML part; in a news email it keeps the place that <see cref="EmailLayout.LinkUnsubscribe"/> fills
-/// with the unsubscribe link of each recipient.
+/// HTML part; in a news email it keeps the place that <see cref="EmailLayout.LinkUnsubscribe"/>
+/// fills with the unsubscribe link of each recipient.
 /// </param>
 /// <param name="TextBody">Plain-text part, with the same place in a news email.</param>
-/// <param name="InlineImages">Images the HTML part references by content identifier: the logo.</param>
+/// <param name="InlineImages">
+/// Images the HTML part references by content identifier: the logo.
+/// </param>
 public sealed record ManualEmailContent(
     string Subject,
     string HtmlBody,
@@ -31,12 +33,13 @@ public static class ManualEmail
     private static readonly char[] Whitespace = [' ', '\t', '\n', '\r', '\f', '\v'];
 
     /// <summary>
-    /// Renders the subject and body into the site layout, without a greeting. The preheader is the body
-    /// on one line, cut to at most 140 characters at the last space that fits.
+    /// Renders the subject and body into the site layout, without a greeting. The preheader is the
+    /// body on one line, cut to at most 140 characters at the last space that fits.
     /// </summary>
     /// <param name="subject">Subject, also the heading of the message; raw text.</param>
     /// <param name="body">
-    /// Raw plain-text body; empty lines separate paragraphs and the line breaks inside one are kept.
+    /// Raw plain-text body; empty lines separate paragraphs and the line breaks inside one are
+    /// kept.
     /// </param>
     /// <param name="siteUrl">Public base URL of the site, linked from the footer.</param>
     /// <param name="newsContact">
@@ -69,11 +72,13 @@ public static class ManualEmail
     }
 
     /// <summary>
-    /// Addresses the rendered content to the recipients as one batch, so every recipient receives their
-    /// own message while the stored copy of the content and its attachments is shared.
+    /// Addresses the rendered content to the recipients as one batch, so every recipient receives
+    /// their own message while the stored copy of the content and its attachments is shared.
     /// </summary>
     /// <param name="content">Content rendered by <see cref="Render"/>.</param>
-    /// <param name="recipients">Recipients, each with their own unsubscribe links in a news email.</param>
+    /// <param name="recipients">
+    /// Recipients, each with their own unsubscribe links in a news email.
+    /// </param>
     /// <param name="attachments">Files attached to every message.</param>
     /// <returns>The batch, of kind <see cref="EmailKind.Manual"/>.</returns>
     public static EmailBatch Create(

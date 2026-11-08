@@ -26,7 +26,9 @@ public sealed record ConfirmEmailChangeCommand(
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="otpValidator">Validator of the code from the link.</param>
-/// <param name="emailClaims">Committer that replaces an unverified account holding the address.</param>
+/// <param name="emailClaims">
+/// Committer that replaces an unverified account holding the address.
+/// </param>
 public sealed class ConfirmEmailChangeCommandHandler(
     IUserRepository users,
     IClock clock,

@@ -5,7 +5,9 @@ namespace CodigoActivo.Infrastructure.Communication.Templates;
 /// <summary>
 /// Colors of an accent that sets the tone of an email or of a callout.
 /// </summary>
-/// <param name="Line">Strong color of the bar at the top of the card and of the left edge of a callout.</param>
+/// <param name="Line">
+/// Strong color of the bar at the top of the card and of the left edge of a callout.
+/// </param>
 /// <param name="Soft">Light tint of the accent color.</param>
 /// <param name="Ink">Dark shade of the accent color.</param>
 public sealed record EmailAccent(string Line, string Soft, string Ink);
@@ -37,7 +39,8 @@ public static class EmailBranding
     public const string Panel = "#f5f5f5";
 
     /// <summary>
-    /// Color of the borders of the card, panels, callouts and code box, and of the lines between detail rows.
+    /// Color of the borders of the card, panels, callouts and code box, and of the lines between
+    /// detail rows.
     /// </summary>
     public const string Border = "#e8e8e8";
 
@@ -102,7 +105,8 @@ public static class EmailBranding
     public static readonly EmailAccent Success = new("#2e9e57", "#e4f2e9", "#257f46");
 
     /// <summary>
-    /// Red accent for bad news or a required action, such as a denied signup or a withdrawn consent.
+    /// Red accent for bad news or a required action, such as a denied signup or a withdrawn
+    /// consent.
     /// </summary>
     public static readonly EmailAccent Danger = new("#d84a3b", "#fae8e6", "#c13b2e");
 

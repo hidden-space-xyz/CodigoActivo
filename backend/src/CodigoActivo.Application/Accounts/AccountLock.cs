@@ -23,10 +23,16 @@ public sealed class AccountLock(IUserRepository users, IUnitOfWork uow)
     /// </summary>
     /// <typeparam name="TResult">Result of the change.</typeparam>
     /// <param name="account">Account loaded in the unit of work.</param>
-    /// <param name="change">Change to run once the account is locked; it receives the cancellation token.</param>
-    /// <param name="whenGone">Result returned, without running the change, when the account no longer exists.</param>
+    /// <param name="change">
+    /// Change to run once the account is locked; it receives the cancellation token.
+    /// </param>
+    /// <param name="whenGone">
+    /// Result returned, without running the change, when the account no longer exists.
+    /// </param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is the result of the change, or <paramref name="whenGone"/>.</returns>
+    /// <returns>
+    /// A task whose result is the result of the change, or <paramref name="whenGone"/>.
+    /// </returns>
     public Task<TResult> RunAsync<TResult>(
         User account,
         Func<CancellationToken, Task<TResult>> change,

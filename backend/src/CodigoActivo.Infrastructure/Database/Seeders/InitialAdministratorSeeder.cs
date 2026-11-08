@@ -23,17 +23,20 @@ public sealed class InitialAdministratorSeeder(
 {
     /// <summary>
     /// Creates the initial administrator when the database has no users, with a password nobody
-    /// knows: its owner chooses one through a password reset sent to the configured email. A
+    /// knows: its owner sets one by requesting a password reset for the configured email. A
     /// database that has users but not the initial administrator is refused, because deleting
     /// accounts relies on it.
     /// </summary>
     /// <param name="configuredEmail">
-    /// <c>BOOTSTRAP_ADMIN_EMAIL</c>, trimmed and lowercased before use; ignored once the database has
-    /// users.
+    /// <c>BOOTSTRAP_ADMIN_EMAIL</c>, trimmed and lowercased before use; ignored once the database
+    /// has users.
     /// </param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    /// <exception cref="InvalidOperationException">The bootstrap email is invalid on an empty database, or the database has users but not the initial administrator.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The bootstrap email is invalid on an empty database, or the database has users but not the
+    /// initial administrator.
+    /// </exception>
     public async Task SeedAsync(string? configuredEmail, CancellationToken ct = default)
     {
         if (await context.Users.AnyAsync(ct))

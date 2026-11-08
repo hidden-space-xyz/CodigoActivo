@@ -58,7 +58,9 @@ export function momentText(instant: string | null | undefined): string {
   return instant ? momentFormat.format(new Date(instant)) : '—'
 }
 
-/** Two instants as the event page writes a signup window; the end drops the date on the same day. */
+/**
+ * Two instants as the event page writes a signup window; the end drops the date on the same day.
+ */
 export function momentRangeText(start: string, end: string): string {
   const sameDay = calendarDay.format(new Date(start)) === calendarDay.format(new Date(end))
   const endText = sameDay ? timeFormat.format(new Date(end)) : momentText(end)
@@ -80,7 +82,9 @@ export function pickerDate(day: string): string {
   return `${date}/${month}/${year}`
 }
 
-/** The wall-clock time `hour:minute` of `day` as the datetime pickers take it, `DD/MM/YYYY HH:mm`. */
+/**
+ * The wall-clock time `hour:minute` of `day` as the datetime pickers take it, `DD/MM/YYYY HH:mm`.
+ */
 export function pickerMoment(day: string, hour: number, minute = 0): string {
   return `${pickerDate(day)} ${twoDigits(hour)}:${twoDigits(minute)}`
 }

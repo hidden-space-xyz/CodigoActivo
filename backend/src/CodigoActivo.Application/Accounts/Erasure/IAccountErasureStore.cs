@@ -15,7 +15,9 @@ public interface IAccountErasureStore
     /// </summary>
     /// <param name="accountId">Identifier of the account.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="false"/> when the account no longer exists.</returns>
+    /// <returns>
+    /// A task whose result is <see langword="false"/> when the account no longer exists.
+    /// </returns>
     public Task<bool> LockHouseholdAsync(UserId accountId, CancellationToken ct = default);
 
     /// <summary>
@@ -47,9 +49,9 @@ public interface IAccountErasureStore
     /// Deletes the email still waiting for the addresses of the account and its dependents and the
     /// messages about one of them waiting for another address, such as a signup decision sent to
     /// the guardian or the link to a new address, so no message about an erased person leaves
-    /// after the erasure. The notices to the association's
-    /// legal contact, which are about other people, stay even when its address is one of them. It
-    /// runs at once, inside the transaction of the erasure.
+    /// after the erasure. The notices to the association's legal contact, which are about other
+    /// people, stay even when its address is one of them. It runs at once, inside the transaction
+    /// of the erasure.
     /// </summary>
     /// <param name="accountId">Identifier of the account.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

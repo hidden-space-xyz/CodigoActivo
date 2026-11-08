@@ -55,7 +55,9 @@ export interface SignupApiState {
   unassignError: (() => Response) | null
 }
 
-/** The one terms document served by `/api/events/:eventId/terms` by default: required conditions. */
+/**
+ * The one terms document served by `/api/events/:eventId/terms` by default: required conditions.
+ */
 export const TERMS_DOCUMENT = {
   termsDocumentId: 'terms-1',
   name: 'Normas del campamento',

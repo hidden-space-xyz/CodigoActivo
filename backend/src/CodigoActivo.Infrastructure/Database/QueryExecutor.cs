@@ -8,16 +8,7 @@ namespace CodigoActivo.Infrastructure.Database;
 /// </summary>
 public sealed class QueryExecutor : IQueryExecutor
 {
-    /// <summary>
-    /// Counts the query and loads one page of it in its own order; a page past the end loads no item
-    /// and still reports the total.
-    /// </summary>
-    /// <typeparam name="T">Type of item processed by the operation.</typeparam>
-    /// <param name="source">Query to page, in the order the pages follow.</param>
-    /// <param name="page">One-based page number to return.</param>
-    /// <param name="pageSize">Maximum number of items in the page.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the items of the page, the total count and the page asked for.</returns>
+    /// <inheritdoc />
     public async Task<PagedResult<T>> ToPagedAsync<T>(
         IQueryable<T> source,
         int page,
@@ -34,13 +25,7 @@ public sealed class QueryExecutor : IQueryExecutor
         return new PagedResult<T>(items, total, page, pageSize);
     }
 
-    /// <summary>
-    /// Runs the query and loads every result.
-    /// </summary>
-    /// <typeparam name="T">Type of item processed by the operation.</typeparam>
-    /// <param name="source">Source sequence to query.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains every result, in the order of the query.</returns>
+    /// <inheritdoc />
     public async Task<IReadOnlyList<T>> ToListAsync<T>(
         IQueryable<T> source,
         CancellationToken ct = default
@@ -49,13 +34,7 @@ public sealed class QueryExecutor : IQueryExecutor
         return await source.ToListAsync(ct);
     }
 
-    /// <summary>
-    /// Returns the first matching query result, or <see langword="null"/> when none exists.
-    /// </summary>
-    /// <typeparam name="T">Type of item processed by the operation.</typeparam>
-    /// <param name="source">Source sequence to query.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the first result, or <see langword="null"/> when there is none.</returns>
+    /// <inheritdoc />
     public async Task<T?> FirstOrDefaultAsync<T>(
         IQueryable<T> source,
         CancellationToken ct = default
@@ -64,13 +43,7 @@ public sealed class QueryExecutor : IQueryExecutor
         return await source.FirstOrDefaultAsync(ct);
     }
 
-    /// <summary>
-    /// Determines whether the query returns any result.
-    /// </summary>
-    /// <typeparam name="T">Type of item processed by the operation.</typeparam>
-    /// <param name="source">Source sequence to query.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="true"/> when at least one item matches.</returns>
+    /// <inheritdoc />
     public async Task<bool> AnyAsync<T>(IQueryable<T> source, CancellationToken ct = default)
     {
         return await source.AnyAsync(ct);

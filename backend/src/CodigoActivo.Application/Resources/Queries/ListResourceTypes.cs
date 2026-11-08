@@ -6,7 +6,7 @@ using CodigoActivo.Application.Resources.Contracts;
 namespace CodigoActivo.Application.Resources.Queries;
 
 /// <summary>
-/// Carries the criteria used to list resource types.
+/// Carries the request to list the resource types.
 /// </summary>
 public sealed record ListResourceTypesQuery
     : IQuery<IReadOnlyList<ResourceTypeResponse>>,

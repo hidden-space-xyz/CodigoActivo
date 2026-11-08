@@ -17,7 +17,9 @@ namespace CodigoActivo.Application.TermsDecisions.Commands;
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 /// <param name="UserId">Identifier of the person the consent is about.</param>
-/// <param name="TermsDocumentId">Identifier of the terms document, which must hold a consent.</param>
+/// <param name="TermsDocumentId">
+/// Identifier of the terms document, which must hold a consent.
+/// </param>
 public sealed record WithdrawTermsConsentCommand(
     EventId EventId,
     UserId UserId,

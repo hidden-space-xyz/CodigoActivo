@@ -23,7 +23,7 @@ namespace CodigoActivo.Infrastructure.Logs;
 /// actor, which the entry shows, and of a user the entry acted on are joined into the page query,
 /// where the person search matches them; the names of the main and related entities come from one
 /// query per kind of entity on the page, left out for those that no longer exist and for the
-/// consultations of the blocked data, which the legal archive lists by their request.
+/// consultations of and holds on the blocked data, which their own lists show by request.
 /// </summary>
 /// <param name="context">Read-side database context.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>

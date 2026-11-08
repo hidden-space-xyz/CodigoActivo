@@ -10,7 +10,9 @@ namespace CodigoActivo.Application.Activities.Queries;
 /// Carries the criteria used to retrieve the assignments of several users to one activity.
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
-/// <param name="UserIds">Identifiers of the assigned users, in the order the response keeps.</param>
+/// <param name="UserIds">
+/// Identifiers of the assigned users, in the order the response keeps.
+/// </param>
 public sealed record GetAssignmentsQuery(ActivityId ActivityId, IReadOnlyList<UserId> UserIds)
     : IQuery<IReadOnlyList<AssignmentResponse>>;
 

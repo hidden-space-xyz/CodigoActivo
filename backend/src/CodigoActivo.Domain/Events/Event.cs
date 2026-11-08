@@ -98,7 +98,8 @@ public class Event : AuditableEntity<EventId>, IFeaturable
 
     /// <summary>
     /// Replaces the event, keeping the categories and terms links that are still wanted, and raises
-    /// <see cref="EventUpdated"/> with the thumbnail and description images it no longer references.
+    /// <see cref="EventUpdated"/> with the thumbnail and description images it no longer
+    /// references.
     /// </summary>
     /// <param name="content">New titles, description and thumbnail.</param>
     /// <param name="schedule">New days and signup window.</param>
@@ -165,10 +166,12 @@ public class Event : AuditableEntity<EventId>, IFeaturable
     }
 
     /// <summary>
-    /// Raises <see cref="EventDeleted"/> before the event is removed together with its activities, so
-    /// the files they reference are released once they are gone.
+    /// Raises <see cref="EventDeleted"/> before the event is removed together with its activities,
+    /// so the files they reference are released once they are gone.
     /// </summary>
-    /// <param name="activityThumbnailIds">Thumbnails of the activities deleted with the event.</param>
+    /// <param name="activityThumbnailIds">
+    /// Thumbnails of the activities deleted with the event.
+    /// </param>
     public void Delete(IReadOnlyCollection<StoredFileId> activityThumbnailIds)
     {
         ArgumentNullException.ThrowIfNull(activityThumbnailIds);

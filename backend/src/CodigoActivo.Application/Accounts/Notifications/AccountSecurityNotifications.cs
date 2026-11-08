@@ -5,7 +5,8 @@ namespace CodigoActivo.Application.Accounts.Notifications;
 
 /// <summary>
 /// Tells the holder of an account, once the change is committed, that its credentials, its password
-/// lock, its second factor, its staff role, its data protection designation or the identifiers it is reached at changed.
+/// lock, its second factor, its staff role, its data protection designation or the identifiers it
+/// is reached at changed.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="notifier">Sender of the account security notifications.</param>

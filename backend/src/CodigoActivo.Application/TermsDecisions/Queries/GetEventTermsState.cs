@@ -37,7 +37,8 @@ public sealed class GetEventTermsStateQueryHandler(
 ) : IQueryHandler<GetEventTermsStateQuery, Result<EventTermsStateResponse>>
 {
     /// <summary>
-    /// Handles the request to retrieve the terms state of an event for the current user's household.
+    /// Handles the request to retrieve the terms state of an event for the current user's
+    /// household.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

@@ -76,8 +76,9 @@ export class DataTable {
   }
 
   /**
-   * Opens the column or toolbar filter that carries the test id `filter` and picks `value`. The rows
-   * of the previous filter may still arrive and close the popover, so that is repeated if it does.
+   * Opens the column or toolbar filter that carries the test id `filter` and picks `value`. The
+   * rows of the previous filter may still arrive and close the popover, so that is repeated if it
+   * does.
    */
   async filterBy(filter: string, value: string): Promise<void> {
     await expect(async () => {

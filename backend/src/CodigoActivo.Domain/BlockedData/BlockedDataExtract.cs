@@ -61,7 +61,8 @@ public class BlockedDataExtract
     public int EntryCount { get; private set; }
 
     /// <summary>
-    /// Gets whether it also held the current data of an account that still exists.
+    /// Gets a value indicating whether it also held the current data of an account that still
+    /// exists.
     /// </summary>
     public bool IncludesCurrentData { get; private set; }
 

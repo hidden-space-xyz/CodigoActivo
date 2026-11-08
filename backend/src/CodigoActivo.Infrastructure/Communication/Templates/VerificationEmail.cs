@@ -10,14 +10,16 @@ namespace CodigoActivo.Infrastructure.Communication.Templates;
 public static class VerificationEmail
 {
     /// <summary>
-    /// Creates the email with the verification button, the minutes the link lasts, the news consent when
-    /// given and a note for whoever did not register.
+    /// Creates the email with the verification button, the minutes the link lasts, the news consent
+    /// when given and a note for whoever did not register.
     /// </summary>
     /// <param name="toAddress">Address of the new account.</param>
     /// <param name="toName">Name the message greets.</param>
     /// <param name="verificationUrl">Link to the page that verifies the account.</param>
     /// <param name="siteUrl">Public base URL of the site, linked from the footer.</param>
-    /// <param name="lifetime">Validity of the link, shown in whole minutes rounded up, at least one.</param>
+    /// <param name="lifetime">
+    /// Validity of the link, shown in whole minutes rounded up, at least one.
+    /// </param>
     /// <param name="newsConsent">Whether the registration accepted news by email.</param>
     /// <returns>The message, of kind <see cref="EmailKind.AccountVerification"/>.</returns>
     public static EmailMessage Create(

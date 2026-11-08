@@ -25,8 +25,8 @@ public static class UseCaseRegistration
 
     /// <summary>
     /// Adds the use cases. From the outside in, a command runs through logging, the audit log,
-    /// validation and the unit of work before its handler; a query runs through logging,
-    /// validation and caching.
+    /// validation and the unit of work before its handler; a query runs through logging, the audit
+    /// log, validation and caching.
     /// </summary>
     /// <param name="services">Service collection to add to.</param>
     /// <returns>The same service collection.</returns>
@@ -69,7 +69,8 @@ public static class UseCaseRegistration
     }
 
     /// <summary>
-    /// Lists every concrete handler and listener of the application with the contract it implements.
+    /// Lists every concrete handler and listener of the application with the contract it
+    /// implements.
     /// </summary>
     /// <returns>Pairs of closed contract and implementation.</returns>
     public static IReadOnlyList<(Type Contract, Type Implementation)> Implementations()

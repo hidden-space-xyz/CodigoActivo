@@ -71,7 +71,9 @@ export class AccountPage {
     await expect(this.tab(tab)).toHaveAttribute('aria-selected', 'true')
   }
 
-  /** The header of the tab `name`, which reports in `aria-selected` whether it is the selected one. */
+  /**
+   * The header of the tab `name`, which reports in `aria-selected` whether it is the selected one.
+   */
   tab(name: AccountTab): Locator {
     return this.page
       .locator('.el-tabs__item')

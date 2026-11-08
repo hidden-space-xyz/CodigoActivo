@@ -25,17 +25,16 @@ const CLOSING_ERRORS = [
 ] as const
 
 /**
- * Blocked data page: every administrator, and the data protection officer whatever their cargo,
- * sees the list of consultations, newest first, without any of their data; the account designated
- * for data protection opens one for a request, looks accounts up in it and downloads an extract
- * about the account it picks, narrowed to a range of days and to kinds of data. Opening takes two
- * steps: the request and the password, which email a
- * code unless the account reads it from an authenticator application, and then that code; closing
- * the dialog forgets the request and its password. Every administrator also sees the holds, newest
- * first, without the accounts they keep; the designated account places one on the account it
- * picks, for the request of its open consultation, and lifts one from an open consultation once
- * its claim is closed, each after confirming. A consultation that ended is closed with its error.
- * Call it in `setup`.
+ * Blocked data page: every administrator sees the consultations, newest first, without any of
+ * their data, and the holds, newest first, without the accounts they keep. The account designated
+ * for data protection opens a consultation for a request, looks accounts up in it and downloads an
+ * extract about the account it picks, narrowed to a range of days and to kinds of data. Opening
+ * takes two steps: the request and the password, which email a code unless the account reads it
+ * from an authenticator application, and then that code; closing the dialog forgets the request
+ * and its password. The designated account also places a hold on the account it picks, for the
+ * request of its open consultation, and lifts one from an open consultation once its claim is
+ * closed, each after confirming. A consultation that ended is closed with its error. Call it in
+ * `setup`.
  */
 export function useBlockedData() {
   const { t } = useI18n()

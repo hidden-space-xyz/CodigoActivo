@@ -12,7 +12,9 @@ public interface IEventCategoryTypeRepository : IRepository<EventCategoryType>
     /// </summary>
     /// <param name="id">Identifier of the category.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is the category, or <see langword="null"/> when it does not exist.</returns>
+    /// <returns>
+    /// A task whose result is the category, or <see langword="null"/> when it does not exist.
+    /// </returns>
     public Task<EventCategoryType?> GetByIdAsync(
         EventCategoryTypeId id,
         CancellationToken ct = default
@@ -24,7 +26,9 @@ public interface IEventCategoryTypeRepository : IRepository<EventCategoryType>
     /// </summary>
     /// <param name="categoryType">Category loaded in the unit of work.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="false"/> when the category no longer exists.</returns>
+    /// <returns>
+    /// A task whose result is <see langword="false"/> when the category no longer exists.
+    /// </returns>
     public Task<bool> LockAsync(EventCategoryType categoryType, CancellationToken ct = default);
 
     /// <summary>

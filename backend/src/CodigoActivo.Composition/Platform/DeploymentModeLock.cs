@@ -34,7 +34,9 @@ internal sealed class DeploymentModeLock
     /// </summary>
     /// <param name="demoMode">Whether the configured mode is demo mode.</param>
     /// <param name="configuration">Configuration holding the container marker.</param>
-    /// <param name="environment">Host environment that decides whether the choice is persisted.</param>
+    /// <param name="environment">
+    /// Host environment that decides whether the choice is persisted.
+    /// </param>
     /// <exception cref="InvalidOperationException">
     /// The stored mode is unreadable or differs from the configured one.
     /// </exception>
@@ -55,7 +57,9 @@ internal sealed class DeploymentModeLock
     /// </summary>
     /// <param name="demoMode">Whether the configured mode is demo mode.</param>
     /// <param name="configuration">Configuration holding the container marker.</param>
-    /// <param name="environment">Host environment that decides whether the choice is persisted.</param>
+    /// <param name="environment">
+    /// Host environment that decides whether the choice is persisted.
+    /// </param>
     /// <exception cref="InvalidOperationException">
     /// The stored mode is unreadable or differs from the configured one.
     /// </exception>

@@ -27,7 +27,9 @@ public sealed record EmailAddress
     /// Normalizes and checks a typed email.
     /// </summary>
     /// <param name="value">Email as typed.</param>
-    /// <returns>The email, or <see cref="DomainErrorCode.UserEmailInvalid"/> when it is blank or malformed.</returns>
+    /// <returns>
+    /// The email, or <see cref="DomainErrorCode.UserEmailInvalid"/> when it is blank or malformed.
+    /// </returns>
     public static Result<EmailAddress> Create(string? value)
     {
         var normalized = value.NormalizeEmailOrNull();

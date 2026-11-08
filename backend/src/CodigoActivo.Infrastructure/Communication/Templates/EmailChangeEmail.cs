@@ -15,7 +15,9 @@ public static class EmailChangeEmail
     /// <param name="toName">Name the message greets.</param>
     /// <param name="confirmationUrl">Link that confirms the new address.</param>
     /// <param name="siteUrl">Public base URL of the site, linked from the footer.</param>
-    /// <param name="lifetime">Validity of the link, shown in whole minutes rounded up, at least one.</param>
+    /// <param name="lifetime">
+    /// Validity of the link, shown in whole minutes rounded up, at least one.
+    /// </param>
     /// <returns>The message, of kind <see cref="EmailKind.AccountVerification"/>.</returns>
     public static EmailMessage Create(
         string toAddress,

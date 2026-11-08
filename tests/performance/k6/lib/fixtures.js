@@ -45,7 +45,9 @@ export function downloadImage(session, fileId) {
     .body
 }
 
-/** Creates what the scenarios share: the event of the signup rush, its activities, terms and news. */
+/**
+ * Creates what the scenarios share: the event of the signup rush, its activities, terms and news.
+ */
 export function createFixtures(admin, runId) {
   const { session } = admin
   const [demoEvent] = list(session, '/api/events', { pageSize: 1 })

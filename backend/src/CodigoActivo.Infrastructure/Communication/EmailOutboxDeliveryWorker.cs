@@ -7,8 +7,8 @@ namespace CodigoActivo.Infrastructure.Communication;
 
 /// <summary>
 /// Runs the email outbox in the background on the one instance that holds the
-/// <see cref="IEmailDeliveryLock"/>: it delivers due messages as soon as this process stores one and
-/// polls for the rest, which also picks up the mail other instances store and the retries that
+/// <see cref="IEmailDeliveryLock"/>: it delivers due messages as soon as this process stores one
+/// and polls for the rest, which also picks up the mail other instances store and the retries that
 /// became due; a run that claims a full batch is followed at once by the next. An instance without
 /// the lock tries to take it on every poll. A failed run never stops the loop or the host; it is
 /// logged at most once per <see cref="EmailGuardOptions.AlertInterval"/>, since an unreachable
@@ -18,7 +18,9 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// <param name="deliveryLock">Lock that lets one instance deliver at a time.</param>
 /// <param name="signal">Signal raised when this process stores email.</param>
 /// <param name="options">Outbox policy: poll interval, batch size and shutdown drain.</param>
-/// <param name="guard">Email guard configuration, whose alert interval spaces repeated failures.</param>
+/// <param name="guard">
+/// Email guard configuration, whose alert interval spaces repeated failures.
+/// </param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class EmailOutboxDeliveryWorker(
@@ -35,11 +37,13 @@ public sealed class EmailOutboxDeliveryWorker(
 
     /// <summary>
     /// Stops claiming new messages and waits for the send in flight, up to
-    /// <see cref="EmailQueueOptions.ShutdownDrain"/>, then releases the lock; the rest of the claimed
-    /// batch goes back to the outbox untried. A message whose send is still running by then stays in
-    /// the outbox and is claimed again once its lease expires.
+    /// <see cref="EmailQueueOptions.ShutdownDrain"/>, then releases the lock; the rest of the
+    /// claimed batch goes back to the outbox untried. A message whose send is still running by then
+    /// stays in the outbox and is claimed again once its lease expires.
     /// </summary>
-    /// <param name="cancellationToken">Cancellation token used to stop the asynchronous operation.</param>
+    /// <param name="cancellationToken">
+    /// Cancellation token used to stop the asynchronous operation.
+    /// </param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
@@ -57,12 +61,14 @@ public sealed class EmailOutboxDeliveryWorker(
     }
 
     /// <summary>
-    /// Delivers due email until shutdown while this instance holds the lock, waiting for a signal or
-    /// the poll interval between runs unless the last run claimed a full batch.
-    /// Only the shutdown token ends the loop: a cancellation raised by a send timeout, a database
-    /// command or any other dependency is a failed run like any other and the worker keeps going.
+    /// Delivers due email until shutdown while this instance holds the lock, waiting for a signal
+    /// or the poll interval between runs unless the last run claimed a full batch. Only the
+    /// shutdown token ends the loop: a cancellation raised by a send timeout, a database command or
+    /// any other dependency is a failed run like any other and the worker keeps going.
     /// </summary>
-    /// <param name="stoppingToken">Cancellation token used to stop the asynchronous operation.</param>
+    /// <param name="stoppingToken">
+    /// Cancellation token used to stop the asynchronous operation.
+    /// </param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

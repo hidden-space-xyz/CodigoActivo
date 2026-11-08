@@ -8,78 +8,128 @@ namespace CodigoActivo.Application.Abstractions.Querying;
 /// </summary>
 public interface IReadStore
 {
-    /// <summary>Gets the stored accounts.</summary>
+    /// <summary>
+    /// Gets the stored accounts.
+    /// </summary>
     public IQueryable<UserRow> Users { get; }
 
-    /// <summary>Gets the account statuses.</summary>
+    /// <summary>
+    /// Gets the account statuses.
+    /// </summary>
     public IQueryable<UserStatusTypeRow> UserStatusTypes { get; }
 
-    /// <summary>Gets the membership types.</summary>
+    /// <summary>
+    /// Gets the membership types.
+    /// </summary>
     public IQueryable<UserTypeRow> UserTypes { get; }
 
-    /// <summary>Gets the stored sessions.</summary>
+    /// <summary>
+    /// Gets the stored sessions.
+    /// </summary>
     public IQueryable<UserSessionRow> UserSessions { get; }
 
-    /// <summary>Gets every change of the news consent of the accounts.</summary>
+    /// <summary>
+    /// Gets every change of the news consent of the accounts.
+    /// </summary>
     public IQueryable<NewsConsentChangeRow> NewsConsentChanges { get; }
 
-    /// <summary>Gets the stored events.</summary>
+    /// <summary>
+    /// Gets the stored events.
+    /// </summary>
     public IQueryable<EventRow> Events { get; }
 
-    /// <summary>Gets the event ratings.</summary>
+    /// <summary>
+    /// Gets the event ratings.
+    /// </summary>
     public IQueryable<EventRatingRow> EventRatings { get; }
 
-    /// <summary>Gets the event category types.</summary>
+    /// <summary>
+    /// Gets the event category types.
+    /// </summary>
     public IQueryable<EventCategoryTypeRow> EventCategoryTypes { get; }
 
-    /// <summary>Gets the terms documents linked to the events.</summary>
+    /// <summary>
+    /// Gets the terms documents linked to the events.
+    /// </summary>
     public IQueryable<EventTermsDocumentRow> EventTermsDocuments { get; }
 
-    /// <summary>Gets the recorded terms decisions.</summary>
+    /// <summary>
+    /// Gets the recorded terms decisions.
+    /// </summary>
     public IQueryable<EventTermsAcceptanceRow> EventTermsAcceptances { get; }
 
-    /// <summary>Gets the terms documents.</summary>
+    /// <summary>
+    /// Gets the terms documents.
+    /// </summary>
     public IQueryable<TermsDocumentRow> TermsDocuments { get; }
 
-    /// <summary>Gets the stored activities.</summary>
+    /// <summary>
+    /// Gets the stored activities.
+    /// </summary>
     public IQueryable<ActivityRow> Activities { get; }
 
-    /// <summary>Gets the activity assignments.</summary>
+    /// <summary>
+    /// Gets the activity assignments.
+    /// </summary>
     public IQueryable<AssignmentRow> Assignments { get; }
 
-    /// <summary>Gets the activity roles.</summary>
+    /// <summary>
+    /// Gets the activity roles.
+    /// </summary>
     public IQueryable<ActivityRoleTypeRow> ActivityRoleTypes { get; }
 
-    /// <summary>Gets the assignment statuses.</summary>
+    /// <summary>
+    /// Gets the assignment statuses.
+    /// </summary>
     public IQueryable<AssignmentStatusTypeRow> AssignmentStatusTypes { get; }
 
-    /// <summary>Gets the activity modalities.</summary>
+    /// <summary>
+    /// Gets the activity modalities.
+    /// </summary>
     public IQueryable<ActivityModalityTypeRow> ActivityModalityTypes { get; }
 
-    /// <summary>Gets the stored resources.</summary>
+    /// <summary>
+    /// Gets the stored resources.
+    /// </summary>
     public IQueryable<ResourceRow> Resources { get; }
 
-    /// <summary>Gets the resource types.</summary>
+    /// <summary>
+    /// Gets the resource types.
+    /// </summary>
     public IQueryable<ResourceTypeRow> ResourceTypes { get; }
 
-    /// <summary>Gets the stored news items.</summary>
+    /// <summary>
+    /// Gets the stored news items.
+    /// </summary>
     public IQueryable<NewsItemRow> News { get; }
 
-    /// <summary>Gets the stored partners.</summary>
+    /// <summary>
+    /// Gets the stored partners.
+    /// </summary>
     public IQueryable<PartnerRow> Partners { get; }
 
-    /// <summary>Gets the stored file metadata.</summary>
+    /// <summary>
+    /// Gets the stored file metadata.
+    /// </summary>
     public IQueryable<FileRow> Files { get; }
 
-    /// <summary>Gets the published legal policies.</summary>
+    /// <summary>
+    /// Gets the published legal policies.
+    /// </summary>
     public IQueryable<LegalPolicyRow> LegalPolicies { get; }
 
-    /// <summary>Gets the versions the legal policies replaced.</summary>
+    /// <summary>
+    /// Gets the versions the legal policies replaced.
+    /// </summary>
     public IQueryable<LegalPolicyVersionRow> LegalPolicyVersions { get; }
 
-    /// <summary>Gets the consultations of the blocked data.</summary>
+    /// <summary>
+    /// Gets the consultations of the blocked data.
+    /// </summary>
     public IQueryable<BlockedDataConsultationRow> BlockedDataConsultations { get; }
 
-    /// <summary>Gets the holds on the blocked data.</summary>
+    /// <summary>
+    /// Gets the holds on the blocked data.
+    /// </summary>
     public IQueryable<BlockedDataHoldRow> BlockedDataHolds { get; }
 }

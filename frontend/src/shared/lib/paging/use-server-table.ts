@@ -93,7 +93,9 @@ interface UseServerTableOptions<T, TParams> extends ServerTableSource<T, TParams
   readonly extraParams?: (() => Record<string, unknown>) | undefined
   /** Whether the query may run; always when absent. */
   readonly enabled?: (() => boolean) | undefined
-  /** Row identity for Element Plus; defaults to `'id'`. Lists whose rows have no id pass a function. */
+  /**
+   * Row identity for Element Plus; defaults to `'id'`. Lists whose rows have no id pass a function.
+   */
   readonly rowKey?: string | ((row: T) => string) | undefined
 }
 

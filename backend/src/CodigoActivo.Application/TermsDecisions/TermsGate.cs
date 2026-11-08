@@ -15,7 +15,10 @@ namespace CodigoActivo.Application.TermsDecisions;
 /// <see cref="TermsConsent"/>.
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
-/// <param name="termsDocuments">Repository that tells which documents ask for a signature and which hold a consent.</param>
+/// <param name="termsDocuments">
+/// Repository that tells which documents ask for a signature, which hold a consent and their
+/// current versions.
+/// </param>
 /// <param name="termsAcceptances">Repository of the terms decisions taken.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class TermsGate(

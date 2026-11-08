@@ -14,19 +14,13 @@ public sealed class SystemClock(TimeZoneInfo timeZone, TimeProvider? timeProvide
 {
     private readonly TimeProvider time = timeProvider ?? TimeProvider.System;
 
-    /// <summary>
-    /// Gets the current instant in UTC.
-    /// </summary>
+    /// <inheritdoc />
     public DateTimeOffset UtcNow => time.GetUtcNow();
 
-    /// <summary>
-    /// Gets the current calendar date in the configured time zone.
-    /// </summary>
+    /// <inheritdoc />
     public DateOnly Today =>
         DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(time.GetUtcNow(), timeZone).DateTime);
 
-    /// <summary>
-    /// Gets the time zone used to calculate local dates.
-    /// </summary>
+    /// <inheritdoc />
     public TimeZoneInfo TimeZone => timeZone;
 }

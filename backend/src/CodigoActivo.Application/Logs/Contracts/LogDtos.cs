@@ -7,22 +7,34 @@ namespace CodigoActivo.Application.Logs.Contracts;
 /// </summary>
 public enum DiagnosticLevel
 {
-    /// <summary>Step-by-step tracing.</summary>
+    /// <summary>
+    /// Step-by-step tracing.
+    /// </summary>
     Trace = 0,
 
-    /// <summary>Debugging detail.</summary>
+    /// <summary>
+    /// Debugging detail.
+    /// </summary>
     Debug = 1,
 
-    /// <summary>Normal operation.</summary>
+    /// <summary>
+    /// Normal operation.
+    /// </summary>
     Information = 2,
 
-    /// <summary>Something unexpected that did not fail.</summary>
+    /// <summary>
+    /// Something unexpected that did not fail.
+    /// </summary>
     Warning = 3,
 
-    /// <summary>A failure of one operation.</summary>
+    /// <summary>
+    /// A failure of one operation.
+    /// </summary>
     Error = 4,
 
-    /// <summary>A failure of the whole application.</summary>
+    /// <summary>
+    /// A failure of the whole application.
+    /// </summary>
     Critical = 5,
 }
 
@@ -79,19 +91,24 @@ public sealed record DiagnosticLogEntryDetailResponse(
 /// <param name="OccurredAt">UTC instant the command ended.</param>
 /// <param name="ActorType">Who ran it.</param>
 /// <param name="ActorId">Account that ran it, if a user did.</param>
-/// <param name="ActorName">Full name of that account, or null when it no longer exists.</param>
+/// <param name="ActorName">
+/// Full name of that account, or <see langword="null"/> when it no longer exists.
+/// </param>
 /// <param name="ActorEmail">Email of that account, if it still exists and has one.</param>
 /// <param name="ClientIp">Address of the caller, if it came through a request.</param>
 /// <param name="Action">Command that ran.</param>
 /// <param name="EntityType">Kind of the main entity, if any.</param>
 /// <param name="EntityId">Identifier of the main entity, if any.</param>
-/// <param name="EntityName">Name of the main entity, such as a person's full name or a title, or null
-/// when it no longer exists or is a consultation of the blocked data, which is never named.</param>
+/// <param name="EntityName">
+/// Name of the main entity, such as a person's full name or a title, or <see langword="null"/>
+/// when it no longer exists or is a consultation or hold of the blocked data, which is never named.
+/// </param>
 /// <param name="Related">Other entities the command named.</param>
 /// <param name="Outcome">How it ended.</param>
 /// <param name="ErrorCode">
-/// Code of the error that rejected it, or <c>ConcurrentUpdate</c> or <c>UniqueConstraintViolation</c>
-/// when the database refused its commit; null otherwise.
+/// Code of the error that rejected it, or <c>ConcurrentUpdate</c> or
+/// <c>UniqueConstraintViolation</c> when the database refused its commit; <see langword="null"/>
+/// otherwise.
 /// </param>
 /// <param name="TraceId">Trace it ran in, if any.</param>
 public sealed record AuditLogEntryResponse(
@@ -117,8 +134,10 @@ public sealed record AuditLogEntryResponse(
 /// </summary>
 /// <param name="Type">Kind of the entity.</param>
 /// <param name="Id">Identifier of the entity.</param>
-/// <param name="Name">Name of the entity, such as a person's full name or a title, or null when it no
-/// longer exists or is a consultation of the blocked data, which is never named.</param>
+/// <param name="Name">
+/// Name of the entity, such as a person's full name or a title, or <see langword="null"/> when it
+/// no longer exists or is a consultation or hold of the blocked data, which is never named.
+/// </param>
 public sealed record AuditRelatedEntityResponse(AuditEntityType Type, Guid Id, string? Name);
 
 /// <summary>
@@ -129,7 +148,9 @@ public sealed record AuditRelatedEntityResponse(AuditEntityType Type, Guid Id, s
 /// <param name="OccurredAt">When it ran.</param>
 /// <param name="Action">Command that ran.</param>
 /// <param name="Outcome">How it ended.</param>
-/// <param name="ActorType">Who ran it: a signed-in user, someone not signed in or the system.</param>
+/// <param name="ActorType">
+/// Who ran it: a signed-in user, someone not signed in or the system.
+/// </param>
 /// <param name="RanBySelf">Whether the holder ran it signed in.</param>
 /// <param name="ClientIp">Address of the caller, unless another user ran it.</param>
 public sealed record AccountAuditEntryResponse(

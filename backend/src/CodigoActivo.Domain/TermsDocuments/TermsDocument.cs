@@ -57,7 +57,9 @@ public class TermsDocument : AggregateRoot<TermsDocumentId>
     /// </summary>
     /// <param name="name">Name; surrounding spaces are removed.</param>
     /// <param name="description">Rich-text content.</param>
-    /// <param name="requiresSignature">Whether accepting it asks for a handwritten signature.</param>
+    /// <param name="requiresSignature">
+    /// Whether accepting it asks for a handwritten signature.
+    /// </param>
     /// <param name="kind">Whether it holds conditions or a consent.</param>
     /// <param name="id">Stable identifier for seeded documents; a new one otherwise.</param>
     /// <returns>The new terms document.</returns>
@@ -75,15 +77,18 @@ public class TermsDocument : AggregateRoot<TermsDocumentId>
     }
 
     /// <summary>
-    /// Replaces the name and content of the document, whether accepting it asks for a signature and
-    /// its kind. When anything changes, the current version is kept in
+    /// Replaces the name and content of the document, whether accepting it asks for a signature
+    /// and its kind. When anything changes, the current version is kept in
     /// <see cref="PreviousVersions"/> and the new one gets the next number, so decisions already
     /// taken keep naming the text they were taken on; nobody has to decide again. Every rewrite
-    /// raises <see cref="TermsDocumentRewritten"/> with the images the content no longer references.
+    /// raises <see cref="TermsDocumentRewritten"/> with the images the content no longer
+    /// references.
     /// </summary>
     /// <param name="name">New name; surrounding spaces are removed.</param>
     /// <param name="description">New rich-text content.</param>
-    /// <param name="requiresSignature">Whether accepting it asks for a handwritten signature.</param>
+    /// <param name="requiresSignature">
+    /// Whether accepting it asks for a handwritten signature.
+    /// </param>
     /// <param name="kind">Whether it holds conditions or a consent.</param>
     public void Rewrite(
         string name,

@@ -21,12 +21,14 @@ public interface IEmailDeliveryLock : IAsyncDisposable
 }
 
 /// <summary>
-/// Holds the PostgreSQL session lock that lets one API instance deliver email at a time, so the pace
-/// of the SMTP provider and of every recipient, kept in that instance's memory, is the pace of the
-/// whole application. The lock lives on a connection of its own: if the instance dies or the
+/// Holds the PostgreSQL session lock that lets one API instance deliver email at a time, so the
+/// pace of the SMTP provider and of every recipient, kept in that instance's memory, is the pace of
+/// the whole application. The lock lives on a connection of its own: if the instance dies or the
 /// connection drops, the database releases it and another instance takes over.
 /// </summary>
-/// <param name="scopes">Scope factory used to resolve the context that holds the connection.</param>
+/// <param name="scopes">
+/// Scope factory used to resolve the context that holds the connection.
+/// </param>
 public sealed class EmailDeliveryLock(IServiceScopeFactory scopes) : IEmailDeliveryLock, IDisposable
 {
     private const long LockKey = 6_710_917_394_118_620_401;

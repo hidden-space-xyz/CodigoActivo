@@ -8,39 +8,63 @@ namespace CodigoActivo.Application.Abstractions.Auditing;
 /// </summary>
 public enum AuditEntityType
 {
-    /// <summary>An activity.</summary>
+    /// <summary>
+    /// An activity.
+    /// </summary>
     Activity,
 
-    /// <summary>A consultation of the blocked data.</summary>
+    /// <summary>
+    /// A consultation of the blocked data.
+    /// </summary>
     BlockedDataConsultation,
 
-    /// <summary>A hold on the blocked data.</summary>
+    /// <summary>
+    /// A hold on the blocked data.
+    /// </summary>
     BlockedDataHold,
 
-    /// <summary>An event.</summary>
+    /// <summary>
+    /// An event.
+    /// </summary>
     Event,
 
-    /// <summary>An event category.</summary>
+    /// <summary>
+    /// An event category.
+    /// </summary>
     EventCategoryType,
 
-    /// <summary>A legal policy.</summary>
+    /// <summary>
+    /// A legal policy.
+    /// </summary>
     LegalPolicy,
 
-    /// <summary>A news item.</summary>
+    /// <summary>
+    /// A news item.
+    /// </summary>
     NewsItem,
 
-    /// <summary>A partner.</summary>
+    /// <summary>
+    /// A partner.
+    /// </summary>
     Partner,
 
-    /// <summary>A resource.</summary>
+    /// <summary>
+    /// A resource.
+    /// </summary>
     Resource,
 
-    /// <summary>A stored file.</summary>
+    /// <summary>
+    /// A stored file.
+    /// </summary>
     StoredFile,
 
-    /// <summary>A terms document.</summary>
+    /// <summary>
+    /// A terms document.
+    /// </summary>
     TermsDocument,
 
-    /// <summary>A user.</summary>
+    /// <summary>
+    /// A user.
+    /// </summary>
     User,
 }

@@ -6,8 +6,8 @@ using CodigoActivo.Application.Common;
 namespace CodigoActivo.Infrastructure.Communication.Templates;
 
 /// <summary>
-/// Renders the signup decision messages with the site layout, linking a confirmation to the event page and
-/// a denial to the events list.
+/// Renders the signup decision messages with the site layout, linking a confirmation to the event
+/// page and a denial to the events list.
 /// </summary>
 /// <param name="application">Options that carry the public base URL of the site.</param>
 /// <param name="clock">Clock whose time zone presents the activity schedule.</param>

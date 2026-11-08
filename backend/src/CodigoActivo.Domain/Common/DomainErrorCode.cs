@@ -46,8 +46,8 @@ public enum DomainErrorCode
     ActivitySignupEarlyOnly,
 
     /// <summary>
-    /// The activity has already started, so only an administrator can still sign people up for it or
-    /// withdraw them from it.
+    /// The activity has already started, so only an administrator can still sign people up for it
+    /// or withdraw them from it.
     /// </summary>
     ActivityAlreadyStarted,
 

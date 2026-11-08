@@ -19,8 +19,9 @@ export function statusLabelKey(status: EventStatusKind): TranslationKey {
 }
 
 /**
- * Signup access of a user to an event: open during the signup window, and during early signup only
- * for users the API deems eligible; the rest wait (`earlyOnly`) or are too late or early (`closed`).
+ * Signup access of a user to an event: open during the signup window, and during early signup
+ * only for users the API deems eligible; the rest wait (`earlyOnly`) or are too late or early
+ * (`closed`).
  */
 export function signupAccess(
   event: Pick<EventDetail, 'status'>,

@@ -9,14 +9,16 @@ namespace CodigoActivo.Infrastructure.Communication.Templates;
 public static class PasswordResetEmail
 {
     /// <summary>
-    /// Creates the email with the reset button, the minutes the link lasts and a note for whoever did not
-    /// ask for it.
+    /// Creates the email with the reset button, the minutes the link lasts and a note for whoever
+    /// did not ask for it.
     /// </summary>
     /// <param name="toAddress">Address of the account holder.</param>
     /// <param name="toName">Name the message greets.</param>
     /// <param name="resetUrl">Link to the page that sets the new password.</param>
     /// <param name="siteUrl">Public base URL of the site, linked from the footer.</param>
-    /// <param name="lifetime">Validity of the link, shown in whole minutes rounded up, at least one.</param>
+    /// <param name="lifetime">
+    /// Validity of the link, shown in whole minutes rounded up, at least one.
+    /// </param>
     /// <returns>The message, of kind <see cref="EmailKind.AccessRecovery"/>.</returns>
     public static EmailMessage Create(
         string toAddress,

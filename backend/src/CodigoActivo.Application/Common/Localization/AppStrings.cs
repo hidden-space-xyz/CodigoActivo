@@ -550,8 +550,8 @@ public static class AppStrings
         Get("emails.securityAlert.emailChangedWarning");
 
     /// <summary>
-    /// Gets the advice for a change an administrator made on the account: a second-factor reset or
-    /// administrator rights granted or revoked.
+    /// Gets the advice for a change an administrator made on the account: a second-factor reset, a
+    /// staff role granted or revoked, or the designation for data protection given or taken away.
     /// </summary>
     public static string EmailsSecurityAlertUnexpectedWarning =>
         Get("emails.securityAlert.unexpectedWarning");

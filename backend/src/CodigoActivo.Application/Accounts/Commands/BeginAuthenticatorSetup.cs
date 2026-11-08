@@ -17,7 +17,9 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the input required to start enrolling an authenticator application.
 /// </summary>
-/// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize the change.</param>
+/// <param name="CurrentPassword">
+/// Password of the signed-in user, re-entered to authorize the change.
+/// </param>
 public sealed record BeginAuthenticatorSetupCommand(
     [property: Required, MaxLength(128), NotBlank] string CurrentPassword
 ) : ICommand<Result<AuthenticatorSetup>>, IPreparatoryCommand;
@@ -54,8 +56,8 @@ public sealed class BeginAuthenticatorSetupCommandHandler(
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
     /// A task whose result contains the enrollment data, shown only now, on success;
-    /// <see cref="ApplicationErrorCode.UserCurrentPasswordIncorrect"/> when the password is wrong or
-    /// the account is locked by wrong passwords, or
+    /// <see cref="ApplicationErrorCode.UserCurrentPasswordIncorrect"/> when the password is wrong
+    /// or the account is locked by wrong passwords, or
     /// <see cref="DomainErrorCode.AuthenticatorAlreadyEnabled"/> when an authenticator is active.
     /// </returns>
     public async Task<Result<AuthenticatorSetup>> HandleAsync(

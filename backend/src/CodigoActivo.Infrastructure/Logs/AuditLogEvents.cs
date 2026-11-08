@@ -25,9 +25,9 @@ public static class AuditLogEvents
     /// <summary>
     /// Builds the event of a record.
     /// </summary>
-    /// <param name="record">What the command did.</param>
-    /// <param name="occurredAt">When the command ended.</param>
-    /// <param name="activity">Activity the command ran in, if any.</param>
+    /// <param name="record">Audited event to store.</param>
+    /// <param name="occurredAt">Instant the event is recorded at.</param>
+    /// <param name="activity">Activity whose trace the entry keeps, if any.</param>
     /// <returns>The event to queue.</returns>
     public static LogEvent ToEvent(
         AuditRecord record,

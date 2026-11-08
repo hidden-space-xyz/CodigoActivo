@@ -21,8 +21,12 @@ namespace CodigoActivo.Application.Events.Contracts;
 /// <param name="ThumbnailId">Identifier of the thumbnail file.</param>
 /// <param name="Featured">Whether this is the featured event.</param>
 /// <param name="Categories">Categories that tag the event.</param>
-/// <param name="TermsDocuments">The terms documents linked to this event, ordered for display.</param>
-/// <param name="Stage">Where the event stands, by the server clock, when the response is built.</param>
+/// <param name="TermsDocuments">
+/// The terms documents linked to this event, ordered for display.
+/// </param>
+/// <param name="Stage">
+/// Where the event stands, by the server clock, when the response is built.
+/// </param>
 public record EventResponse(
     Guid Id,
     string Title,
@@ -84,7 +88,9 @@ public record EventResponse(
 /// <param name="ThumbnailId">Identifier of the thumbnail file.</param>
 /// <param name="Featured">Whether this is the featured event.</param>
 /// <param name="Categories">Categories that tag the event.</param>
-/// <param name="Stage">Where the event stands, by the server clock, when the response is built.</param>
+/// <param name="Stage">
+/// Where the event stands, by the server clock, when the response is built.
+/// </param>
 public record EventListItemResponse(
     Guid Id,
     string Title,
@@ -144,7 +150,9 @@ public record EventCategoryResponse(Guid CategoryTypeId, string Name, string Col
 /// </summary>
 /// <param name="TermsDocumentId">Identifier of the terms document.</param>
 /// <param name="Name">Name of the terms document.</param>
-/// <param name="Required">Whether accepting the document is mandatory to complete the signup.</param>
+/// <param name="Required">
+/// Whether accepting the document is mandatory to complete the signup.
+/// </param>
 /// <param name="DisplayOrder">The position in which the document is displayed.</param>
 public record EventTermsDocumentResponse(
     Guid TermsDocumentId,

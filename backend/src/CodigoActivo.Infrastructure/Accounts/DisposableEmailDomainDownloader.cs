@@ -15,9 +15,11 @@ public sealed class DisposableEmailDomainDownloader : IDisposable
     private readonly DisposableEmailDomainOptions options;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="DisposableEmailDomainDownloader"/> class.
+    /// Initializes the downloader with the handler that sends its request and the list options.
     /// </summary>
-    /// <param name="handler">Handler that sends the request; this instance owns and disposes it.</param>
+    /// <param name="handler">
+    /// Handler that sends the request; this instance owns and disposes it.
+    /// </param>
     /// <param name="options">Source address and download timeout of the list.</param>
     public DisposableEmailDomainDownloader(
         HttpMessageHandler handler,
@@ -38,7 +40,9 @@ public sealed class DisposableEmailDomainDownloader : IDisposable
     /// Downloads and validates the list.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the validated domains or why the list was rejected.</returns>
+    /// <returns>
+    /// A task whose result contains the validated domains or why the list was rejected.
+    /// </returns>
     /// <exception cref="HttpRequestException">
     /// The source could not be reached or did not answer with a success status.
     /// </exception>

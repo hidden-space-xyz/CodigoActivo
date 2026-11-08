@@ -5,15 +5,17 @@ using CodigoActivo.Application.Common.Localization;
 namespace CodigoActivo.Infrastructure.Communication.Templates;
 
 /// <summary>
-/// Activity a signup decision email is about, shown as a panel of details. Its texts are raw; the panel
-/// encodes them for the HTML part.
+/// Activity a signup decision email is about, shown as a panel of details. Its texts are raw; the
+/// panel encodes them for the HTML part.
 /// </summary>
 /// <param name="ActivityTitle">Title of the activity.</param>
 /// <param name="EventTitle">Title of the event the activity belongs to.</param>
 /// <param name="Location">Where the activity takes place.</param>
 /// <param name="StartsAt">When the activity starts.</param>
 /// <param name="EndsAt">When the activity ends.</param>
-/// <param name="EventUrl">Absolute link to the page of the event; the panel does not show it.</param>
+/// <param name="EventUrl">
+/// Absolute link to the page of the event; the panel does not show it.
+/// </param>
 public sealed record ActivityEmailDetails(
     string ActivityTitle,
     string EventTitle,
@@ -31,7 +33,8 @@ public sealed record ActivityEmailDetails(
     /// </summary>
     /// <param name="timeZone">Time zone used to calculate local dates.</param>
     /// <returns>
-    /// The day and the start and end times, with the end day too when the activity ends on another day.
+    /// The day and the start and end times, with the end day too when the activity ends on another
+    /// day.
     /// </returns>
     public string ScheduleText(TimeZoneInfo timeZone)
     {
@@ -52,11 +55,13 @@ public sealed record ActivityEmailDetails(
     }
 
     /// <summary>
-    /// Builds the panel with one row each for the activity, the event, the schedule, the location and,
-    /// when given, the role; in the plain-text part each row is a line.
+    /// Builds the panel with one row each for the activity, the event, the schedule, the location
+    /// and, when given, the role; in the plain-text part each row is a line.
     /// </summary>
     /// <param name="timeZone">Time zone used to calculate local dates.</param>
-    /// <param name="roleName">Role the participant was confirmed in; null or blank leaves the row out.</param>
+    /// <param name="roleName">
+    /// Role the participant was confirmed in; <see langword="null"/> or blank leaves the row out.
+    /// </param>
     /// <returns>The details panel block.</returns>
     public EmailBlock ToBlock(TimeZoneInfo timeZone, string? roleName = null)
     {

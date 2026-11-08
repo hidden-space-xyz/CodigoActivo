@@ -48,7 +48,10 @@ public sealed class TwoFactorTicketValidator(
     /// <param name="challenge">Challenge the password step opened.</param>
     /// <param name="keepSignedIn">Whether the user asked to stay signed in on this device.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the principal, or <see langword="null"/> when the challenge is not open.</returns>
+    /// <returns>
+    /// A task whose result contains the principal, or <see langword="null"/> when the challenge is
+    /// not open.
+    /// </returns>
     public async Task<ClaimsPrincipal?> CreatePrincipalAsync(
         LoginChallengeKey challenge,
         bool keepSignedIn,
@@ -126,7 +129,9 @@ public sealed class TwoFactorTicketValidator(
     /// Reads whether the user asked, at the password step, to stay signed in on this device.
     /// </summary>
     /// <param name="principal">Principal read from the challenge cookie, if any.</param>
-    /// <returns><see langword="true"/> only when the challenge cookie records that request.</returns>
+    /// <returns>
+    /// <see langword="true"/> only when the challenge cookie records that request.
+    /// </returns>
     public static bool ReadKeepSignedIn(ClaimsPrincipal? principal)
     {
         return bool.TryParse(principal?.FindFirstValue(KeepSignedInClaim), out var keepSignedIn)

@@ -29,7 +29,9 @@ public sealed record ForgotPasswordCommand(
 /// <param name="accountLock">Runs the issue of the code with the account locked.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="codeHasher">Hasher used so the reset code is never stored in plaintext.</param>
-/// <param name="passwordReset">Password reset configuration: code lifetime and resend cooldown.</param>
+/// <param name="passwordReset">
+/// Password reset configuration: code lifetime and resend cooldown.
+/// </param>
 /// <param name="accountEmails">Sender of the password reset link.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 /// <param name="auditSubject">Names the account the request found for the audit log.</param>

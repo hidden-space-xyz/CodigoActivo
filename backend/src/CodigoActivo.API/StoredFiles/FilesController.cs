@@ -21,7 +21,7 @@ namespace CodigoActivo.API.StoredFiles;
 
 /// <summary>
 /// Exposes HTTP endpoints for querying and managing the uploaded image files: anyone may read them
-/// and only administrators upload or delete them.
+/// and only editors and administrators upload or delete them.
 /// </summary>
 [ApiController]
 [Route("api/files")]
@@ -57,7 +57,9 @@ public class FilesController : ApiControllerBase
     /// <param name="fileId">Identifier of the file.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>The bytes of the thumbnail with their cache validators, or an error response.</returns>
+    /// <returns>
+    /// The bytes of the thumbnail with their cache validators, or an error response.
+    /// </returns>
     [HttpGet("{fileId:guid}/thumbnail")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.Files)]

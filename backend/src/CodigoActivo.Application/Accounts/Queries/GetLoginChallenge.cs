@@ -38,7 +38,11 @@ public sealed class GetLoginChallengeQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the challenge.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result describes the challenge, or an expired challenge error.</returns>
+    /// <returns>
+    /// A task whose result describes the challenge, or
+    /// <see cref="ApplicationErrorCode.TwoFactorChallengeExpired"/> when it can no longer be
+    /// answered.
+    /// </returns>
     public async Task<Result<LoginChallengeResponse>> HandleAsync(
         GetLoginChallengeQuery query,
         CancellationToken ct = default

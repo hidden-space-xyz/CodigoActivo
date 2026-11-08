@@ -38,13 +38,15 @@ public sealed class ProfileChange
     public EmailAddress? NewEmail { get; }
 
     /// <summary>
-    /// Gets whether the change replaces the email, the phone or the secondary phone of the account,
-    /// which lets whoever makes it take the account over or redirect its contact details.
+    /// Gets a value indicating whether the change replaces the email, the phone or the secondary
+    /// phone of the account, which lets whoever makes it take the account over or redirect its
+    /// contact details.
     /// </summary>
     public bool ReplacesContact { get; }
 
     /// <summary>
-    /// Gets whether the change replaces the phone or the secondary phone of the account.
+    /// Gets a value indicating whether the change replaces the phone or the secondary phone of the
+    /// account.
     /// </summary>
     public bool ReplacesPhones { get; }
 

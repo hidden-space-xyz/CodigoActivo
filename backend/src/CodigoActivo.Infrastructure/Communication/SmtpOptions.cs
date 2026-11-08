@@ -12,7 +12,8 @@ public enum SmtpSecurityMode
     StartTls = 0,
 
     /// <summary>
-    /// Speaks TLS from the first byte, as servers on <see cref="SmtpOptions.ImplicitTlsPort"/> expect.
+    /// Speaks TLS from the first byte, as servers on <see cref="SmtpOptions.ImplicitTlsPort"/>
+    /// expect.
     /// </summary>
     SslOnConnect = 1,
 
@@ -55,8 +56,8 @@ public sealed class SmtpOptions
     public const int DefaultMaxPerDay = 2000;
 
     /// <summary>
-    /// Gets or sets the name or address of the SMTP server (<c>SMTP_HOST</c>); the sender refuses to
-    /// send while it is empty.
+    /// Gets or sets the name or address of the SMTP server (<c>SMTP_HOST</c>); the sender refuses
+    /// to send while it is empty.
     /// </summary>
     public string Host { get; set; } = string.Empty;
 
@@ -84,8 +85,8 @@ public sealed class SmtpOptions
     public string Password { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the sender address of every email (<c>SMTP_FROM_ADDRESS</c>); the sender refuses
-    /// to send while it is empty.
+    /// Gets or sets the sender address of every email (<c>SMTP_FROM_ADDRESS</c>); the sender
+    /// refuses to send while it is empty.
     /// </summary>
     public string FromAddress { get; set; } = string.Empty;
 
@@ -103,9 +104,9 @@ public sealed class SmtpOptions
     public int MaxPerMinute { get; set; } = DefaultMaxPerMinute;
 
     /// <summary>
-    /// Gets or sets how many messages the SMTP provider accepts in 24 hours (<c>SMTP_MAX_PER_DAY</c>),
-    /// counted over a rolling window that survives restarts; each priority may spend the share
-    /// <see cref="EmailQueueOptions.DailySharePercent"/> gives it.
+    /// Gets or sets how many messages the SMTP provider accepts in 24 hours
+    /// (<c>SMTP_MAX_PER_DAY</c>), counted over a rolling window that survives restarts; each
+    /// priority may spend the share <see cref="EmailQueueOptions.DailySharePercent"/> gives it.
     /// </summary>
     public int MaxPerDay { get; set; } = DefaultMaxPerDay;
 

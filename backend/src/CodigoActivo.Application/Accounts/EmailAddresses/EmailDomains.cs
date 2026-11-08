@@ -44,7 +44,9 @@ public static class EmailDomains
     /// <c>mailinator.com</c>.
     /// </summary>
     /// <param name="domain">Normalized domain name.</param>
-    /// <returns>The names, empty when the domain has fewer than two labels or an empty label.</returns>
+    /// <returns>
+    /// The names, empty when the domain has fewer than two labels or an empty label.
+    /// </returns>
     public static IReadOnlyList<string> SelfAndParents(string domain)
     {
         ArgumentNullException.ThrowIfNull(domain);

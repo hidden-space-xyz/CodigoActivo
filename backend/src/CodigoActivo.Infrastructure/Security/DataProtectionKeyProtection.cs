@@ -36,8 +36,8 @@ public static class DataProtectionKeyProtection
     /// <summary>
     /// Keeps the key ring in the directory of the registered <see cref="KeyRingOptions"/> and
     /// encrypts every key with <see cref="AesGcmKeyRingProtection"/> under the registered
-    /// <see cref="DataProtectionRootKey"/>. Keys found in the directory that this protection does not
-    /// cover are ignored when the ring is read.
+    /// <see cref="DataProtectionRootKey"/>. Keys found in the directory that this protection does
+    /// not cover are ignored when the ring is read.
     /// </summary>
     /// <param name="dataProtection">Data Protection builder to configure.</param>
     /// <returns>The same builder.</returns>

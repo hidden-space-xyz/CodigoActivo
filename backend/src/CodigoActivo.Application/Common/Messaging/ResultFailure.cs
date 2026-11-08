@@ -16,7 +16,9 @@ internal static class ResultFailure
     /// Tells whether a result type can carry a failure.
     /// </summary>
     /// <typeparam name="TResult">Result type of a handler.</typeparam>
-    /// <returns><see langword="true"/> for <see cref="Result"/> and <see cref="Result{T}"/>.</returns>
+    /// <returns>
+    /// <see langword="true"/> for <see cref="Result"/> and <see cref="Result{T}"/>.
+    /// </returns>
     public static bool IsSupported<TResult>()
     {
         return typeof(Result).IsAssignableFrom(typeof(TResult));

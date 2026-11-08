@@ -14,7 +14,10 @@ export class CertificatesTab {
     return this.tile(name, event).getByTestId('certificate-tile-open')
   }
 
-  /** The tile of the diploma of the person `name` for the event `event`, with its code and downloads. */
+  /**
+   * The tile of the diploma of the person `name` for the event `event`, with its code and
+   * downloads.
+   */
   tile(name: string, event: string): Locator {
     return this.page
       .getByTestId('certificate-tile')

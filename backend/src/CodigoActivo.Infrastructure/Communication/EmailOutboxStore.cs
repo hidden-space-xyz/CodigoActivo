@@ -12,14 +12,16 @@ namespace CodigoActivo.Infrastructure.Communication;
 public interface IEmailOutboxStore : IEmailOutbox, IPendingEmails
 {
     /// <summary>
-    /// Takes up to <paramref name="batchSize"/> unexpired messages whose next attempt is due and whose
-    /// priority is at most <paramref name="maxPriority"/>, by priority and then by schedule, leasing
-    /// them until <paramref name="leaseUntil"/> so no other instance delivers the same row and
-    /// counting the attempt as started. Rows another transaction has locked are skipped. The messages
-    /// come back in claim order with their content and its parts loaded, and messages that share
-    /// stored content share one instance of it.
+    /// Takes up to <paramref name="batchSize"/> unexpired messages whose next attempt is due and
+    /// whose priority is at most <paramref name="maxPriority"/>, by priority and then by schedule,
+    /// leasing them until <paramref name="leaseUntil"/> so no other instance delivers the same row
+    /// and counting the attempt as started. Rows another transaction has locked are skipped. The
+    /// messages come back in claim order with their content and its parts loaded, and messages that
+    /// share stored content share one instance of it.
     /// </summary>
-    /// <param name="now">Current timestamp compared against the schedule, the leases and the expiry.</param>
+    /// <param name="now">
+    /// Current timestamp compared against the schedule, the leases and the expiry.
+    /// </param>
     /// <param name="leaseUntil">Timestamp until which the claimed rows stay reserved.</param>
     /// <param name="batchSize">Largest number of messages to claim.</param>
     /// <param name="maxPriority">Highest stored priority value that may be claimed.</param>
@@ -45,21 +47,25 @@ public interface IEmailOutboxStore : IEmailOutbox, IPendingEmails
     /// attempt the caller claimed. Its content stays until <see cref="RemoveOrphanContentAsync"/>.
     /// </summary>
     /// <param name="messageId">Identifier of the message.</param>
-    /// <param name="attemptCount">Attempt the caller claimed, which must still be the current one.</param>
+    /// <param name="attemptCount">
+    /// Attempt the caller claimed, which must still be the current one.
+    /// </param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
-    /// A task whose result contains the number of deleted rows: zero when the message is gone or was
-    /// claimed again.
+    /// A task whose result contains the number of deleted rows: zero when the message is gone or
+    /// was claimed again.
     /// </returns>
     public Task<int> RemoveAsync(Guid messageId, int attemptCount, CancellationToken ct = default);
 
     /// <summary>
-    /// Releases the lease of a failed message so it is retried later and stores the error, as long as
-    /// it is still on the attempt the caller claimed: a worker whose lease expired never overwrites the
-    /// schedule of the worker that claimed the message afterwards.
+    /// Releases the lease of a failed message so it is retried later and stores the error, as long
+    /// as it is still on the attempt the caller claimed: a worker whose lease expired never
+    /// overwrites the schedule of the worker that claimed the message afterwards.
     /// </summary>
     /// <param name="messageId">Identifier of the message.</param>
-    /// <param name="attemptCount">Attempt the caller claimed, which must still be the current one.</param>
+    /// <param name="attemptCount">
+    /// Attempt the caller claimed, which must still be the current one.
+    /// </param>
     /// <param name="nextAttemptAt">Timestamp from which the message may be attempted again.</param>
     /// <param name="error">
     /// Diagnostic of the failure, without recipient data; it is cut to
@@ -68,8 +74,8 @@ public interface IEmailOutboxStore : IEmailOutbox, IPendingEmails
     /// </param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
-    /// A task whose result contains the number of updated rows: zero when the message is gone or was
-    /// claimed again.
+    /// A task whose result contains the number of updated rows: zero when the message is gone or
+    /// was claimed again.
     /// </returns>
     public Task<int> RescheduleAsync(
         Guid messageId,
@@ -80,17 +86,19 @@ public interface IEmailOutboxStore : IEmailOutbox, IPendingEmails
     );
 
     /// <summary>
-    /// Hands back a message the worker claimed but did not try, because the delivery paused or its
-    /// recipient has to wait: the lease is released and the attempt returned, as long as it is still
-    /// on the attempt the caller claimed.
+    /// Hands back a message the worker claimed but did not try, because the delivery paused, its
+    /// recipient has to wait or the host is stopping: the lease is released and the attempt
+    /// returned, as long as it is still on the attempt the caller claimed.
     /// </summary>
     /// <param name="messageId">Identifier of the message.</param>
-    /// <param name="attemptCount">Attempt the caller claimed, which must still be the current one.</param>
+    /// <param name="attemptCount">
+    /// Attempt the caller claimed, which must still be the current one.
+    /// </param>
     /// <param name="nextAttemptAt">Timestamp from which the message may be claimed again.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
-    /// A task whose result contains the number of updated rows: zero when the message is gone or was
-    /// claimed again.
+    /// A task whose result contains the number of updated rows: zero when the message is gone or
+    /// was claimed again.
     /// </returns>
     public Task<int> ReleaseAsync(
         Guid messageId,
@@ -105,7 +113,9 @@ public interface IEmailOutboxStore : IEmailOutbox, IPendingEmails
     /// </summary>
     /// <param name="now">Current timestamp compared against the expiry and the leases.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the kind of every removed message, for the log.</returns>
+    /// <returns>
+    /// A task whose result contains the kind of every removed message, for the log.
+    /// </returns>
     public Task<IReadOnlyList<EmailKind>> RemoveExpiredAsync(
         DateTimeOffset now,
         CancellationToken ct = default
@@ -134,8 +144,8 @@ public interface IEmailOutboxStore : IEmailOutbox, IPendingEmails
     public Task<int> RemoveOrphanContentAsync(CancellationToken ct = default);
 
     /// <summary>
-    /// Adds messages handed to the SMTP server to the count of their UTC hour and removes the counts
-    /// older than two <see cref="EmailQueueOptions.DailyWindow"/>.
+    /// Adds messages handed to the SMTP server to the count of their UTC hour and removes the
+    /// counts older than two <see cref="EmailQueueOptions.DailyWindow"/>.
     /// </summary>
     /// <param name="now">Time the messages were handed over.</param>
     /// <param name="sent">Number of messages handed over.</param>
@@ -154,9 +164,9 @@ public interface IEmailOutboxStore : IEmailOutbox, IPendingEmails
 }
 
 /// <summary>
-/// Stores outbound email in PostgreSQL. Every call uses a scope, and therefore a database session, of
-/// its own: enqueuing commits before returning and never carries the pending changes of the handler
-/// that asked for the email. A stored batch wakes the delivery worker of this process.
+/// Stores outbound email in PostgreSQL. Every call uses a scope, and therefore a database session,
+/// of its own: enqueuing commits before returning and never carries the pending changes of the
+/// handler that asked for the email. A stored batch wakes the delivery worker of this process.
 /// </summary>
 /// <param name="scopes">Scope factory used to resolve the context of each operation.</param>
 /// <param name="protector">Protector applied to the stored subject, bodies and attachments.</param>

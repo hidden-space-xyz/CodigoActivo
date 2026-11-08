@@ -9,7 +9,8 @@ namespace CodigoActivo.Domain.Files;
 public static class ReleasedFiles
 {
     /// <summary>
-    /// Gets the files the previous thumbnail and description referenced and the current ones do not.
+    /// Gets the files the previous thumbnail and description referenced and the current ones do
+    /// not.
     /// </summary>
     /// <param name="previousThumbnailId">Thumbnail before the change.</param>
     /// <param name="thumbnailId">Thumbnail after the change.</param>

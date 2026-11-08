@@ -2,7 +2,7 @@ import type { ActivityDetail, ActivityInput, ActivityRole } from '@/entities/act
 import { isDayAfter, isDayBefore } from '@/shared/lib/date'
 import type { FormProblem, FormReading } from '@/shared/lib/form'
 
-/** What the activity dialog binds its inputs to; each date picker holds `null` until one is picked. */
+/** What the activity dialog binds its inputs to; each date picker holds `null` until picked. */
 export interface ActivityDraft {
   title: string
   description: string

@@ -98,8 +98,8 @@ function memberSpecs(runId, size) {
 }
 
 /**
- * Prepares the accounts and data every scenario shares. Compose starts k6 once the API reports
- * healthy, which it does after seeding the demo data.
+ * Prepares the accounts and data every scenario shares. Compose starts k6 once `volume.sql` has
+ * filled the database, which it runs when the API reports healthy, after seeding the demo data.
  */
 export function setup() {
   const runId = Date.now().toString(36)
@@ -134,6 +134,7 @@ export function run(data) {
   SCENARIOS[exec.scenario.name](data)
 }
 
+/** Replaces k6's end-of-test summary with the report of the run. */
 export function handleSummary(data) {
   return report(data)
 }

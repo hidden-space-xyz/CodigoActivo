@@ -119,7 +119,8 @@ public class Activity : AuditableEntity<ActivityId>
     }
 
     /// <summary>
-    /// Tells whether the activity has already begun, so people can no longer join or leave it.
+    /// Tells whether the activity has already begun, after which only an administrator can sign
+    /// people up for it or withdraw them from it.
     /// </summary>
     /// <param name="now">Current time.</param>
     /// <returns><see langword="true"/> from the moment the activity starts.</returns>
@@ -233,8 +234,8 @@ public class Activity : AuditableEntity<ActivityId>
     /// <param name="userId">Identifier of the signed-up person.</param>
     /// <param name="status">New status.</param>
     /// <returns>
-    /// The status the signup had before, or <see cref="DomainErrorCode.ActivityAssignmentNotFound"/>
-    /// when the person is not signed up.
+    /// The status the signup had before, or
+    /// <see cref="DomainErrorCode.ActivityAssignmentNotFound"/> when the person is not signed up.
     /// </returns>
     public Result<AssignmentStatus> ChangeAssignmentStatus(UserId userId, AssignmentStatus status)
     {

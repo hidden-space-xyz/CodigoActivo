@@ -9,13 +9,13 @@ using CodigoActivo.Domain.Events;
 namespace CodigoActivo.Application.Events.Queries;
 
 /// <summary>
-/// Carries the criteria used to retrieve event by identifier.
+/// Carries the criteria used to retrieve an event by identifier.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 public sealed record GetEventByIdQuery(EventId EventId) : IQuery<Result<EventResponse>>;
 
 /// <summary>
-/// Executes the query to retrieve event by identifier.
+/// Executes the query to retrieve an event by identifier.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -27,7 +27,7 @@ public sealed class GetEventByIdQueryHandler(
 ) : IQueryHandler<GetEventByIdQuery, Result<EventResponse>>
 {
     /// <summary>
-    /// Handles the request to retrieve event by identifier.
+    /// Handles the request to retrieve an event by identifier.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

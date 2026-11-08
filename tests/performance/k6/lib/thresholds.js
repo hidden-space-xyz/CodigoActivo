@@ -12,11 +12,14 @@ export const RUN_PHASE = 'run'
 const API = 'target:api'
 const TRACK = { trend: ['p(95)>=0'], rate: ['rate>=0'], count: ['count>=0'] }
 
+/** Names a metric filtered by `filter` and limited to the samples of the scenarios. */
 export const runMetric = (metric, filter) => `${metric}{${filter},phase:${RUN_PHASE}}`
 
+/** Names a metric of one load window, of the API requests unless `filter` says otherwise. */
 export const windowMetric = (metric, window, filter = API) =>
   runMetric(metric, `${filter},window:${window}`)
 
+/** Names the count of the iterations that arrived in one load window. */
 export const arrivalsMetric = (window) => runMetric('arrivals', `window:${window}`)
 
 const perEndpoint = (entry) => Object.fromEntries(ENDPOINTS.map(entry))
@@ -42,7 +45,10 @@ export function everyEndpointReliable() {
   ])
 }
 
-/** Gate: every window receives the iterations its profile promises, so a pass proves the load. */
+/**
+ * Gate: every window receives at least the `OBJECTIVE.delivered` share of the iterations its
+ * profile promises, so a pass proves the load.
+ */
 export function everyWindowDelivered({ windows }) {
   return Object.fromEntries(
     windows.map(({ name, arrivals }) => [
@@ -92,8 +98,8 @@ function tracked(windows) {
 }
 
 /**
- * Declares the gates of a profile. A threshold is also what makes k6 keep a sub-metric, so `tracked`
- * adds ones that always pass for everything the summary reports.
+ * Declares the gates of a profile. A threshold is also what makes k6 keep a sub-metric, so
+ * `tracked` adds ones that always pass for everything the summary reports.
  */
 export function thresholds(profile) {
   return Object.assign(tracked(profile.windows), ...profile.gates.map((gate) => gate(profile)))

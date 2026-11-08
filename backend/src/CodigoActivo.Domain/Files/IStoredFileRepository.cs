@@ -12,7 +12,9 @@ public interface IStoredFileRepository : IRepository<StoredFile>
     /// </summary>
     /// <param name="id">Identifier of the file.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is the file, or <see langword="null"/> when it does not exist.</returns>
+    /// <returns>
+    /// A task whose result is the file, or <see langword="null"/> when it does not exist.
+    /// </returns>
     public Task<StoredFile?> GetByIdAsync(StoredFileId id, CancellationToken ct = default);
 
     /// <summary>
@@ -39,8 +41,8 @@ public interface IStoredFileRepository : IRepository<StoredFile>
 
     /// <summary>
     /// Returns which of the given files exist and, inside a transaction, keeps them from being
-    /// deleted until it ends (<c>FOR KEY SHARE</c>), so content that is about to reference them can be
-    /// saved first.
+    /// deleted until it ends (<c>FOR KEY SHARE</c>), so content that is about to reference them can
+    /// be saved first.
     /// </summary>
     /// <param name="ids">Identifiers of the files.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -51,8 +53,8 @@ public interface IStoredFileRepository : IRepository<StoredFile>
     );
 
     /// <summary>
-    /// Locks the given files for deletion (<c>FOR UPDATE</c>) until the transaction ends, waiting for any
-    /// save that is about to reference them, and returns which of them exist.
+    /// Locks the given files for deletion (<c>FOR UPDATE</c>) until the transaction ends, waiting
+    /// for any save that is about to reference them, and returns which of them exist.
     /// </summary>
     /// <param name="ids">Identifiers of the files.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

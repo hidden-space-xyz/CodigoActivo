@@ -5,7 +5,7 @@ using Serilog.Events;
 namespace CodigoActivo.Infrastructure.Logs;
 
 /// <summary>
-/// Stores audited commands in <c>audit_log_entries</c>.
+/// Stores audited events in <c>audit_log_entries</c>.
 /// </summary>
 /// <param name="database">Connections of the log tables, owned by the host.</param>
 /// <param name="partitions">Maintenance of the log partitions.</param>

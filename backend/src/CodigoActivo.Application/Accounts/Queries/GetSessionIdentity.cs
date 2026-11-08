@@ -35,7 +35,10 @@ public sealed class GetSessionIdentityQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the presented session.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the session identity, or <see langword="null"/> when the session is not valid.</returns>
+    /// <returns>
+    /// A task whose result contains the session identity, or <see langword="null"/> when the
+    /// session is not valid.
+    /// </returns>
     public async Task<SessionIdentity?> HandleAsync(
         GetSessionIdentityQuery query,
         CancellationToken ct = default

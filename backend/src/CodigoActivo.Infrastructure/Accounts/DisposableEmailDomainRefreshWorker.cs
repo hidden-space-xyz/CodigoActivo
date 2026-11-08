@@ -25,11 +25,13 @@ public sealed class DisposableEmailDomainRefreshWorker(
 {
     /// <summary>
     /// Downloads the list and, when it is valid, stores it in place of the previous one. A download
-    /// that fails or is rejected is logged and changes nothing; a failed write is not logged here and
-    /// propagates to the caller.
+    /// that fails or is rejected is logged and changes nothing; a failed write is not logged here
+    /// and propagates to the caller.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="true"/> when the downloaded list was stored.</returns>
+    /// <returns>
+    /// A task whose result is <see langword="true"/> when the downloaded list was stored.
+    /// </returns>
     public async Task<bool> RefreshAsync(CancellationToken ct = default)
     {
         DisposableEmailDomainListResult list;
@@ -60,7 +62,7 @@ public sealed class DisposableEmailDomainRefreshWorker(
     /// refresh interval after a stored list and the retry interval after any failure. Only the
     /// shutdown token ends the loop: a timeout or any other failure is logged and retried.
     /// </summary>
-    /// <param name="stoppingToken">Cancellation token used to stop the asynchronous operation.</param>
+    /// <param name="stoppingToken">Cancellation token that stops the refreshes at shutdown.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

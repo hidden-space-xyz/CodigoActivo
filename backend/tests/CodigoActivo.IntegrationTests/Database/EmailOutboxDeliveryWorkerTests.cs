@@ -14,8 +14,8 @@ namespace CodigoActivo.IntegrationTests.Database;
 /// <summary>
 /// Exercises the hosted delivery worker itself against PostgreSQL. The shared factory drains the
 /// outbox inline so tests never race a background service, so this one wires the real
-/// <see cref="EmailOutboxDeliveryWorker"/> over the real store and lock with a transport of its own,
-/// and stops and disposes it before the test ends.
+/// <see cref="EmailOutboxDeliveryWorker"/> over the real store and lock with a transport of its
+/// own, and stops and disposes it before the test ends.
 /// </summary>
 public sealed class EmailOutboxDeliveryWorkerTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)

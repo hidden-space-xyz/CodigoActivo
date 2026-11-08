@@ -24,9 +24,8 @@ public sealed record DesignatePrivacyOfficerCommand(
 /// <summary>
 /// Executes the command to designate the account for data protection, the only one that consults
 /// the blocked data, which must be an administrator. Only the initial administrator designates it,
-/// itself included, and the account
-/// designated until now stops being designated in the same transaction, so exactly one account is
-/// designated at any time. Both holders are told by email.
+/// itself included, and the account designated until now stops being designated in the same
+/// transaction, so exactly one account is designated at any time. Both holders are told by email.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="currentUser">Person the use case runs for.</param>

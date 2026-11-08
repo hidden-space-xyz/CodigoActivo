@@ -53,8 +53,8 @@ public class TermsDecisionChange
     public int TermsDocumentVersion { get; private set; }
 
     /// <summary>
-    /// Gets whether the document was accepted; <see langword="false"/> for a decline or a
-    /// withdrawal.
+    /// Gets a value indicating whether the document was accepted; <see langword="false"/> for a
+    /// decline or a withdrawal.
     /// </summary>
     public bool Accepted { get; private set; }
 

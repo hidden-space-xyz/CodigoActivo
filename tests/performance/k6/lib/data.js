@@ -142,7 +142,10 @@ export function activityBody({ thumbnailId, modalityId, roles, startsIn = 14, sl
   }
 }
 
-/** Accepts every terms document, signing those that ask for it. */
+/**
+ * Accepts every terms document, signing those that ask for it and every consent, which a dependent
+ * of 14 or more must sign.
+ */
 export function decisionsFor(documents) {
   return documents.map((document) => ({
     termsDocumentId: document.termsDocumentId,

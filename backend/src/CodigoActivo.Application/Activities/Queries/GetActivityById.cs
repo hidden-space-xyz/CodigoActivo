@@ -8,13 +8,13 @@ using CodigoActivo.Domain.Common;
 namespace CodigoActivo.Application.Activities.Queries;
 
 /// <summary>
-/// Carries the criteria used to retrieve activity by identifier.
+/// Carries the criteria used to retrieve an activity by identifier.
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>
 public sealed record GetActivityByIdQuery(ActivityId ActivityId) : IQuery<Result<ActivityResponse>>;
 
 /// <summary>
-/// Executes the query to retrieve activity by identifier.
+/// Executes the query to retrieve an activity by identifier.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -22,7 +22,7 @@ public sealed class GetActivityByIdQueryHandler(IReadStore readStore, IQueryExec
     : IQueryHandler<GetActivityByIdQuery, Result<ActivityResponse>>
 {
     /// <summary>
-    /// Handles the request to retrieve activity by identifier.
+    /// Handles the request to retrieve an activity by identifier.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

@@ -14,7 +14,9 @@ namespace CodigoActivo.API.Activities.Contracts;
 /// <summary>
 /// Contains the client-supplied number of people an activity role takes.
 /// </summary>
-/// <param name="ActivityRoleTypeId">Identifier of the activity role type; each role at most once.</param>
+/// <param name="ActivityRoleTypeId">
+/// Identifier of the activity role type; each role at most once.
+/// </param>
 /// <param name="DesiredCount">
 /// Number of people wanted in the role, from <see cref="RoleCapacity.MinDesiredCount"/> to
 /// <see cref="RoleCapacity.MaxDesiredCount"/>.
@@ -42,11 +44,13 @@ public record ActivityRoleCapacityRequest(
 /// <param name="Description">Plain-text description of the activity.</param>
 /// <param name="Location">Where the activity takes place.</param>
 /// <param name="ActivityModalityTypeId">Identifier of the activity modality type.</param>
-/// <param name="ActivityStartsAt">When the activity starts, within the calendar of its event.</param>
+/// <param name="ActivityStartsAt">
+/// When the activity starts, within the calendar of its event.
+/// </param>
 /// <param name="ActivityEndsAt">When the activity ends, later than the start.</param>
 /// <param name="ThumbnailId">Identifier of the uploaded thumbnail file, which must exist.</param>
 /// <param name="RoleCapacities">
-/// How many people each role takes; null or empty when no role has a capacity.
+/// How many people each role takes; <see langword="null"/> or empty when no role has a capacity.
 /// </param>
 public record CreateActivityRequest(
     [Required] [MaxLength(200)] string Title,
@@ -99,11 +103,13 @@ public record CreateActivityRequest(
 /// <param name="Description">Plain-text description of the activity.</param>
 /// <param name="Location">Where the activity takes place.</param>
 /// <param name="ActivityModalityTypeId">Identifier of the activity modality type.</param>
-/// <param name="ActivityStartsAt">When the activity starts, within the calendar of its event.</param>
+/// <param name="ActivityStartsAt">
+/// When the activity starts, within the calendar of its event.
+/// </param>
 /// <param name="ActivityEndsAt">When the activity ends, later than the start.</param>
 /// <param name="ThumbnailId">Identifier of the uploaded thumbnail file, which must exist.</param>
 /// <param name="RoleCapacities">
-/// How many people each role takes; null or empty when no role has a capacity.
+/// How many people each role takes; <see langword="null"/> or empty when no role has a capacity.
 /// </param>
 public record UpdateActivityRequest(
     [Required] [MaxLength(200)] string Title,
@@ -155,8 +161,8 @@ public record UpdateActivityRequest(
 /// <param name="TermsDocumentId">Identifier of the terms document.</param>
 /// <param name="Accepted">Whether the user accepted the document.</param>
 /// <param name="Signature">
-/// Base64 PNG image of the signature drawn to accept a document that asks for one; ignored for
-/// other documents and for declined ones.
+/// Base64 PNG image of the signature drawn to accept a document that asks for one or a consent a
+/// dependent decides; ignored for every other decision.
 /// </param>
 /// <param name="Version">
 /// Version of the document the person read, as the terms state returned it; a decision on a

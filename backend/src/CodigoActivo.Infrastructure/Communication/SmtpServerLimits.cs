@@ -6,7 +6,8 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// <summary>
 /// Remembers the largest message the SMTP server said it accepts (the <c>SIZE</c> extension) on the
 /// last connection of this process, so the outbox refuses a message the server would reject anyway
-/// before an administrator believes it sent. Until a connection has told it, every size is accepted.
+/// before an administrator believes it sent. Until a connection has told it, every size is
+/// accepted.
 /// </summary>
 public sealed class SmtpServerLimits
 {
@@ -17,8 +18,8 @@ public sealed class SmtpServerLimits
     private long maxMessageSize;
 
     /// <summary>
-    /// Gets the largest message the server accepts, in bytes; <see langword="null"/> while unknown or
-    /// when the server sets no limit.
+    /// Gets the largest message the server accepts, in bytes; <see langword="null"/> while unknown
+    /// or when the server sets no limit.
     /// </summary>
     public long? MaxMessageSize =>
         Interlocked.Read(ref maxMessageSize) is > 0 and var size ? size : null;
@@ -26,15 +27,17 @@ public sealed class SmtpServerLimits
     /// <summary>
     /// Records the limit the server announced on a new connection.
     /// </summary>
-    /// <param name="advertised">Announced limit in bytes; zero when the server announced none.</param>
+    /// <param name="advertised">
+    /// Announced limit in bytes; zero when the server announced none.
+    /// </param>
     public void Record(long advertised)
     {
         Interlocked.Exchange(ref maxMessageSize, Math.Max(advertised, 0));
     }
 
     /// <summary>
-    /// Tells whether the server accepts the batch, estimating its encoded size from above: every part,
-    /// text included, counted as base64 with its line breaks, plus room for the headers.
+    /// Tells whether the server accepts the batch, estimating its encoded size from above: every
+    /// part, text included, counted as base64 with its line breaks, plus room for the headers.
     /// </summary>
     /// <param name="batch">Batch whose message is checked.</param>
     /// <returns>

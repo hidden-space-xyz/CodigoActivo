@@ -7,9 +7,9 @@ namespace CodigoActivo.Domain.Common;
 public static class LocalDayRange
 {
     /// <summary>
-    /// Calculates the first instant of a local day. When the local midnight does not exist because the
-    /// clocks skip it, the day starts at the instant that midnight would have had; when it happens
-    /// twice because the clocks go back, the day starts at the first one.
+    /// Calculates the first instant of a local day. When the local midnight does not exist because
+    /// the clocks skip it, the day starts at the instant that midnight would have had; when it
+    /// happens twice because the clocks go back, the day starts at the first one.
     /// </summary>
     /// <param name="day">Local day.</param>
     /// <param name="zone">Time zone the day is counted in.</param>

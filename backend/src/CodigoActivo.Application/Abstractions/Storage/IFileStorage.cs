@@ -1,8 +1,9 @@
 namespace CodigoActivo.Application.Abstractions.Storage;
 
 /// <summary>
-/// Stores the binary content of uploaded files, keyed by their storage-safe name. Every method throws
-/// <see cref="ArgumentException"/> for a blank name or one that is not a bare file name.
+/// Stores the binary content of uploaded files, keyed by their storage-safe name. Every method that
+/// takes a name throws <see cref="ArgumentException"/> for a blank name or one that is not a bare
+/// file name.
 /// </summary>
 public interface IFileStorage
 {
@@ -14,7 +15,9 @@ public interface IFileStorage
     /// <param name="content">Content to store, read from its current position to the end.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    /// <exception cref="IOException">Content is already stored under the name, or it could not be written.</exception>
+    /// <exception cref="IOException">
+    /// Content is already stored under the name, or it could not be written.
+    /// </exception>
     public Task SaveAsync(string storedName, Stream content, CancellationToken ct = default);
 
     /// <summary>
@@ -30,7 +33,10 @@ public interface IFileStorage
     /// </summary>
     /// <param name="storedName">Storage-safe file name identifying the content.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the matching stream, or <see langword="null"/> when it is not found.</returns>
+    /// <returns>
+    /// A task whose result contains the matching stream, or <see langword="null"/> when it is not
+    /// found.
+    /// </returns>
     public Task<Stream?> OpenReadAsync(string storedName, CancellationToken ct = default);
 
     /// <summary>

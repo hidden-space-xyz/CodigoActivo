@@ -17,13 +17,14 @@ public static class ConsentWithdrawalEmail
     /// <summary>
     /// Creates the notice for the association's legal contact: for every withdrawal, whose consent
     /// was withdrawn, for which document and event, who recorded it and when, then a callout with
-    /// what to stop using. One withdrawal reads in the singular, several in the plural.
+    /// what to stop using and a note on where the earlier acceptance stays recorded. One withdrawal
+    /// reads in the singular, several in the plural.
     /// </summary>
     /// <param name="toAddress">Legal contact email of the association.</param>
     /// <param name="toName">Name the message greets.</param>
     /// <param name="withdrawals">
-    /// What was withdrawn, for whom and by whom, at least one; its texts are raw and encoded for the
-    /// HTML part.
+    /// What was withdrawn, for whom and by whom, at least one; its texts are raw and encoded for
+    /// the HTML part.
     /// </param>
     /// <param name="timeZone">Time zone used to calculate local dates.</param>
     /// <param name="siteUrl">Public base URL of the site, linked from the footer.</param>

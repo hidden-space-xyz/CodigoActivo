@@ -8,7 +8,9 @@ namespace CodigoActivo.Application.TermsDocuments.Contracts;
 /// <param name="Id">Identifier of the terms document.</param>
 /// <param name="Name">Name, unique among terms documents.</param>
 /// <param name="Description">Content of the current version as rich text JSON.</param>
-/// <param name="RequiresSignature">Whether accepting the document asks for a handwritten signature.</param>
+/// <param name="RequiresSignature">
+/// Whether accepting the document asks for a handwritten signature.
+/// </param>
 /// <param name="Kind">Whether the document holds conditions or a consent.</param>
 /// <param name="Version">Number of the current version; it grows with every change.</param>
 public record TermsDocumentResponse(

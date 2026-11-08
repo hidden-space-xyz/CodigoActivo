@@ -47,6 +47,8 @@ public interface ICommandHandler<in TCommand, TResult>
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result reports success, or the failure that refused the command.</returns>
+    /// <returns>
+    /// A task whose result reports success, or the failure that refused the command.
+    /// </returns>
     public Task<TResult> HandleAsync(TCommand command, CancellationToken ct = default);
 }

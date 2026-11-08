@@ -8,13 +8,13 @@ using CodigoActivo.Domain.Files;
 namespace CodigoActivo.Application.Files.Queries;
 
 /// <summary>
-/// Carries the criteria used to retrieve file by identifier.
+/// Carries the criteria used to retrieve a file by identifier.
 /// </summary>
 /// <param name="FileId">Identifier of the file.</param>
 public sealed record GetFileByIdQuery(StoredFileId FileId) : IQuery<Result<FileResponse>>;
 
 /// <summary>
-/// Executes the query to retrieve file by identifier.
+/// Executes the query to retrieve a file by identifier.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -22,7 +22,7 @@ public sealed class GetFileByIdQueryHandler(IReadStore readStore, IQueryExecutor
     : IQueryHandler<GetFileByIdQuery, Result<FileResponse>>
 {
     /// <summary>
-    /// Handles the request to retrieve file by identifier.
+    /// Handles the request to retrieve a file by identifier.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

@@ -69,7 +69,9 @@ public sealed class UnitOfWork(CodigoActivoDbContext context, IDomainEventPublis
     /// transaction is open, or when the open unit-of-work transaction commits. A transaction that
     /// rolls back discards them, so a retried attempt publishes only the events it raises again.
     /// </summary>
-    /// <param name="domainEvents">Events of the written change, in the order they were raised.</param>
+    /// <param name="domainEvents">
+    /// Events of the written change, in the order they were raised.
+    /// </param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     internal async Task PublishAfterCommitAsync(IReadOnlyList<IDomainEvent> domainEvents)
     {

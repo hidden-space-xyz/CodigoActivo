@@ -27,8 +27,10 @@ public sealed class UnusedFilePurgeWorker(
     /// Deletes every upload that no content used in time, then the stored content no file row owns.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the number of deleted uploads; stray content removed
-    /// without a row is not counted.</returns>
+    /// <returns>
+    /// A task whose result contains the number of deleted uploads; stray content removed without a
+    /// row is not counted.
+    /// </returns>
     public Task<int> PurgeAsync(CancellationToken ct = default)
     {
         return ScheduledCommandRunner.RunAsync(scopes, new PurgeUnusedFilesCommand(), ct);
@@ -38,7 +40,7 @@ public sealed class UnusedFilePurgeWorker(
     /// Purges shortly after startup and then once per configured interval until shutdown. A failed
     /// run is logged and never stops the host or the following runs.
     /// </summary>
-    /// <param name="stoppingToken">Cancellation token used to stop the asynchronous operation.</param>
+    /// <param name="stoppingToken">Cancellation token that stops the runs at shutdown.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {

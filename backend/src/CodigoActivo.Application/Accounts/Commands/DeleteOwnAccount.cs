@@ -17,8 +17,12 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the input required to delete the signed-in user's own account.
 /// </summary>
-/// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize the change.</param>
-/// <param name="Code">Code from the account deletion email or the authenticator application.</param>
+/// <param name="CurrentPassword">
+/// Password of the signed-in user, re-entered to authorize the change.
+/// </param>
+/// <param name="Code">
+/// Code from the account deletion email or the authenticator application.
+/// </param>
 public sealed record DeleteOwnAccountCommand(
     [property: Required, MaxLength(128), NotBlank] string CurrentPassword,
     [property: Required, MaxLength(16), NotBlank] string Code
@@ -34,7 +38,9 @@ public sealed record DeleteOwnAccountCommand(
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
-/// <param name="accountEraser">Eraser that deletes the household and keeps its data history.</param>
+/// <param name="accountEraser">
+/// Eraser that deletes the household and keeps its data history.
+/// </param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>

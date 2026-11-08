@@ -37,8 +37,8 @@ public sealed class EmailDeliveryPacer(SmtpOptions smtp, EmailGuardOptions guard
     }
 
     /// <summary>
-    /// Spends one message of the per-minute budget, even when it is already spent: the claim only took
-    /// what <see cref="Available"/> allowed.
+    /// Spends one message of the per-minute budget, even when it is already spent: the claim only
+    /// took what <see cref="Available"/> allowed.
     /// </summary>
     /// <param name="now">Current time.</param>
     public void Spend(DateTimeOffset now)

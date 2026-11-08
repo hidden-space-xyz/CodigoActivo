@@ -167,87 +167,87 @@ public sealed class GetEventHistoryQueryHandler(
     private sealed record HistoryRow
     {
         /// <summary>
-        /// Gets or sets the identifier of the associated event.
+        /// Gets the identifier of the event.
         /// </summary>
         public Guid EventId { get; init; }
 
         /// <summary>
-        /// Gets or sets the event title value.
+        /// Gets the title of the event.
         /// </summary>
         public string EventTitle { get; init; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the event subtitle value.
+        /// Gets the subtitle of the event.
         /// </summary>
         public string EventSubtitle { get; init; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the first day of the event.
+        /// Gets the first day of the event.
         /// </summary>
         public DateOnly EventStartsAt { get; init; }
 
         /// <summary>
-        /// Gets or sets the last day of the event.
+        /// Gets the last day of the event.
         /// </summary>
         public DateOnly EventEndsAt { get; init; }
 
         /// <summary>
-        /// Gets or sets the identifier of the associated thumbnail.
+        /// Gets the identifier of the thumbnail file of the event.
         /// </summary>
         public Guid ThumbnailId { get; init; }
 
         /// <summary>
-        /// Gets or sets the identifier of the associated activity.
+        /// Gets the identifier of the activity.
         /// </summary>
         public Guid ActivityId { get; init; }
 
         /// <summary>
-        /// Gets or sets the activity title value.
+        /// Gets the title of the activity.
         /// </summary>
         public string ActivityTitle { get; init; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the location value.
+        /// Gets where the activity takes place.
         /// </summary>
         public string Location { get; init; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the modality name value.
+        /// Gets the display name of the modality of the activity.
         /// </summary>
         public string ModalityName { get; init; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the identifier of the associated user.
+        /// Gets the identifier of the person signed up.
         /// </summary>
         public Guid UserId { get; init; }
 
         /// <summary>
-        /// Gets or sets the first name value.
+        /// Gets the person's given name.
         /// </summary>
         public string FirstName { get; init; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the last name value.
+        /// Gets the person's family name.
         /// </summary>
         public string LastName { get; init; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the identifier of the associated role type.
+        /// Gets the catalog identifier of the role taken.
         /// </summary>
         public Guid RoleTypeId { get; init; }
 
         /// <summary>
-        /// Gets or sets the role type name value.
+        /// Gets the display name of the role.
         /// </summary>
         public string RoleTypeName { get; init; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the identifier of the associated status.
+        /// Gets the catalog identifier of the status of the signup.
         /// </summary>
         public Guid StatusId { get; init; }
 
         /// <summary>
-        /// Gets or sets the status name value.
+        /// Gets the display name of the status.
         /// </summary>
         public string StatusName { get; init; } = string.Empty;
     }

@@ -17,7 +17,9 @@ public sealed class AllowOnlyStaffAttribute : AuthorizeAttribute, IAuthorization
     /// <summary>
     /// Initializes the attribute so it also requires the role claim of the staff role.
     /// </summary>
-    /// <param name="staffRole">Staff role required, <see cref="StaffRole.Editor"/> or higher.</param>
+    /// <param name="staffRole">
+    /// Staff role required, <see cref="StaffRole.Editor"/> or higher.
+    /// </param>
     public AllowOnlyStaffAttribute(StaffRole staffRole)
     {
         StaffRole = staffRole;
@@ -32,7 +34,9 @@ public sealed class AllowOnlyStaffAttribute : AuthorizeAttribute, IAuthorization
     /// <summary>
     /// Challenges a request without a signed-in user and forbids one from any other account.
     /// </summary>
-    /// <param name="context">Authorization context of the request; its result is set to refuse it.</param>
+    /// <param name="context">
+    /// Authorization context of the request; its result is set to refuse it.
+    /// </param>
     public void OnAuthorization(AuthorizationFilterContext context)
     {
         var user = context.HttpContext.User;

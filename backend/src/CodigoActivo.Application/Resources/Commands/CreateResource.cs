@@ -44,7 +44,9 @@ public sealed record CreateResourceCommand(
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="currentUser">Person the use case runs for, recorded as the creator.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="uow">Unit of work that saves the resource in the transaction that locks its files.</param>
+/// <param name="uow">
+/// Unit of work that saves the resource in the transaction that locks its files.
+/// </param>
 public sealed class CreateResourceCommandHandler(
     IResourceRepository resources,
     IStoredFileRepository files,

@@ -34,8 +34,8 @@ public static partial class InfrastructureLog
     );
 
     /// <summary>
-    /// Records that the server refused a message for good, or that its stored content cannot be read,
-    /// so it was dropped from the outbox.
+    /// Records that the server refused a message for good, or that its stored content cannot be
+    /// read, so it was dropped from the outbox.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="kind">Email category of the message.</param>
@@ -120,8 +120,8 @@ public static partial class InfrastructureLog
     public static partial void EmailDailyLimitReached(this ILogger logger, int limit);
 
     /// <summary>
-    /// Records that the messages handed to the SMTP server could not be added to the daily count, so
-    /// the count is lower than it should be until the window passes.
+    /// Records that the messages handed to the SMTP server could not be added to the daily count,
+    /// so the count is lower than it should be until the window passes.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="exception">Failure raised while writing the count.</param>
@@ -135,8 +135,9 @@ public static partial class InfrastructureLog
     );
 
     /// <summary>
-    /// Records that the result of a failed attempt could not be written back, so the message waits
-    /// for its lease to expire instead and is then retried.
+    /// Records that the outcome of an attempt could not be written back: a retry, a release or the
+    /// removal of a delivered or dropped message. The message waits for its lease to expire and is
+    /// then claimed again.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="attempts">Attempts already spent on the message.</param>
@@ -154,8 +155,8 @@ public static partial class InfrastructureLog
     );
 
     /// <summary>
-    /// Records that the expired messages could not be removed. The deliverer logs it at most once per
-    /// alert interval of the email guard.
+    /// Records that the expired messages could not be removed. The deliverer logs it at most once
+    /// per alert interval of the email guard.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="exception">Failure raised while removing the rows.</param>
@@ -190,8 +191,8 @@ public static partial class InfrastructureLog
     public static partial void EmailOutboxRunFailed(this ILogger logger, Exception exception);
 
     /// <summary>
-    /// Records that the budget of the mail anyone can ask for is spent and such mail is being denied.
-    /// The send limiter raises it at most once per alert interval of the email guard.
+    /// Records that the budget of the mail anyone can ask for is spent and such mail is being
+    /// denied. The send limiter raises it at most once per alert interval of the email guard.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     [LoggerMessage(
@@ -401,7 +402,9 @@ public static partial class InfrastructureLog
     /// change and the other effects stand.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="effect">Short type name, without namespace, of the listener or handler that failed.</param>
+    /// <param name="effect">
+    /// Short type name, without namespace, of the listener or handler that failed.
+    /// </param>
     /// <param name="exception">Failure raised by the handler.</param>
     [LoggerMessage(
         Level = LogLevel.Error,

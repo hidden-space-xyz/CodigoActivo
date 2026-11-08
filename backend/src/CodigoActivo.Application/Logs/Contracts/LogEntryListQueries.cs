@@ -30,8 +30,8 @@ public sealed class DiagnosticLogEntryListQuery : PageQuery
     public DiagnosticLevel? Level { get; set; }
 
     /// <summary>
-    /// Gets or sets a text the category or the event name must contain, ignoring case and surrounding
-    /// spaces.
+    /// Gets or sets a text the category or the event name must contain, ignoring case and
+    /// surrounding spaces.
     /// </summary>
     [MaxLength(MaxTextLength)]
     [SingleLine]

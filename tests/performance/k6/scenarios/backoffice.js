@@ -172,7 +172,9 @@ function newsItem(session, fixtures, round) {
   session.delete('/api/news/{newsItemId}', { route: news, expect: [204] })
 }
 
-/** An administrator reviews users, runs a draft event to its deletion, decides signups, edits news. */
+/**
+ * An administrator reviews users, runs a draft event to its deletion, decides signups, edits news.
+ */
 export function backoffice(data) {
   const { account, round } = nextAccount(data.admins.backoffice)
   const session = sessionFor(account)

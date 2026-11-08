@@ -80,7 +80,9 @@ public class EventTermsAcceptance : IAggregateRoot
     /// <param name="termsDocumentId">Identifier of the terms document.</param>
     /// <param name="termsDocumentVersion">Version of the document the decision is taken on.</param>
     /// <param name="accepted">Whether the document is accepted.</param>
-    /// <param name="signature">Signature drawn to accept it, if any; a declined document keeps none.</param>
+    /// <param name="signature">
+    /// Signature drawn to accept it, if any; a declined document keeps none.
+    /// </param>
     /// <param name="recordedById">Identifier of the account that records the decision.</param>
     /// <param name="now">Current time.</param>
     /// <returns>The new decision.</returns>
@@ -139,8 +141,8 @@ public class EventTermsAcceptance : IAggregateRoot
 
     /// <summary>
     /// Withdraws a consent given before, on the version that was accepted, and leaves the notice to
-    /// the association's legal contact pending. The acceptance it ends, with its signature, stays in
-    /// <see cref="Changes"/>, since withdrawing never makes unlawful what was done before.
+    /// the association's legal contact pending. The acceptance it ends, with its signature, stays
+    /// in <see cref="Changes"/>, since withdrawing never makes unlawful what was done before.
     /// </summary>
     /// <param name="decidedById">Identifier of the person who withdraws it.</param>
     /// <param name="recordedById">Identifier of the account that records the withdrawal.</param>

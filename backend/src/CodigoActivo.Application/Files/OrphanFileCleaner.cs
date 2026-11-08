@@ -46,11 +46,12 @@ public interface IOrphanFileCleaner
 
 /// <summary>
 /// Removes orphan file data that is no longer referenced. The candidates are locked for deletion
-/// (<see cref="IStoredFileRepository.LockForDeletionAsync"/>) before their references are read, so a
-/// save that locked them to reference them is waited for, and the rows are deleted in that
+/// (<see cref="IStoredFileRepository.LockForDeletionAsync"/>) before their references are read, so
+/// a save that locked them to reference them is waited for, and the rows are deleted in that
 /// transaction, so a refused delete leaves nothing staged for a later commit of the same request.
 /// The stored content is only deleted once the rows are gone; when that fails the content stays on
-/// the volume, a warning is logged and <see cref="Commands.PurgeUnusedFilesCommand"/> removes it later.
+/// the volume, a warning is logged and <see cref="Commands.PurgeUnusedFilesCommand"/> removes it
+/// later.
 /// </summary>
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>

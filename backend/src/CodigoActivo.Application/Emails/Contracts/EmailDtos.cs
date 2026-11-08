@@ -5,7 +5,9 @@ namespace CodigoActivo.Application.Emails.Contracts;
 /// the response reports how many messages were accepted, not how many reached their mailbox.
 /// </summary>
 /// <param name="Queued">Messages accepted for delivery.</param>
-/// <param name="Skipped">Matching users left out because they have no email address or have not confirmed it.</param>
+/// <param name="Skipped">
+/// Matching users left out because they have no email address or have not confirmed it.
+/// </param>
 public record SendEmailResultResponse(int Queued, int Skipped);
 
 /// <summary>

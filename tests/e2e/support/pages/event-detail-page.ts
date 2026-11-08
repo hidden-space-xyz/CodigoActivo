@@ -7,7 +7,9 @@ import { ActivityCard } from './signups/activity-card'
 /** A tab of the public event page. */
 export type EventTab = 'info' | 'activities' | 'attendees'
 
-/** The public page of an event, at `/events/{id}`: information, activities and the leader roster. */
+/**
+ * The public page of an event, at `/events/{id}`: information, activities and the leader roster.
+ */
 export class EventDetailPage {
   /** The main landmark that holds the page. */
   readonly main: Locator

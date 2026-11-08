@@ -8,11 +8,11 @@ using Microsoft.Extensions.Logging;
 namespace CodigoActivo.Infrastructure.DataHistory;
 
 /// <summary>
-/// Physically deletes the data history whose retention has ended and the consultations of the
-/// blocked data opened at least
-/// <see cref="CodigoActivo.Domain.BlockedData.BlockedDataConsultation.RetentionYears"/> years ago. It
-/// runs shortly after startup, so a stopped API only delays the purge until the next start, and then
-/// once per interval.
+/// Physically deletes the data history whose retention has ended, except the history about an
+/// account an active hold keeps, and the consultations opened and the holds lifted at least
+/// <see cref="CodigoActivo.Domain.BlockedData.BlockedDataConsultation.RetentionYears"/> years ago.
+/// It runs shortly after startup, so a stopped API only delays the purge until the next start, and
+/// then once per interval.
 /// </summary>
 /// <param name="scopes">Scope factory used to resolve the use case of each run.</param>
 /// <param name="options">Startup delay and interval of the purges.</param>
@@ -24,11 +24,12 @@ public sealed class DataHistoryPurgeWorker(
 ) : BackgroundService
 {
     /// <summary>
-    /// Removes every entry whose retention has already ended and every consultation of the blocked
-    /// data past its retention.
+    /// Removes every unheld entry, consultation and lifted hold whose retention has ended.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the number of purged entries and consultations.</returns>
+    /// <returns>
+    /// A task whose result contains the number of purged entries, consultations and holds.
+    /// </returns>
     public Task<int> PurgeAsync(CancellationToken ct = default)
     {
         return ScheduledCommandRunner.RunAsync(scopes, new PurgeDataHistoryCommand(), ct);
@@ -38,7 +39,7 @@ public sealed class DataHistoryPurgeWorker(
     /// Purges shortly after startup and then once per configured interval until shutdown. A failed
     /// run is logged and never stops the host or the following runs.
     /// </summary>
-    /// <param name="stoppingToken">Cancellation token used to stop the asynchronous operation.</param>
+    /// <param name="stoppingToken">Cancellation token that stops the runs at shutdown.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {

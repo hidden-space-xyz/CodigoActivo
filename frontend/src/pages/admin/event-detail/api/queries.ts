@@ -18,8 +18,8 @@ import {
 } from './requests'
 
 /**
- * Query keys of the event reports, under their own root so activity and signup changes refresh
- * them without touching the event lists.
+ * Query keys of the event reports, under the root of every report and apart from the event lists;
+ * the page's activity, signup and consent changes refresh them.
  */
 export const eventReportKeys = {
   all: ['reports'] as const,

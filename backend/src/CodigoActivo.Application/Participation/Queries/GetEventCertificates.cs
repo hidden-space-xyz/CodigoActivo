@@ -125,42 +125,42 @@ public sealed class GetEventCertificatesQueryHandler(
     private sealed record CertificateRow
     {
         /// <summary>
-        /// Gets or sets the identifier of the associated event.
+        /// Gets the identifier of the event.
         /// </summary>
         public Guid EventId { get; init; }
 
         /// <summary>
-        /// Gets or sets the event title value.
+        /// Gets the title of the event.
         /// </summary>
         public string EventTitle { get; init; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the event subtitle value.
+        /// Gets the subtitle of the event.
         /// </summary>
         public string EventSubtitle { get; init; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the first day of the event.
+        /// Gets the first day of the event.
         /// </summary>
         public DateOnly EventStartsAt { get; init; }
 
         /// <summary>
-        /// Gets or sets the last day of the event.
+        /// Gets the last day of the event.
         /// </summary>
         public DateOnly EventEndsAt { get; init; }
 
         /// <summary>
-        /// Gets or sets the identifier of the associated user.
+        /// Gets the identifier of the person who attended.
         /// </summary>
         public Guid UserId { get; init; }
 
         /// <summary>
-        /// Gets or sets the first name value.
+        /// Gets the person's given name.
         /// </summary>
         public string FirstName { get; init; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the last name value.
+        /// Gets the person's family name.
         /// </summary>
         public string LastName { get; init; } = string.Empty;
     }

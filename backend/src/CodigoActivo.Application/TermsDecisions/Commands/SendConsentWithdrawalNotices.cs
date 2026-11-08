@@ -18,9 +18,9 @@ public sealed record SendConsentWithdrawalNoticesCommand : ICommand<Result<int>>
 /// withdrawals it was not told about yet, so the images or the names of the people stop being used
 /// and are removed from the site and the social profiles. A withdrawal waits in its decision until
 /// the email is queued, so none is lost to a failure or a restart; while the last notice is still
-/// waiting to be delivered, the new withdrawals wait for the next one, so the legal contact gets one
-/// email at a time however many arrive. Without a legal contact nothing is sent and the withdrawals
-/// keep waiting.
+/// waiting to be delivered, the new withdrawals wait for the next one, so the legal contact gets
+/// one email at a time however many arrive. Without a legal contact nothing is sent and the
+/// withdrawals keep waiting.
 /// </summary>
 /// <param name="acceptances">Repository of the decisions whose withdrawal is told.</param>
 /// <param name="legalEntity">Legal identity of the association, with its contact email.</param>

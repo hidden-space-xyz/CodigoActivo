@@ -40,8 +40,8 @@ public static class EmailBlocks
     }
 
     /// <summary>
-    /// Builds the sign-off of the association's team that closes the prose of the automatic emails to
-    /// account holders; the notices to the association carry none.
+    /// Builds the sign-off of the association's team that closes the prose of the automatic emails
+    /// to account holders; the notices to the association carry none.
     /// </summary>
     /// <returns>The sign-off paragraph block.</returns>
     public static EmailBlock Signoff()
@@ -52,7 +52,9 @@ public static class EmailBlocks
     /// <summary>
     /// Builds a paragraph block from raw text, encoded for the HTML part.
     /// </summary>
-    /// <param name="text">Raw text of the paragraph; a blank text leaves the block out of the email.</param>
+    /// <param name="text">
+    /// Raw text of the paragraph; a blank text leaves the block out of the email.
+    /// </param>
     /// <returns>The paragraph block.</returns>
     public static EmailBlock Prose(string text)
     {
@@ -60,7 +62,8 @@ public static class EmailBlocks
     }
 
     /// <summary>
-    /// Builds a small muted paragraph for a side remark, such as what to do with an unexpected email.
+    /// Builds a small muted paragraph for a side remark, such as what to do with an unexpected
+    /// email.
     /// </summary>
     /// <param name="text">Raw text of the note, encoded for the HTML part.</param>
     /// <returns>The note block.</returns>
@@ -74,8 +77,8 @@ public static class EmailBlocks
     }
 
     /// <summary>
-    /// Builds a button that opens a link, followed by the link written out for clients where the button
-    /// does not work. The plain-text form is the link alone.
+    /// Builds a button that opens a link, followed by the link written out for clients where the
+    /// button does not work. The plain-text form is the link alone.
     /// </summary>
     /// <param name="label">Raw text of the button, encoded for the HTML part.</param>
     /// <param name="url">Absolute link the button opens, encoded for the HTML part.</param>
@@ -125,7 +128,8 @@ public static class EmailBlocks
     }
 
     /// <summary>
-    /// Builds a highlighted panel with a colored left edge for the sentence the reader must not miss.
+    /// Builds a highlighted panel with a colored left edge for the sentence the reader must not
+    /// miss.
     /// </summary>
     /// <param name="text">Raw text of the callout, encoded for the HTML part.</param>
     /// <param name="accent">Accent whose line color draws the left edge.</param>

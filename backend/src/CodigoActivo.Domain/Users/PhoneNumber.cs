@@ -33,7 +33,9 @@ public sealed record PhoneNumber
     /// Trims and checks a typed phone.
     /// </summary>
     /// <param name="value">Phone as typed, not blank.</param>
-    /// <returns>The phone, or <see cref="DomainErrorCode.UserPhoneInvalid"/> when it has another shape.</returns>
+    /// <returns>
+    /// The phone, or <see cref="DomainErrorCode.UserPhoneInvalid"/> when it has another shape.
+    /// </returns>
     public static Result<PhoneNumber> Create(string value)
     {
         ArgumentNullException.ThrowIfNull(value);

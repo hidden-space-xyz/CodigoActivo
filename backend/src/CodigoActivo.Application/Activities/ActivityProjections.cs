@@ -8,8 +8,8 @@ using CodigoActivo.Domain.Common;
 namespace CodigoActivo.Application.Activities;
 
 /// <summary>
-/// Database projections from the read models to the response shapes of this feature, and the read-side
-/// conditions the queries share.
+/// Database projections from the read models to the response shapes of this feature, and the
+/// read-side conditions the queries share.
 /// </summary>
 public static class ActivityProjections
 {

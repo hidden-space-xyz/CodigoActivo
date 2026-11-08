@@ -15,7 +15,9 @@ internal static class ProductionConfiguration
     /// Checks every production rule and reports all the broken ones at once.
     /// </summary>
     /// <param name="config">Configuration of the production process.</param>
-    /// <exception cref="InvalidOperationException">At least one production rule is broken.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// At least one production rule is broken.
+    /// </exception>
     public static void Validate(IConfiguration config)
     {
         var errors = new List<string>();

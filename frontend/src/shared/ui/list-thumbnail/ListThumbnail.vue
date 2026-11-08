@@ -6,7 +6,7 @@ import { fileThumbnailUrl } from '@/shared/api'
 
 const props = withDefaults(
   defineProps<{
-    /** Stored file id; without one, or when it fails to load, a placeholder icon fills the frame. */
+    /** Stored file id; without one, or when its image fails, a placeholder icon fills the frame. */
     thumbnailId?: string | null
     /** Image alt text; defaults to empty, marking the image as decorative. */
     alt?: string

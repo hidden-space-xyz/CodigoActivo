@@ -10,7 +10,9 @@ public interface IPasswordHasher
     /// Hashes a password with a fresh random salt for storage.
     /// </summary>
     /// <param name="password">Plain-text password to hash.</param>
-    /// <returns>The encoded hash, which carries the algorithm, its cost parameters and the salt.</returns>
+    /// <returns>
+    /// The encoded hash, which carries the algorithm, its cost parameters and the salt.
+    /// </returns>
     public string Hash(string password);
 
     /// <summary>
@@ -19,8 +21,8 @@ public interface IPasswordHasher
     /// <param name="password">Plain-text password to verify.</param>
     /// <param name="hash">Encoded password hash to verify against.</param>
     /// <returns>
-    /// <see langword="true"/> when the password matches; <see langword="false"/> when it does not or
-    /// the hash is malformed or uses other cost parameters.
+    /// <see langword="true"/> when the password matches; <see langword="false"/> when it does not
+    /// or the hash is malformed or uses other cost parameters.
     /// </returns>
     public bool Verify(string password, string hash);
 }

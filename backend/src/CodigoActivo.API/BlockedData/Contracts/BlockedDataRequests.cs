@@ -79,7 +79,8 @@ public record SearchBlockedDataRequest(
 /// <param name="From">First day covered, or <see langword="null"/> for no limit.</param>
 /// <param name="To">Last day covered, or <see langword="null"/> for no limit.</param>
 /// <param name="Entities">
-/// Kinds of data covered, each one the data history knows; null or empty for every kind.
+/// Kinds of data covered, each one the data history knows; <see langword="null"/> or empty for
+/// every kind.
 /// </param>
 public record ExportBlockedDataRequest(
     [Required] Guid AccountId,

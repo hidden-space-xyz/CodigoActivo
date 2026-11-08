@@ -31,8 +31,8 @@ public sealed class TotpService : ITotpService
     /// <param name="code">Code typed by the user.</param>
     /// <param name="now">Current timestamp used to compute the candidate time steps.</param>
     /// <returns>
-    /// The matching time step, or <see langword="null"/> when no candidate matches or the code is not
-    /// six digits (spaces aside) or the secret is not valid Base32.
+    /// The matching time step, or <see langword="null"/> when no candidate matches or the code is
+    /// not six digits (spaces aside) or the secret is not valid Base32.
     /// </returns>
     public long? MatchStep(string secret, string code, DateTimeOffset now)
     {
@@ -65,7 +65,7 @@ public sealed class TotpService : ITotpService
     }
 
     /// <summary>
-    /// Gets the time step that corresponds to the supplied instant.
+    /// Returns the time step that corresponds to the supplied instant.
     /// </summary>
     /// <param name="instant">The instant to convert.</param>
     /// <returns>The time step.</returns>

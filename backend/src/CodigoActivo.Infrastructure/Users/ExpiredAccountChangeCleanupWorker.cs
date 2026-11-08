@@ -39,7 +39,7 @@ public sealed class ExpiredAccountChangeCleanupWorker(
     /// Cleans up shortly after startup and then once per configured interval until shutdown. A
     /// failed run is logged and never stops the host or the following runs.
     /// </summary>
-    /// <param name="stoppingToken">Cancellation token used to stop the asynchronous operation.</param>
+    /// <param name="stoppingToken">Cancellation token that stops the runs at shutdown.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {

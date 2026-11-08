@@ -1,8 +1,8 @@
 namespace CodigoActivo.API.Errors;
 
 /// <summary>
-/// Identifies every failure the API reports in <c>ApiErrorResponse.Code</c>. It is the wire contract
-/// the frontend translates, so members are never renamed or reordered.
+/// Identifies every failure the API reports in <c>ApiErrorResponse.Code</c>. It is the wire
+/// contract the frontend translates, so members are never renamed or reordered.
 /// </summary>
 public enum ErrorCode
 {
@@ -32,7 +32,8 @@ public enum ErrorCode
     ActivitySignupEarlyOnly,
 
     /// <summary>
-    /// The activity has already started, so nobody can sign up for it or withdraw from it.
+    /// The activity has already started, so only an administrator can still sign people up for it
+    /// or withdraw them from it.
     /// </summary>
     ActivityAlreadyStarted,
 
@@ -393,14 +394,14 @@ public enum ErrorCode
     UserPendingVerificationCannotHoldStaffRole,
 
     /// <summary>
-    /// A staff role was given to an account that is not a member, or an account with one was to stop
-    /// being a member.
+    /// A staff role was given to an account that is not a member, or an account with one was to
+    /// stop being a member.
     /// </summary>
     UserStaffRoleRequiresMember,
 
     /// <summary>
-    /// An account that is not an administrator was designated for data protection, or the designated
-    /// account was to stop being an administrator.
+    /// An account that is not an administrator was designated for data protection, or the
+    /// designated account was to stop being an administrator.
     /// </summary>
     UserPrivacyOfficerMustBeAdministrator,
 
@@ -519,7 +520,8 @@ public enum ErrorCode
     UserAccountPendingVerification,
 
     /// <summary>
-    /// The account a request has just verified or signed in no longer exists.
+    /// The account of the signed-in user, or of the login just completed, no longer exists when it
+    /// is read.
     /// </summary>
     CurrentUserNotFound,
 
@@ -540,7 +542,8 @@ public enum ErrorCode
     PasswordResetInvalidOrExpired,
 
     /// <summary>
-    /// A second-factor code is wrong; wrong codes count towards the lockout.
+    /// A second-factor code is wrong, expired or already used; wrong codes count towards the
+    /// lockout, except the first code of an authenticator being set up.
     /// </summary>
     TwoFactorCodeInvalid,
 
@@ -657,7 +660,8 @@ public enum ErrorCode
     TooManyRequests,
 
     /// <summary>
-    /// The request is malformed or breaks a rule of its fields, such as a missing or too long value.
+    /// The request is malformed or breaks a rule of its fields, such as a missing or too long
+    /// value.
     /// </summary>
     RequestValidationFailed,
 

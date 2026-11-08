@@ -9,7 +9,7 @@ const legalEntityKeys = {
 
 /** Query options of the legal identity. */
 export const legalEntityQueries = {
-  /** The data controller the privacy policy and the registration notice name. */
+  /** The association's legal identity and contact details, as the deployment configures them. */
   detail: () =>
     queryOptions({
       queryKey: legalEntityKeys.all,

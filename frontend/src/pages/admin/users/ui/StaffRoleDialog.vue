@@ -11,20 +11,20 @@ import {
 
 import AdminPasswordDialog from './AdminPasswordDialog.vue'
 
-/** Opens the dialog; each time it opens the user's current cargo is preselected. */
+/** Opens the dialog; each time it opens the user's current staff role is preselected. */
 const visible = defineModel<boolean>('visible', { required: true })
 
 const props = defineProps<{
-  /** User whose cargo changes. */
+  /** User whose staff role changes. */
   user: User | null
-  /** Shows a loading state on the confirm button while the parent saves the cargo. */
+  /** Shows a loading state on the confirm button while the parent saves the staff role. */
   saving: boolean
   /** Rejection reported by the parent, such as an incorrect password; empty hides it. */
   error: string
 }>()
 
 const emit = defineEmits<{
-  /** Fired with the chosen cargo and the caller's password, `null` when no cargo is chosen. */
+  /** Fired with the chosen staff role and the caller's password, `null` when it is `None`. */
   submit: [staffRole: StaffRole, currentPassword: string | null]
 }>()
 

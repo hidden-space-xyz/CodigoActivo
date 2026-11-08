@@ -73,7 +73,9 @@ public class Resource : AuditableEntity<ResourceId>
     /// images it no longer references.
     /// </summary>
     /// <param name="details">New titles and thumbnail.</param>
-    /// <param name="content">New content checked against its type, which the resource takes.</param>
+    /// <param name="content">
+    /// New content checked against its type, which the resource takes.
+    /// </param>
     /// <param name="editorId">Identifier of the user who edits it.</param>
     /// <param name="now">Current time.</param>
     public void Update(

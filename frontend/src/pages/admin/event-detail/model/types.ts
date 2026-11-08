@@ -114,7 +114,7 @@ export interface EventTermsDecision {
   /** Whether a consent given before was withdrawn, as opposed to never given. */
   readonly withdrawn: boolean
   readonly decidedAt: string
-  /** Same-origin URL of the PNG signature drawn to accept the document; empty when there is none. */
+  /** Same-origin URL of the PNG signature drawn to accept the document; empty without one. */
   readonly signatureUrl: string
 }
 

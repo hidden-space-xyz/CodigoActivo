@@ -30,7 +30,8 @@ public sealed class ThrottledEmailSender(
     /// Spends the quota of a code and stores the message in the outbox, so the task completes once
     /// the row is committed, not once the SMTP server accepts it. The quota is spent before the
     /// message is stored and is not refunded. An exhausted anonymous budget and a saturated
-    /// recipient tracking are logged at most once per <see cref="EmailGuardOptions.AlertInterval"/>.
+    /// recipient tracking are logged at most once per
+    /// <see cref="EmailGuardOptions.AlertInterval"/>.
     /// </summary>
     /// <param name="message">Email message to deliver.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

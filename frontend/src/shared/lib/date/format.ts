@@ -126,8 +126,8 @@ export function formatDateRange(start?: string | null, end?: string | null): str
 }
 
 /**
- * `start – end` as times, for schedules grouped by day. A day and month is added to the start when
- * it differs from `referenceDay`, and to the end when it falls on another day than the start.
+ * `start – end` as times, for schedules grouped by day. A day and month is added to the start
+ * when it differs from `referenceDay`, and to the end when it falls on another day than the start.
  */
 export function formatTimeRange(
   start?: Date | string | null,

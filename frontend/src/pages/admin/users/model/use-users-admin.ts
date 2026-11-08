@@ -46,18 +46,18 @@ export interface UserRelationFilter {
  * everyone, a filter per column and an optional relation filter (also listed as a table chip) that
  * moves to the scope of the people it shows and is dropped when the scope changes. Each scope hides
  * the fields its people never have (`showsField`) and drops their filters and their sort: the
- * birth date of independent accounts, and the contact details, DNI/NIE, status, cargo and news
+ * birth date of independent accounts, and the contact details, DNI/NIE, status, staff role and news
  * consent of dependents.
  *
  * It also opens the dialogs that change a user's type or return their second factor to email, and,
- * for the superadministrator alone, those that change the cargo of another independent account or
- * designate the data protection officer; personal data and consents are only changed by their
- * holder or guardian from «Mi cuenta». Resetting the second factor, designating the officer and
- * giving any cargo but none need the caller's password: a refused one is shown in the dialog
- * instead of a toast. Only the superadministrator deletes, after confirmation; they can never be
- * deleted, and the caller can neither change their own type nor delete their own account here; the
- * block reasons explain why. Designating the officer away from or onto the caller reloads their
- * session. Call it in `setup`.
+ * for the superadministrator alone, those that change the staff role of another independent
+ * account or designate the data protection officer; personal data and consents are only changed by
+ * their holder or guardian from «Mi cuenta». Resetting the second factor, designating the officer
+ * and giving any staff role but none need the caller's password: a refused one is shown in the
+ * dialog instead of a toast. Only the superadministrator deletes, after confirmation; they can
+ * never be deleted, and the caller can neither change their own type nor delete their own account
+ * here; the block reasons explain why. Designating the officer away from or onto the caller
+ * reloads their session. Call it in `setup`.
  */
 export function useUsersAdmin() {
   const { t } = useI18n()

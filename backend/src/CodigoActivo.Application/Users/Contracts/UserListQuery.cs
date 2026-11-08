@@ -78,7 +78,7 @@ public sealed class UserListQuery : PageQuery
     public StaffRole? StaffRole { get; set; }
 
     /// <summary>
-    /// Gets or sets whether users must have given, or withheld, news consent.
+    /// Gets or sets a value indicating whether users must have given, or withheld, news consent.
     /// </summary>
     public bool? NewsConsent { get; set; }
 
@@ -94,14 +94,14 @@ public sealed class UserListQuery : PageQuery
     public UserScope? Scope { get; set; }
 
     /// <summary>
-    /// Gets or sets the earliest birth date, inclusive; set, it leaves out the users without one, the
-    /// independent accounts.
+    /// Gets or sets the earliest birth date, inclusive; set, it leaves out the users without one,
+    /// the independent accounts.
     /// </summary>
     public DateOnly? BirthDateFrom { get; set; }
 
     /// <summary>
-    /// Gets or sets the latest birth date, inclusive; set, it leaves out the users without one, the
-    /// independent accounts.
+    /// Gets or sets the latest birth date, inclusive; set, it leaves out the users without one,
+    /// the independent accounts.
     /// </summary>
     public DateOnly? BirthDateTo { get; set; }
 }

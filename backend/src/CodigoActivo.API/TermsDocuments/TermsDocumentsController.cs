@@ -47,7 +47,9 @@ public class TermsDocumentsController : ApiControllerBase
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="getById">Query handler that reads the created terms document.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A 201 response with the terms document and its location, or an error response.</returns>
+    /// <returns>
+    /// A 201 response with the terms document and its location, or an error response.
+    /// </returns>
     [HttpPost]
     [AllowOnlyStaff(StaffRole.Editor)]
     [ProducesResponseType<TermsDocumentResponse>(StatusCodes.Status201Created)]

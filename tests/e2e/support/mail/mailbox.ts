@@ -69,8 +69,8 @@ export class Mailbox {
   /**
    * Waits for the newest message to `to` whose subject starts with `subject` and that arrived after
    * `sentAfter`. When the API may reuse a code it sent shortly before instead of sending a new one,
-   * `reusedAfter` accepts, once a few seconds pass without a new message, one that arrived after it.
-   * A message a scheduled job sends gets a longer `timeout` than the delivery of the outbox.
+   * `reusedAfter` accepts, once a few seconds pass without a new message, one that arrived after
+   * it. A message a scheduled job sends gets a longer `timeout` than the delivery of the outbox.
    */
   async waitFor(query: EmailQuery, timeout = DELIVERY_TIMEOUT_MS): Promise<Email> {
     const started = Date.now()

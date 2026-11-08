@@ -114,7 +114,9 @@ public class BlockedDataController : ApiControllerBase
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="getById">Query handler that reads the opened consultation.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A 201 response with the consultation and its location, or an error response.</returns>
+    /// <returns>
+    /// A 201 response with the consultation and its location, or an error response.
+    /// </returns>
     [HttpPost("consultations")]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
     [ProducesResponseType<BlockedDataConsultationResponse>(StatusCodes.Status201Created)]

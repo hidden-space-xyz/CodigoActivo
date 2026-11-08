@@ -43,7 +43,9 @@ public enum DisposableEmailDomainListRejection
 /// Contains the outcome of reading a downloaded disposable email domain list.
 /// </summary>
 /// <param name="Domains">Validated normalized domains, empty when the list was rejected.</param>
-/// <param name="Rejection">Reason the list was rejected, or <see langword="null"/> when it is valid.</param>
+/// <param name="Rejection">
+/// Reason the list was rejected, or <see langword="null"/> when it is valid.
+/// </param>
 public sealed record DisposableEmailDomainListResult(
     IReadOnlySet<string> Domains,
     DisposableEmailDomainListRejection? Rejection
@@ -74,10 +76,10 @@ public sealed record DisposableEmailDomainListResult(
 
 /// <summary>
 /// Validates a downloaded disposable email domain list before it replaces the stored one. The list
-/// is UTF-8 text with one domain per line; blank lines and lines starting with <c>#</c> are skipped.
-/// Any other line that is not a domain name rejects the whole list, and so does a list that is too
-/// large, too short or that would refuse a widely used mailbox provider, so a source that
-/// disappears, changes its format or is tampered with never replaces the last valid list.
+/// is UTF-8 text with one domain per line; blank lines and lines starting with <c>#</c> are
+/// skipped. Any other line that is not a domain name rejects the whole list, and so does a list
+/// that is too large, too short or that would refuse a widely used mailbox provider, so a source
+/// that disappears, changes its format or is tampered with never replaces the last valid list.
 /// </summary>
 public static partial class DisposableEmailDomainList
 {
@@ -131,7 +133,9 @@ public static partial class DisposableEmailDomainList
     /// Reads and validates a downloaded list.
     /// </summary>
     /// <param name="content">Raw body of the download.</param>
-    /// <returns>The normalized domains of a valid list, or the reason the list was rejected.</returns>
+    /// <returns>
+    /// The normalized domains of a valid list, or the reason the list was rejected.
+    /// </returns>
     public static DisposableEmailDomainListResult Parse(ReadOnlySpan<byte> content)
     {
         if (content.Length > MaxBytes)

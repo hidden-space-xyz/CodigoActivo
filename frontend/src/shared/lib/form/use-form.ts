@@ -2,7 +2,9 @@ import { computed, reactive, ref } from 'vue'
 
 import { i18n, type TranslationKey } from '@/shared/i18n'
 
-/** Why a field was refused: the message to show under it, or `true` when its red border is enough. */
+/**
+ * Why a field was refused: the message to show under it, or `true` when its red border is enough.
+ */
 export type FormProblem = TranslationKey | true
 
 /** What reading a draft yields: the problems by field and, only without any, the value to send. */

@@ -26,7 +26,10 @@ public sealed class GetBlockedDataHoldQueryHandler(IReadStore readStore, IQueryE
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the hold, or the error.</returns>
+    /// <returns>
+    /// A task whose result contains the hold, or
+    /// <see cref="DomainErrorCode.BlockedDataHoldNotFound"/>.
+    /// </returns>
     public async Task<Result<BlockedDataHoldResponse>> HandleAsync(
         GetBlockedDataHoldQuery query,
         CancellationToken ct = default

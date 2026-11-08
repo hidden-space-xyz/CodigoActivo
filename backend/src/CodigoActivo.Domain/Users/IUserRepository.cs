@@ -13,7 +13,9 @@ public interface IUserRepository : IRepository<User>
     /// </summary>
     /// <param name="id">Identifier of the account.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is the account, or <see langword="null"/> when it does not exist.</returns>
+    /// <returns>
+    /// A task whose result is the account, or <see langword="null"/> when it does not exist.
+    /// </returns>
     public Task<User?> GetByIdAsync(UserId id, CancellationToken ct = default);
 
     /// <summary>
@@ -32,14 +34,18 @@ public interface IUserRepository : IRepository<User>
     /// </summary>
     /// <param name="email">Normalized email address.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is the account, or <see langword="null"/> when no account uses it.</returns>
+    /// <returns>
+    /// A task whose result is the account, or <see langword="null"/> when no account uses it.
+    /// </returns>
     public Task<User?> GetByEmailAsync(EmailAddress email, CancellationToken ct = default);
 
     /// <summary>
     /// Loads the account designated for data protection to change it.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is the account, or <see langword="null"/> when none is designated.</returns>
+    /// <returns>
+    /// A task whose result is the account, or <see langword="null"/> when none is designated.
+    /// </returns>
     public Task<User?> GetPrivacyOfficerAsync(CancellationToken ct = default);
 
     /// <summary>
@@ -103,7 +109,9 @@ public interface IUserRepository : IRepository<User>
     /// </summary>
     /// <param name="user">Account loaded in the unit of work.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="false"/> when the account no longer exists.</returns>
+    /// <returns>
+    /// A task whose result is <see langword="false"/> when the account no longer exists.
+    /// </returns>
     public Task<bool> LockPasswordStateAsync(User user, CancellationToken ct = default);
 
     /// <summary>
@@ -114,7 +122,9 @@ public interface IUserRepository : IRepository<User>
     /// </summary>
     /// <param name="user">Account loaded in the unit of work.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="false"/> when the account no longer exists.</returns>
+    /// <returns>
+    /// A task whose result is <see langword="false"/> when the account no longer exists.
+    /// </returns>
     public Task<bool> LockAsync(User user, CancellationToken ct = default);
 
     /// <summary>
@@ -126,6 +136,6 @@ public interface IUserRepository : IRepository<User>
     /// </summary>
     /// <param name="user">Account whose lockout state changed.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task that completes once the state is stored.</returns>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public Task SavePasswordStateAsync(User user, CancellationToken ct = default);
 }

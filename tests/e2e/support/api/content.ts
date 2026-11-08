@@ -198,8 +198,8 @@ export class ContentSeeder {
   }
 
   /**
-   * Creates an activity on the event's first day, by default 10:00–12:00 with every role, or from
-   * `startsAt` to `endsAt` when given.
+   * Creates an activity `dayOfEvent` days into the event, by default on its first day, 10:00–12:00,
+   * with every role, or from `startsAt` to `endsAt` when given.
    */
   async activity(event: EventResponse, options: ActivityOptions = {}): Promise<ActivityResponse> {
     const day = dayFromToday(

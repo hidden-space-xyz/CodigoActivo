@@ -15,7 +15,7 @@ public sealed class CatalogKeys<TValue>
     private readonly FrozenDictionary<Guid, TValue> values;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="CatalogKeys{TValue}"/> class.
+    /// Initializes the catalog with the identifier of every member.
     /// </summary>
     /// <param name="ids">Identifier of every member of the enumeration.</param>
     /// <exception cref="ArgumentException">A member has no identifier or two share one.</exception>

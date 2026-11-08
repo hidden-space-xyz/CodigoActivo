@@ -17,8 +17,8 @@ namespace CodigoActivo.Application.Abstractions.Auditing;
 /// <param name="Outcome">How it ended.</param>
 /// <param name="ErrorCode">
 /// Name of the error code that rejected it, or <c>ConcurrentUpdate</c> or
-/// <c>UniqueConstraintViolation</c> when the database refused its commit; <see langword="null"/> when
-/// it succeeded or failed.
+/// <c>UniqueConstraintViolation</c> when the database refused its commit; <see langword="null"/>
+/// when it succeeded or failed.
 /// </param>
 public sealed record AuditRecord(
     AuditAction Action,

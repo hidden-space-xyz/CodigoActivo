@@ -40,7 +40,9 @@ public record TwoFactorLoginRequest([Required] [MaxLength(16)] string Code);
 /// <summary>
 /// Contains the client-supplied data used to start enrolling an authenticator application.
 /// </summary>
-/// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize the change.</param>
+/// <param name="CurrentPassword">
+/// Password of the signed-in user, re-entered to authorize the change.
+/// </param>
 public record AuthenticatorSetupRequest([Required] [MaxLength(128)] string CurrentPassword)
 {
     /// <summary>
@@ -72,7 +74,9 @@ public record ConfirmAuthenticatorRequest([Required] [MaxLength(16)] string Code
 /// <summary>
 /// Contains the client-supplied data used to return to email as the second factor.
 /// </summary>
-/// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize the change.</param>
+/// <param name="CurrentPassword">
+/// Password of the signed-in user, re-entered to authorize the change.
+/// </param>
 /// <param name="Code">Current code of the authenticator being removed.</param>
 public record DisableAuthenticatorRequest(
     [Required] [MaxLength(128)] string CurrentPassword,
@@ -112,7 +116,7 @@ public record DisableAuthenticatorRequest(
 /// <param name="NewsConsent">Whether the adult agrees to receive news by email.</param>
 /// <param name="Minors">
 /// Minors registered in the household of the adult, at most <see cref="Household.MaxDependents"/>;
-/// null means none.
+/// <see langword="null"/> means none.
 /// </param>
 /// <param name="SecondaryPhone">
 /// Optional second contact phone of the adult; blank means none and it must differ from
@@ -163,8 +167,8 @@ public record RegisterRequest(
 /// <param name="BirthDate">Date of birth of the minor; today at the latest.</param>
 /// <param name="Gender">Gender of the minor.</param>
 /// <param name="DeclaresGuardianship">
-/// Whether the adult adding the minor declares being its parent or legal guardian; a minor without it
-/// is refused (<c>UserGuardianshipDeclarationRequired</c>).
+/// Whether the adult adding the minor declares being its parent or legal guardian; a minor without
+/// it is refused (<c>UserGuardianshipDeclarationRequired</c>).
 /// </param>
 public record RegisterMinorRequest(
     [Required] [MaxLength(120)] string FirstName,
@@ -252,7 +256,9 @@ public record ResetPasswordRequest(
 /// <summary>
 /// Contains the client-supplied data used to request the code that confirms account deletion.
 /// </summary>
-/// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize the request.</param>
+/// <param name="CurrentPassword">
+/// Password of the signed-in user, re-entered to authorize the request.
+/// </param>
 public record AccountDeletionCodeRequest([Required] [MaxLength(128)] string CurrentPassword)
 {
     /// <summary>
@@ -268,7 +274,9 @@ public record AccountDeletionCodeRequest([Required] [MaxLength(128)] string Curr
 /// <summary>
 /// Contains the client-supplied data used to delete the signed-in user's own account.
 /// </summary>
-/// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize the deletion.</param>
+/// <param name="CurrentPassword">
+/// Password of the signed-in user, re-entered to authorize the deletion.
+/// </param>
 /// <param name="Code">Code from the email or the authenticator application.</param>
 public record DeleteAccountRequest(
     [Required] [MaxLength(128)] string CurrentPassword,
@@ -288,7 +296,9 @@ public record DeleteAccountRequest(
 /// <summary>
 /// Contains the client-supplied data used to change the password of the signed-in user.
 /// </summary>
-/// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize the change.</param>
+/// <param name="CurrentPassword">
+/// Password of the signed-in user, re-entered to authorize the change.
+/// </param>
 /// <param name="NewPassword">New password, at least 12 characters long.</param>
 public record ChangePasswordRequest(
     [Required] [MaxLength(128)] string CurrentPassword,

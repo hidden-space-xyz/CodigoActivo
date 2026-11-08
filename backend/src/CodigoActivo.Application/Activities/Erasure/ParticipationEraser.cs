@@ -10,7 +10,7 @@ namespace CodigoActivo.Application.Activities.Erasure;
 /// and tracks it, so every deleted signup, rating and terms decision leaves its data history,
 /// which the law requires to keep blocked (LOPDGDD article 32). A withdrawn consent it deletes
 /// before the association's legal contact was told about it is told first, and so is every
-/// consent given it deletes.
+/// consent given it deletes about an event that has already started.
 /// </summary>
 /// <param name="store">Storage steps of the removal.</param>
 /// <param name="withdrawalNotices">Notifier that tells the legal contact about withdrawals.</param>

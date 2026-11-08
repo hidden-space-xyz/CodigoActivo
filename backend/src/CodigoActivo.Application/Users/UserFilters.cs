@@ -6,8 +6,8 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Users;
 
 /// <summary>
-/// Applies the filters of a <see cref="UserListQuery"/>, shared by the user list and the manual email
-/// commands and audience queries.
+/// Applies the filters of a <see cref="UserListQuery"/>, shared by the user list and the manual
+/// email commands and audience queries.
 /// </summary>
 public static class UserFilters
 {

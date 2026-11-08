@@ -41,7 +41,9 @@ public class EmailsController : ApiControllerBase
     /// <param name="attachments">Files attached to the email, if any.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing the messages queued and skipped, or an error response.</returns>
+    /// <returns>
+    /// An HTTP response containing the messages queued and skipped, or an error response.
+    /// </returns>
     [HttpPost("users/{userId:guid}")]
     [AllowOnlyStaff(StaffRole.Administrator)]
     [Consumes("multipart/form-data")]
@@ -85,7 +87,9 @@ public class EmailsController : ApiControllerBase
     /// <param name="attachments">Files attached to every message, if any.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing the messages queued and skipped, or an error response.</returns>
+    /// <returns>
+    /// An HTTP response containing the messages queued and skipped, or an error response.
+    /// </returns>
     [HttpPost("users")]
     [AllowOnlyStaff(StaffRole.Administrator)]
     [Consumes("multipart/form-data")]
@@ -130,7 +134,9 @@ public class EmailsController : ApiControllerBase
     /// <param name="attachments">Files attached to every message, if any.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing the messages queued and skipped, or an error response.</returns>
+    /// <returns>
+    /// An HTTP response containing the messages queued and skipped, or an error response.
+    /// </returns>
     [HttpPost("events/{eventId:guid}/attendees")]
     [AllowOnlyStaff(StaffRole.Administrator)]
     [Consumes("multipart/form-data")]

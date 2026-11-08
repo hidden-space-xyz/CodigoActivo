@@ -1,11 +1,11 @@
 namespace CodigoActivo.Application.Abstractions.Email;
 
 /// <summary>
-/// Names the topics of <see cref="EmailMessage.Topic"/>. A topic says which pending message a new one
-/// makes useless: the codes of an account share one, since a new code invalidates the one before;
-/// an alert, a signup decision or a coming-of-age notice replaces the pending one about the same
-/// thing. The summaries to the legal contact have none, since a new one never makes the waiting one
-/// useless. Topics carry identifiers and enum names only, never personal data.
+/// Names the topics of <see cref="EmailMessage.Topic"/>. A topic says which pending message a new
+/// one makes useless: the codes of an account share one, since a new code invalidates the one
+/// before; an alert, a signup decision or a coming-of-age notice replaces the pending one about the
+/// same thing. The summaries to the legal contact have none, since a new one never makes the
+/// waiting one useless. Topics carry identifiers and enum names only, never personal data.
 /// </summary>
 public static class EmailTopics
 {
@@ -15,8 +15,8 @@ public static class EmailTopics
     public const int MaxLength = 100;
 
     /// <summary>
-    /// Topic of the codes that confirm a login, an account deletion or a consultation of the blocked
-    /// data, which share one stored code per account.
+    /// Topic of the codes that confirm a login, an account deletion or a consultation of the
+    /// blocked data, which share one stored code per account.
     /// </summary>
     public const string AccountCode = "account-code";
 

@@ -14,7 +14,9 @@ namespace CodigoActivo.Application.Emails.Commands;
 /// Carries the input required to send email to event attendees.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
-/// <param name="Filters">Attendee filters that select the recipients; their sort and page are ignored.</param>
+/// <param name="Filters">
+/// Attendee filters that select the recipients; their sort and page are ignored.
+/// </param>
 /// <param name="Content">Subject and body of the email.</param>
 /// <param name="Purpose">What the email is written for, which decides who it reaches.</param>
 /// <param name="Attachments">Files attached to every message.</param>
@@ -45,8 +47,9 @@ public sealed class SendEmailToEventAttendeesCommandHandler(
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
-    /// A task whose result contains the dispatch counts; <see cref="ApplicationErrorCode.EventNotFound"/>,
-    /// or an error of <see cref="ManualEmailDispatcher.DispatchAsync"/>.
+    /// A task whose result contains the dispatch counts;
+    /// <see cref="ApplicationErrorCode.EventNotFound"/>, or an error of
+    /// <see cref="ManualEmailDispatcher.DispatchAsync"/>.
     /// </returns>
     public async Task<Result<EmailDispatch>> HandleAsync(
         SendEmailToEventAttendeesCommand command,

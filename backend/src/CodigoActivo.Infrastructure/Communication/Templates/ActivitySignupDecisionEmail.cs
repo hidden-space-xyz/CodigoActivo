@@ -5,22 +5,25 @@ using CodigoActivo.Application.Common.Localization;
 namespace CodigoActivo.Infrastructure.Communication.Templates;
 
 /// <summary>
-/// Builds the email that tells a participant, or their guardian, how an activity signup was decided.
+/// Builds the email that tells a participant, or their guardian, how an activity signup was
+/// decided.
 /// </summary>
 public static class ActivitySignupDecisionEmail
 {
     /// <summary>
-    /// Builds the email sent when an activity signup is confirmed: the details with the role, a reminder
-    /// to cancel the signup when the participant cannot attend and a button to the event page. The
-    /// subject names the activity.
+    /// Builds the email sent when an activity signup is confirmed: the details with the role, a
+    /// reminder to cancel the signup when the participant cannot attend and a button to the event
+    /// page. The subject names the activity.
     /// </summary>
     /// <param name="toAddress">Address of the participant or guardian.</param>
     /// <param name="toName">Name the message greets.</param>
     /// <param name="participantName">
-    /// Name of the dependent the signup is for, when writing to a guardian; null or blank when the signup
-    /// is the recipient's own.
+    /// Name of the dependent the signup is for, when writing to a guardian; <see langword="null"/>
+    /// or blank when the signup is the recipient's own.
     /// </param>
-    /// <param name="roleName">Role the participant was confirmed in; null or blank leaves the row out.</param>
+    /// <param name="roleName">
+    /// Role the participant was confirmed in; <see langword="null"/> or blank leaves the row out.
+    /// </param>
     /// <param name="details">Activity the signup is for.</param>
     /// <param name="timeZone">Time zone used to calculate local dates.</param>
     /// <param name="siteUrl">Public base URL of the site, linked from the footer.</param>
@@ -58,14 +61,14 @@ public static class ActivitySignupDecisionEmail
     }
 
     /// <summary>
-    /// Builds the email sent when an activity signup is denied: the details without a role and a button
-    /// to the events list. The subject names the activity.
+    /// Builds the email sent when an activity signup is denied: the details without a role and a
+    /// button to the events list. The subject names the activity.
     /// </summary>
     /// <param name="toAddress">Address of the participant or guardian.</param>
     /// <param name="toName">Name the message greets.</param>
     /// <param name="participantName">
-    /// Name of the dependent the signup is for, when writing to a guardian; null or blank when the signup
-    /// is the recipient's own.
+    /// Name of the dependent the signup is for, when writing to a guardian; <see langword="null"/>
+    /// or blank when the signup is the recipient's own.
     /// </param>
     /// <param name="details">Activity the signup is for.</param>
     /// <param name="timeZone">Time zone used to calculate local dates.</param>

@@ -1,7 +1,7 @@
 namespace CodigoActivo.Infrastructure.Users;
 
 /// <summary>
-/// Defines configuration values for the periodic removal of expired session rows.
+/// Defines the schedule of the periodic removal of expired session rows.
 /// </summary>
 public sealed class SessionCleanupOptions
 {

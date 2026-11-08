@@ -5,7 +5,9 @@ import type {
   UserTypeResponse,
 } from '@/shared/api/generated/models'
 
-/** Wire `UserResponse` of an adult participant, as `/api/auth/me` and the users endpoints return it. */
+/**
+ * Wire `UserResponse` of an adult participant, as `/api/auth/me` and the users endpoints return it.
+ */
 export function buildUserResponse(overrides: Partial<UserResponse> = {}): UserResponse {
   return {
     id: 'user-1',

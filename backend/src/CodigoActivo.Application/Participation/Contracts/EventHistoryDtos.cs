@@ -36,7 +36,9 @@ public record EventHistoryResponse(
 /// <summary>
 /// Contains the signed-in account's own rating of an event in its history.
 /// </summary>
-/// <param name="Score">Score from 1 to 5, or <see langword="null"/> when the account gave none.</param>
+/// <param name="Score">
+/// Score from 1 to 5, or <see langword="null"/> when the account gave none.
+/// </param>
 /// <param name="MostLiked">
 /// What the account liked most, or <see langword="null"/> without an answer.
 /// </param>

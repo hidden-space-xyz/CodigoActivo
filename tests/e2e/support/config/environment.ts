@@ -7,7 +7,9 @@ export const environment = {
   clientAddressBase: Number(process.env.CLIENT_ADDRESS_BASE ?? '1'),
 } as const
 
-/** The association's identity and contact details, which `compose.yaml` gives the API in `LEGAL_*`. */
+/**
+ * The association's identity and contact details, which `compose.yaml` gives the API in `LEGAL_*`.
+ */
 export const LEGAL_ENTITY = {
   name: 'Código Activo (e2e)',
   taxId: 'G00000000',

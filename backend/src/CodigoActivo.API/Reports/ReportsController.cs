@@ -87,8 +87,8 @@ public class ReportsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Returns the activities of the event with confirmed signups, each listing the people confirmed
-    /// in it with their contact details.
+    /// Returns the activities of the event with confirmed signups, each listing the people
+    /// confirmed in it with their contact details.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>

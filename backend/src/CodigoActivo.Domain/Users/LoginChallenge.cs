@@ -6,7 +6,9 @@ namespace CodigoActivo.Domain.Users;
 /// changes or is cleared. The default value is no open challenge.
 /// </summary>
 /// <param name="Id">Identifier of the open challenge.</param>
-/// <param name="StartedAt">When the challenge was opened, which bounds how long it is accepted.</param>
+/// <param name="StartedAt">
+/// When the challenge was opened, which bounds how long it is accepted.
+/// </param>
 public readonly record struct LoginChallenge(LoginChallengeId? Id, DateTimeOffset? StartedAt)
 {
     /// <summary>

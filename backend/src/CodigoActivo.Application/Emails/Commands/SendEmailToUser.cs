@@ -9,11 +9,13 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Emails.Commands;
 
 /// <summary>
-/// Carries the input required to send email to user.
+/// Carries the input required to email one user.
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
 /// <param name="Content">Subject and body of the email.</param>
-/// <param name="Purpose">What the email is written for, which decides whether it may reach the user.</param>
+/// <param name="Purpose">
+/// What the email is written for, which decides whether it may reach the user.
+/// </param>
 /// <param name="Attachments">Files attached to the message.</param>
 public sealed record SendEmailToUserCommand(
     UserId UserId,
@@ -35,13 +37,14 @@ public sealed class SendEmailToUserCommandHandler(
 ) : ICommandHandler<SendEmailToUserCommand, Result<EmailDispatch>>
 {
     /// <summary>
-    /// Handles the request to send email to user. A user without an email address, an account that
+    /// Handles the request to email one user. A user without an email address, an account that
     /// has not confirmed its address and, for news, one without news consent are refused.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
-    /// A task whose result contains the dispatch counts; <see cref="ApplicationErrorCode.UserNotFound"/>,
+    /// A task whose result contains the dispatch counts;
+    /// <see cref="ApplicationErrorCode.UserNotFound"/>,
     /// <see cref="ApplicationErrorCode.EmailRecipientWithoutAddress"/>,
     /// <see cref="ApplicationErrorCode.EmailRecipientNotVerified"/>,
     /// <see cref="ApplicationErrorCode.EmailRecipientWithoutConsent"/>, or an error of

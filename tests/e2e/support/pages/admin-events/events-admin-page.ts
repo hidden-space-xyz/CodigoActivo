@@ -111,7 +111,9 @@ export class EventFormDialog {
     await this.closeOptions()
   }
 
-  /** Creates the category `name` through the button beside the select; the event takes it at once. */
+  /**
+   * Creates the category `name` through the button beside the select; the event takes it at once.
+   */
   async createCategory(name: string): Promise<void> {
     await this.root.getByTestId('event-form-new-category').click()
     const dialog = this.page.getByTestId('new-category-dialog')

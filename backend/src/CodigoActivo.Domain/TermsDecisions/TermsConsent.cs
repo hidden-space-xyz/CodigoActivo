@@ -25,7 +25,9 @@ public static class TermsConsent
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="person">Person the decisions are about.</param>
     /// <param name="documents">Terms documents linked to the event.</param>
-    /// <param name="signedDocumentIds">Linked documents whose acceptance asks for a signature.</param>
+    /// <param name="signedDocumentIds">
+    /// Linked documents whose acceptance asks for a signature.
+    /// </param>
     /// <param name="consentDocumentIds">Linked documents that hold a consent.</param>
     /// <param name="documentVersions">Current version of each linked document.</param>
     /// <param name="acceptances">Decisions already taken about them for the person.</param>
@@ -38,8 +40,8 @@ public static class TermsConsent
     /// <see cref="DomainErrorCode.EventTermsSignatureRequired"/> or
     /// <see cref="DomainErrorCode.EventTermsSignatureInvalid"/> when a document that asks for a
     /// signature, or a consent a dependent decides, is accepted without a valid one, or
-    /// <see cref="DomainErrorCode.EventTermsDocumentChanged"/> when a decision names a version of its
-    /// document that is no longer current.
+    /// <see cref="DomainErrorCode.EventTermsDocumentChanged"/> when a decision names a version of
+    /// its document that is no longer current.
     /// </returns>
     public static Result<TermsConsentOutcome> Apply(
         EventId eventId,

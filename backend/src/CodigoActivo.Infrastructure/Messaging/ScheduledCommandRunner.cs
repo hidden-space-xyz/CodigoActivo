@@ -5,8 +5,8 @@ using Microsoft.Extensions.DependencyInjection;
 namespace CodigoActivo.Infrastructure.Messaging;
 
 /// <summary>
-/// Runs the scheduled commands of the purge workers: each command in a scope of its own, and the
-/// runs shortly after startup and then once per interval until shutdown.
+/// Runs the scheduled commands of the background workers: each command in a scope of its own,
+/// and the runs shortly after startup and then once per interval until shutdown.
 /// </summary>
 internal static class ScheduledCommandRunner
 {
@@ -14,10 +14,12 @@ internal static class ScheduledCommandRunner
     /// Runs <paramref name="run"/> after <paramref name="startupDelay"/> and then once per
     /// <paramref name="interval"/> until shutdown. A failed run is handed to
     /// <paramref name="logFailure"/> and never stops the host or the following runs. Only the
-    /// shutdown token ends the runs: a cancellation raised by a timeout or any other dependency is a
-    /// failed run, logged like any other.
+    /// shutdown token ends the runs: a cancellation raised by a timeout or any other dependency is
+    /// a failed run, logged like any other.
     /// </summary>
-    /// <param name="startupDelay">Delay before the first run, so startup work finishes first.</param>
+    /// <param name="startupDelay">
+    /// Delay before the first run, so startup work finishes first.
+    /// </param>
     /// <param name="interval">Interval between two runs.</param>
     /// <param name="run">Work of one run.</param>
     /// <param name="logFailure">Records a failed run.</param>
@@ -66,7 +68,9 @@ internal static class ScheduledCommandRunner
     /// <param name="command">Command to run.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the count the command reports.</returns>
-    /// <exception cref="InvalidOperationException">The command returned a failed result.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The command returned a failed result.
+    /// </exception>
     internal static async Task<int> RunAsync<TCommand>(
         IServiceScopeFactory scopes,
         TCommand command,

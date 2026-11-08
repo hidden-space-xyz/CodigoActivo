@@ -9,10 +9,16 @@ namespace CodigoActivo.Application.TermsDecisions.Contracts;
 /// <param name="Name">Name of the terms document.</param>
 /// <param name="Description">Content of the document as rich text JSON.</param>
 /// <param name="Kind">Whether the document holds conditions or a consent.</param>
-/// <param name="Required">Whether accepting the document is mandatory to complete the signup; never for a consent.</param>
-/// <param name="RequiresSignature">Whether accepting the document asks for a handwritten signature.</param>
+/// <param name="Required">
+/// Whether accepting the document is mandatory to complete the signup; never for a consent.
+/// </param>
+/// <param name="RequiresSignature">
+/// Whether accepting the document asks for a handwritten signature.
+/// </param>
 /// <param name="DisplayOrder">The position in which the document is displayed.</param>
-/// <param name="Version">Version of the document shown, which the decisions about it send back.</param>
+/// <param name="Version">
+/// Version of the document shown, which the decisions about it send back.
+/// </param>
 public record EventTermsDocumentStateResponse(
     Guid TermsDocumentId,
     string Name,
@@ -40,7 +46,9 @@ public record EventTermsPersonDecisionResponse(
 /// Contains the terms decisions taken for a member of the current user's household, returned by
 /// the API.
 /// </summary>
-/// <param name="UserId">Identifier of the member: the current user or one of their dependents.</param>
+/// <param name="UserId">
+/// Identifier of the member: the current user or one of their dependents.
+/// </param>
 /// <param name="FirstName">First name of the member.</param>
 /// <param name="LastName">Last name of the member.</param>
 /// <param name="DecidesOwnConsents">
@@ -62,7 +70,9 @@ public record EventTermsPersonStateResponse(
 /// Contains the terms state of an event for the current user's household, returned by the API.
 /// </summary>
 /// <param name="Documents">The documents linked to the event, in display order.</param>
-/// <param name="People">The current user first and then their dependents, with the decisions taken for each.</param>
+/// <param name="People">
+/// The current user first and then their dependents, with the decisions taken for each.
+/// </param>
 public record EventTermsStateResponse(
     IReadOnlyList<EventTermsDocumentStateResponse> Documents,
     IReadOnlyList<EventTermsPersonStateResponse> People

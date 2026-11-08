@@ -10,7 +10,7 @@ namespace CodigoActivo.Application.BlockedData;
 public interface IBlockedDataEmailComposer
 {
     /// <summary>
-    /// Composes one notice with every opened consultation the legal contact was not told about yet.
+    /// Composes one notice that lists consultations the legal contact was not told about yet.
     /// </summary>
     /// <param name="recipient">Legal contact of the association.</param>
     /// <param name="consultations">The consultations opened; at least one.</param>

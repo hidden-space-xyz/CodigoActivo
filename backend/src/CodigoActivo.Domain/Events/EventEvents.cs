@@ -13,7 +13,9 @@ public sealed record EventCreated(EventId EventId) : IDomainEvent;
 /// The content, schedule, categories or terms of an event were replaced.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
-/// <param name="ReleasedFileIds">Identifiers of the files the previous content referenced and the new one does not.</param>
+/// <param name="ReleasedFileIds">
+/// Identifiers of the files the previous content referenced and the new one does not.
+/// </param>
 public sealed record EventUpdated(
     EventId EventId,
     IReadOnlyCollection<StoredFileId> ReleasedFileIds
@@ -23,7 +25,9 @@ public sealed record EventUpdated(
 /// An event was deleted together with its activities.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
-/// <param name="ReleasedFileIds">Identifiers of the files the event and its activities referenced.</param>
+/// <param name="ReleasedFileIds">
+/// Identifiers of the files the event and its activities referenced.
+/// </param>
 public sealed record EventDeleted(
     EventId EventId,
     IReadOnlyCollection<StoredFileId> ReleasedFileIds

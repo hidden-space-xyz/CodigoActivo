@@ -8,8 +8,8 @@ namespace CodigoActivo.Infrastructure.Communication;
 public enum EmailDeliveryFailure
 {
     /// <summary>
-    /// The server refused the recipient for good, such as a mailbox that does not exist; the message
-    /// is dropped.
+    /// The server refused the recipient for good, such as a mailbox that does not exist; the
+    /// message is dropped.
     /// </summary>
     RecipientRejected,
 
@@ -26,14 +26,14 @@ public enum EmailDeliveryFailure
     RecipientDeferred,
 
     /// <summary>
-    /// The send failed for a reason that may pass and is not known to be the recipient's; the message
-    /// is retried later, and several in a row are blamed on the server.
+    /// The send failed for a reason that may pass and is not known to be the recipient's; the
+    /// message is retried later, and several in a row are blamed on the server.
     /// </summary>
     Transient,
 
     /// <summary>
-    /// The server cannot take mail now: it is unreachable, refused the login or the sender, or asked
-    /// to slow down. The whole delivery pauses without spending any attempt.
+    /// The server cannot take mail now: it is unreachable, refused the login or the sender, or
+    /// asked to slow down. The whole delivery pauses without spending any attempt.
     /// </summary>
     ServerUnavailable,
 }
@@ -119,6 +119,8 @@ public interface IEmailTransportSession : IAsyncDisposable
     /// <param name="message">Email message to deliver.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    /// <exception cref="EmailDeliveryException">The send failed, with whose fault it was.</exception>
+    /// <exception cref="EmailDeliveryException">
+    /// The send failed, with whose fault it was.
+    /// </exception>
     public Task SendAsync(EmailMessage message, CancellationToken ct = default);
 }

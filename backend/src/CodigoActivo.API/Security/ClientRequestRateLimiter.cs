@@ -13,7 +13,9 @@ public static class ClientRequestRateLimiter
     /// <summary>
     /// Creates the global per-client limiter used by all API endpoints.
     /// </summary>
-    /// <param name="authenticatedPermitLimit">Requests allowed per authenticated user and window.</param>
+    /// <param name="authenticatedPermitLimit">
+    /// Requests allowed per authenticated user and window.
+    /// </param>
     /// <param name="anonymousPermitLimit">Requests allowed per anonymous IP and window.</param>
     /// <returns>The configured partitioned limiter.</returns>
     public static PartitionedRateLimiter<HttpContext> CreateGlobal(

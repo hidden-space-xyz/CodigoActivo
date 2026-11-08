@@ -27,10 +27,12 @@ public sealed class CredentialTimingProtector
     /// Verifies a password against a stored hash, paying the same work when there is none.
     /// </summary>
     /// <param name="password">Plain-text password presented by the client.</param>
-    /// <param name="passwordHash">Stored password hash, or <see langword="null"/> when there is none.</param>
+    /// <param name="passwordHash">
+    /// Stored password hash, or <see langword="null"/> when there is none.
+    /// </param>
     /// <returns>
-    /// <see langword="true"/> when the password matches a stored hash; always <see langword="false"/>
-    /// when <paramref name="passwordHash"/> is <see langword="null"/>.
+    /// <see langword="true"/> when the password matches a stored hash; always
+    /// <see langword="false"/> when <paramref name="passwordHash"/> is <see langword="null"/>.
     /// </returns>
     public bool Verify(string password, string? passwordHash)
     {

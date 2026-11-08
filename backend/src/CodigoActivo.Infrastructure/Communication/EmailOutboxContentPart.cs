@@ -18,9 +18,8 @@ public enum EmailPartDisposition
 }
 
 /// <summary>
-/// Represents the persisted email outbox content part domain entity and its relationships. One row
-/// carries one attachment or inline image of a stored email, so a message sent to many recipients
-/// keeps a single copy of the bytes.
+/// Represents a stored part of outbox email content. One row carries one attachment or inline
+/// image of a stored email, so a message sent to many recipients keeps a single copy of the bytes.
 /// </summary>
 public class EmailOutboxContentPart
 {
@@ -67,8 +66,8 @@ public class EmailOutboxContentPart
     public byte[] Payload { get; set; } = [];
 
     /// <summary>
-    /// Gets or sets the position the part keeps among the parts of its content: inline images first,
-    /// then attachments, each in the order of the batch.
+    /// Gets or sets the position the part keeps among the parts of its content: inline images
+    /// first, then attachments, each in the order of the batch.
     /// </summary>
     public int DisplayOrder { get; set; }
 }

@@ -34,8 +34,9 @@ public enum ErrorKind
 }
 
 /// <summary>
-/// Represents an expected failure: its kind and the code that names it, a <see cref="DomainErrorCode"/>
-/// for a broken domain rule or a code of the layer that reported the failure.
+/// Represents an expected failure: its kind and the code that names it, a
+/// <see cref="DomainErrorCode"/> for a broken domain rule or a code of the layer that reported the
+/// failure.
 /// </summary>
 /// <param name="Kind">Kind of failure.</param>
 /// <param name="Code">Member of the error code enumeration that names the failure.</param>

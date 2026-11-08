@@ -8,7 +8,10 @@ type MessagePath<T> = {
       : never
 }[keyof T & string]
 
-/** Dot-separated path to a message of the SPA's `es.json`; a key it no longer has fails the type check. */
+/**
+ * Dot-separated path to a message of the SPA's `es.json`; a key it no longer has fails the type
+ * check.
+ */
 export type MessageKey = MessagePath<typeof messages>
 
 /** The values of the named placeholders of a message, such as `{name}`. */
@@ -18,9 +21,9 @@ const PLACEHOLDER = /\{\s*(?:'([^']*)'|(\w+))\s*\}/g
 
 /**
  * The text the SPA shows for `key`, formatted as `t` of Vue I18n does: named placeholders take
- * `values`, quoted literals such as `{'@'}` are unquoted and, in a message with `|` choices, `count`
- * or else `n` picks the choice. Throws when a placeholder has no value, so a test never compares
- * against `{name}`.
+ * `values`, quoted literals such as `{'@'}` are unquoted and, in a message with `|` choices,
+ * `count` or else `n` picks the choice. Throws when a placeholder has no value, so a test never
+ * compares against `{name}`.
  */
 export function t(key: MessageKey, values: MessageValues = {}): string {
   const message = key

@@ -22,7 +22,7 @@ public sealed class LogDatabase : IDisposable, IAsyncDisposable
     private readonly NpgsqlDataSource dataSource;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="LogDatabase"/> class.
+    /// Initializes the logging pool over the application database.
     /// </summary>
     /// <param name="connectionString">
     /// Connection string of the application database; its application name, pool size and

@@ -27,7 +27,9 @@ public sealed record SessionIdentity(
     /// current password, so changing or resetting the password ends every session.
     /// </summary>
     /// <param name="presentedStamp">Credential stamp the cookie carries.</param>
-    /// <returns><see langword="true"/> when the cookie was issued for the current password.</returns>
+    /// <returns>
+    /// <see langword="true"/> when the cookie was issued for the current password.
+    /// </returns>
     public bool Accepts(string presentedStamp)
     {
         return CredentialStamps.Matches(presentedStamp, CredentialStamp);

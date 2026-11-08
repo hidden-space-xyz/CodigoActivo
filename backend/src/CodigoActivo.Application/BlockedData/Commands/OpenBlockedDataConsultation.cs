@@ -16,7 +16,9 @@ namespace CodigoActivo.Application.BlockedData.Commands;
 /// </summary>
 /// <param name="Requester">Who asks for the data.</param>
 /// <param name="Reference">Reference of the request, such as the number of the proceedings.</param>
-/// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize it.</param>
+/// <param name="CurrentPassword">
+/// Password of the signed-in user, re-entered to authorize it.
+/// </param>
 /// <param name="Code">Code from the consultation email or the authenticator application.</param>
 public sealed record OpenBlockedDataConsultationCommand(
     [property:

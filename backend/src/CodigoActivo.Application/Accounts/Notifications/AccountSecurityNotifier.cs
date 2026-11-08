@@ -9,10 +9,10 @@ namespace CodigoActivo.Application.Accounts.Notifications;
 
 /// <summary>
 /// Tells the owner of an account about a security-relevant change to it: its password or password
-/// lock, its second factor, its administrator rights, or the email and phones it is reached at.
-/// <see cref="AccountSecurityNotifications"/> calls it once the change is committed: the alert is
-/// always queued, replacing a pending alert about the same kind of change, and a failure to queue it
-/// is logged and swallowed, so it never undoes the change it reports.
+/// lock, its second factor, its staff role or data protection designation, or the email and phones
+/// it is reached at. <see cref="AccountSecurityNotifications"/> calls it once the change is
+/// committed: the alert is always queued, replacing a pending alert about the same kind of change,
+/// and a failure to queue it is logged and swallowed, so it never undoes the change it reports.
 /// </summary>
 /// <param name="emailSender">Sender that queues the alert.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
@@ -28,7 +28,9 @@ public sealed class AccountSecurityNotifier(
     /// <summary>
     /// Notifies the account owner at their current address. Accounts without one are skipped.
     /// </summary>
-    /// <param name="user">Account whose owner is told; greeted by name only once the address is verified.</param>
+    /// <param name="user">
+    /// Account whose owner is told; greeted by name only once the address is verified.
+    /// </param>
     /// <param name="change">Change the alert reports.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
@@ -47,7 +49,9 @@ public sealed class AccountSecurityNotifier(
     /// Notifies the address the account used before its email or phones were replaced, naming what
     /// changed. The new address is only ever quoted masked.
     /// </summary>
-    /// <param name="previousEmail">Address the account had before the change; without one nothing is sent.</param>
+    /// <param name="previousEmail">
+    /// Address the account had before the change; without one nothing is sent.
+    /// </param>
     /// <param name="recipientName">Name the message greets the holder with.</param>
     /// <param name="newEmail">
     /// Address the account has now when it changed, quoted masked; <see langword="null"/> when only

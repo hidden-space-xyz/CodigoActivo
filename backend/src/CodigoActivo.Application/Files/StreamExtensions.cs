@@ -16,7 +16,10 @@ public static class StreamExtensions
     /// </summary>
     /// <param name="content">Content of the upload, positioned at its start.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the matching image format, or <see langword="null"/> when it is not found.</returns>
+    /// <returns>
+    /// A task whose result contains the matching image format, or <see langword="null"/> when it
+    /// is none of them.
+    /// </returns>
     public static async Task<ImageFormat?> DetectImageFormatAsync(
         this Stream content,
         CancellationToken ct = default
@@ -102,7 +105,9 @@ public sealed record ImageFormat(string Extension, string ContentType)
     /// Finds the format a stored extension stands for.
     /// </summary>
     /// <param name="extension">Extension of a stored file.</param>
-    /// <returns>The matching format, or <see langword="null"/> when it is not one of them.</returns>
+    /// <returns>
+    /// The matching format, or <see langword="null"/> when it is not one of them.
+    /// </returns>
     public static ImageFormat? FromExtension(string extension)
     {
         return Known.FirstOrDefault(format =>

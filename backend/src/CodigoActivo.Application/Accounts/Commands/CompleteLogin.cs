@@ -14,7 +14,9 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the second factor that completes a login.
 /// </summary>
-/// <param name="Challenge">Challenge the password step opened, named by the challenge cookie.</param>
+/// <param name="Challenge">
+/// Challenge the password step opened, named by the challenge cookie.
+/// </param>
 /// <param name="Code">Code from the email or the authenticator application.</param>
 public sealed record CompleteLoginCommand(
     LoginChallengeKey Challenge,

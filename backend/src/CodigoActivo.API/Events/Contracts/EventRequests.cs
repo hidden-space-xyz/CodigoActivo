@@ -18,7 +18,7 @@ namespace CodigoActivo.API.Events.Contracts;
 /// <param name="EventStartsAt">First day of the event.</param>
 /// <param name="EventEndsAt">Last day of the event, not before the first.</param>
 /// <param name="EarlySignupStartsAt">
-/// Start of the early signup, before the regular one; null when there is none.
+/// Start of the early signup, before the regular one; <see langword="null"/> when there is none.
 /// </param>
 /// <param name="SignupStartsAt">Start of the signup.</param>
 /// <param name="SignupEndsAt">
@@ -75,10 +75,12 @@ public record CreateEventRequest(
 /// <param name="Title">Title of the event.</param>
 /// <param name="Subtitle">Line shown below the title.</param>
 /// <param name="Description">Body as rich text JSON within the rich text allowlist.</param>
-/// <param name="EventStartsAt">First day of the event; every activity must stay within the new days.</param>
+/// <param name="EventStartsAt">
+/// First day of the event; every activity must stay within the new days.
+/// </param>
 /// <param name="EventEndsAt">Last day of the event, not before the first.</param>
 /// <param name="EarlySignupStartsAt">
-/// Start of the early signup, before the regular one; null when there is none.
+/// Start of the early signup, before the regular one; <see langword="null"/> when there is none.
 /// </param>
 /// <param name="SignupStartsAt">Start of the signup.</param>
 /// <param name="SignupEndsAt">

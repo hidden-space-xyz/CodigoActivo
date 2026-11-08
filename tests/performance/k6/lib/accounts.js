@@ -122,8 +122,9 @@ export function takeOverDemoMembers(admin, count, firstIpIndex) {
 }
 
 /**
- * Completes a login the way the SPA does: password, second-factor page, emailed code. The SPA drops
- * its token after a login, so the next unsafe request fetches a new one. Tells whether it succeeded.
+ * Completes a login the way the SPA does: password, second-factor page, emailed code. The SPA
+ * drops its token after a login, so the next unsafe request fetches a new one. Tells whether it
+ * succeeded.
  */
 export function logIn(session, address) {
   const since = Date.now()

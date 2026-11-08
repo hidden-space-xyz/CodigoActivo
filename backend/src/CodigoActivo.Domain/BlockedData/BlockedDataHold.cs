@@ -7,10 +7,10 @@ namespace CodigoActivo.Domain.BlockedData;
 /// Keeps the data history of an account and its minors past its retention while a claim about
 /// them is open: a claim interrupts the prescription of the liabilities the blocked data serves
 /// (article 1973 of the Civil Code), so the history must outlive it. The person designated for
-/// data protection places it from a consultation that found the account, with who asked for the data
-/// and the reference of that consultation, and lifts it from another once the claim is closed. A
-/// lifted hold is kept <see cref="BlockedDataConsultation.RetentionYears"/>, so why the history
-/// outlived its retention can be proven.
+/// data protection places it from a consultation that found the account, with who asked for the
+/// data and the reference of that consultation, and lifts it from any open consultation once the
+/// claim is closed. A lifted hold is kept <see cref="BlockedDataConsultation.RetentionYears"/>
+/// years, so why the history outlived its retention can be proven.
 /// </summary>
 public class BlockedDataHold : AggregateRoot<BlockedDataHoldId>
 {
@@ -65,7 +65,9 @@ public class BlockedDataHold : AggregateRoot<BlockedDataHoldId>
     /// </summary>
     /// <param name="consultation">Open consultation of the account that places it.</param>
     /// <param name="accountId">Identifier of the account the claim is about.</param>
-    /// <param name="minorIds">Identifiers of the minors of the account, existing and erased.</param>
+    /// <param name="minorIds">
+    /// Identifiers of the minors of the account, existing and erased.
+    /// </param>
     /// <param name="now">Current time.</param>
     /// <returns>
     /// The hold, or <see cref="DomainErrorCode.BlockedDataAccountNotFound"/> when no search of the

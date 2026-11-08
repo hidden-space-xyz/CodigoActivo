@@ -168,7 +168,7 @@ export function outcomeTagType(outcome: AuditOutcome): OutcomeTagType {
 
 /**
  * Who ran a command: the user's name, «Cuenta eliminada» for an account erased since, or the name
- * of an anonymous caller or of the system.
+ * of the kind of actor for an anonymous caller or the system.
  */
 export function actorLabel(entry: AuditEntry, t: Translate): string {
   if (entry.actorType !== 'User') return t(actorTypeLabelKey(entry.actorType))

@@ -27,7 +27,9 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
     /// </summary>
     /// <param name="httpContext">HTTP context of the failed request.</param>
     /// <param name="exception">Exception that ended the request.</param>
-    /// <param name="cancellationToken">Cancellation token used to stop the asynchronous operation.</param>
+    /// <param name="cancellationToken">
+    /// Cancellation token used to stop the asynchronous operation.
+    /// </param>
     /// <returns>
     /// A task whose result is always <see langword="true"/>, since every exception is answered.
     /// </returns>
@@ -66,9 +68,9 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
     }
 
     /// <summary>
-    /// Reads the route pattern of the endpoint the request had reached. The exception handler clears
-    /// the endpoint before calling this handler, so the one captured by the exception feature is
-    /// preferred.
+    /// Reads the route pattern of the endpoint the request had reached. The exception handler
+    /// clears the endpoint before calling this handler, so the one captured by the exception
+    /// feature is preferred.
     /// </summary>
     /// <param name="httpContext">Context of the failed request.</param>
     /// <returns>The route pattern, or a fixed literal when no endpoint matched.</returns>

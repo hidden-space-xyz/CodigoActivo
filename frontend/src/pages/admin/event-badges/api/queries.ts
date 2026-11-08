@@ -2,7 +2,7 @@ import { queryOptions } from '@tanstack/vue-query'
 
 import { getEventBadgesRequest } from './requests'
 
-/** Query keys of the badges report, under the root of every event report. */
+/** Query keys of the badges report, under the root of every report. */
 export const badgeKeys = {
   all: ['reports'] as const,
   ofEvent: (eventId: string) => [...badgeKeys.all, 'event-badges', eventId] as const,

@@ -18,10 +18,14 @@ public static class PngImage
     /// <summary>
     /// Reads the size of the PNG image a content starts with.
     /// </summary>
-    /// <param name="content">Content, or at least its first <see cref="HeaderLength"/> bytes.</param>
+    /// <param name="content">
+    /// Content, or at least its first <see cref="HeaderLength"/> bytes.
+    /// </param>
     /// <param name="width">Width in pixels, or zero when the content is not a PNG image.</param>
     /// <param name="height">Height in pixels, or zero when the content is not a PNG image.</param>
-    /// <returns><see langword="true"/> when the content starts with a PNG header of a non-empty image.</returns>
+    /// <returns>
+    /// <see langword="true"/> when the content starts with a PNG header of a non-empty image.
+    /// </returns>
     public static bool TryReadSize(ReadOnlySpan<byte> content, out uint width, out uint height)
     {
         width = 0;

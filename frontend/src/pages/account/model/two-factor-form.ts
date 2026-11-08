@@ -1,7 +1,7 @@
 import type { DisableAuthenticatorInput } from '@/entities/account'
 import type { FormReading } from '@/shared/lib/form'
 
-/** What the second-factor dialogs bind their inputs to; each step reads only the fields it shows. */
+/** What the second-factor dialogs bind their inputs to; each step reads only its own fields. */
 export interface TwoFactorDraft {
   /** Current password of the account. */
   password: string

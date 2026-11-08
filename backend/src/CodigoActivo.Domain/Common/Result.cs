@@ -65,7 +65,7 @@ public class Result
 }
 
 /// <summary>
-/// Represents the success or failure outcome of an application operation.
+/// Represents the success or failure outcome of an application operation that produces a value.
 /// </summary>
 /// <typeparam name="T">Type of the value a successful result holds.</typeparam>
 public sealed class Result<T> : Result

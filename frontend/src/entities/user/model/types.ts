@@ -27,11 +27,11 @@ export interface User {
   /** Whether the user agreed to receive news by email; always `false` for dependents. */
   readonly newsConsent: boolean
   readonly gender: Gender
-  /** Cargo in the admin area; `None` for those who only use the public site. */
+  /** Staff role in the admin area; `None` for those who only use the public site. */
   readonly staffRole: StaffRole
   /**
    * The superadministrator, the account created on first start: it can be neither deleted nor
-   * demoted, and only it changes cargos, designates the data protection officer and deletes
+   * demoted, and only it changes staff roles, designates the data protection officer and deletes
    * other accounts.
    */
   readonly isInitialAdmin: boolean

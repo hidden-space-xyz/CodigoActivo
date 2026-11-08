@@ -219,18 +219,18 @@ public enum ApplicationErrorCode
     UserSelfDeleteRequiresVerification,
 
     /// <summary>
-    /// Selects the option for a user who changes their own staff role.
+    /// The signed-in user tried to change their own staff role.
     /// </summary>
     UserSelfStaffRoleChangeForbidden,
 
     /// <summary>
-    /// Selects the option for an account other than the initial administrator that changes a staff
-    /// role or designates the account for data protection.
+    /// An account other than the initial administrator tried to change a staff role or designate
+    /// the account for data protection.
     /// </summary>
     SuperAdministratorOnly,
 
     /// <summary>
-    /// Selects the option for a user who changes their own membership type.
+    /// The signed-in user tried to change their own membership type.
     /// </summary>
     UserSelfTypeChangeForbidden,
 
@@ -256,13 +256,14 @@ public enum ApplicationErrorCode
 
     /// <summary>
     /// The new email being confirmed already belongs to another account that owns it. Registering
-    /// with, or asking to change to, an email in use reports nothing: its holder is notified instead.
+    /// with, or asking to change to, an email in use reports nothing: its holder is notified
+    /// instead.
     /// </summary>
     UserEmailAlreadyInUse,
 
     /// <summary>
-    /// Selects the option for an email address whose domain is on the disposable email domain list,
-    /// refused when registering or changing an account email.
+    /// The domain of the email given to register or to change an account email is on the
+    /// disposable email domain list.
     /// </summary>
     DisposableEmailNotAllowed,
 
@@ -282,13 +283,14 @@ public enum ApplicationErrorCode
     UserAccountPendingVerification,
 
     /// <summary>
-    /// The account of the signed-in user no longer exists when it is read; answered as unauthorized.
+    /// The account of the signed-in user no longer exists when it is read; answered as
+    /// unauthorized.
     /// </summary>
     CurrentUserNotFound,
 
     /// <summary>
-    /// The code that confirms the email of a new account, or a new email, is wrong, expired, already
-    /// used or not pending.
+    /// The code that confirms the email of a new account, or a new email, is wrong, expired,
+    /// already used or not pending.
     /// </summary>
     OtpInvalidOrExpired,
 
@@ -384,8 +386,8 @@ public enum ApplicationErrorCode
 
     /// <summary>
     /// The signed-in user tried to act for someone who is neither themselves nor one of their
-    /// dependents, without being an administrator. Personal data, the news consent and dependents
-    /// refuse administrators too, and only its holder changes a password.
+    /// dependents, without being an administrator. Personal data, the news consent, dependents and
+    /// signups refuse administrators too, and only its holder changes a password.
     /// </summary>
     ActingForAnotherUserForbidden,
 

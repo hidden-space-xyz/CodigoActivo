@@ -12,8 +12,8 @@ const sessionKeys = {
 /** Query options of the session, shared by guards, views and tests. */
 export const sessionQueries = {
   /**
-   * The signed-in user, or `null` for a guest. A known user stays cached until a mutation
-   * invalidates it or the session ends, and views never refetch it by themselves; a guest is asked
+   * The signed-in user, or `null` for a guest. A known user stays cached until `refreshSession`
+   * reloads it or the session ends, and views never refetch it by themselves; a guest is asked
    * again on every guarded navigation, so signing in from another tab is noticed.
    */
   me: () =>

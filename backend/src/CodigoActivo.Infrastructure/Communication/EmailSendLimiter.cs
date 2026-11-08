@@ -17,12 +17,12 @@ namespace CodigoActivo.Infrastructure.Communication;
 public readonly record struct EmailSendDecision(EmailLimitScope Scope, EmailGuardAlert Alert);
 
 /// <summary>
-/// Enforces the email guard on the codes, the only mail limited before it is stored: an hourly and a
-/// daily budget per normalized address, and a budget shared by the mail anyone can ask for, the
+/// Enforces the email guard on the codes, the only mail limited before it is stored: an hourly and
+/// a daily budget per normalized address, and a budget shared by the mail anyone can ask for, the
 /// verification, email-in-use and password-reset mail, which second-factor codes never spend.
 /// Second-factor codes also have address budgets of their own, so flooding an address with mail
-/// anyone can ask for never stops its owner from receiving a login code. The budgets live in memory
-/// behind a lock.
+/// anyone can ask for never stops its owner from receiving a login code. The budgets live in
+/// memory behind a lock.
 /// </summary>
 /// <param name="options">Limits applied, and the interval that spaces repeated alerts.</param>
 /// <param name="smtp">SMTP provider pace, which caps the anonymous budget at half of it.</param>
@@ -46,8 +46,8 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, SmtpOptions smtp
     );
 
     /// <summary>
-    /// Gets how many address budgets the limiter holds; an address that received second-factor codes
-    /// and other codes counts twice.
+    /// Gets how many address budgets the limiter holds; an address that received second-factor
+    /// codes and other codes counts twice.
     /// </summary>
     public int TrackedRecipients => recipients.Count;
 
@@ -108,8 +108,8 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, SmtpOptions smtp
     /// <summary>
     /// Reduces an address to the key of its mailbox, so its aliases share one budget: trimmed and
     /// lower-cased, without a <c>+tag</c> in the local part and, on <c>gmail.com</c> and
-    /// <c>googlemail.com</c>, without its dots. A value with nothing before its last <c>@</c> is only
-    /// trimmed and lower-cased.
+    /// <c>googlemail.com</c>, without its dots. A value with nothing before its last <c>@</c> is
+    /// only trimmed and lower-cased.
     /// </summary>
     /// <param name="address">Recipient address used as a rate-limit key.</param>
     /// <returns>The normalized key.</returns>

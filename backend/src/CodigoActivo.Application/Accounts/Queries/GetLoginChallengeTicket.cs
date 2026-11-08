@@ -34,7 +34,9 @@ public sealed class GetLoginChallengeTicketQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the challenge.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is the ticket, or <see langword="null"/> when the challenge is not open.</returns>
+    /// <returns>
+    /// A task whose result is the ticket, or <see langword="null"/> when the challenge is not open.
+    /// </returns>
     public async Task<LoginChallengeTicket?> HandleAsync(
         GetLoginChallengeTicketQuery query,
         CancellationToken ct = default

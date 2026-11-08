@@ -13,7 +13,9 @@ public sealed record ResourceCreated(ResourceId ResourceId) : IDomainEvent;
 /// The content of a resource was replaced.
 /// </summary>
 /// <param name="ResourceId">Identifier of the resource.</param>
-/// <param name="ReleasedFileIds">Identifiers of the files the previous content referenced and the new one does not.</param>
+/// <param name="ReleasedFileIds">
+/// Identifiers of the files the previous content referenced and the new one does not.
+/// </param>
 public sealed record ResourceUpdated(
     ResourceId ResourceId,
     IReadOnlyCollection<StoredFileId> ReleasedFileIds

@@ -18,10 +18,10 @@ public sealed record SendComingOfAgeNoticesCommand : ICommand<Result<int>>, ISch
 
 /// <summary>
 /// Executes the command that tells guardians, <see cref="User.ComingOfAgeNoticeDays"/> days ahead,
-/// that a dependent will be erased the day it comes of age, so they can download its data first. Each
-/// dependent is locked and checked again in its own transaction, and the notice is recorded only once
-/// the email is queued, so a notice that could not be queued is tried again on the next run. A
-/// guardian whose email nobody verified gets none.
+/// that a dependent will be erased the day it comes of age, so they can download its data first.
+/// Each dependent is locked and checked again in its own transaction, and the notice is recorded
+/// only once the email is queued, so a notice that could not be queued is tried again on the next
+/// run. A guardian whose email nobody verified gets none.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="accountEmails">Sender of the notice.</param>

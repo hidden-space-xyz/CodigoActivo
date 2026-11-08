@@ -22,7 +22,7 @@ export class SiteHeader {
   /** The link to «Mi cuenta», for signed-in people. */
   readonly account: Locator
 
-  /** The link to the administration, for administrators. */
+  /** The link to the administration, for editors, administrators and the privacy officer. */
   readonly admin: Locator
 
   /** The sign-out button. */

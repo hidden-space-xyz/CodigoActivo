@@ -7,7 +7,9 @@ namespace CodigoActivo.Domain.TermsDocuments;
 /// even with the same values.
 /// </summary>
 /// <param name="TermsDocumentId">Identifier of the document.</param>
-/// <param name="ReleasedFileIds">Identifiers of the files the previous content referenced and the new one does not.</param>
+/// <param name="ReleasedFileIds">
+/// Identifiers of the files the previous content referenced and the new one does not.
+/// </param>
 public sealed record TermsDocumentRewritten(
     TermsDocumentId TermsDocumentId,
     IReadOnlyCollection<StoredFileId> ReleasedFileIds

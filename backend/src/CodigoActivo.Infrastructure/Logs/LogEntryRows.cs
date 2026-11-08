@@ -66,17 +66,17 @@ public sealed class AuditLogRow
     public Guid Id { get; init; }
 
     /// <summary>
-    /// Gets the UTC instant the command ended.
+    /// Gets the UTC instant the event was recorded.
     /// </summary>
     public DateTimeOffset OccurredAt { get; init; }
 
     /// <summary>
-    /// Gets who ran the command.
+    /// Gets who caused the event.
     /// </summary>
     public AuditActorType ActorType { get; init; }
 
     /// <summary>
-    /// Gets the account that ran the command, if a user did.
+    /// Gets the account that caused the event, if a user did.
     /// </summary>
     public Guid? ActorId { get; init; }
 
@@ -86,7 +86,7 @@ public sealed class AuditLogRow
     public IPAddress? ClientIp { get; init; }
 
     /// <summary>
-    /// Gets the command that ran.
+    /// Gets the audit action that happened.
     /// </summary>
     public AuditAction Action { get; init; }
 
@@ -106,7 +106,7 @@ public sealed class AuditLogRow
     public string? Related { get; init; }
 
     /// <summary>
-    /// Gets how the command ended.
+    /// Gets how the event ended.
     /// </summary>
     public AuditOutcome Outcome { get; init; }
 
@@ -116,7 +116,7 @@ public sealed class AuditLogRow
     public string? ErrorCode { get; init; }
 
     /// <summary>
-    /// Gets the trace the command ran in, if any.
+    /// Gets the trace the event was recorded in, if any.
     /// </summary>
     public string? TraceId { get; init; }
 }

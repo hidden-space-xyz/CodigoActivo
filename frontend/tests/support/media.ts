@@ -39,7 +39,9 @@ export function matchMediaMock(query: string): MediaQueryList {
   return entry.list
 }
 
-/** Makes queries accepted by `matches` match (e.g. `(q) => q.includes('max-width')`) and notifies. */
+/**
+ * Makes queries accepted by `matches` match (e.g. `(q) => q.includes('max-width')`) and notifies.
+ */
 export function setMediaQueryMatches(matches: (query: string) => boolean): void {
   predicate = matches
   for (const [query, entry] of lists) {

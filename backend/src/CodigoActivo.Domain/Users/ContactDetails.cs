@@ -20,9 +20,10 @@ internal sealed record ContactDetails(
     /// </summary>
     /// <param name="details">Details as supplied.</param>
     /// <returns>
-    /// The contact details, <see cref="DomainErrorCode.UserContactInfoRequired"/> without an email or a
-    /// phone, <see cref="DomainErrorCode.UserPhoneInvalid"/> when a phone is not a <see cref="PhoneNumber"/>,
-    /// <see cref="DomainErrorCode.SecondaryPhoneSameAsPrimary"/> when both phones are equal, or
+    /// The contact details, <see cref="DomainErrorCode.UserContactInfoRequired"/> without an email
+    /// or a phone, <see cref="DomainErrorCode.UserPhoneInvalid"/> when a phone is not a
+    /// <see cref="PhoneNumber"/>, <see cref="DomainErrorCode.SecondaryPhoneSameAsPrimary"/> when
+    /// both phones are equal, or
     /// <see cref="DomainErrorCode.UserEmailInvalid"/> when the email is malformed.
     /// </returns>
     public static Result<ContactDetails> From(PersonDetails details)

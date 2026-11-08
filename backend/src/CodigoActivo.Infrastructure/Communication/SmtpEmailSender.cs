@@ -141,12 +141,15 @@ public sealed class SmtpEmailSender(SmtpOptions options, SmtpServerLimits server
     /// <summary>
     /// Tells whose fault a command the server rejected was, from the command and its status: a
     /// recipient whose address or mailbox is refused for good (enhanced status 5.1 or 5.2) or that
-    /// is refused for now is the recipient's, a message too large is the message's, a refused sender
-    /// or a closed service (421) is the server's, and anything else, such as a recipient refused by
-    /// the relay's policy or quota or a message deferred or refused after its content, may pass.
+    /// is refused for now is the recipient's, a message too large is the message's, a refused
+    /// sender or a closed service (421) is the server's, and anything else, such as a recipient
+    /// refused by the relay's policy or quota or a message deferred or refused after its content,
+    /// may pass.
     /// </summary>
     /// <param name="exception">Rejection reported by MailKit.</param>
-    /// <returns>The failure, whose message keeps the codes but not the reply of the server.</returns>
+    /// <returns>
+    /// The failure, whose message keeps the codes but not the reply of the server.
+    /// </returns>
     private static EmailDeliveryException Classify(SmtpCommandException exception)
     {
         var status = (int)exception.StatusCode;

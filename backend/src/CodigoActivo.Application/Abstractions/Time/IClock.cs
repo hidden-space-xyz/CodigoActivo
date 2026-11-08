@@ -18,8 +18,8 @@ public interface IClock
     public DateOnly Today { get; }
 
     /// <summary>
-    /// Gets the time zone local days are read in, such as the days of the date filters: the IANA zone
-    /// set by <c>APP_TIMEZONE</c>, or the zone of the host when it is unset.
+    /// Gets the time zone local days are read in, such as the days of the date filters: the IANA
+    /// zone set by <c>APP_TIMEZONE</c>, or the zone of the host when it is unset.
     /// </summary>
     public TimeZoneInfo TimeZone { get; }
 }

@@ -30,7 +30,9 @@ export interface PersonDraft {
 /** Fields an independent account is filled in with; it has no birth date. */
 export type IndependentDraft = Omit<PersonDraft, 'birthDate'>
 
-/** Fields a dependent is filled in with; the guardian's contact details and DNI/NIE stand for it. */
+/**
+ * Fields a dependent is filled in with; the guardian's contact details and DNI/NIE stand for it.
+ */
 export type DependentDraft = Pick<PersonDraft, 'firstName' | 'lastName' | 'gender' | 'birthDate'>
 
 /** Field of a person that a rule can refuse. */

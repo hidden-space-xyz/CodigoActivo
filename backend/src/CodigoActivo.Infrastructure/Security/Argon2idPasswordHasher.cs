@@ -32,7 +32,9 @@ public sealed class Argon2idPasswordHasher : IPasswordHasher
     /// Hashes a password with a fresh random salt.
     /// </summary>
     /// <param name="password">Plain-text password to hash.</param>
-    /// <returns>The algorithm, its cost parameters, the salt and the hash, separated by <c>$</c>.</returns>
+    /// <returns>
+    /// The algorithm, its cost parameters, the salt and the hash, separated by <c>$</c>.
+    /// </returns>
     public string Hash(string password)
     {
         var salt = RandomNumberGenerator.GetBytes(SaltSize);
@@ -50,13 +52,14 @@ public sealed class Argon2idPasswordHasher : IPasswordHasher
     }
 
     /// <summary>
-    /// Verifies a password against a hash produced by <see cref="Hash"/>, comparing in constant time.
+    /// Verifies a password against a hash produced by <see cref="Hash"/>, comparing in constant
+    /// time.
     /// </summary>
     /// <param name="password">Plain-text password to verify.</param>
     /// <param name="hash">Encoded password hash to verify against.</param>
     /// <returns>
-    /// <see langword="true"/> when the password matches; <see langword="false"/> when it does not or
-    /// the hash is malformed or uses other cost parameters.
+    /// <see langword="true"/> when the password matches; <see langword="false"/> when it does not
+    /// or the hash is malformed or uses other cost parameters.
     /// </returns>
     public bool Verify(string password, string hash)
     {

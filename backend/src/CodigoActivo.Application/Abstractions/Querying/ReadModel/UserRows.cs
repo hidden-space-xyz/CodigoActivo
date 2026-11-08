@@ -5,19 +5,29 @@ namespace CodigoActivo.Application.Abstractions.Querying.ReadModel;
 /// </summary>
 public sealed class UserRow
 {
-    /// <summary>Gets the identifier of the account.</summary>
+    /// <summary>
+    /// Gets the identifier of the account.
+    /// </summary>
     public Guid Id { get; init; }
 
-    /// <summary>Gets the given name.</summary>
+    /// <summary>
+    /// Gets the given name.
+    /// </summary>
     public string FirstName { get; init; } = string.Empty;
 
-    /// <summary>Gets the family name.</summary>
+    /// <summary>
+    /// Gets the family name.
+    /// </summary>
     public string LastName { get; init; } = string.Empty;
 
-    /// <summary>Gets the email address, absent for dependents.</summary>
+    /// <summary>
+    /// Gets the email address, absent for dependents.
+    /// </summary>
     public string? Email { get; init; }
 
-    /// <summary>Gets the new email address its holder asked for and has not confirmed yet.</summary>
+    /// <summary>
+    /// Gets the new email address its holder asked for and has not confirmed yet.
+    /// </summary>
     public string? PendingEmail { get; init; }
 
     /// <summary>
@@ -26,7 +36,9 @@ public sealed class UserRow
     /// </summary>
     public string? Phone { get; init; }
 
-    /// <summary>Gets the optional second phone number.</summary>
+    /// <summary>
+    /// Gets the optional second phone number.
+    /// </summary>
     public string? SecondaryPhone { get; init; }
 
     /// <summary>
@@ -36,28 +48,44 @@ public sealed class UserRow
     /// </summary>
     public string? PasswordHash { get; init; }
 
-    /// <summary>Gets the date of birth, kept for dependents.</summary>
+    /// <summary>
+    /// Gets the date of birth, kept for dependents.
+    /// </summary>
     public DateOnly? BirthDate { get; init; }
 
-    /// <summary>Gets the DNI or NIE of an independent account.</summary>
+    /// <summary>
+    /// Gets the DNI or NIE of an independent account.
+    /// </summary>
     public string? NationalId { get; init; }
 
-    /// <summary>Gets a value indicating whether news email is accepted.</summary>
+    /// <summary>
+    /// Gets a value indicating whether news email is accepted.
+    /// </summary>
     public bool NewsConsent { get; init; }
 
-    /// <summary>Gets the gender.</summary>
+    /// <summary>
+    /// Gets the gender.
+    /// </summary>
     public Gender Gender { get; init; }
 
-    /// <summary>Gets the last successful login.</summary>
+    /// <summary>
+    /// Gets when the last successful login happened.
+    /// </summary>
     public DateTimeOffset? LastLoginAt { get; init; }
 
-    /// <summary>Gets when the account was created.</summary>
+    /// <summary>
+    /// Gets when the account was created.
+    /// </summary>
     public DateTimeOffset CreatedAt { get; init; }
 
-    /// <summary>Gets when the account was last updated.</summary>
+    /// <summary>
+    /// Gets when the account was last updated.
+    /// </summary>
     public DateTimeOffset? UpdatedAt { get; init; }
 
-    /// <summary>Gets when the holder declared being of age while registering.</summary>
+    /// <summary>
+    /// Gets when the holder declared being of age while registering.
+    /// </summary>
     public DateTimeOffset? AdultDeclaredAt { get; init; }
 
     /// <summary>
@@ -70,46 +98,74 @@ public sealed class UserRow
     /// </summary>
     public DateTimeOffset? ComingOfAgeNoticeSentAt { get; init; }
 
-    /// <summary>Gets the identifier of the guardian of a dependent.</summary>
+    /// <summary>
+    /// Gets the identifier of the guardian of a dependent.
+    /// </summary>
     public Guid? ParentId { get; init; }
 
-    /// <summary>Gets the guardian of a dependent.</summary>
+    /// <summary>
+    /// Gets the guardian of a dependent.
+    /// </summary>
     public UserRow? Parent { get; init; }
 
-    /// <summary>Gets the identifier of the account status.</summary>
+    /// <summary>
+    /// Gets the identifier of the account status.
+    /// </summary>
     public Guid UserStatusTypeId { get; init; }
 
-    /// <summary>Gets the account status.</summary>
+    /// <summary>
+    /// Gets the account status.
+    /// </summary>
     public UserStatusTypeRow UserStatusType { get; init; } = null!;
 
-    /// <summary>Gets the identifier of the membership type.</summary>
+    /// <summary>
+    /// Gets the identifier of the membership type.
+    /// </summary>
     public Guid UserTypeId { get; init; }
 
-    /// <summary>Gets the membership type.</summary>
+    /// <summary>
+    /// Gets the membership type.
+    /// </summary>
     public UserTypeRow UserType { get; init; } = null!;
 
-    /// <summary>Gets the staff role of the account.</summary>
+    /// <summary>
+    /// Gets the staff role of the account.
+    /// </summary>
     public StaffRole StaffRole { get; init; }
 
-    /// <summary>Gets a value indicating whether the account is designated for data protection.</summary>
+    /// <summary>
+    /// Gets a value indicating whether the account is designated for data protection.
+    /// </summary>
     public bool IsPrivacyOfficer { get; init; }
 
-    /// <summary>Gets the second-factor method.</summary>
+    /// <summary>
+    /// Gets the second-factor method.
+    /// </summary>
     public TwoFactorMethod TwoFactorMethod { get; init; } = TwoFactorMethod.Email;
 
-    /// <summary>Gets the identifier of the pending second-factor challenge.</summary>
+    /// <summary>
+    /// Gets the identifier of the pending second-factor challenge.
+    /// </summary>
     public Guid? LoginChallengeId { get; init; }
 
-    /// <summary>Gets when the pending second-factor challenge was opened.</summary>
+    /// <summary>
+    /// Gets when the pending second-factor challenge was opened.
+    /// </summary>
     public DateTimeOffset? LoginChallengeStartedAt { get; init; }
 
-    /// <summary>Gets when the account was locked after wrong passwords.</summary>
+    /// <summary>
+    /// Gets when the account was locked after wrong passwords.
+    /// </summary>
     public DateTimeOffset? PasswordLockedAt { get; init; }
 
-    /// <summary>Gets the dependents of a guardian.</summary>
+    /// <summary>
+    /// Gets the dependents of a guardian.
+    /// </summary>
     public ICollection<UserRow> Children { get; init; } = [];
 
-    /// <summary>Gets the activity assignments of the account.</summary>
+    /// <summary>
+    /// Gets the activity assignments of the account.
+    /// </summary>
     public ICollection<AssignmentRow> Assignments { get; init; } = [];
 }
 
@@ -118,16 +174,24 @@ public sealed class UserRow
 /// </summary>
 public sealed class UserStatusTypeRow
 {
-    /// <summary>Gets the identifier of the status.</summary>
+    /// <summary>
+    /// Gets the identifier of the status.
+    /// </summary>
     public Guid Id { get; init; }
 
-    /// <summary>Gets the display name.</summary>
+    /// <summary>
+    /// Gets the display name.
+    /// </summary>
     public string Name { get; init; } = string.Empty;
 
-    /// <summary>Gets the description.</summary>
+    /// <summary>
+    /// Gets the description.
+    /// </summary>
     public string Description { get; init; } = string.Empty;
 
-    /// <summary>Gets the display color.</summary>
+    /// <summary>
+    /// Gets the display color.
+    /// </summary>
     public string Color { get; init; } = string.Empty;
 }
 
@@ -136,16 +200,24 @@ public sealed class UserStatusTypeRow
 /// </summary>
 public sealed class UserTypeRow
 {
-    /// <summary>Gets the identifier of the type.</summary>
+    /// <summary>
+    /// Gets the identifier of the type.
+    /// </summary>
     public Guid Id { get; init; }
 
-    /// <summary>Gets the display name.</summary>
+    /// <summary>
+    /// Gets the display name.
+    /// </summary>
     public string Name { get; init; } = string.Empty;
 
-    /// <summary>Gets the description.</summary>
+    /// <summary>
+    /// Gets the description.
+    /// </summary>
     public string Description { get; init; } = string.Empty;
 
-    /// <summary>Gets the display color.</summary>
+    /// <summary>
+    /// Gets the display color.
+    /// </summary>
     public string Color { get; init; } = string.Empty;
 }
 
@@ -154,16 +226,24 @@ public sealed class UserTypeRow
 /// </summary>
 public sealed class UserSessionRow
 {
-    /// <summary>Gets the identifier of the session.</summary>
+    /// <summary>
+    /// Gets the identifier of the session.
+    /// </summary>
     public Guid Id { get; init; }
 
-    /// <summary>Gets the identifier of the account.</summary>
+    /// <summary>
+    /// Gets the identifier of the account.
+    /// </summary>
     public Guid UserId { get; init; }
 
-    /// <summary>Gets when the session was opened.</summary>
+    /// <summary>
+    /// Gets when the session was opened.
+    /// </summary>
     public DateTimeOffset CreatedAt { get; init; }
 
-    /// <summary>Gets when the session expires.</summary>
+    /// <summary>
+    /// Gets when the session expires.
+    /// </summary>
     public DateTimeOffset ExpiresAt { get; init; }
 }
 
@@ -172,21 +252,30 @@ public sealed class UserSessionRow
 /// </summary>
 public sealed class NewsConsentChangeRow
 {
-    /// <summary>Gets the database sequence, which orders changes made at the same instant.</summary>
+    /// <summary>
+    /// Gets the database sequence, which orders changes made at the same instant.
+    /// </summary>
     public long Id { get; init; }
 
-    /// <summary>Gets the identifier of the account.</summary>
+    /// <summary>
+    /// Gets the identifier of the account.
+    /// </summary>
     public Guid UserId { get; init; }
 
-    /// <summary>Gets a value indicating whether the consent was given or withdrawn.</summary>
+    /// <summary>
+    /// Gets a value indicating whether the consent was given; <see langword="false"/> when it was
+    /// withdrawn.
+    /// </summary>
     public bool Granted { get; init; }
 
     /// <summary>
-    /// Gets where the change was made: the name of the <c>NewsConsentSource</c> member it was stored
-    /// with, such as <c>Registration</c> or <c>UnsubscribeLink</c>.
+    /// Gets where the change was made: the name of the <c>NewsConsentSource</c> member it was
+    /// stored with, such as <c>Registration</c> or <c>UnsubscribeLink</c>.
     /// </summary>
     public string Source { get; init; } = string.Empty;
 
-    /// <summary>Gets when the change was made.</summary>
+    /// <summary>
+    /// Gets when the change was made.
+    /// </summary>
     public DateTimeOffset ChangedAt { get; init; }
 }

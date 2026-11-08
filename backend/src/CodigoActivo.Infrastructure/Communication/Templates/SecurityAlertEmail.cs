@@ -6,17 +6,18 @@ using CodigoActivo.Application.Common.Localization;
 namespace CodigoActivo.Infrastructure.Communication.Templates;
 
 /// <summary>
-/// Builds the email content that tells an account owner of a security change to their account: password,
-/// second factor, administrator rights, email or phone, or a lock after wrong passwords. The message
-/// carries no code, no secret and no link that performs an action.
+/// Builds the email content that tells an account owner of a security change to their account:
+/// password, second factor, staff role, data protection designation, email or phone, or a lock
+/// after wrong passwords. The message carries no code, no secret and no link that performs an
+/// action.
 /// </summary>
 public static class SecurityAlertEmail
 {
     private const string TimestampFormat = "dd/MM/yyyy, HH:mm";
 
     /// <summary>
-    /// Creates the alert: what changed, when, the masked new address when given, and the advice that fits
-    /// the change. A lock has a subject and heading of its own.
+    /// Creates the alert: what changed, when, the masked new address when given, and the advice
+    /// that fits the change. A lock has a subject and heading of its own.
     /// </summary>
     /// <param name="toAddress">
     /// Address of the account owner; the previous one when the email or phone changed.
@@ -27,7 +28,7 @@ public static class SecurityAlertEmail
     /// <param name="timeZone">Time zone used to calculate local dates.</param>
     /// <param name="siteUrl">Public base URL of the site, linked from the footer.</param>
     /// <param name="maskedNewEmail">
-    /// Masked new address, when the email changed; null or blank leaves it out.
+    /// Masked new address, when the email changed; <see langword="null"/> or blank leaves it out.
     /// </param>
     /// <returns>The message, of kind <see cref="EmailKind.SecurityAlert"/>.</returns>
     public static EmailMessage Create(

@@ -29,15 +29,17 @@ public sealed record UpdateTermsDocumentCommand(
 ) : ICommand<Result>, IRoutineCommand;
 
 /// <summary>
-/// Executes the command to update the terms document. The document is locked and reloaded first, so
-/// concurrent rewrites run one after another, and its kind stays as it is while an event links it or
-/// anyone decided on it, since every rule about those decisions reads the current kind. A rewrite
-/// that changes anything starts a new version and keeps the one it replaces, so decisions already
-/// taken keep naming the text they were taken on.
+/// Executes the command to update the terms document. The document is locked and reloaded first,
+/// so concurrent rewrites run one after another, and its kind stays as it is while an event links
+/// it or anyone decided on it, since every rule about those decisions reads the current kind. A
+/// rewrite that changes anything starts a new version and keeps the one it replaces, so decisions
+/// already taken keep naming the text they were taken on.
 /// </summary>
 /// <param name="termsDocuments">Repository used to persist and retrieve terms documents.</param>
 /// <param name="events">Repository used to persist and retrieve events.</param>
-/// <param name="termsAcceptances">Repository used to persist and retrieve terms acceptances.</param>
+/// <param name="termsAcceptances">
+/// Repository used to persist and retrieve terms acceptances.
+/// </param>
 /// <param name="uow">Unit of work that runs the rewrite in one transaction.</param>
 public sealed class UpdateTermsDocumentCommandHandler(
     ITermsDocumentRepository termsDocuments,

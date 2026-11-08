@@ -10,8 +10,8 @@ namespace CodigoActivo.Infrastructure.Users;
 
 /// <summary>
 /// Erases the dependents who came of age and then tells the guardians of those who come of age
-/// within <see cref="User.ComingOfAgeNoticeDays"/> days. It runs shortly after startup, so a stopped
-/// API only delays both until the next start, and then once per interval.
+/// within <see cref="User.ComingOfAgeNoticeDays"/> days. It runs shortly after startup, so a
+/// stopped API only delays both until the next start, and then once per interval.
 /// </summary>
 /// <param name="scopes">Scope factory used to resolve the use cases of each run.</param>
 /// <param name="options">Startup delay and interval of the runs.</param>
@@ -26,7 +26,9 @@ public sealed class AdultDependentPurgeWorker(
     /// Erases every dependent who has come of age, then sends the notices that are due.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the number of erased dependents and of notices sent.</returns>
+    /// <returns>
+    /// A task whose result contains the number of erased dependents and of notices sent.
+    /// </returns>
     public async Task<(int Erased, int Notified)> PurgeAsync(CancellationToken ct = default)
     {
         var erased = await ScheduledCommandRunner.RunAsync(
@@ -46,7 +48,7 @@ public sealed class AdultDependentPurgeWorker(
     /// Runs shortly after startup and then once per configured interval until shutdown. A failed
     /// run is logged and never stops the host or the following runs.
     /// </summary>
-    /// <param name="stoppingToken">Cancellation token used to stop the asynchronous operation.</param>
+    /// <param name="stoppingToken">Cancellation token that stops the runs at shutdown.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {

@@ -29,7 +29,7 @@ public static class CachePolicies
         };
 
     /// <summary>
-    /// Gets the entry options of a duration.
+    /// Returns the entry options of a duration.
     /// </summary>
     /// <param name="duration">How long the result lives.</param>
     /// <returns>The entry options.</returns>

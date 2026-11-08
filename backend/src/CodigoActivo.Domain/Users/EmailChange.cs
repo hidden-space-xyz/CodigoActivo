@@ -35,7 +35,9 @@ public readonly record struct EmailChange(
     /// Gets the hash of the code that confirms the change while the code can still be used.
     /// </summary>
     /// <param name="now">Current time.</param>
-    /// <returns>The hash, or <see langword="null"/> when no change waits or its code expired.</returns>
+    /// <returns>
+    /// The hash, or <see langword="null"/> when no change waits or its code expired.
+    /// </returns>
     public string? UsableCodeHash(DateTimeOffset now)
     {
         return ExpiresAt >= now ? CodeHash : null;

@@ -39,7 +39,8 @@ const RouteStub: Component = {
 
 /**
  * Memory router with the application's route names and paths but stub components and no guards,
- * so `RouterLink`s and `router.push` calls inside isolated components resolve without loading pages.
+ * so `RouterLink`s and `router.push` calls inside isolated components resolve without loading
+ * pages.
  */
 function createStubRouter(extraRoutes: RouteRecordRaw[] = []): Router {
   const stubbed = appRoutes.map((route): RouteRecordRaw => {

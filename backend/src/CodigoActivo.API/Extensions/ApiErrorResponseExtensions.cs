@@ -31,7 +31,9 @@ public static class ApiErrorResponseExtensions
     /// <param name="error">Failure with its kind and wire code.</param>
     /// <param name="context">HTTP context of the failed request.</param>
     /// <returns>The status code and body of the error response.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">The kind of the failure maps to no status.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// The kind of the failure maps to no status.
+    /// </exception>
     public static (int StatusCode, ApiErrorResponse Body) Create(
         ApiError error,
         HttpContext context
@@ -42,7 +44,8 @@ public static class ApiErrorResponseExtensions
     }
 
     /// <summary>
-    /// Creates the 500 error response of an unexpected failure, which tells nothing about its cause.
+    /// Creates the 500 error response of an unexpected failure, which tells nothing about its
+    /// cause.
     /// </summary>
     /// <param name="context">HTTP context of the failed request.</param>
     /// <returns>The status code and body of the error response.</returns>

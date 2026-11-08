@@ -7,8 +7,8 @@ namespace CodigoActivo.Application.Abstractions.Querying;
 public interface IQueryExecutor
 {
     /// <summary>
-    /// Counts the query and loads one page of it in its own order; a page past the end loads no item
-    /// and still reports the total.
+    /// Counts the query and loads one page of it in its own order; a page past the end loads no
+    /// item and still reports the total.
     /// </summary>
     /// <typeparam name="T">Type of the query results.</typeparam>
     /// <param name="source">Query to page, in the order the pages follow.</param>
@@ -55,6 +55,8 @@ public interface IQueryExecutor
     /// <typeparam name="T">Type of the query results.</typeparam>
     /// <param name="source">Query to test.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="true"/> when at least one item matches.</returns>
+    /// <returns>
+    /// A task whose result is <see langword="true"/> when at least one item matches.
+    /// </returns>
     public Task<bool> AnyAsync<T>(IQueryable<T> source, CancellationToken ct = default);
 }

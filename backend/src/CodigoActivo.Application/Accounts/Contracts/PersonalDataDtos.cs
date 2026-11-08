@@ -130,7 +130,9 @@ public sealed record PersonalDataDependentResponse(
 /// <summary>
 /// Represents a signup in a copy of personal data.
 /// </summary>
-/// <param name="PersonId">Identifier of the person signed up: the user or a minor in their care.</param>
+/// <param name="PersonId">
+/// Identifier of the person signed up: the user or a minor in their care.
+/// </param>
 /// <param name="PersonName">Full name of the person signed up.</param>
 /// <param name="EventTitle">Title of the event.</param>
 /// <param name="ActivityTitle">Title of the activity.</param>
@@ -153,7 +155,9 @@ public sealed record PersonalDataSignupResponse(
 /// Represents a rating of an event in a copy of personal data.
 /// </summary>
 /// <param name="EventTitle">Title of the rated event.</param>
-/// <param name="Score">Score from 1 to 5, or <see langword="null"/> when the user gave none.</param>
+/// <param name="Score">
+/// Score from 1 to 5, or <see langword="null"/> when the user gave none.
+/// </param>
 /// <param name="MostLiked">What the user liked most.</param>
 /// <param name="LeastLiked">What the user liked least.</param>
 /// <param name="Suggestions">Suggestions.</param>
@@ -195,13 +199,15 @@ public sealed record PersonalDataTermsDecisionResponse(
 /// <summary>
 /// Represents one change of a decision on a document of an event in a copy of personal data.
 /// </summary>
-/// <param name="Accepted">Whether the document was accepted; false for a decline or a withdrawal.</param>
+/// <param name="Accepted">
+/// Whether the document was accepted; <see langword="false"/> for a decline or a withdrawal.
+/// </param>
 /// <param name="DocumentVersion">Version of the document the change was made on.</param>
 /// <param name="ChangedAt">When it changed.</param>
 /// <param name="DecidedByName">Full name of who decided: the person or their guardian.</param>
 /// <param name="Signature">
-/// Handwritten signature drawn for an acceptance, as a PNG image, when the document asked for one;
-/// it stays after a withdrawal, which never makes unlawful what the acceptance allowed.
+/// Handwritten signature drawn for an acceptance, as a PNG image, when one was needed; it stays
+/// after a withdrawal, which never makes unlawful what the acceptance allowed.
 /// </param>
 public sealed record PersonalDataTermsDecisionChangeResponse(
     bool Accepted,

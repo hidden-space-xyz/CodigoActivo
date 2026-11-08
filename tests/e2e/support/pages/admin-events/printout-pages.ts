@@ -62,7 +62,9 @@ export class BadgesPage extends PrintoutPage {
   }
 }
 
-/** The roster printout, at `/admin/events/{id}/roster`: a table per activity with confirmed people. */
+/**
+ * The roster printout, at `/admin/events/{id}/roster`: a table per activity with confirmed people.
+ */
 export class RosterPage extends PrintoutPage {
   /** The note the page shows while it loads, when it fails or when nobody is confirmed. */
   readonly empty: Locator

@@ -13,10 +13,11 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 namespace CodigoActivo.API.Security;
 
 /// <summary>
-/// Issues, validates and revokes the session cookie. Every cookie names a stored session and carries
-/// the credential stamp of the password it was issued for, so revoking the session or changing the
-/// password invalidates it on the next request; the account data behind the claims comes from the
-/// session use cases, and <see cref="SessionIdentity.Accepts"/> decides whether the stamp is current.
+/// Issues, validates and revokes the session cookie. Every cookie names a stored session and
+/// carries the credential stamp of the password it was issued for, so revoking the session or
+/// changing the password invalidates it on the next request; the account data behind the claims
+/// comes from the session use cases, and <see cref="SessionIdentity.Accepts"/> decides whether the
+/// stamp is current.
 /// </summary>
 /// <param name="endSession">Handler that revokes a stored session.</param>
 /// <param name="sessionIdentity">Handler that resolves the account behind a live session.</param>
@@ -34,7 +35,10 @@ public sealed class SessionTicketValidator(
     /// <param name="userId">Identifier of the account that completed the login.</param>
     /// <param name="sessionId">Identifier of the session the login opened.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the principal, or <see langword="null"/> when the session is not live.</returns>
+    /// <returns>
+    /// A task whose result contains the principal, or <see langword="null"/> when the session is
+    /// not live.
+    /// </returns>
     public async Task<ClaimsPrincipal?> CreatePrincipalAsync(
         UserId userId,
         UserSessionId sessionId,

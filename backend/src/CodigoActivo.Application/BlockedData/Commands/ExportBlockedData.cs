@@ -62,9 +62,9 @@ public sealed class ExportBlockedDataCommandHandler(
     /// <see cref="ApplicationErrorCode.BlockedDataPeriodInvalid"/> for a filter that cannot apply,
     /// <see cref="ApplicationErrorCode.BlockedDataOfficerOnly"/> for any other account,
     /// <see cref="DomainErrorCode.BlockedDataConsultationNotFound"/> or
-    /// <see cref="DomainErrorCode.BlockedDataConsultationExpired"/> when the consultation may not be
-    /// used, or <see cref="DomainErrorCode.BlockedDataAccountNotFound"/> when none of its searches
-    /// found the account.
+    /// <see cref="DomainErrorCode.BlockedDataConsultationExpired"/> when the consultation may not
+    /// be used, or <see cref="DomainErrorCode.BlockedDataAccountNotFound"/> when none of its
+    /// searches found the account.
     /// </returns>
     public async Task<Result<BlockedDataExport>> HandleAsync(
         ExportBlockedDataCommand command,

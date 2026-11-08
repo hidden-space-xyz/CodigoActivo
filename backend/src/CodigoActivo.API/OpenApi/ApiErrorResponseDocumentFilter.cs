@@ -14,7 +14,9 @@ public sealed class ApiErrorResponseDocumentFilter : IDocumentFilter
     /// Generates the error body schema into the schema repository of the document.
     /// </summary>
     /// <param name="swaggerDoc">OpenAPI document being generated.</param>
-    /// <param name="context">Document filter context whose schema generator and repository are used.</param>
+    /// <param name="context">
+    /// Document filter context whose schema generator and repository are used.
+    /// </param>
     public void Apply(OpenApiDocument swaggerDoc, DocumentFilterContext context)
     {
         context.SchemaGenerator.GenerateSchema(typeof(ApiErrorResponse), context.SchemaRepository);

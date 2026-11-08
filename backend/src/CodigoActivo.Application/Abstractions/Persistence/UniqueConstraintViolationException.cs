@@ -33,7 +33,9 @@ public sealed class UniqueConstraintViolationException : Exception
     /// <summary>
     /// Initializes a unique constraint violation for the entity whose table rejected the commit.
     /// </summary>
-    /// <param name="entityType">Entity type stored in the table that rejected the commit, if known.</param>
+    /// <param name="entityType">
+    /// Entity type stored in the table that rejected the commit, if known.
+    /// </param>
     /// <param name="innerException">Database error that rejected the commit.</param>
     public UniqueConstraintViolationException(Type? entityType, Exception innerException)
         : base(DefaultMessage, innerException)

@@ -32,7 +32,8 @@ public sealed class NewsListQuery : PageQuery
     public string? Subtitle { get; set; }
 
     /// <summary>
-    /// Gets or sets whether only the featured item, or only the others, are listed.
+    /// Gets or sets a value indicating whether only the featured item, or only the others, are
+    /// listed.
     /// </summary>
     public bool? Featured { get; set; }
 

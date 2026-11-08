@@ -1,9 +1,10 @@
 namespace CodigoActivo.API.Diagnostics;
 
 /// <summary>
-/// Declares the events the API layer records: the failures an operator has to act on, including the
-/// one that ends the process. Request templates never carry the requested path, its query, the caller
-/// address or any header, only the HTTP method and the route pattern of the matched endpoint.
+/// Declares the events the API layer records: the failures an operator has to act on, including
+/// the one that ends the process. Request templates never carry the requested path, its query, the
+/// caller address or any header, only the HTTP method and the route pattern of the matched
+/// endpoint.
 /// </summary>
 internal static partial class ApiLog
 {
@@ -12,7 +13,9 @@ internal static partial class ApiLog
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="method">HTTP method of the request.</param>
-    /// <param name="routeTemplate">Route pattern of the matched endpoint, never the requested path.</param>
+    /// <param name="routeTemplate">
+    /// Route pattern of the matched endpoint, never the requested path.
+    /// </param>
     /// <param name="exception">Exception that was not handled by the endpoint.</param>
     [LoggerMessage(
         Level = LogLevel.Error,

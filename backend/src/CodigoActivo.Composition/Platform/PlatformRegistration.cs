@@ -13,7 +13,7 @@ namespace CodigoActivo.Composition.Platform;
 
 /// <summary>
 /// Registers what every feature relies on: the clock, the public address of the application, the
-/// caches and the protection of secrets.
+/// caches, the deployment mode and the protection of secrets.
 /// </summary>
 internal static class PlatformRegistration
 {

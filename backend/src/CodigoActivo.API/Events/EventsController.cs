@@ -114,7 +114,9 @@ public class EventsController : ApiControllerBase
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing the event's terms state, or an error response.</returns>
+    /// <returns>
+    /// An HTTP response containing the event's terms state, or an error response.
+    /// </returns>
     [HttpGet("{eventId:guid}/terms")]
     [Authorize]
     public async Task<ActionResult<EventTermsStateResponse>> TermsStateAsync(
@@ -137,7 +139,9 @@ public class EventsController : ApiControllerBase
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing a page of terms decisions, or an error response.</returns>
+    /// <returns>
+    /// An HTTP response containing a page of terms decisions, or an error response.
+    /// </returns>
     [HttpGet("{eventId:guid}/terms/decisions")]
     [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<PagedResult<EventTermsDecisionResponse>>> TermsDecisionsAsync(
@@ -166,7 +170,9 @@ public class EventsController : ApiControllerBase
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="userId">Identifier of the person the consent is about.</param>
-    /// <param name="termsDocumentId">Identifier of the terms document, which must hold a consent.</param>
+    /// <param name="termsDocumentId">
+    /// Identifier of the terms document, which must hold a consent.
+    /// </param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 204 response, or an error response.</returns>
@@ -237,7 +243,9 @@ public class EventsController : ApiControllerBase
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing the led activities with their attendees, or an error response.</returns>
+    /// <returns>
+    /// An HTTP response containing the led activities with their attendees, or an error response.
+    /// </returns>
     [HttpGet("{eventId:guid}/leader-roster")]
     [Authorize]
     public async Task<ActionResult<IReadOnlyList<LeaderRosterActivityResponse>>> LeaderRosterAsync(

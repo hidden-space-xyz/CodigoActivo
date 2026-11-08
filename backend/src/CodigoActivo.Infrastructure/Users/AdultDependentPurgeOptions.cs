@@ -1,8 +1,8 @@
 namespace CodigoActivo.Infrastructure.Users;
 
 /// <summary>
-/// Defines the schedule of the periodic erasure of the dependents who came of age and of the notices
-/// that announce it to their guardians.
+/// Defines the schedule of the periodic erasure of the dependents who came of age and of the
+/// notices that announce it to their guardians.
 /// </summary>
 public sealed class AdultDependentPurgeOptions
 {

@@ -33,7 +33,9 @@ internal static class RequestTracing
     /// Creates the listener that makes the request activities exist without recording their
     /// data.
     /// </summary>
-    /// <returns>A listener of <see cref="HostingSource"/> that asks for propagation data only.</returns>
+    /// <returns>
+    /// A listener of <see cref="HostingSource"/> that asks for propagation data only.
+    /// </returns>
     internal static ActivityListener CreateListener()
     {
         return new ActivityListener

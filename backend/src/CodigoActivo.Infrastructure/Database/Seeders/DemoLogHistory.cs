@@ -42,7 +42,7 @@ namespace CodigoActivo.Infrastructure.Database.Seeders;
 internal sealed class DemoLogHistory : IDisposable
 {
     /// <summary>
-    /// Gets how far back the history goes.
+    /// How far back the history goes.
     /// </summary>
     internal static readonly TimeSpan Span = TimeSpan.FromDays(21);
 
@@ -91,7 +91,9 @@ internal sealed class DemoLogHistory : IDisposable
     /// <param name="clock">Clock that gives the end of the history and the local days.</param>
     /// <param name="maxFailedLogins">Wrong passwords that lock an account.</param>
     /// <param name="maxFailedCodes">Wrong codes that lock the second factor of an account.</param>
-    /// <returns>The events of both log tables, oldest first; none when no demo adult is left.</returns>
+    /// <returns>
+    /// The events of both log tables, oldest first; none when no demo adult is left.
+    /// </returns>
     internal static DemoLogBatch Build(
         DemoLogFacts facts,
         IClock clock,
@@ -917,8 +919,8 @@ internal sealed class DemoLogHistory : IDisposable
 /// <param name="Events">Events the demo accounts published.</param>
 /// <param name="Activities">Activities the demo accounts published.</param>
 /// <param name="News">News items the demo accounts published.</param>
-/// <param name="Consultations">Consultations of the blocked data the administrator opened.</param>
-/// <param name="Holds">Holds on the blocked data the administrator placed.</param>
+/// <param name="Consultations">Consultations of the blocked data.</param>
+/// <param name="Holds">Holds on the blocked data.</param>
 internal sealed record DemoLogFacts(
     IReadOnlyList<DemoLogUser> Users,
     IReadOnlyList<DemoLogSignup> Signups,

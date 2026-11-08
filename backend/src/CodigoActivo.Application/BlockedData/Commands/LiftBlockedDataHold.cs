@@ -46,9 +46,9 @@ public sealed class LiftBlockedDataHoldCommandHandler(
     /// A task whose result is success;
     /// <see cref="ApplicationErrorCode.BlockedDataOfficerOnly"/> for any other account,
     /// <see cref="DomainErrorCode.BlockedDataConsultationNotFound"/> or
-    /// <see cref="DomainErrorCode.BlockedDataConsultationExpired"/> when the consultation may not be
-    /// used, <see cref="DomainErrorCode.BlockedDataHoldNotFound"/> for a hold that does not exist,
-    /// or <see cref="DomainErrorCode.BlockedDataHoldLifted"/> when it was already lifted.
+    /// <see cref="DomainErrorCode.BlockedDataConsultationExpired"/> when the consultation may not
+    /// be used, <see cref="DomainErrorCode.BlockedDataHoldNotFound"/> for a hold that does not
+    /// exist, or <see cref="DomainErrorCode.BlockedDataHoldLifted"/> when it was already lifted.
     /// </returns>
     public async Task<Result> HandleAsync(
         LiftBlockedDataHoldCommand command,

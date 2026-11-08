@@ -24,9 +24,13 @@ public sealed class LogRetentionOptions
     /// <summary>
     /// Gets the retention of a log table.
     /// </summary>
-    /// <param name="table">Log table whose retention is read, one of <see cref="LogTable.All"/>.</param>
+    /// <param name="table">
+    /// Log table whose retention is read, one of <see cref="LogTable.All"/>.
+    /// </param>
     /// <returns>The age after which an entry of the table is removed.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">The table is not one of <see cref="LogTable.All"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// The table is not one of <see cref="LogTable.All"/>.
+    /// </exception>
     public TimeSpan Of(LogTable table)
     {
         ArgumentNullException.ThrowIfNull(table);

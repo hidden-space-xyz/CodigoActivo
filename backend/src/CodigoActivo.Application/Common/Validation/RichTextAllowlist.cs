@@ -109,8 +109,8 @@ public static partial class RichTextAllowlist
         };
 
     /// <summary>
-    /// Tells whether a JSON text is an allowed rich-text document. An empty JSON object counts as an
-    /// empty document.
+    /// Tells whether a JSON text is an allowed rich-text document. An empty JSON object counts as
+    /// an empty document.
     /// </summary>
     /// <param name="json">Rich-text document encoded as JSON.</param>
     /// <param name="allowImages">Whether image nodes are allowed.</param>

@@ -45,8 +45,9 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, 
     private readonly List<WebApplicationFactory<Program>> derived = [];
 
     /// <summary>
-    /// Sends every request over HTTPS, as the production proxy does, so the HTTPS redirection
-    /// lets it through instead of warning that it has no port to redirect to.
+    /// Initializes the factory with its database on the shared server and sends every request over
+    /// HTTPS, as the production proxy does, so the HTTPS redirection lets it through instead of
+    /// warning that it has no port to redirect to.
     /// </summary>
     public CodigoActivoWebAppFactory(PostgresServerFixture server)
     {
@@ -55,7 +56,8 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, 
     }
 
     /// <summary>
-    /// Database of the test class, which the hosts of this factory and its derived ones share.
+    /// Gets the database of the test class, which the hosts of this factory and its derived ones
+    /// share.
     /// </summary>
     public PostgresDatabaseFixture Database { get; }
 
@@ -204,9 +206,9 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, 
 
     /// <summary>
     /// Drops a background worker whose timing would race the tests: the periodic purges of expired
-    /// sessions, the data history, unverified accounts, dependents who came of age and unused files
-    /// would delete rows behind a test that moves the clock on purpose, the email
-    /// delivery worker would compete with the synchronous drain installed by
+    /// sessions, expired account changes, the data history, unverified accounts, dependents who
+    /// came of age and unused files would delete rows behind a test that moves the clock on
+    /// purpose, the email delivery worker would compete with the synchronous drain installed by
     /// <see cref="UseSynchronousEmailOutbox"/>, the disposable email domain refresh would reach
     /// the internet and fill the list behind the tests, the log retention would drop the
     /// partitions a test prepared and the legal contact notices would send mail behind a test that

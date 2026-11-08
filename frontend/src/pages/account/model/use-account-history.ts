@@ -28,7 +28,9 @@ export function useAccountHistory() {
   const saveRating = useMutation(accountMutations.rateEvent())
   const deleteRating = useMutation(accountMutations.deleteRating())
 
-  /** Asks for confirmation and deletes the account's rating of `entry`; `then` runs once it is gone. */
+  /**
+   * Asks for confirmation and deletes the account's rating of `entry`; `then` runs once it is gone.
+   */
   function removeRating(entry: AccountHistoryEntry, then: () => void): void {
     confirmDelete({
       header: t('pages.account.history.dialog.deleteHeader'),

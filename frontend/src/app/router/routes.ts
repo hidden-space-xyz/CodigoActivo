@@ -20,11 +20,11 @@ function adminRoute(
 
 /**
  * Application route table with lazily loaded pages. Admin routes use the admin layout (or `blank`
- * for printable pages) and are for administrators unless their `access` opens them to editors, to
- * the superadministrator and the data protection officer (the audit log) or to that officer and
- * the administrators (the blocked data); `/admin` has no page and the access guard sends it on
- * to the first admin page the user can open. Detail pages receive their path params as props,
- * which only match GUIDs because they become path segments of API requests.
+ * for printable pages) and are for administrators unless their `access` opens them to editors or
+ * to the superadministrator and the data protection officer (the audit log); `/admin` has no page
+ * and the access guard sends it on to the first admin page the user can open. Detail pages
+ * receive their path params as props, which only match GUIDs because they become path segments of
+ * API requests.
  */
 export const routes: readonly RouteRecordRaw[] = [
   {

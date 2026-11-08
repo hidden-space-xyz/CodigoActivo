@@ -61,7 +61,9 @@ public static class LogPartitions
     /// <param name="table">Partitioned table.</param>
     /// <param name="partition">Name of the partition.</param>
     /// <param name="day">Day the partition holds, when the name is one of ours.</param>
-    /// <returns><see langword="true"/> when the name follows the daily pattern of the table.</returns>
+    /// <returns>
+    /// <see langword="true"/> when the name follows the daily pattern of the table.
+    /// </returns>
     public static bool TryParseDay(LogTable table, string partition, out DateOnly day)
     {
         ArgumentNullException.ThrowIfNull(table);

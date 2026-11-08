@@ -133,7 +133,10 @@ export async function updateEventRequest(id: string, input: EventInput): Promise
   await putApiEventsEventId(id, toEventRequest(input))
 }
 
-/** Deletes an event with its activities, their signups and the terms decisions taken about it. */
+/**
+ * Deletes an event with its activities, their signups and the terms decisions and ratings taken
+ * about it.
+ */
 export async function deleteEventRequest(id: string): Promise<void> {
   await deleteApiEventsEventId(id)
 }

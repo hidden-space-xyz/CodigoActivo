@@ -15,9 +15,9 @@ public interface ISecretProtector
     public string Protect(string plaintext);
 
     /// <summary>
-    /// Decrypts a value produced by <see cref="Protect"/>. A value that cannot be decrypted, because
-    /// the keys that protected it are gone or it was altered, is reported as unreadable instead of
-    /// failing.
+    /// Decrypts a value produced by <see cref="Protect"/>. A value that cannot be decrypted,
+    /// because the keys that protected it are gone or it was altered, is reported as unreadable
+    /// instead of failing.
     /// </summary>
     /// <param name="protectedValue">Protected representation to reverse.</param>
     /// <param name="plaintext">The original value, when it could be read.</param>

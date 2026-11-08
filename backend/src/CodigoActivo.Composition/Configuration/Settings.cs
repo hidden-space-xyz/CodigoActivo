@@ -37,10 +37,14 @@ internal sealed class Settings(IConfiguration configuration)
     /// </summary>
     /// <typeparam name="T">Value read.</typeparam>
     /// <param name="key">Configuration key.</param>
-    /// <param name="parse">Turns the text into the value, or returns null when it cannot.</param>
+    /// <param name="parse">
+    /// Turns the text into the value, or returns <see langword="null"/> when it cannot.
+    /// </param>
     /// <param name="expected">What the setting must be, as the error message names it.</param>
     /// <returns>The value.</returns>
-    /// <exception cref="InvalidOperationException">The setting is missing or cannot be used.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The setting is missing or cannot be used.
+    /// </exception>
     public T Required<T>(string key, Func<string, T?> parse, string expected)
         where T : class
     {
@@ -53,7 +57,9 @@ internal sealed class Settings(IConfiguration configuration)
     /// </summary>
     /// <param name="key">Configuration key.</param>
     /// <returns>The value.</returns>
-    /// <exception cref="InvalidOperationException">The setting is missing or not a boolean.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The setting is missing or not a boolean.
+    /// </exception>
     public bool RequiredBoolean(string key)
     {
         return bool.TryParse(configuration[key], out var value)
@@ -67,7 +73,9 @@ internal sealed class Settings(IConfiguration configuration)
     /// <param name="key">Configuration key.</param>
     /// <param name="fallback">Value when the setting is missing or blank.</param>
     /// <returns>The value.</returns>
-    /// <exception cref="InvalidOperationException">The setting is not a positive whole number.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The setting is not a positive whole number.
+    /// </exception>
     public int PositiveInt(string key, int fallback)
     {
         return Read(
@@ -111,13 +119,15 @@ internal sealed class Settings(IConfiguration configuration)
     }
 
     /// <summary>
-    /// Reads a time zone by its IANA identifier. Windows identifiers are refused everywhere, since the
-    /// API image runs without ICU and cannot convert them.
+    /// Reads a time zone by its IANA identifier. Windows identifiers are refused everywhere, since
+    /// the API image runs without ICU and cannot convert them.
     /// </summary>
     /// <param name="key">Configuration key.</param>
     /// <param name="fallback">Value when the setting is missing or blank.</param>
     /// <returns>The value.</returns>
-    /// <exception cref="InvalidOperationException">The setting names no known IANA time zone.</exception>
+    /// <exception cref="InvalidOperationException">
+    /// The setting names no known IANA time zone.
+    /// </exception>
     public TimeZoneInfo TimeZone(string key, TimeZoneInfo fallback)
     {
         return Read(key, fallback, FindIanaTimeZone, "a known IANA time zone");

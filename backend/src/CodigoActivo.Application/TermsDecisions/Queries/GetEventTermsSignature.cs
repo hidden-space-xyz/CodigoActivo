@@ -10,7 +10,8 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.TermsDecisions.Queries;
 
 /// <summary>
-/// Carries the criteria used to retrieve the signature drawn to accept a terms document of an event.
+/// Carries the criteria used to retrieve the signature drawn to accept a terms document of an
+/// event.
 /// </summary>
 /// <param name="EventId">Identifier of the event.</param>
 /// <param name="UserId">Identifier of the person the decision is about.</param>

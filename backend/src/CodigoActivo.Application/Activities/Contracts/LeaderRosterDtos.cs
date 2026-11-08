@@ -9,7 +9,9 @@ namespace CodigoActivo.Application.Activities.Contracts;
 /// <param name="Location">Concrete place or platform where the activity takes place.</param>
 /// <param name="ActivityStartsAt">When it starts, in UTC.</param>
 /// <param name="ActivityEndsAt">When it ends, in UTC.</param>
-/// <param name="Roles">Confirmed attendees grouped by role: leaders, volunteers, then participants.</param>
+/// <param name="Roles">
+/// Confirmed attendees grouped by role: leaders, volunteers, then participants.
+/// </param>
 public record LeaderRosterActivityResponse(
     Guid ActivityId,
     string Title,
@@ -26,7 +28,9 @@ public record LeaderRosterActivityResponse(
 /// <param name="RoleTypeId">Catalog identifier of the role.</param>
 /// <param name="RoleName">Display name of the role.</param>
 /// <param name="Users">Attendees with an account of their own, reachable directly.</param>
-/// <param name="Dependents">Minors signed up by their guardian, reachable through the guardian.</param>
+/// <param name="Dependents">
+/// Dependents signed up by their guardian, reachable through the guardian.
+/// </param>
 public record LeaderRosterRoleResponse(
     Guid RoleTypeId,
     string RoleName,
@@ -58,9 +62,14 @@ public record LeaderRosterUserResponse(
 /// </summary>
 /// <param name="FirstName">Dependent's given name.</param>
 /// <param name="LastName">Dependent's family name.</param>
-/// <param name="Age">Age in years on the local day the activity starts; <see langword="null"/> when no birth date is stored.</param>
+/// <param name="Age">
+/// Age in years on the local day the activity starts; <see langword="null"/> when no birth date is
+/// stored.
+/// </param>
 /// <param name="Guardian">Guardian to contact about the dependent.</param>
-/// <param name="SignedUpAt">UTC timestamp when the dependent was signed up for the activity.</param>
+/// <param name="SignedUpAt">
+/// UTC timestamp when the dependent was signed up for the activity.
+/// </param>
 public record LeaderRosterDependentResponse(
     string FirstName,
     string LastName,

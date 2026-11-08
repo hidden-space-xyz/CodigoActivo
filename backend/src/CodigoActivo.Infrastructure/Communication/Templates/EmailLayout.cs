@@ -12,7 +12,8 @@ namespace CodigoActivo.Infrastructure.Communication.Templates;
 /// HTML fragment placed as is in the content cell; any raw text in it is already encoded.
 /// </param>
 /// <param name="Text">
-/// Plain-text form of the block, trimmed in the text part; a blank text leaves the block out of both parts.
+/// Plain-text form of the block, trimmed in the text part; a blank text leaves the block out of
+/// both parts.
 /// </param>
 public sealed record EmailBlock(string Html, string Text);
 
@@ -21,7 +22,9 @@ public sealed record EmailBlock(string Html, string Text);
 /// </summary>
 /// <param name="Html">Complete HTML document of the message.</param>
 /// <param name="Text">Plain-text part of the message.</param>
-/// <param name="InlineImages">Images the HTML part references by content identifier: the logo.</param>
+/// <param name="InlineImages">
+/// Images the HTML part references by content identifier: the logo.
+/// </param>
 public sealed record EmailContent(
     string Html,
     string Text,
@@ -51,14 +54,17 @@ public sealed record EmailContent(
 }
 
 /// <summary>
-/// Frame the layout draws around the blocks of an email. Its texts are raw; the layout encodes them for the
-/// HTML part.
+/// Frame the layout draws around the blocks of an email. Its texts are raw; the layout encodes them
+/// for the HTML part.
 /// </summary>
 /// <param name="Heading">Heading of the message, also the title of the HTML document.</param>
 /// <param name="Preheader">
-/// Preview text mail clients show next to the subject; hidden in the HTML body and left out of the text part.
+/// Preview text mail clients show next to the subject; hidden in the HTML body and left out of the
+/// text part.
 /// </param>
-/// <param name="RecipientName">Name the message greets; a null or empty name greets nobody.</param>
+/// <param name="RecipientName">
+/// Name the message greets; a <see langword="null"/> or empty name greets nobody.
+/// </param>
 /// <param name="SiteUrl">Public base URL of the site, linked from the footer.</param>
 /// <param name="Accent">Accent whose line color draws the bar at the top of the card.</param>
 /// <param name="NewsContact">
@@ -93,14 +99,18 @@ public static class EmailLayout
         "role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" border=\"0\"";
 
     /// <summary>
-    /// Renders the document and its blocks into both parts of a message: the brand header, the heading,
-    /// the greeting, the blocks in order and the footer with the site link.
+    /// Renders the document and its blocks into both parts of a message: the brand header, the
+    /// heading, the greeting, the blocks in order and the footer with the site link.
     /// </summary>
-    /// <param name="document">Heading, preheader, greeting, accent and footer of the message.</param>
+    /// <param name="document">
+    /// Heading, preheader, greeting, accent and footer of the message.
+    /// </param>
     /// <param name="blocks">
     /// Body blocks in order; those whose plain text is blank are left out of both parts.
     /// </param>
-    /// <returns>The HTML and plain-text parts, with the inline logo the HTML part references.</returns>
+    /// <returns>
+    /// The HTML and plain-text parts, with the inline logo the HTML part references.
+    /// </returns>
     public static EmailContent Render(EmailDocument document, IReadOnlyList<EmailBlock> blocks)
     {
         var kept = blocks.Where(block => !string.IsNullOrWhiteSpace(block.Text)).ToList();

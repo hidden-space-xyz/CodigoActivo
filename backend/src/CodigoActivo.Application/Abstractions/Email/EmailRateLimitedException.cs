@@ -61,7 +61,8 @@ public sealed class EmailRateLimitedException : Exception
     }
 
     /// <summary>
-    /// Gets the limit that refused the email; <see cref="EmailLimitScope.None"/> when it was not named.
+    /// Gets the limit that refused the email; <see cref="EmailLimitScope.None"/> when it was not
+    /// named.
     /// </summary>
     public EmailLimitScope Scope { get; }
 }

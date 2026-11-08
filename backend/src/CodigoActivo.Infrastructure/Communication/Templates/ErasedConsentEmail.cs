@@ -17,7 +17,8 @@ public static class ErasedConsentEmail
     /// <summary>
     /// Creates the notice for the association's legal contact: for every consent erased, whose it
     /// was, for which document and event, who gave it and when, then a callout with what to stop
-    /// using. One consent reads in the singular, several in the plural.
+    /// using and a note that the decision stays blocked and encrypted. One consent reads in the
+    /// singular, several in the plural.
     /// </summary>
     /// <param name="toAddress">Legal contact email of the association.</param>
     /// <param name="toName">Name the message greets.</param>

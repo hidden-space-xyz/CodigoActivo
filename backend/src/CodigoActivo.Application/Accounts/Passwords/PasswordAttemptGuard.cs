@@ -21,12 +21,16 @@ namespace CodigoActivo.Application.Accounts.Passwords;
 /// the account. A locked account refuses every password, so a correct one cannot be told apart from
 /// a wrong one.
 /// </summary>
-/// <param name="users">Repository that counts the failures and locks the account atomically.</param>
+/// <param name="users">
+/// Repository that counts the failures and locks the account atomically.
+/// </param>
 /// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="hasher">Hasher used to verify a stored password.</param>
-/// <param name="credentialTiming">Verifier that pays the same work for accounts without a password.</param>
+/// <param name="credentialTiming">
+/// Verifier that pays the same work for accounts without a password.
+/// </param>
 /// <param name="options">Lockout configuration.</param>
 public sealed class PasswordAttemptGuard(
     IUserRepository users,
@@ -48,7 +52,9 @@ public sealed class PasswordAttemptGuard(
     /// <param name="user">Account the identifier resolved to, or <see langword="null"/>.</param>
     /// <param name="password">Plain-text password presented by the client.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="true"/> when the login may continue.</returns>
+    /// <returns>
+    /// A task whose result is <see langword="true"/> when the login may continue.
+    /// </returns>
     public async Task<bool> VerifyLoginPasswordAsync(
         User? user,
         string password,
@@ -83,10 +89,14 @@ public sealed class PasswordAttemptGuard(
     /// account is refused; sessions are deleted once an account lock commits, so this normally
     /// cannot be reached with a lock in place.
     /// </summary>
-    /// <param name="actingUser">Account whose password is being proved, or <see langword="null"/>.</param>
+    /// <param name="actingUser">
+    /// Account whose password is being proved, or <see langword="null"/>.
+    /// </param>
     /// <param name="password">Plain-text password presented by the client.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="true"/> when the caller proved the password.</returns>
+    /// <returns>
+    /// A task whose result is <see langword="true"/> when the caller proved the password.
+    /// </returns>
     public async Task<bool> VerifyReauthenticationAsync(
         User? actingUser,
         string? password,
@@ -118,7 +128,9 @@ public sealed class PasswordAttemptGuard(
     /// </summary>
     /// <param name="password">Plain-text password presented by the client.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="true"/> when the caller proved the password.</returns>
+    /// <returns>
+    /// A task whose result is <see langword="true"/> when the caller proved the password.
+    /// </returns>
     public async Task<bool> VerifyActingUserAsync(string? password, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(password))

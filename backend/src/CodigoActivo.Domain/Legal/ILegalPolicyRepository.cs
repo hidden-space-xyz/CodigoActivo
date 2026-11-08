@@ -14,6 +14,8 @@ public interface ILegalPolicyRepository : IRepository<LegalPolicy>
     /// </summary>
     /// <param name="kind">Which policy to load.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is the policy, or <see langword="null"/> when none was published yet.</returns>
+    /// <returns>
+    /// A task whose result is the policy, or <see langword="null"/> when none was published yet.
+    /// </returns>
     public Task<LegalPolicy?> LockAsync(LegalPolicyKind kind, CancellationToken ct = default);
 }

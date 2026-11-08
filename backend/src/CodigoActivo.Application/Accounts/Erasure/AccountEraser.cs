@@ -9,10 +9,10 @@ namespace CodigoActivo.Application.Accounts.Erasure;
 /// Erases an account and its dependents in one transaction: it credits the content the household
 /// authored to the <see cref="InitialAdministrator"/>, deletes the email still waiting for their
 /// addresses, tells the association's legal contact about the withdrawn consents it deletes before
-/// they were told and about the consents given it deletes, and deletes the accounts with
-/// everything that belongs to them. When the account is the one designated for data protection, the
-/// designation returns to the initial administrator in the same transaction. Every deleted or
-/// handed-over row leaves its data history, which the law
+/// they were told and about the consents given it deletes on events that have already started, and
+/// deletes the accounts with everything that belongs to them. When the account is the one
+/// designated for data protection, the designation returns to the initial administrator in the
+/// same transaction. Every deleted or handed-over row leaves its data history, which the law
 /// requires to keep blocked (LOPDGDD article 32). Any other change staged in the unit of work
 /// commits with it.
 /// </summary>
@@ -34,8 +34,12 @@ public sealed class AccountEraser(
     /// </summary>
     /// <param name="account">Account to erase, tracked by the unit of work.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="false"/> when the account was erased meanwhile.</returns>
-    /// <exception cref="InvalidOperationException">The account is the initial administrator.</exception>
+    /// <returns>
+    /// A task whose result is <see langword="false"/> when the account was erased meanwhile.
+    /// </returns>
+    /// <exception cref="InvalidOperationException">
+    /// The account is the initial administrator.
+    /// </exception>
     public Task<bool> EraseAsync(User account, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(account);

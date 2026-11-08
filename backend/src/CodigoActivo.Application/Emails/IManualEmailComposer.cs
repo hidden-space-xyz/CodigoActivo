@@ -6,7 +6,9 @@ namespace CodigoActivo.Application.Emails;
 /// <summary>
 /// Represents one addressee of a manual email.
 /// </summary>
-/// <param name="UserId">Account the message is written to, which its unsubscribe link names.</param>
+/// <param name="UserId">
+/// Account the message is written to, which its unsubscribe link names.
+/// </param>
 /// <param name="Address">Email address of the account.</param>
 /// <param name="Name">First name of the account.</param>
 public sealed record ManualEmailRecipient(UserId UserId, string Address, string Name);

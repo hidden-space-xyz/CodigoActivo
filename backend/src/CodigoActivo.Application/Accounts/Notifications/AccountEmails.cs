@@ -12,10 +12,17 @@ namespace CodigoActivo.Application.Accounts.Notifications;
 /// delivered once useless. A refused code throws <see cref="EmailRateLimitedException"/>; callers
 /// decide whether that fails their request.
 /// </summary>
-/// <param name="emailSender">Sender that applies the message limiter and queues the messages.</param>
+/// <param name="emailSender">
+/// Sender that applies the message limiter and queues the messages.
+/// </param>
 /// <param name="composer">Composer that renders the account messages.</param>
-/// <param name="verification">Account verification configuration, whose code lifetime the verification and email change messages state.</param>
-/// <param name="passwordReset">Password reset configuration, whose code lifetime the reset message states.</param>
+/// <param name="verification">
+/// Account verification configuration, whose code lifetime the verification and email change
+/// messages state.
+/// </param>
+/// <param name="passwordReset">
+/// Password reset configuration, whose code lifetime the reset message states.
+/// </param>
 /// <param name="twoFactor">Second-factor configuration.</param>
 public sealed class AccountEmails(
     IEmailSender emailSender,
@@ -29,7 +36,9 @@ public sealed class AccountEmails(
     /// Sends the code that verifies the email of a new account, mentioning the news consent the
     /// registration gave.
     /// </summary>
-    /// <param name="user">Account waiting for its verification; greeted by nobody until it is verified.</param>
+    /// <param name="user">
+    /// Account waiting for its verification; greeted by nobody until it is verified.
+    /// </param>
     /// <param name="otpCode">Plain verification code; only its hash is stored.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
@@ -85,9 +94,9 @@ public sealed class AccountEmails(
     }
 
     /// <summary>
-    /// Tells the holder of <paramref name="holder"/> that someone tried to use its email for another
-    /// account. Registrations and email changes send it instead of their link, so the caller cannot
-    /// tell whether the address already had an account.
+    /// Tells the holder of <paramref name="holder"/> that someone tried to use its email for
+    /// another account. Registrations and email changes send it instead of their link, so the
+    /// caller cannot tell whether the address already had an account.
     /// </summary>
     /// <param name="holder">Account that has the address.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -132,7 +141,7 @@ public sealed class AccountEmails(
     /// Sends the email carrying the one-time code that completes a login.
     /// </summary>
     /// <param name="user">Account signing in; it must have an email.</param>
-    /// <param name="code">Plain code the user must type; it is never stored.</param>
+    /// <param name="code">Plain code the user must type; only its hash is stored.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task SendLoginCodeEmailAsync(User user, string code, CancellationToken ct)
@@ -145,7 +154,7 @@ public sealed class AccountEmails(
     /// Sends the email carrying the one-time code that confirms deleting an account.
     /// </summary>
     /// <param name="user">Account to delete; it must have an email.</param>
-    /// <param name="code">Plain code the user must type; it is never stored.</param>
+    /// <param name="code">Plain code the user must type; only its hash is stored.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task SendAccountDeletionCodeEmailAsync(User user, string code, CancellationToken ct)
@@ -163,7 +172,7 @@ public sealed class AccountEmails(
     /// blocked data.
     /// </summary>
     /// <param name="user">Account designated for data protection; it must have an email.</param>
-    /// <param name="code">Plain code the user must type; it is never stored.</param>
+    /// <param name="code">Plain code the user must type; only its hash is stored.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public Task SendBlockedDataConsultationCodeEmailAsync(
@@ -181,7 +190,8 @@ public sealed class AccountEmails(
     }
 
     /// <summary>
-    /// Tells the guardian of <paramref name="dependent"/> on which day it comes of age and is erased.
+    /// Tells the guardian of <paramref name="dependent"/> on which day it comes of age and is
+    /// erased.
     /// </summary>
     /// <param name="guardian">Guardian of the dependent, with a verified email.</param>
     /// <param name="dependent">Dependent about to come of age.</param>

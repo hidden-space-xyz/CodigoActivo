@@ -60,7 +60,9 @@ public sealed class HmacOneTimeCodeHasher : IOneTimeCodeHasher
     /// </summary>
     /// <param name="code">Code to verify.</param>
     /// <param name="hash">Encoded hash of the stored code.</param>
-    /// <returns><see langword="true"/> when the code matches; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    /// <see langword="true"/> when the code matches; otherwise, <see langword="false"/>.
+    /// </returns>
     public bool Verify(string code, string hash)
     {
         Span<byte> expected = stackalloc byte[HMACSHA256.HashSizeInBytes];

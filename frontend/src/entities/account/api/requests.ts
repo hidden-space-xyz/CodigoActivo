@@ -150,7 +150,10 @@ export async function confirmAuthenticatorRequest(code: string): Promise<void> {
   await postApiAuthTwoFactorAuthenticatorConfirm({ code })
 }
 
-/** Removes the authenticator so login codes arrive by email again (`POST /api/auth/two-factor/email`). */
+/**
+ * Removes the authenticator so login codes arrive by email again
+ * (`POST /api/auth/two-factor/email`).
+ */
 export async function disableAuthenticatorRequest(input: DisableAuthenticatorInput): Promise<void> {
   await postApiAuthTwoFactorEmail({ currentPassword: input.currentPassword, code: input.code })
 }

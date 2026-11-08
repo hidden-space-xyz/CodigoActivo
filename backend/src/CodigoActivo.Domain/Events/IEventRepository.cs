@@ -14,7 +14,9 @@ public interface IEventRepository : IRepository<Event>
     /// </summary>
     /// <param name="id">Identifier of the event.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is the event, or <see langword="null"/> when it does not exist.</returns>
+    /// <returns>
+    /// A task whose result is the event, or <see langword="null"/> when it does not exist.
+    /// </returns>
     public Task<Event?> GetByIdAsync(EventId id, CancellationToken ct = default);
 
     /// <summary>
@@ -56,6 +58,8 @@ public interface IEventRepository : IRepository<Event>
     /// </summary>
     /// <param name="id">Identifier of the event.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is the event, or <see langword="null"/> when it does not exist.</returns>
+    /// <returns>
+    /// A task whose result is the event, or <see langword="null"/> when it does not exist.
+    /// </returns>
     public Task<Event?> GetLockedAsync(EventId id, CancellationToken ct = default);
 }

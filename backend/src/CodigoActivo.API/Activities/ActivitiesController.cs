@@ -74,7 +74,9 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="userId">Identifier of the person whose signups are checked.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing the overlapping activities, or an error response.</returns>
+    /// <returns>
+    /// An HTTP response containing the overlapping activities, or an error response.
+    /// </returns>
     [HttpGet("{activityId:guid}/overlaps/{userId:guid}")]
     [AllowOnlySelf]
     public async Task<ActionResult<TimeOverlapResponse>> OverlapsAsync(
@@ -208,7 +210,9 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="getById">Query handler that reads the created activity.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A 201 response with the created activity and its location, or an error response.</returns>
+    /// <returns>
+    /// A 201 response with the created activity and its location, or an error response.
+    /// </returns>
     [HttpPost("{eventId:guid}")]
     [AllowOnlyStaff(StaffRole.Editor)]
     [ProducesResponseType<ActivityResponse>(StatusCodes.Status201Created)]

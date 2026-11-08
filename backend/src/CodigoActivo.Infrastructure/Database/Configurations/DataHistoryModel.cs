@@ -64,7 +64,8 @@ public static class DataHistoryModel
 
     /// <summary>
     /// Leaves a member of a complex property out of the history, as
-    /// <see cref="ExcludedFromHistory{TProperty}(PropertyBuilder{TProperty})"/> does for a property.
+    /// <see cref="ExcludedFromHistory{TProperty}(PropertyBuilder{TProperty})"/> does for a
+    /// property.
     /// </summary>
     /// <typeparam name="TProperty">Property type.</typeparam>
     /// <param name="builder">Builder of the member.</param>

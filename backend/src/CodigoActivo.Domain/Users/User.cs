@@ -80,7 +80,7 @@ public class User : AggregateRoot<UserId>
     public SpanishNationalId? NationalId { get; private set; }
 
     /// <summary>
-    /// Gets whether the user agreed to receive news by email. Always
+    /// Gets a value indicating whether the user agreed to receive news by email. Always
     /// <see langword="false"/> for dependents.
     /// </summary>
     public bool NewsConsent { get; private set; }
@@ -108,20 +108,20 @@ public class User : AggregateRoot<UserId>
     public DateTimeOffset CreatedAt { get; private set; }
 
     /// <summary>
-    /// Gets when the holder declared being of age while registering the account; null for the
-    /// initial administrator and for dependents.
+    /// Gets when the holder declared being of age while registering the account;
+    /// <see langword="null"/> for the initial administrator and for dependents.
     /// </summary>
     public DateTimeOffset? AdultDeclaredAt { get; private set; }
 
     /// <summary>
     /// Gets when the guardian declared being the dependent's parent or legal guardian while adding
-    /// it; null for independent accounts.
+    /// it; <see langword="null"/> for independent accounts.
     /// </summary>
     public DateTimeOffset? GuardianshipDeclaredAt { get; private set; }
 
     /// <summary>
     /// Gets when the guardian was told that this dependent will be erased the day it comes of age;
-    /// null until then, and again once its birth date changes.
+    /// <see langword="null"/> until then, and again once its birth date changes.
     /// </summary>
     public DateTimeOffset? ComingOfAgeNoticeSentAt { get; private set; }
 
@@ -132,8 +132,8 @@ public class User : AggregateRoot<UserId>
     public DateTimeOffset? UpdatedAt { get; private set; }
 
     /// <summary>
-    /// Gets the identifier of the guardian of a dependent; <see langword="null"/> for an independent
-    /// account.
+    /// Gets the identifier of the guardian of a dependent; <see langword="null"/> for an
+    /// independent account.
     /// </summary>
     public UserId? ParentId { get; private set; }
 
@@ -264,7 +264,9 @@ public class User : AggregateRoot<UserId>
     /// of <see cref="Household.EnsureMayAddDependent"/> is the caller's to check.
     /// </summary>
     /// <param name="guardian">Independent account the dependent is created under.</param>
-    /// <param name="details">Details as supplied; only the names, gender and birth date apply.</param>
+    /// <param name="details">
+    /// Details as supplied; only the names, gender and birth date apply.
+    /// </param>
     /// <param name="declaresGuardianship">
     /// Whether the guardian declared being the minor's parent or legal guardian.
     /// </param>
@@ -406,8 +408,9 @@ public class User : AggregateRoot<UserId>
     /// Applies a change the holder of this account planned with <see cref="PlanProfileChange"/>
     /// except its new email: the account keeps the stored one until
     /// <see cref="ConfirmEmailChange"/> proves, with the code emailed to the new address, that the
-    /// holder controls it. A later request replaces this one. It raises <see cref="ProfileChanged"/>
-    /// and, when a phone is replaced, <see cref="ContactDetailsReplaced"/>.
+    /// holder controls it. A later request replaces this one. It raises
+    /// <see cref="ProfileChanged"/> and, when a phone is replaced,
+    /// <see cref="ContactDetailsReplaced"/>.
     /// </summary>
     /// <param name="change">Change planned for this account; it must replace the email.</param>
     /// <param name="codeHash">Hash of the code emailed to the new address.</param>
@@ -657,7 +660,7 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Clears the stored otp.
+    /// Clears the stored verification code.
     /// </summary>
     private void ClearOtp()
     {
@@ -685,8 +688,8 @@ public class User : AggregateRoot<UserId>
 
     /// <summary>
     /// Replaces the password once the emailed reset code was accepted, and raises
-    /// <see cref="PasswordReset"/>. It spends the reset code, lifts the password lock and closes the
-    /// open second-factor challenge.
+    /// <see cref="PasswordReset"/>. It spends the reset code, lifts the password lock and closes
+    /// the open second-factor challenge.
     /// </summary>
     /// <param name="passwordHash">Hash of the new password.</param>
     /// <param name="now">Current timestamp, stored as the update time.</param>
@@ -857,7 +860,7 @@ public class User : AggregateRoot<UserId>
     /// the open challenge.
     /// </summary>
     /// <param name="now">Current timestamp.</param>
-    /// <param name="maxFailedAttempts">Failures allowed before locking.</param>
+    /// <param name="maxFailedAttempts">Wrong codes that lock the second factor.</param>
     /// <param name="lockoutDuration">How long the lock lasts.</param>
     public void RecordTwoFactorFailure(
         DateTimeOffset now,
@@ -984,7 +987,9 @@ public class User : AggregateRoot<UserId>
     /// <see cref="TwoFactorReset"/> only when the account used an authenticator.
     /// </summary>
     /// <param name="now">Current timestamp.</param>
-    /// <returns><see langword="true"/> when the account used an authenticator and now uses email.</returns>
+    /// <returns>
+    /// <see langword="true"/> when the account used an authenticator and now uses email.
+    /// </returns>
     public bool ResetTwoFactor(DateTimeOffset now)
     {
         var leftAuthenticator = TwoFactorMethod is not TwoFactorMethod.Email;
@@ -1067,8 +1072,8 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Tells whether nobody verified the account within <see cref="UnverifiedRetentionDays"/> of its
-    /// registration.
+    /// Tells whether nobody verified the account within <see cref="UnverifiedRetentionDays"/> of
+    /// its registration.
     /// </summary>
     /// <param name="now">Current time.</param>
     /// <returns><see langword="true"/> when the account is still unverified and expired.</returns>
@@ -1082,15 +1087,17 @@ public class User : AggregateRoot<UserId>
     /// <paramref name="today"/> that it will be erased the day it comes of age.
     /// </summary>
     /// <param name="today">Local day on which the age is evaluated.</param>
-    /// <returns>The latest birth date of a dependent who comes of age within the notice days.</returns>
+    /// <returns>
+    /// The latest birth date of a dependent who comes of age within the notice days.
+    /// </returns>
     public static DateOnly ComingOfAgeNoticeCutoff(DateOnly today)
     {
         return today.AddDays(ComingOfAgeNoticeDays).LatestAdultBirthDate();
     }
 
     /// <summary>
-    /// Tells whether the guardian still has to be told that this dependent will be erased the day it
-    /// comes of age: it is a minor on <paramref name="today"/>, comes of age within
+    /// Tells whether the guardian still has to be told that this dependent will be erased the day
+    /// it comes of age: it is a minor on <paramref name="today"/>, comes of age within
     /// <see cref="ComingOfAgeNoticeDays"/> days and its guardian was not told yet.
     /// </summary>
     /// <param name="today">Local day on which the age is evaluated.</param>
@@ -1105,7 +1112,8 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Records that the guardian was told that this dependent will be erased the day it comes of age.
+    /// Records that the guardian was told that this dependent will be erased the day it comes of
+    /// age.
     /// </summary>
     /// <param name="now">Current timestamp, stored as the time of the notice.</param>
     public void RecordComingOfAgeNotice(DateTimeOffset now)
@@ -1118,7 +1126,9 @@ public class User : AggregateRoot<UserId>
     /// represents it then, so it is erased.
     /// </summary>
     /// <param name="today">Local day on which the age is evaluated.</param>
-    /// <returns><see langword="true"/> when the account is a dependent who has come of age.</returns>
+    /// <returns>
+    /// <see langword="true"/> when the account is a dependent who has come of age.
+    /// </returns>
     public bool HasComeOfAge(DateOnly today)
     {
         return IsDependent && BirthDate is { } birthDate && !birthDate.IsMinor(today);

@@ -34,7 +34,9 @@ public static class DateAndTimeExtensions
     /// </summary>
     /// <param name="birthDate">User's date of birth.</param>
     /// <param name="today">Local day on which the age is evaluated.</param>
-    /// <returns><see langword="true"/> before the 18th birthday; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    /// <see langword="true"/> before the 18th birthday; otherwise, <see langword="false"/>.
+    /// </returns>
     public static bool IsMinor(this DateOnly birthDate, DateOnly today)
     {
         return birthDate.AgeOn(today) < AdultAge;
@@ -46,7 +48,9 @@ public static class DateAndTimeExtensions
     /// </summary>
     /// <param name="birthDate">User's date of birth.</param>
     /// <param name="today">Local day on which the age is evaluated.</param>
-    /// <returns><see langword="true"/> from the 14th birthday; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    /// <see langword="true"/> from the 14th birthday; otherwise, <see langword="false"/>.
+    /// </returns>
     public static bool MayConsent(this DateOnly birthDate, DateOnly today)
     {
         return birthDate.AgeOn(today) >= ConsentAge;
@@ -67,7 +71,9 @@ public static class DateAndTimeExtensions
     /// Gets the latest birth date of a person who is of age on <paramref name="today"/>.
     /// </summary>
     /// <param name="today">Local day on which the age is evaluated.</param>
-    /// <returns>The day 18 years before <paramref name="today"/>; anyone born up to it is of age.</returns>
+    /// <returns>
+    /// The day 18 years before <paramref name="today"/>; anyone born up to it is of age.
+    /// </returns>
     public static DateOnly LatestAdultBirthDate(this DateOnly today)
     {
         return today.AddYears(-AdultAge);

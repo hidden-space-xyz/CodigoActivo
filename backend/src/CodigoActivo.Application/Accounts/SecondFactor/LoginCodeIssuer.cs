@@ -88,7 +88,8 @@ public sealed class LoginCodeIssuer(
 
     /// <summary>
     /// Tells why a new code may not be emailed to the user now: the account may not receive codes
-    /// (<see cref="User.MayReceiveLoginCode"/>) or the last one was sent within the resend cooldown.
+    /// (<see cref="User.MayReceiveLoginCode"/>) or the last one was sent within the resend
+    /// cooldown.
     /// </summary>
     /// <param name="user">User who asks for a new code.</param>
     /// <param name="now">Current timestamp.</param>

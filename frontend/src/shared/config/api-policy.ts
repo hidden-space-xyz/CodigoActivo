@@ -1,13 +1,13 @@
 /** Longest search term or text filter a list query accepts (`PageQuery.MaxTextLength`). */
 export const MAX_SEARCH_LENGTH = 200
 
-/** Fewest characters a search of the blocked data takes (`SearchBlockedDataCommand.MinQueryLength`). */
+/** Fewest characters a blocked data search takes (`SearchBlockedDataCommand.MinQueryLength`). */
 export const BLOCKED_DATA_MIN_SEARCH_LENGTH = 3
 
 /** Longest text naming who asks for blocked data (`BlockedDataConsultation.RequesterMaxLength`). */
 export const BLOCKED_DATA_REQUESTER_MAX_LENGTH = 200
 
-/** Longest reference of a blocked data consultation (`BlockedDataConsultation.ReferenceMaxLength`). */
+/** Longest blocked data consultation reference (`BlockedDataConsultation.ReferenceMaxLength`). */
 export const BLOCKED_DATA_REFERENCE_MAX_LENGTH = 200
 
 /** Largest page a list query returns (`PageQuery.MaxPageSize`). */
@@ -16,13 +16,13 @@ export const MAX_PAGE_SIZE = 100
 /** Fewest characters the API accepts in a password (`[MinLength(12)]` on the account requests). */
 export const PASSWORD_MIN_LENGTH = 12
 
-/** Most characters the API accepts in a password (`[MaxLength(128)]` on every request taking one). */
+/** Most characters the API accepts in a password (`[MaxLength(128)]` on every request with one). */
 export const PASSWORD_MAX_LENGTH = 128
 
 /** Longest second-factor code, emailed or from an authenticator (`[MaxLength(16)] Code`). */
 export const TWO_FACTOR_CODE_MAX_LENGTH = 16
 
-/** Longest first name or last name of a person (`[MaxLength(120)]` on the account and user requests). */
+/** Longest first or last name of a person (`[MaxLength(120)]` on the account and user requests). */
 export const PERSON_NAME_MAX_LENGTH = 120
 
 /** Longest email address, and so the longest login identifier (`[MaxLength(256)]`). */
@@ -55,7 +55,7 @@ export const SUBTITLE_MAX_LENGTH = 300
 /** Longest partner website or resource link (`[MaxLength(500)]` on their requests). */
 export const URL_MAX_LENGTH = 500
 
-/** Longest description of an activity (`[MaxLength(4000)] Description` on the activity requests). */
+/** Longest activity description (`[MaxLength(4000)] Description` on the activity requests). */
 export const ACTIVITY_DESCRIPTION_MAX_LENGTH = 4000
 
 /** Longest location of an activity (`[MaxLength(200)] Location` on the activity requests). */
@@ -73,7 +73,7 @@ export const PARTNER_NAME_MAX_LENGTH = 200
 /** Lowest partner tier (`[Range(0, int.MaxValue)] Tier` on the partner requests). */
 export const PARTNER_MIN_TIER = 0
 
-/** Highest partner tier, `int.MaxValue` (`[Range(0, int.MaxValue)] Tier` on the partner requests). */
+/** Highest partner tier (`[Range(0, int.MaxValue)] Tier` on the partner requests). */
 export const PARTNER_MAX_TIER = 2_147_483_647
 
 /** Highest score of an event rating (`EventRating.MaxScore`). */
@@ -88,10 +88,10 @@ export const MANUAL_EMAIL_SUBJECT_MAX_LENGTH = 200
 /** Longest body of an email an administrator writes (`ManualEmailText.BodyMaxLength`). */
 export const MANUAL_EMAIL_BODY_MAX_LENGTH = 10_000
 
-/** Most files attached to one email an administrator writes (`ManualEmailOptions.MaxAttachments`). */
+/** Most attachments of an email an administrator writes (`ManualEmailOptions.MaxAttachments`). */
 export const MANUAL_EMAIL_MAX_ATTACHMENTS = 10
 
-/** Largest combined size of those attachments, in bytes (`ManualEmailOptions.MaxAttachmentsBytes`). */
+/** Largest total size of those attachments, in bytes (`ManualEmailOptions.MaxAttachmentsBytes`). */
 export const MANUAL_EMAIL_MAX_ATTACHMENTS_BYTES = 8 * 1024 * 1024
 
 /** Longest rich-text document, in characters of JSON (`RichTextAllowlist.MaxJsonLength`). */

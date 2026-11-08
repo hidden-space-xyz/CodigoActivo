@@ -84,7 +84,7 @@ public sealed class ResourceTypeEntry : CatalogEntry<ResourceType>
     public string Color { get; init; } = string.Empty;
 
     /// <summary>
-    /// Gets whether resources of this type link to an external page.
+    /// Gets a value indicating whether resources of this type link to an external page.
     /// </summary>
     public bool IsExternal { get; init; }
 }

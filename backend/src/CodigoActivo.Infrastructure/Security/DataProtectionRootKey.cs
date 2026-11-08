@@ -30,8 +30,8 @@ public sealed class DataProtectionRootKey
     /// <param name="encoded">Base64 text of exactly <see cref="Size"/> bytes.</param>
     /// <param name="rootKey">The root key when the text is valid.</param>
     /// <returns>
-    /// <see langword="true"/> when the text encodes exactly <see cref="Size"/> bytes that are neither
-    /// all printable nor all equal.
+    /// <see langword="true"/> when the text encodes exactly <see cref="Size"/> bytes that are
+    /// neither all printable nor all equal.
     /// </returns>
     public static bool TryParse(
         string? encoded,

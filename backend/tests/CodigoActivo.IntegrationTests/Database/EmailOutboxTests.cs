@@ -453,10 +453,10 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     }
 
     /// <summary>
-    /// Stops the host in the narrowest window there is: the claim is already committed, so every row
-    /// of the batch has spent an attempt, and the rows still have to be read out before anything can
-    /// be delivered. The batch has to come back whole; a claim dropped here would sit out its lease
-    /// and nobody would have tried to send it.
+    /// Stops the host in the narrowest window there is: the claim is already committed, so every
+    /// row of the batch has spent an attempt, and the rows still have to be read out before
+    /// anything can be delivered. The batch has to come back whole; a claim dropped here would sit
+    /// out its lease and nobody would have tried to send it.
     /// </summary>
     [Fact]
     public async Task ClaimDueAsyncShutdownAfterTheClaimStillReturnsTheLeasedBatch()
@@ -824,8 +824,8 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     }
 
     /// <summary>
-    /// Cancels the supplied source before the first command the outbox runs after its claim, which is
-    /// the read that materializes the claimed rows.
+    /// Cancels the supplied source before the first command the outbox runs after its claim, which
+    /// is the read that materializes the claimed rows.
     /// </summary>
     private sealed class ShutdownAfterClaimInterceptor(CancellationTokenSource shutdown)
         : DbCommandInterceptor

@@ -13,9 +13,9 @@ public sealed record RescheduledMessage(
 public sealed record ReleasedMessage(Guid Id, int AttemptCount, DateTimeOffset NextAttemptAt);
 
 /// <summary>
-/// In-memory stand-in for the PostgreSQL outbox: it keeps the same rows, protects the stored content
-/// with the supplied protector and claims, replaces, expires and counts by the same rules, so the
-/// delivery policy can be exercised without a database.
+/// In-memory stand-in for the PostgreSQL outbox: it keeps the same rows, protects the stored
+/// content with the supplied protector and claims, replaces, expires and counts by the same rules,
+/// so the delivery policy can be exercised without a database.
 /// </summary>
 public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity = 100)
     : IEmailOutboxStore

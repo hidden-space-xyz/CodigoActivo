@@ -49,13 +49,25 @@ public sealed record RegisterCommand(
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="hasher">Hasher of the new password.</param>
-/// <param name="codeHasher">Hasher used so the verification code is never stored in plaintext.</param>
-/// <param name="verification">Account verification configuration, whose code lifetime applies.</param>
-/// <param name="accountEmails">Sender of the verification link and of the email-in-use notice.</param>
+/// <param name="codeHasher">
+/// Hasher used so the verification code is never stored in plaintext.
+/// </param>
+/// <param name="verification">
+/// Account verification configuration, whose code lifetime applies.
+/// </param>
+/// <param name="accountEmails">
+/// Sender of the verification link and of the email-in-use notice.
+/// </param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
-/// <param name="disposableEmails">Checker that refuses addresses of disposable email providers.</param>
-/// <param name="emailClaims">Committer that replaces an unverified account holding the email.</param>
-/// <param name="auditSubject">Names the account the registration created or found for the audit log.</param>
+/// <param name="disposableEmails">
+/// Checker that refuses addresses of disposable email providers.
+/// </param>
+/// <param name="emailClaims">
+/// Committer that replaces an unverified account holding the email.
+/// </param>
+/// <param name="auditSubject">
+/// Names the account the registration created or found for the audit log.
+/// </param>
 public sealed class RegisterCommandHandler(
     IUserRepository users,
     IClock clock,

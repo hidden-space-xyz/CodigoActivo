@@ -23,11 +23,14 @@ namespace CodigoActivo.Infrastructure.Database.Context;
 /// Write-side Entity Framework session: it tracks the aggregates the repositories load, so the unit
 /// of work saves their changes, and owns the model the migrations are built from.
 /// </summary>
-/// <param name="options">Options that point the context at the write database, as set by
-/// <see cref="PostgresContexts.UseWriteDatabase"/>.</param>
+/// <param name="options">
+/// Options that point the context at the write database, as set by
+/// <see cref="PostgresContexts.UseWriteDatabase"/>.
+/// </param>
 /// <param name="history">
-/// Recorder of the data history, which the container always supplies (<c>DataHistoryWiringTests</c>);
-/// only the EF Core tools and tests that build the context by hand go without it.
+/// Recorder of the data history, which the container always supplies
+/// (<c>DataHistoryWiringTests</c>); only the EF Core tools and tests that build the context by hand
+/// go without it.
 /// </param>
 public class CodigoActivoDbContext(
     DbContextOptions<CodigoActivoDbContext> options,
@@ -181,7 +184,8 @@ public class CodigoActivoDbContext(
     public DbSet<EmailDeliveryHour> EmailDeliveryHours => Set<EmailDeliveryHour>();
 
     /// <summary>
-    /// Gets the protected subject and bodies of the outbox emails, shared by their pending deliveries.
+    /// Gets the protected subject and bodies of the outbox emails, shared by their pending
+    /// deliveries.
     /// </summary>
     public DbSet<EmailOutboxContent> EmailOutboxContents => Set<EmailOutboxContent>();
 

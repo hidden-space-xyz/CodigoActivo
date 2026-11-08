@@ -5,10 +5,10 @@ using CodigoActivo.Application.Common.Validation;
 namespace CodigoActivo.API.Security;
 
 /// <summary>
-/// Reads every JSON string of a request body and refuses one holding a control character other than
-/// a tab or a line break, so model binding answers it as invalid input. No text the application
-/// accepts needs them, and PostgreSQL refuses U+0000, which would otherwise fail the request in the
-/// database instead of being reported as a validation error.
+/// Reads every JSON string of a request body and refuses one holding a control character other
+/// than a tab or a line break, so model binding answers it as invalid input. No text the
+/// application accepts needs them, and PostgreSQL refuses U+0000, which would otherwise fail the
+/// request in the database instead of being reported as a validation error.
 /// </summary>
 public sealed class ControlCharacterRejectingConverter : JsonConverter<string>
 {

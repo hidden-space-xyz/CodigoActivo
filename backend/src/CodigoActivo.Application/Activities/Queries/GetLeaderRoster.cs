@@ -30,7 +30,9 @@ public sealed record GetLeaderRosterQuery(EventId EventId)
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
-/// <param name="clock">Clock used to exclude ended activities and to find each activity's local day.</param>
+/// <param name="clock">
+/// Clock used to exclude ended activities and to find each activity's local day.
+/// </param>
 /// <param name="currentUser">Person the query runs for.</param>
 public sealed class GetLeaderRosterQueryHandler(
     IReadStore readStore,

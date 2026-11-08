@@ -12,7 +12,9 @@ namespace CodigoActivo.Infrastructure.Users;
 /// its data history.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
-/// <param name="unitOfWork">Unit of work that publishes the events of the lockouts stored here.</param>
+/// <param name="unitOfWork">
+/// Unit of work that publishes the events of the lockouts stored here.
+/// </param>
 public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork)
     : AggregateRepository<User>(context),
         IUserRepository

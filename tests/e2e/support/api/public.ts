@@ -20,7 +20,9 @@ export class PublicEvents {
     private readonly seed: ContentSeeder,
   ) {}
 
-  /** A one-day event `startsIn` days from today (a negative number) whose signup closed before it. */
+  /**
+   * A one-day event `startsIn` days from today (a negative number) whose signup closed before it.
+   */
   past(startsIn: number, options: EventOptions = {}): Promise<EventResponse> {
     return this.track(this.seed.event({ ...options, startsIn }))
   }

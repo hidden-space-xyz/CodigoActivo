@@ -23,7 +23,7 @@ export const userMutations = {
         changeUserTypeRequest(id, userTypeId),
       meta: { invalidates: [userKeys.all] },
     }),
-  /** Gives a cargo with the superadministrator's password, or removes it without one. */
+  /** Gives a staff role with the superadministrator's password, or removes it without one. */
   setStaffRole: () =>
     mutationOptions({
       mutationFn: ({

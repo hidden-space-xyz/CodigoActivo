@@ -12,6 +12,8 @@ public interface IResourceRepository : IRepository<Resource>
     /// </summary>
     /// <param name="id">Identifier of the resource.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is the resource, or <see langword="null"/> when it does not exist.</returns>
+    /// <returns>
+    /// A task whose result is the resource, or <see langword="null"/> when it does not exist.
+    /// </returns>
     public Task<Resource?> GetByIdAsync(ResourceId id, CancellationToken ct = default);
 }

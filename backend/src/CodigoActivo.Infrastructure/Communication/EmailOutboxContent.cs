@@ -1,11 +1,11 @@
 namespace CodigoActivo.Infrastructure.Communication;
 
 /// <summary>
-/// Represents the persisted email outbox content domain entity and its relationships. One row holds
-/// the text an email is made of, shared by every pending message that delivers it, and the content
-/// sweep of a delivery run removes it once the last of those messages is gone. Subject and bodies are
-/// stored protected by <see cref="EmailOutboxProtector"/> because they quote one-time codes and reset
-/// links that exist nowhere else in the database as plain text.
+/// Represents the stored content of outbox email. One row holds the text an email is made of,
+/// shared by every pending message that delivers it, and the content sweep of a delivery run
+/// removes it once the last of those messages is gone. Subject and bodies are stored protected by
+/// <see cref="EmailOutboxProtector"/> because they quote one-time codes and reset links that exist
+/// nowhere else in the database as plain text.
 /// </summary>
 public class EmailOutboxContent
 {

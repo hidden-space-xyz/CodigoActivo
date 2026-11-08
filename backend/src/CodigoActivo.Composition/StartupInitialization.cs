@@ -16,7 +16,7 @@ namespace CodigoActivo.Composition;
 /// <summary>
 /// Runs the start-up steps from a service scope: the configuration, key ring and deployment mode
 /// checks, schema migrations, log table maintenance, catalog seeding, the initial administrator,
-/// the deployment mode lock and the optional demo data and log history.
+/// the deployment mode lock and the optional demo data, data history and log history.
 /// </summary>
 public static class StartupInitialization
 {
@@ -132,7 +132,8 @@ public static class StartupInitialization
 
     /// <summary>
     /// Adds the demo data unless the first demo account already exists, so it adds everything or
-    /// nothing and never refreshes demo data added by an earlier start.
+    /// nothing, and a registration that waits for its verification unless one is waiting already,
+    /// since the scheduled purge erases it.
     /// </summary>
     /// <param name="services">Scoped service provider.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

@@ -10,8 +10,8 @@ namespace CodigoActivo.Infrastructure.Security;
 /// <summary>
 /// Protects Data Protection key ring elements with AES-256-GCM under the key that
 /// <see cref="DataProtectionRootKey"/> derives for <see cref="KeyPurpose"/>. Each element carries a
-/// fresh random nonce, the authentication tag and the ciphertext; the tag rejects an element that was
-/// changed or written without the root key before any byte of it is returned.
+/// fresh random nonce, the authentication tag and the ciphertext; the tag rejects an element that
+/// was changed or written without the root key before any byte of it is returned.
 /// </summary>
 public sealed class AesGcmKeyRingProtection
 {
@@ -46,12 +46,16 @@ public sealed class AesGcmKeyRingProtection
     }
 
     /// <summary>
-    /// Decrypts every key ring element stored in <paramref name="keysDirectory"/>, so a root key that
-    /// does not open the existing ring stops the start instead of letting Data Protection replace the
-    /// ring with new keys.
+    /// Decrypts every key ring element stored in <paramref name="keysDirectory"/>, so a root key
+    /// that does not open the existing ring stops the start instead of letting Data Protection
+    /// replace the ring with new keys.
     /// </summary>
-    /// <param name="keysDirectory">Directory holding the key ring; a missing one holds no key yet.</param>
-    /// <exception cref="CryptographicException">A stored element does not decrypt with the root key.</exception>
+    /// <param name="keysDirectory">
+    /// Directory holding the key ring; a missing one holds no key yet.
+    /// </param>
+    /// <exception cref="CryptographicException">
+    /// A stored element does not decrypt with the root key.
+    /// </exception>
     public void VerifyKeyRing(string keysDirectory)
     {
         if (!Directory.Exists(keysDirectory))

@@ -9,10 +9,18 @@ namespace CodigoActivo.API.Participation.Contracts;
 /// Contains the client-supplied rating of an event. The score and the three answers cannot all be
 /// missing.
 /// </summary>
-/// <param name="Score">Score from 1 to 5, or <see langword="null"/> when the participant gave none.</param>
-/// <param name="MostLiked">What the participant liked most, if anything; blank counts as missing.</param>
-/// <param name="LeastLiked">What the participant liked least, if anything; blank counts as missing.</param>
-/// <param name="Suggestions">Suggestions of the participant, if any; blank counts as missing.</param>
+/// <param name="Score">
+/// Score from 1 to 5, or <see langword="null"/> when the participant gave none.
+/// </param>
+/// <param name="MostLiked">
+/// What the participant liked most, if anything; blank counts as missing.
+/// </param>
+/// <param name="LeastLiked">
+/// What the participant liked least, if anything; blank counts as missing.
+/// </param>
+/// <param name="Suggestions">
+/// Suggestions of the participant, if any; blank counts as missing.
+/// </param>
 public record SaveEventRatingRequest(
     [Range(EventRating.MinScore, EventRating.MaxScore)] int? Score,
     [MaxLength(EventRating.MaxAnswerLength)] string? MostLiked,

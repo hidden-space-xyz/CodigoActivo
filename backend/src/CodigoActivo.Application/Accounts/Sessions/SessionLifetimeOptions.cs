@@ -1,10 +1,10 @@
 namespace CodigoActivo.Application.Accounts.Sessions;
 
 /// <summary>
-/// Defines how long an authenticated session lasts. The same value sets the expiry of the persistent
-/// session cookie and of the <c>user_sessions</c> row the cookie points at, but a claims refresh
-/// re-issues the cookie with a later expiry, so the row is the absolute expiry that decides access
-/// and a surviving cookie is rejected once its row is gone.
+/// Defines how long an authenticated session lasts. The same value sets the expiry of the
+/// persistent session cookie and of the <c>user_sessions</c> row the cookie points at, but a claims
+/// refresh re-issues the cookie with a later expiry, so the row is the absolute expiry that decides
+/// access and a surviving cookie is rejected once its row is gone.
 /// </summary>
 public sealed class SessionLifetimeOptions
 {

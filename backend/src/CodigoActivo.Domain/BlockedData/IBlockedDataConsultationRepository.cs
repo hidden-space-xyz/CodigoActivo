@@ -12,7 +12,9 @@ public interface IBlockedDataConsultationRepository : IRepository<BlockedDataCon
     /// </summary>
     /// <param name="id">Identifier of the consultation.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is the consultation, or <see langword="null"/> when missing.</returns>
+    /// <returns>
+    /// A task whose result is the consultation, or <see langword="null"/> when missing.
+    /// </returns>
     public Task<BlockedDataConsultation?> GetByIdAsync(
         BlockedDataConsultationId id,
         CancellationToken ct = default
@@ -24,7 +26,9 @@ public interface IBlockedDataConsultationRepository : IRepository<BlockedDataCon
     /// </summary>
     /// <param name="id">Identifier of the consultation.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is the consultation, or <see langword="null"/> when missing.</returns>
+    /// <returns>
+    /// A task whose result is the consultation, or <see langword="null"/> when missing.
+    /// </returns>
     public Task<BlockedDataConsultation?> GetLockedAsync(
         BlockedDataConsultationId id,
         CancellationToken ct = default

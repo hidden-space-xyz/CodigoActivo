@@ -15,9 +15,10 @@ namespace CodigoActivo.Composition.Legal;
 internal static class LegalRegistration
 {
     /// <summary>
-    /// Adds the legal policy repository and the legal identity options; a name, tax identifier,
-    /// address or registry longer than <see cref="LegalEntityOptions.MaxLength"/>, or an email or
-    /// phone that is not valid, stops the start.
+    /// Adds the legal policy repository, the scheduled notices to the legal contact and the legal
+    /// identity options; a name, tax identifier, address or registry longer than
+    /// <see cref="LegalEntityOptions.MaxLength"/>, or an email or phone set but not valid, stops
+    /// the start.
     /// </summary>
     /// <param name="services">Service collection to add to.</param>
     /// <param name="configuration">Configuration of the application.</param>

@@ -56,8 +56,8 @@ public sealed class AuditWriter(
 )
 {
     /// <summary>
-    /// Queues one entry. The main thing is the one the draft names, else the one its result created,
-    /// else the first typed identifier of its message; every other identifier is related.
+    /// Queues one entry. The main thing is the one the draft names, else the one its result
+    /// created, else the first typed identifier of its message; every other identifier is related.
     /// </summary>
     /// <param name="draft">What the entry records.</param>
     public void Write(AuditDraft draft)

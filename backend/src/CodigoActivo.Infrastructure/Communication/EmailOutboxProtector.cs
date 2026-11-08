@@ -6,10 +6,10 @@ using Microsoft.AspNetCore.DataProtection;
 namespace CodigoActivo.Infrastructure.Communication;
 
 /// <summary>
-/// Holds the readable content of one stored email while a batch is being delivered. Every message of
-/// the batch that shares the stored content shares this instance, so the attachments are unprotected
-/// and held in memory once instead of once per recipient. It is only worth keeping for the run that
-/// reads it: the next one reads the rows it claims again.
+/// Holds the readable content of one stored email while a batch is being delivered. Every message
+/// of the batch that shares the stored content shares this instance, so the attachments are
+/// unprotected and held in memory once instead of once per recipient. It is only worth keeping for
+/// the run that reads it: the next one reads the rows it claims again.
 /// </summary>
 /// <param name="Subject">Readable subject.</param>
 /// <param name="HtmlBody">

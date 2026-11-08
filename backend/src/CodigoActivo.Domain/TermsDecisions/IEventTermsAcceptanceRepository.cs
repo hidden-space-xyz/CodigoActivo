@@ -30,7 +30,9 @@ public interface IEventTermsAcceptanceRepository : IRepository<EventTermsAccepta
     /// <param name="userId">Identifier of the person the decision is about.</param>
     /// <param name="termsDocumentId">Identifier of the terms document.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is the decision, or <see langword="null"/> when none was taken.</returns>
+    /// <returns>
+    /// A task whose result is the decision, or <see langword="null"/> when none was taken.
+    /// </returns>
     public Task<EventTermsAcceptance?> GetAsync(
         EventId eventId,
         UserId userId,

@@ -34,8 +34,8 @@ public sealed record Recipient(
 
 /// <summary>
 /// Validates administrator-written email and stores it for delivery. The whole batch is queued at
-/// once or not at all, and the response reports what was accepted, not what the SMTP server did with
-/// it: delivery happens in the background.
+/// once or not at all, and the response reports what was accepted, not what the SMTP server did
+/// with it: delivery happens in the background.
 /// </summary>
 /// <param name="outbox">Outbox the batch is stored in for background delivery.</param>
 /// <param name="options">Limits on the recipients and attachments of one email.</param>
@@ -66,14 +66,19 @@ public sealed class ManualEmailDispatcher(
     /// <see cref="ManualEmailOptions.MaxAttachments"/> attachments, attachments that add up to more
     /// than <see cref="ManualEmailOptions.MaxAttachmentsBytes"/>, or an empty attachment.
     /// </summary>
-    /// <param name="recipients">Recipients the email reaches, already chosen for its purpose.</param>
-    /// <param name="skipped">Matching users left out for lack of a confirmed address, reported back as is.</param>
+    /// <param name="recipients">
+    /// Recipients the email reaches, already chosen for its purpose.
+    /// </param>
+    /// <param name="skipped">
+    /// Matching users left out for lack of a confirmed address, reported back as is.
+    /// </param>
     /// <param name="request">Subject and body, trimmed before they are rendered.</param>
     /// <param name="purpose">What the email is written for.</param>
     /// <param name="attachments">Files attached to every message.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
-    /// A task whose result contains the dispatch counts; <see cref="ApplicationErrorCode.EmailNoRecipients"/>,
+    /// A task whose result contains the dispatch counts;
+    /// <see cref="ApplicationErrorCode.EmailNoRecipients"/>,
     /// <see cref="ApplicationErrorCode.EmailTooManyRecipients"/>,
     /// <see cref="ApplicationErrorCode.EmailTooManyAttachments"/>,
     /// <see cref="ApplicationErrorCode.EmailAttachmentsTooLarge"/>, also when the message is larger

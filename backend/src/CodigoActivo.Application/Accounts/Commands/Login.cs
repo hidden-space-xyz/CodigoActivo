@@ -28,13 +28,13 @@ public sealed record LoginCommand(
 /// An identifier matching no account, and an account locked after repeated wrong passwords, still
 /// pay the same Argon2 work and answer the same error, so neither the response nor its timing
 /// discloses which identifiers exist or which accounts are locked. Every accepted password step
-/// stores a fresh challenge identifier, so the challenge cookie of an earlier attempt stops working.
-/// The password is verified without holding the account locked; only an accepted one locks and
-/// reloads the account to open the challenge, and a password replaced or an account locked since
-/// the check is answered like a wrong password, without counting it, because the password was
-/// right when it was checked. So no challenge is ever opened for a replaced password. An account
-/// that uses email as its second factor is emailed a login code, unless one was sent within the
-/// resend cooldown, which the new challenge then accepts.
+/// stores a fresh challenge identifier, so the challenge cookie of an earlier attempt stops
+/// working. The password is verified without holding the account locked; only an accepted one
+/// locks and reloads the account to open the challenge, and a password replaced or an account
+/// locked since the check is answered like a wrong password, without counting it, because the
+/// password was right when it was checked. So no challenge is ever opened for a replaced password.
+/// An account that uses email as its second factor is emailed a login code, unless one was sent
+/// within the resend cooldown, which the new challenge then accepts.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="accountLock">Opens the challenge with the account locked.</param>

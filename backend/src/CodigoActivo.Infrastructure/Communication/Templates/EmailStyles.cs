@@ -105,7 +105,8 @@ public static class EmailStyles
         Font + $"margin:14px 0 0 0;font-size:12px;line-height:1.6;color:{EmailBranding.TextMuted};";
 
     /// <summary>
-    /// Style of the footer links: the site link and, in a news email, the unsubscribe and contact links.
+    /// Style of the footer links: the site link and, in a news email, the unsubscribe and contact
+    /// links.
     /// </summary>
     public const string FooterLink =
         $"color:{EmailBranding.PrimaryInk};font-weight:700;text-decoration:underline;";
@@ -192,7 +193,8 @@ public static class EmailStyles
         + $"vertical-align:top;color:{EmailBranding.Text};";
 
     /// <summary>
-    /// Style appended to the cells of every detail row but the first, to separate it from the one above.
+    /// Style appended to the cells of every detail row but the first, to separate it from the one
+    /// above.
     /// </summary>
     public const string DetailsRowBorder = $"border-top:1px solid {EmailBranding.Border};";
 }

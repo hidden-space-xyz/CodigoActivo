@@ -14,7 +14,7 @@ public sealed record LogTable(string Name)
     public static LogTable Diagnostics { get; } = new("diagnostic_log_entries");
 
     /// <summary>
-    /// Gets the table of audited commands.
+    /// Gets the table of audited events.
     /// </summary>
     public static LogTable Audit { get; } = new("audit_log_entries");
 

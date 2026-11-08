@@ -14,8 +14,9 @@ public sealed class LocalFileStorage : IFileStorage
     /// <summary>
     /// Initializes the local file storage and creates its root directory when it does not exist.
     /// </summary>
-    /// <param name="options">Storage root; a blank root falls back to <c>files</c> under the current
-    /// directory.</param>
+    /// <param name="options">
+    /// Storage root; a blank root falls back to <c>files</c> under the current directory.
+    /// </param>
     public LocalFileStorage(FileStorageOptions options)
     {
         var configured = string.IsNullOrWhiteSpace(options.RootPath) ? "files" : options.RootPath;
@@ -37,7 +38,9 @@ public sealed class LocalFileStorage : IFileStorage
     /// <param name="content">Content to store, read from its current position to the end.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    /// <exception cref="IOException">Content is already stored under the name, or it could not be written.</exception>
+    /// <exception cref="IOException">
+    /// Content is already stored under the name, or it could not be written.
+    /// </exception>
     public async Task SaveAsync(string storedName, Stream content, CancellationToken ct = default)
     {
         var path = ResolvePath(storedName);
@@ -67,12 +70,7 @@ public sealed class LocalFileStorage : IFileStorage
         }
     }
 
-    /// <summary>
-    /// Lists the entries of the root last written at or before an instant, including the temporary
-    /// ones an interrupted write left behind.
-    /// </summary>
-    /// <param name="cutoff">Latest write instant to include.</param>
-    /// <returns>The names of the entries.</returns>
+    /// <inheritdoc />
     public IReadOnlyList<string> ListWrittenUpTo(DateTimeOffset cutoff)
     {
         return
@@ -84,12 +82,7 @@ public sealed class LocalFileStorage : IFileStorage
         ];
     }
 
-    /// <summary>
-    /// Opens the stored file as a read-only stream.
-    /// </summary>
-    /// <param name="storedName">Storage-safe file name identifying the content.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the matching stream, or <see langword="null"/> when it is not found.</returns>
+    /// <inheritdoc />
     public Task<Stream?> OpenReadAsync(string storedName, CancellationToken ct = default)
     {
         var path = ResolvePath(storedName);
@@ -109,10 +102,7 @@ public sealed class LocalFileStorage : IFileStorage
         return Task.FromResult<Stream?>(stream);
     }
 
-    /// <summary>
-    /// Deletes the file stored under the name, if any. A refusal of the file system is thrown.
-    /// </summary>
-    /// <param name="storedName">Storage-safe file name identifying the content.</param>
+    /// <inheritdoc />
     public void Delete(string storedName)
     {
         var path = ResolvePath(storedName);
@@ -122,12 +112,7 @@ public sealed class LocalFileStorage : IFileStorage
         }
     }
 
-    /// <summary>
-    /// Deletes the selected local file, reporting a refusal of the file system instead of
-    /// throwing it.
-    /// </summary>
-    /// <param name="storedName">Storage-safe file name identifying the content.</param>
-    /// <returns><see langword="true"/> when no file is left under the name.</returns>
+    /// <inheritdoc />
     public bool TryDelete(string storedName)
     {
         try

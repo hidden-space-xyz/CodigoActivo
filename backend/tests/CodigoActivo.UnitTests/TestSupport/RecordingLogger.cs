@@ -10,7 +10,9 @@ public sealed class RecordingLogger<T> : ILogger<T>
     private readonly List<string> entries = [];
     private readonly List<(LogLevel Level, string Message)> levelEntries = [];
 
-    /// <summary>Formatted messages followed by the text of their exception, if any.</summary>
+    /// <summary>
+    /// Gets the formatted messages, each followed by the text of its exception, if any.
+    /// </summary>
     public IReadOnlyList<string> Entries
     {
         get
@@ -22,7 +24,9 @@ public sealed class RecordingLogger<T> : ILogger<T>
         }
     }
 
-    /// <summary>Every recorded entry together with the level it was logged at.</summary>
+    /// <summary>
+    /// Gets every recorded entry together with the level it was logged at.
+    /// </summary>
     public IReadOnlyList<(LogLevel Level, string Message)> LevelEntries
     {
         get

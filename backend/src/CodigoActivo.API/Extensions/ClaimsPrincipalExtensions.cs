@@ -43,7 +43,10 @@ public static class ClaimsPrincipalExtensions
     /// </summary>
     /// <param name="principal">Authenticated principal whose claims are inspected.</param>
     /// <param name="staffRole">Staff role required.</param>
-    /// <returns><see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    /// <see langword="true"/> when it holds the role or one that includes it, or the role is
+    /// <see cref="StaffRole.None"/>.
+    /// </returns>
     public static bool HasStaffRole(this ClaimsPrincipal principal, StaffRole staffRole)
     {
         ArgumentNullException.ThrowIfNull(principal);
@@ -55,7 +58,7 @@ public static class ClaimsPrincipalExtensions
     /// superadministrator.
     /// </summary>
     /// <param name="principal">Authenticated principal whose claims are inspected.</param>
-    /// <returns><see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
+    /// <returns><see langword="true"/> when it is the initial administrator.</returns>
     public static bool IsSuperAdministrator(this ClaimsPrincipal principal)
     {
         ArgumentNullException.ThrowIfNull(principal);
@@ -67,7 +70,7 @@ public static class ClaimsPrincipalExtensions
     /// protection.
     /// </summary>
     /// <param name="principal">Authenticated principal whose claims are inspected.</param>
-    /// <returns><see langword="true"/> when the condition is met; otherwise, <see langword="false"/>.</returns>
+    /// <returns><see langword="true"/> when it carries the data protection role claim.</returns>
     public static bool IsPrivacyOfficer(this ClaimsPrincipal principal)
     {
         ArgumentNullException.ThrowIfNull(principal);
@@ -94,7 +97,9 @@ public static class ClaimsPrincipalExtensions
     /// </summary>
     /// <param name="staffRole">Staff role, other than <see cref="StaffRole.None"/>.</param>
     /// <returns>The role claim value.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">The staff role has no role claim value.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// The staff role has no role claim value.
+    /// </exception>
     public static string RoleOf(StaffRole staffRole)
     {
         return staffRole switch

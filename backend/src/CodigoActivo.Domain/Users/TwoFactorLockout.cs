@@ -21,7 +21,7 @@ public readonly record struct TwoFactorLockout(int FailedAttempts, DateTimeOffse
     /// <summary>
     /// Tells whether one more wrong code reaches the limit and locks.
     /// </summary>
-    /// <param name="maxFailedAttempts">Failures allowed before locking.</param>
+    /// <param name="maxFailedAttempts">Wrong codes that lock the second factor.</param>
     /// <returns><see langword="true"/> when the next wrong code locks.</returns>
     public bool LocksOnNextFailure(int maxFailedAttempts)
     {
@@ -33,7 +33,7 @@ public readonly record struct TwoFactorLockout(int FailedAttempts, DateTimeOffse
     /// is reached.
     /// </summary>
     /// <param name="now">Current timestamp.</param>
-    /// <param name="maxFailedAttempts">Failures allowed before locking.</param>
+    /// <param name="maxFailedAttempts">Wrong codes that lock the second factor.</param>
     /// <param name="lockoutDuration">How long the lock lasts.</param>
     /// <returns>The lockout after the wrong code.</returns>
     public TwoFactorLockout AfterFailure(

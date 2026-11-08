@@ -33,8 +33,8 @@ public sealed record AssignActivityCommand(
 
 /// <summary>
 /// Executes the command to sign a person up to an activity, pending a decision. The signed-in user
-/// may sign up only themselves or one of their dependents, administrators included, and decides the
-/// terms documents of the event for them; an administrator may do it outside the signup window.
+/// may sign up only themselves or one of their dependents, administrators included, and records the
+/// terms decisions of the event for them; an administrator may do it outside the signup window.
 /// </summary>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
 /// <param name="users">Repository used to persist and retrieve users.</param>

@@ -15,32 +15,44 @@ namespace CodigoActivo.Application.Users.Contracts;
 /// <param name="NationalId">Normalized DNI or NIE; only independent accounts have one.</param>
 /// <param name="NewsConsent">Whether the user agreed to receive news by email.</param>
 /// <param name="Gender">User's gender.</param>
-/// <param name="LastLoginAt">UTC timestamp of the user's most recent login; null when they never logged in.</param>
+/// <param name="LastLoginAt">
+/// UTC timestamp of the user's most recent login; <see langword="null"/> when they never logged in.
+/// </param>
 /// <param name="CreatedAt">UTC timestamp when the record was created.</param>
-/// <param name="UpdatedAt">UTC timestamp of the most recent update; null when never updated.</param>
-/// <param name="ParentId">Identifier of the guardian of a dependent; null for an independent account.</param>
+/// <param name="UpdatedAt">
+/// UTC timestamp of the most recent update; <see langword="null"/> when never updated.
+/// </param>
+/// <param name="ParentId">
+/// Identifier of the guardian of a dependent; <see langword="null"/> for an independent account.
+/// </param>
 /// <param name="ParentName">
-/// Full name of the guardian of a dependent; null unless read through
+/// Full name of the guardian of a dependent; <see langword="null"/> unless read through
 /// <see cref="UserProjections.UserWithType"/>.
 /// </param>
 /// <param name="DependentCount">
-/// Number of dependents of the user; null unless read through <see cref="UserProjections.UserWithType"/>.
+/// Number of dependents of the user; <see langword="null"/> unless read through
+/// <see cref="UserProjections.UserWithType"/>.
 /// </param>
-/// <param name="Status">Stage of the account: pending verification, active, blocked or dependent.</param>
+/// <param name="Status">
+/// Stage of the account: pending verification, active, blocked or dependent.
+/// </param>
 /// <param name="StaffRole">Staff role of the user.</param>
-/// <param name="IsPrivacyOfficer">Whether the user is the account designated for data protection.</param>
+/// <param name="IsPrivacyOfficer">
+/// Whether the user is the account designated for data protection.
+/// </param>
 /// <param name="IsInitialAdmin">
 /// Whether the account is the initial administrator, the superadministrator: the only one that
 /// changes staff roles, designates the account for data protection and deletes other accounts, and
 /// one that can be neither deleted nor demoted.
 /// </param>
 /// <param name="Type">
-/// Membership type of the user; null unless read through <see cref="UserProjections.UserWithType"/>.
+/// Membership type of the user; <see langword="null"/> unless read through
+/// <see cref="UserProjections.UserWithType"/>.
 /// </param>
 /// <param name="TwoFactorMethod">Second factor the user presents when logging in.</param>
 /// <param name="EarlySignupEligible">
-/// Whether the account may sign up during the early signup: its membership type, or its guardian's for
-/// a dependent, is entitled to it.
+/// Whether the account may sign up during the early signup: its membership type, or its guardian's
+/// for a dependent, is entitled to it.
 /// </param>
 public record UserResponse(
     Guid Id,

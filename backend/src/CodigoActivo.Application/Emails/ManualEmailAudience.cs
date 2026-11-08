@@ -7,9 +7,9 @@ namespace CodigoActivo.Application.Emails;
 /// <summary>
 /// Recipients a manual email reaches once the users matching its filters are known: only users
 /// with an email address they confirmed, each address once regardless of letter case, and for a
-/// news email only those with news consent. An account still pending verification is left out, since
-/// anyone may have registered it with someone else's address. The send commands and the audience
-/// queries share it so the preview always matches what is sent.
+/// news email only those with news consent. An account still pending verification is left out,
+/// since anyone may have registered it with someone else's address. The send commands and the
+/// audience queries share it so the preview always matches what is sent.
 /// </summary>
 /// <param name="Recipients">Distinct recipients that have a confirmed email address.</param>
 /// <param name="Skipped">

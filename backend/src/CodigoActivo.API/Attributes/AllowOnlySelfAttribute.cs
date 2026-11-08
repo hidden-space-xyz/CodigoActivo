@@ -18,15 +18,12 @@ public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilte
     private const string RouteKey = "userId";
 
     /// <summary>
-    /// Gets or sets whether administrators pass for any user. Defaults to <see langword="true"/>.
+    /// Gets or sets a value indicating whether administrators pass for any user. Defaults to
+    /// <see langword="true"/>.
     /// </summary>
     public bool AdministratorsAllowed { get; set; } = true;
 
-    /// <summary>
-    /// Authorizes the current request against the attribute requirements.
-    /// </summary>
-    /// <param name="context">Authorization context of the request.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
+    /// <inheritdoc />
     public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
     {
         var user = context.HttpContext.User;

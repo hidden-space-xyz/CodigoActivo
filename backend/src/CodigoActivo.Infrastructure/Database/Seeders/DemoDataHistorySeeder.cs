@@ -27,11 +27,11 @@ namespace CodigoActivo.Infrastructure.Database.Seeders;
 /// recorder of its own, at the moment it would have happened and as the command and the account
 /// that would have made it: the administrator added a phone, demo accounts replaced their phone
 /// and email, withdrew their news consent, left an activity or deleted a rating, and three former
-/// accounts erased with everything that belonged to them, a household with a minor by its holder, a
-/// sponsor by the administrator and an unverified registration by the scheduled purge. On top of that history it records the
-/// consultations the data protection officer opened, with the claims they keep open and one they
-/// closed. It runs once, in one transaction, when the history holds nothing about the former
-/// accounts.
+/// accounts erased with everything that belonged to them, a household with a minor by its holder,
+/// a sponsor by the administrator and an unverified registration by the scheduled purge. On top of
+/// that history it records the consultations the data protection officers opened, with the claims
+/// they keep open and one they closed. It runs once, in one transaction, when the history holds
+/// nothing about the former accounts.
 /// </summary>
 /// <param name="options">Options of the application database.</param>
 /// <param name="protector">Protector that encrypts the history records.</param>

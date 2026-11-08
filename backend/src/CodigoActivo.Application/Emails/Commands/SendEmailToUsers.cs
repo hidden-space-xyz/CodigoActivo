@@ -11,7 +11,9 @@ namespace CodigoActivo.Application.Emails.Commands;
 /// <summary>
 /// Carries the input required to send email to users.
 /// </summary>
-/// <param name="Filters">User filters that select the recipients; their sort and page are ignored.</param>
+/// <param name="Filters">
+/// User filters that select the recipients; their sort and page are ignored.
+/// </param>
 /// <param name="Content">Subject and body of the email.</param>
 /// <param name="Purpose">What the email is written for, which decides who it reaches.</param>
 /// <param name="Attachments">Files attached to every message.</param>

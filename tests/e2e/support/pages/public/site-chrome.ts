@@ -25,7 +25,7 @@ export class MenuDrawer {
   /** The greeting of signed-in people. */
   readonly greeting: Locator
 
-  /** The link to the administration, for administrators. */
+  /** The link to the administration, for editors, administrators and the privacy officer. */
   readonly admin: Locator
 
   /** The link to «Mi cuenta», for signed-in people. */

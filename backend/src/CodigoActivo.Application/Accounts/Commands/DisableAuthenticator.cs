@@ -16,7 +16,9 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <summary>
 /// Carries the input required to return to email as the second factor.
 /// </summary>
-/// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize the change.</param>
+/// <param name="CurrentPassword">
+/// Password of the signed-in user, re-entered to authorize the change.
+/// </param>
 /// <param name="Code">Current code of the authenticator.</param>
 public sealed record DisableAuthenticatorCommand(
     [property: Required, MaxLength(128), NotBlank] string CurrentPassword,

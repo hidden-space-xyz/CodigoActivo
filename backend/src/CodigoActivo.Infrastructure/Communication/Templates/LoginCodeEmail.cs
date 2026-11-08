@@ -9,14 +9,16 @@ namespace CodigoActivo.Infrastructure.Communication.Templates;
 public static class LoginCodeEmail
 {
     /// <summary>
-    /// Creates the email with the code, the minutes it lasts and a warning for whoever did not try to log
-    /// in.
+    /// Creates the email with the code, the minutes it lasts and a warning for whoever did not try
+    /// to log in.
     /// </summary>
     /// <param name="toAddress">Address of the account holder.</param>
     /// <param name="toName">Name the message greets.</param>
     /// <param name="code">Plain code the user must type.</param>
     /// <param name="siteUrl">Public base URL of the site, linked from the footer.</param>
-    /// <param name="lifetime">Validity of the code, shown in whole minutes rounded up, at least one.</param>
+    /// <param name="lifetime">
+    /// Validity of the code, shown in whole minutes rounded up, at least one.
+    /// </param>
     /// <returns>The message, of kind <see cref="EmailKind.TwoFactorCode"/>.</returns>
     public static EmailMessage Create(
         string toAddress,

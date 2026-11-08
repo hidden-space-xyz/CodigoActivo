@@ -33,9 +33,10 @@ public sealed class EmailOutboxSignal
     }
 
     /// <summary>
-    /// Waits for a notification, giving up after the supplied delay. Notifications collapse: however
-    /// many arrive while nobody is waiting, they release exactly one wait. Letting the delay elapse
-    /// is an ordinary outcome and raises no exception; only the caller's own cancellation does.
+    /// Waits for a notification, giving up after the supplied delay. Notifications collapse:
+    /// however many arrive while nobody is waiting, they release exactly one wait. Letting the
+    /// delay elapse is an ordinary outcome and raises no exception; only the caller's own
+    /// cancellation does.
     /// </summary>
     /// <param name="timeout">Longest time to wait before returning.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

@@ -4,8 +4,8 @@ import { Session } from './http.js'
 const sessions = {}
 
 /**
- * Deals the accounts of a pool in turn across all the VUs of a scenario. A pool must be large enough
- * that an account finishes its iteration before its next turn.
+ * Deals the accounts of a pool in turn across all the VUs of a scenario. A pool must be large
+ * enough that an account finishes its iteration before its next turn.
  */
 export function nextAccount(pool) {
   const iteration = exec.scenario.iterationInTest

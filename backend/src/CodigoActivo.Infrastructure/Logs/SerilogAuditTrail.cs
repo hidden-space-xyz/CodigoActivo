@@ -9,7 +9,7 @@ namespace CodigoActivo.Infrastructure.Logs;
 /// <summary>
 /// Audit log over a batching Serilog pipeline of its own that writes <c>audit_log_entries</c>
 /// through <see cref="AuditLogSink"/>. Recording only enqueues, with the instant of the clock
-/// and the trace of the current activity, so the command never waits for the database; the
+/// and the trace of the current activity, so the caller never waits for the database; the
 /// pipeline shares the limits and failure handling of the diagnostic log. Disposing it writes what
 /// is still queued.
 /// </summary>
@@ -19,7 +19,7 @@ public sealed class SerilogAuditTrail : IAuditTrail, IDisposable, IAsyncDisposab
     private readonly IClock clock;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="SerilogAuditTrail"/> class.
+    /// Initializes the audit trail with its own batching pipeline over the audit sink.
     /// </summary>
     /// <param name="database">Connections of the log tables.</param>
     /// <param name="partitions">Maintenance of the log partitions.</param>

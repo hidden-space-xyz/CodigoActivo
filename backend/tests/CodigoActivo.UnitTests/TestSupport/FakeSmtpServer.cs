@@ -6,9 +6,9 @@ using MimeKit;
 namespace CodigoActivo.UnitTests.TestSupport;
 
 /// <summary>
-/// Minimal in-process SMTP server on a loopback port. It speaks plain ESMTP with AUTH PLAIN, records
-/// delivered messages and the connections opened, and can announce a size limit, answer MAIL FROM with
-/// a refusal, reject a recipient, drop the connection or run a callback on DATA.
+/// Minimal in-process SMTP server on a loopback port. It speaks plain ESMTP with AUTH PLAIN,
+/// records delivered messages and the connections opened, and can announce a size limit, answer
+/// MAIL FROM with a refusal, reject a recipient, drop the connection or run a callback on DATA.
 /// </summary>
 public sealed class FakeSmtpServer : IAsyncDisposable
 {
@@ -29,37 +29,60 @@ public sealed class FakeSmtpServer : IAsyncDisposable
 
     public int Port => ((IPEndPoint)listener.LocalEndpoint).Port;
 
-    /// <summary>Number of connections the server accepted.</summary>
+    /// <summary>
+    /// Gets the number of connections the server accepted.
+    /// </summary>
     public int Connections => Volatile.Read(ref connections);
 
-    /// <summary>Size limit announced with the SIZE extension, if any.</summary>
+    /// <summary>
+    /// Gets the size limit announced with the SIZE extension, if any.
+    /// </summary>
     public long? AdvertisedSize { get; init; }
 
-    /// <summary>Reply to MAIL FROM instead of accepting the sender, such as a refusal.</summary>
+    /// <summary>
+    /// Gets the reply to MAIL FROM instead of accepting the sender, such as a refusal.
+    /// </summary>
     public string? MailReply { get; init; }
 
-    /// <summary>Recipient answered with a permanent 550 failure.</summary>
+    /// <summary>
+    /// Gets the recipient answered with a permanent 550 failure.
+    /// </summary>
     public string? RejectedRecipient { get; init; }
 
-    /// <summary>Reply to the RCPT TO of <see cref="RejectedRecipient"/>, a 5.1.1 refusal by default.</summary>
+    /// <summary>
+    /// Gets the reply to the RCPT TO of <see cref="RejectedRecipient"/>, a 5.1.1 refusal by
+    /// default.
+    /// </summary>
     public string? RejectedRecipientReply { get; init; }
 
-    /// <summary>Recipient answered with a temporary 450 failure, as greylisting does.</summary>
+    /// <summary>
+    /// Gets the recipient answered with a temporary 450 failure, as greylisting does.
+    /// </summary>
     public string? DeferredRecipient { get; init; }
 
-    /// <summary>Reply to the DATA command instead of inviting the content.</summary>
+    /// <summary>
+    /// Gets the reply to the DATA command instead of inviting the content.
+    /// </summary>
     public string? DataCommandReply { get; init; }
 
-    /// <summary>Reply to the message content instead of queueing it, such as a refusal.</summary>
+    /// <summary>
+    /// Gets the reply to the message content instead of queueing it, such as a refusal.
+    /// </summary>
     public string? MessageReply { get; init; }
 
-    /// <summary>Closes the socket without a word once this many messages were queued.</summary>
+    /// <summary>
+    /// Gets how many queued messages make the server close the socket without a word.
+    /// </summary>
     public int? CloseAfterQueuedMessages { get; init; }
 
-    /// <summary>Closes the socket without replying once this many DATA commands were received.</summary>
+    /// <summary>
+    /// Gets how many DATA commands make the server close the socket without replying.
+    /// </summary>
     public int? DropConnectionOnDataCommand { get; init; }
 
-    /// <summary>Runs after a message body is read and before the server replies.</summary>
+    /// <summary>
+    /// Gets the callback run after a message body is read and before the server replies.
+    /// </summary>
     public Action? OnMessageData { get; init; }
 
     public string? AuthenticatedUser { get; private set; }
@@ -276,7 +299,9 @@ public sealed class FakeSmtpServer : IAsyncDisposable
     }
 }
 
-/// <summary>Message accepted by <see cref="FakeSmtpServer"/>.</summary>
+/// <summary>
+/// Message accepted by <see cref="FakeSmtpServer"/>.
+/// </summary>
 public sealed record ReceivedEmail(
     string From,
     IReadOnlyList<string> Recipients,

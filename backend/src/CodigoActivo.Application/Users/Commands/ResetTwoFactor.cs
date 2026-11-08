@@ -14,7 +14,9 @@ namespace CodigoActivo.Application.Users.Commands;
 /// Carries the input required by an administrator to reset a user's second factor.
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
-/// <param name="CurrentPassword">Password of the signed-in administrator, re-entered to authorize the reset.</param>
+/// <param name="CurrentPassword">
+/// Password of the signed-in administrator, re-entered to authorize the reset.
+/// </param>
 public sealed record ResetTwoFactorCommand(
     UserId UserId,
     [property: Required, MaxLength(128), NotBlank] string CurrentPassword

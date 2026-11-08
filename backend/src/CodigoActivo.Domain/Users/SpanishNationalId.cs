@@ -30,8 +30,8 @@ public sealed record SpanishNationalId
     /// <param name="value">Value as typed.</param>
     /// <returns>
     /// The identity number, <see cref="DomainErrorCode.UserNationalIdRequired"/> when nothing was
-    /// typed, or <see cref="DomainErrorCode.UserNationalIdInvalid"/> when it is not shaped as a DNI or
-    /// NIE or its control letter does not match its number.
+    /// typed, or <see cref="DomainErrorCode.UserNationalIdInvalid"/> when it is not shaped as a DNI
+    /// or NIE or its control letter does not match its number.
     /// </returns>
     public static Result<SpanishNationalId> Create(string? value)
     {
@@ -58,8 +58,8 @@ public sealed record SpanishNationalId
     }
 
     /// <summary>
-    /// Converts a typed DNI or NIE to its stored form: uppercase, without spaces or hyphens. It does
-    /// not check the value, so filters can search by a partial one.
+    /// Converts a typed DNI or NIE to its stored form: uppercase, without spaces or hyphens. It
+    /// does not check the value, so filters can search by a partial one.
     /// </summary>
     /// <param name="value">Value as typed.</param>
     /// <returns>The normalized value, or <see langword="null"/> when nothing remains.</returns>
@@ -81,7 +81,9 @@ public sealed record SpanishNationalId
     /// its number.
     /// </summary>
     /// <param name="value">Value as typed or stored.</param>
-    /// <returns><see langword="true"/> for a well-formed DNI or NIE; otherwise, <see langword="false"/>.</returns>
+    /// <returns>
+    /// <see langword="true"/> for a well-formed DNI or NIE; otherwise, <see langword="false"/>.
+    /// </returns>
     public static bool IsValid(string? value)
     {
         if (Normalize(value) is not { Length: 9 } normalized)
@@ -111,7 +113,9 @@ public sealed record SpanishNationalId
     /// </summary>
     /// <param name="number">DNI number, between 0 and 99,999,999.</param>
     /// <returns>The DNI.</returns>
-    /// <exception cref="ArgumentOutOfRangeException">The number does not fit in eight digits.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// The number is negative or does not fit in eight digits.
+    /// </exception>
     public static SpanishNationalId FromDniNumber(int number)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(number);

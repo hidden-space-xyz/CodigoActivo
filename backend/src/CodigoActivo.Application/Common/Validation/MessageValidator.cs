@@ -14,7 +14,8 @@ namespace CodigoActivo.Application.Common.Validation;
 public sealed class MessageValidator(IClock clock)
 {
     /// <summary>
-    /// Key of <see cref="ValidationContext.Items"/> that holds the current day as a <see cref="DateOnly"/>.
+    /// Key of <see cref="ValidationContext.Items"/> that holds the current day as a
+    /// <see cref="DateOnly"/>.
     /// </summary>
     public const string TodayKey = "CodigoActivo.Today";
 

@@ -39,7 +39,9 @@ public sealed record SignupWindow
     /// <param name="earlyStartsAt">When the early signup opens, if there is one.</param>
     /// <param name="startsAt">When the signup opens to everyone.</param>
     /// <param name="endsAt">When the signup closes.</param>
-    /// <returns>The window in UTC, or <see langword="null"/> when the instants are out of order.</returns>
+    /// <returns>
+    /// The window in UTC, or <see langword="null"/> when the instants are out of order.
+    /// </returns>
     public static SignupWindow? TryCreate(
         DateTimeOffset? earlyStartsAt,
         DateTimeOffset startsAt,

@@ -12,7 +12,9 @@ namespace CodigoActivo.API.TermsDocuments.Contracts;
 /// </summary>
 /// <param name="Name">Name, unique among terms documents.</param>
 /// <param name="Description">Rich-text document holding text only; images are refused.</param>
-/// <param name="RequiresSignature">Whether accepting the document asks for a handwritten signature.</param>
+/// <param name="RequiresSignature">
+/// Whether accepting the document asks for a handwritten signature.
+/// </param>
 /// <param name="Kind">Whether the document holds conditions or a consent.</param>
 public record CreateTermsDocumentRequest(
     [Required] [MaxLength(120)] string Name,
@@ -41,7 +43,9 @@ public record CreateTermsDocumentRequest(
 /// </summary>
 /// <param name="Name">Name, unique among terms documents.</param>
 /// <param name="Description">Rich-text document holding text only; images are refused.</param>
-/// <param name="RequiresSignature">Whether accepting the document asks for a handwritten signature.</param>
+/// <param name="RequiresSignature">
+/// Whether accepting the document asks for a handwritten signature.
+/// </param>
 /// <param name="Kind">
 /// Whether the document holds conditions or a consent; it cannot change while an event links the
 /// document or anyone decided on it.

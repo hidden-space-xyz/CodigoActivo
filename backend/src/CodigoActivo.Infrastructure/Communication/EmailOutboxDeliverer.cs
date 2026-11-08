@@ -9,13 +9,13 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// <summary>
 /// Delivers one batch of due outbox messages over one SMTP session. A run removes what expired,
 /// claims what the pace of the SMTP provider and its daily limit allow, by priority, and sends it
-/// message by message: a delivered or refused-for-good message is removed, a message whose recipient
-/// already got their share waits without spending an attempt, a failure that may pass is retried
-/// with a growing delay, and a server that cannot take mail pauses the whole delivery, handing the
-/// rest of the batch back untried. A recipient gets their share back when the server was unavailable
-/// or deferred them, since the message never reached them. Three different messages in a row that
-/// fail for an unknown cause are blamed on the server too, while copies of one content that fail
-/// together are that content's; a recipient the server defers never is. Repeated
+/// message by message: a delivered or refused-for-good message is removed, a message whose
+/// recipient already got their share waits without spending an attempt, a failure that may pass is
+/// retried with a growing delay, and a server that cannot take mail pauses the whole delivery,
+/// handing the rest of the batch back untried. A recipient gets their share back when the server
+/// was unavailable or deferred them, since the message never reached them. Three different messages
+/// in a row that fail for an unknown cause are blamed on the server too, while copies of one
+/// content that fail together are that content's; a recipient the server defers never is. Repeated
 /// failures are logged at most once per <see cref="EmailGuardOptions.AlertInterval"/>. Delivery is
 /// at least once: a sent message whose row cannot be removed is attempted again.
 /// </summary>
@@ -25,7 +25,9 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// <param name="pacer">Pace of the SMTP provider and of every recipient.</param>
 /// <param name="options">Outbox policy: batch size, lease, send timeout and schedules.</param>
 /// <param name="smtp">Daily limit of the SMTP provider.</param>
-/// <param name="guard">Email guard configuration, whose alert interval spaces repeated failures.</param>
+/// <param name="guard">
+/// Email guard configuration, whose alert interval spaces repeated failures.
+/// </param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class EmailOutboxDeliverer(
@@ -52,8 +54,8 @@ public sealed class EmailOutboxDeliverer(
     private int serverFailures;
 
     /// <summary>
-    /// Gets the time until which the delivery is paused because the SMTP server could not take mail;
-    /// a time in the past when it is not paused.
+    /// Gets the time until which the delivery is paused because the SMTP server could not take
+    /// mail; a time in the past when it is not paused.
     /// </summary>
     public DateTimeOffset PausedUntil
     {
@@ -74,9 +76,10 @@ public sealed class EmailOutboxDeliverer(
     /// removal, of the overdue count and of the sweep are logged here.
     /// </summary>
     /// <param name="ct">
-    /// Cancellation token that stops the removal and the claim; in a claimed batch it lets the send
-    /// in flight finish, bounded by <see cref="EmailQueueOptions.SendTimeout"/>, and hands the rest
-    /// back untried, due at once, so the next instance delivers it before its codes expire.
+    /// Cancellation token that stops the removal, the overdue count and the claim; in a claimed
+    /// batch it lets the send in flight finish, bounded by
+    /// <see cref="EmailQueueOptions.SendTimeout"/>, and hands the rest back untried, due at once,
+    /// so the next instance delivers it before its codes expire.
     /// </param>
     /// <returns>A task whose result contains the number of claimed messages.</returns>
     public async Task<int> DeliverDueAsync(CancellationToken ct = default)

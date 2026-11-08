@@ -24,7 +24,7 @@ namespace CodigoActivo.Infrastructure.Database.Seeders;
 /// <param name="database">Connections of the log tables.</param>
 /// <param name="partitions">Maintenance of the log partitions.</param>
 /// <param name="retention">How long the entries of each log table are kept.</param>
-/// <param name="passwordLockout">Password lockout configuration the invented attack follows.</param>
+/// <param name="passwordLockout">Password lockout settings the invented attack follows.</param>
 /// <param name="twoFactor">Second-factor configuration the invented lockout follows.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>

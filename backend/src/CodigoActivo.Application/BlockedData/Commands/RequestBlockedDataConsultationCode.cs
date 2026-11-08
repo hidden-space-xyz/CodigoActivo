@@ -16,7 +16,9 @@ namespace CodigoActivo.Application.BlockedData.Commands;
 /// Carries the input required to email the code that confirms opening a consultation of the
 /// blocked data.
 /// </summary>
-/// <param name="CurrentPassword">Password of the signed-in user, re-entered to authorize it.</param>
+/// <param name="CurrentPassword">
+/// Password of the signed-in user, re-entered to authorize it.
+/// </param>
 public sealed record RequestBlockedDataConsultationCodeCommand(
     [property: Required, MaxLength(128), NotBlank] string CurrentPassword
 ) : ICommand<Result>, IPreparatoryCommand;
@@ -27,7 +29,7 @@ public sealed record RequestBlockedDataConsultationCodeCommand(
 /// is demanded first so a stolen session cannot start the flow; wrong passwords count towards the
 /// same account lock as logins. The code reuses the storage, lifetime, cooldown and lockout of the
 /// emailed login code. Accounts whose second factor is an authenticator application read their
-/// code from it and never reach this command. The code is issued with the account locked, so
+/// code from it and are refused here. The code is issued with the account locked, so
 /// parallel requests run one after another and the later ones find the resend cooldown.
 /// </summary>
 /// <param name="officer">Policy that tells who may consult the blocked data.</param>
@@ -53,7 +55,9 @@ public sealed class RequestBlockedDataConsultationCodeCommandHandler(
     /// <see cref="ApplicationErrorCode.BlockedDataOfficerOnly"/> for any other account,
     /// <see cref="ApplicationErrorCode.UserCurrentPasswordIncorrect"/>, or the refusal of
     /// <see cref="LoginCodeIssuer"/>, such as
-    /// <see cref="ApplicationErrorCode.TwoFactorResendCooldownActive"/> within the resend cooldown.
+    /// <see cref="DomainErrorCode.TwoFactorResendNotAllowed"/> for an authenticator application
+    /// or <see cref="ApplicationErrorCode.TwoFactorResendCooldownActive"/> within the resend
+    /// cooldown.
     /// </returns>
     public async Task<Result> HandleAsync(
         RequestBlockedDataConsultationCodeCommand command,

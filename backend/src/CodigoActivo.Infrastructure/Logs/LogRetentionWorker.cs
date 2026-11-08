@@ -21,7 +21,7 @@ public sealed class LogRetentionWorker(
     /// Waits one interval, since startup has just maintained the tables, and then maintains them
     /// once per interval until shutdown.
     /// </summary>
-    /// <param name="stoppingToken">Cancellation token used to stop the asynchronous operation.</param>
+    /// <param name="stoppingToken">Cancellation token that stops the runs at shutdown.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

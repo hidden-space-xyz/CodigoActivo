@@ -20,8 +20,8 @@ namespace CodigoActivo.API.Participation;
 public class MyParticipationController : ApiControllerBase
 {
     /// <summary>
-    /// Lists the events the signed-in user or their dependents signed up to; a past event shows only
-    /// the confirmed signups and is left out when it has none.
+    /// Lists the events the signed-in user or their dependents signed up to; a past event shows
+    /// only the confirmed signups and is left out when it has none.
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

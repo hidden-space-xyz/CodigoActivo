@@ -15,8 +15,8 @@ public readonly record struct RecipientSpend(bool Allowed, TimeSpan RetryAfter, 
 
 /// <summary>
 /// Keeps an hourly and a daily token bucket per address key, with the limits of
-/// <see cref="EmailGuardOptions"/>, behind a lock of its own. Budgets that are full again are dropped
-/// every <see cref="EmailGuardOptions.SweepInterval"/>, and at most
+/// <see cref="EmailGuardOptions"/>, behind a lock of its own. Budgets that are full again are
+/// dropped every <see cref="EmailGuardOptions.SweepInterval"/>, and at most
 /// <see cref="EmailGuardOptions.MaxTrackedRecipients"/> are held: a new address past that is let
 /// through untracked and reported.
 /// </summary>
@@ -160,14 +160,14 @@ public sealed class RecipientBudgets(EmailGuardOptions options, DateTimeOffset s
     private sealed class RecipientState(TokenBucket hourly, TokenBucket daily)
     {
         /// <summary>
-        /// Gets or sets the budget that holds <see cref="EmailGuardOptions.RecipientBurst"/> and gets
-        /// <see cref="EmailGuardOptions.RecipientPerHour"/> back per hour.
+        /// Gets or sets the budget that holds <see cref="EmailGuardOptions.RecipientBurst"/> and
+        /// gets <see cref="EmailGuardOptions.RecipientPerHour"/> back per hour.
         /// </summary>
         public TokenBucket Hourly { get; set; } = hourly;
 
         /// <summary>
-        /// Gets or sets the budget that holds <see cref="EmailGuardOptions.RecipientPerDay"/> and gets
-        /// it back over a day.
+        /// Gets or sets the budget that holds <see cref="EmailGuardOptions.RecipientPerDay"/> and
+        /// gets it back over a day.
         /// </summary>
         public TokenBucket Daily { get; set; } = daily;
     }

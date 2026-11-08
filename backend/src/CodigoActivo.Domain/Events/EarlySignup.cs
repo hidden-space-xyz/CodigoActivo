@@ -17,7 +17,9 @@ public static class EarlySignup
     /// <summary>
     /// Tells whether a membership type is entitled to the early signup.
     /// </summary>
-    /// <param name="userType">Membership type of the account, or of the guardian of a dependent.</param>
+    /// <param name="userType">
+    /// Membership type of the account, or of the guardian of a dependent.
+    /// </param>
     /// <returns><see langword="true"/> when the type is entitled.</returns>
     public static bool IsEntitled(UserType userType)
     {
@@ -29,7 +31,9 @@ public static class EarlySignup
     /// </summary>
     /// <param name="person">Account that signs up.</param>
     /// <param name="guardian">Guardian of the account when it is a dependent.</param>
-    /// <returns><see langword="true"/> when the person, or the guardian of a dependent, is entitled.</returns>
+    /// <returns>
+    /// <see langword="true"/> when the person, or the guardian of a dependent, is entitled.
+    /// </returns>
     public static bool IsEntitled(User person, User? guardian)
     {
         ArgumentNullException.ThrowIfNull(person);

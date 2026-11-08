@@ -13,7 +13,9 @@ public sealed record NewsItemCreated(NewsItemId NewsItemId) : IDomainEvent;
 /// The content of a news item was replaced.
 /// </summary>
 /// <param name="NewsItemId">Identifier of the news item.</param>
-/// <param name="ReleasedFileIds">Identifiers of the files the previous content referenced and the new one does not.</param>
+/// <param name="ReleasedFileIds">
+/// Identifiers of the files the previous content referenced and the new one does not.
+/// </param>
 public sealed record NewsItemUpdated(
     NewsItemId NewsItemId,
     IReadOnlyCollection<StoredFileId> ReleasedFileIds

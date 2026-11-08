@@ -32,7 +32,9 @@ public sealed class SortMap<T>
     /// Sets the sort terms used when the client names no known key. Call it after
     /// <see cref="Add{TKey}"/>: terms whose key is not registered yet are dropped.
     /// </summary>
-    /// <param name="terms">Keys, each optionally prefixed with <c>-</c> for descending order.</param>
+    /// <param name="terms">
+    /// Keys, each optionally prefixed with <c>-</c> for descending order.
+    /// </param>
     /// <returns>This map, to chain further calls.</returns>
     public SortMap<T> Default(params string[] terms)
     {
@@ -44,7 +46,9 @@ public sealed class SortMap<T>
     /// Adds a deterministic tie-breaker to the sort order, after the ones added before.
     /// </summary>
     /// <typeparam name="TKey">Type of the value ordered by.</typeparam>
-    /// <param name="selector">Value of the row ordered by, ascending, after every sort term.</param>
+    /// <param name="selector">
+    /// Value of the row ordered by, ascending, after every sort term.
+    /// </param>
     /// <returns>This map, to chain further calls.</returns>
     public SortMap<T> Tie<TKey>(Expression<Func<T, TKey>> selector)
     {
@@ -55,15 +59,17 @@ public sealed class SortMap<T>
     /// <summary>
     /// Orders the rows by the known keys of the client, or by the defaults when it names none, and
     /// then by the tie-breakers. Unknown keys are ignored, and only the first occurrence of each
-    /// known key is kept, so the client cannot grow the ordering, and with it the expression tree EF
-    /// Core walks recursively, beyond one term per key.
+    /// known key is kept, so the client cannot grow the ordering, and with it the expression tree
+    /// EF Core walks recursively, beyond one term per key.
     /// </summary>
     /// <param name="source">Rows to order.</param>
     /// <param name="sort">
-    /// Comma-separated keys, each optionally prefixed with <c>-</c> for descending order; null or
-    /// blank for the defaults.
+    /// Comma-separated keys, each optionally prefixed with <c>-</c> for descending order;
+    /// <see langword="null"/> or blank for the defaults.
     /// </param>
-    /// <returns>The ordered rows, or <paramref name="source"/> when there is nothing to order by.</returns>
+    /// <returns>
+    /// The ordered rows, or <paramref name="source"/> when there is nothing to order by.
+    /// </returns>
     public IQueryable<T> Apply(IQueryable<T> source, string? sort)
     {
         var terms = ParseAll(sort)

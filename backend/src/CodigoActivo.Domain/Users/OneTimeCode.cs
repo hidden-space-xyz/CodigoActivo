@@ -7,7 +7,9 @@ namespace CodigoActivo.Domain.Users;
 /// </summary>
 /// <param name="Hash">Hash of the code, or <see langword="null"/> when there is none.</param>
 /// <param name="ExpiresAt">When the code stops being accepted.</param>
-/// <param name="LastSentAt">When the code was last sent, which the resend cooldown counts from.</param>
+/// <param name="LastSentAt">
+/// When the code was last sent, which the resend cooldown counts from.
+/// </param>
 public readonly record struct OneTimeCode(
     string? Hash,
     DateTimeOffset? ExpiresAt,

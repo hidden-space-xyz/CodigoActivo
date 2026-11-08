@@ -5,9 +5,9 @@ using CodigoActivo.Domain.Common;
 namespace CodigoActivo.API.Errors;
 
 /// <summary>
-/// Translates the codes of <see cref="DomainErrorCode"/> and <see cref="ApplicationErrorCode"/> into
-/// the wire <see cref="ErrorCode"/>. A code maps to the wire member of the same name unless it is
-/// listed as a rename.
+/// Translates the codes of <see cref="DomainErrorCode"/> and <see cref="ApplicationErrorCode"/>
+/// into the wire <see cref="ErrorCode"/>. A code maps to the wire member of the same name unless it
+/// is listed as a rename.
 /// </summary>
 public static class WireErrorCodes
 {
@@ -35,7 +35,8 @@ public static class WireErrorCodes
     private static readonly FrozenDictionary<Enum, ErrorCode> Translations = Build();
 
     /// <summary>
-    /// Gets the codes that only the API reports, for failures no use case decides.
+    /// Gets the wire codes that no domain or application code carries by name: the API reports
+    /// them itself, and a use case reaches some of them only through a rename.
     /// </summary>
     public static IReadOnlySet<ErrorCode> ApiOnly { get; } =
         new HashSet<ErrorCode>
@@ -53,7 +54,9 @@ public static class WireErrorCodes
     /// <summary>
     /// Gets the wire code of a domain or application code.
     /// </summary>
-    /// <param name="code">Member of <see cref="DomainErrorCode"/> or <see cref="ApplicationErrorCode"/>.</param>
+    /// <param name="code">
+    /// Member of <see cref="DomainErrorCode"/> or <see cref="ApplicationErrorCode"/>.
+    /// </param>
     /// <returns>The wire code.</returns>
     /// <exception cref="ArgumentOutOfRangeException">The code has no wire translation.</exception>
     public static ErrorCode ToWire(Enum code)
@@ -71,7 +74,9 @@ public static class WireErrorCodes
     /// <summary>
     /// Tells whether a domain or application code has a wire translation.
     /// </summary>
-    /// <param name="code">Member of <see cref="DomainErrorCode"/> or <see cref="ApplicationErrorCode"/>.</param>
+    /// <param name="code">
+    /// Member of <see cref="DomainErrorCode"/> or <see cref="ApplicationErrorCode"/>.
+    /// </param>
     /// <returns><see langword="true"/> when <see cref="ToWire"/> accepts the code.</returns>
     public static bool IsTranslated(Enum code)
     {

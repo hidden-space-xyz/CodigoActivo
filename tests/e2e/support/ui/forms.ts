@@ -8,8 +8,8 @@ const THUMBNAIL_NAME = 'thumbnail.png'
 const THUMBNAIL_PATH = fileURLToPath(new URL(`../assets/${THUMBNAIL_NAME}`, import.meta.url))
 
 /**
- * Picks the suite's image in the thumbnail field (`entities/file`) inside `scope` through its hidden
- * file input; the form uploads it when it is saved.
+ * Picks the suite's image in the thumbnail field (`entities/file`) inside `scope` through its
+ * hidden file input; the form uploads it when it is saved.
  */
 export async function pickThumbnail(scope: Locator): Promise<void> {
   const field = scope.getByTestId('thumbnail-field')
@@ -18,8 +18,8 @@ export async function pickThumbnail(scope: Locator): Promise<void> {
 }
 
 /**
- * Replaces the content of the rich text editor (`shared/ui/rich-text-editor`) that carries a test id
- * with `text`.
+ * Replaces the content of the rich text editor (`shared/ui/rich-text-editor`) that carries a test
+ * id with `text`.
  */
 export async function writeRichText(field: Locator, text: string): Promise<void> {
   const editor = field.locator('.ProseMirror')

@@ -19,7 +19,9 @@ import {
 /** Rules a person form applies: those of an independent account or those of a dependent. */
 type PersonKind = 'independent' | 'dependent'
 
-/** Stored values a form compares the draft with to tell what changed; missing ones count as empty. */
+/**
+ * Stored values a form compares the draft with to tell what changed; missing ones count as empty.
+ */
 type StoredPerson = Partial<Pick<PersonDraft, 'email' | 'phone' | 'secondaryPhone' | 'birthDate'>>
 
 /** Where a person form gets its rules and the record it edits. */

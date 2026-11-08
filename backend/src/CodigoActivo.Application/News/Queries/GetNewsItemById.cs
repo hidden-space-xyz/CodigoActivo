@@ -8,13 +8,13 @@ using CodigoActivo.Domain.News;
 namespace CodigoActivo.Application.News.Queries;
 
 /// <summary>
-/// Carries the criteria used to retrieve news item by identifier.
+/// Carries the criteria used to retrieve a news item by identifier.
 /// </summary>
 /// <param name="NewsItemId">Identifier of the news item.</param>
 public sealed record GetNewsItemByIdQuery(NewsItemId NewsItemId) : IQuery<Result<NewsItemResponse>>;
 
 /// <summary>
-/// Executes the query to retrieve news item by identifier.
+/// Executes the query to retrieve a news item by identifier.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -22,7 +22,7 @@ public sealed class GetNewsItemByIdQueryHandler(IReadStore readStore, IQueryExec
     : IQueryHandler<GetNewsItemByIdQuery, Result<NewsItemResponse>>
 {
     /// <summary>
-    /// Handles the request to retrieve news item by identifier.
+    /// Handles the request to retrieve a news item by identifier.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

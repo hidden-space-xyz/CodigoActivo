@@ -14,7 +14,9 @@ namespace CodigoActivo.Application.Accounts;
 /// once: in the security log, without the account, and in the audit log, which names it with the
 /// caller that caused the lock.
 /// </summary>
-/// <param name="passwordLockout">Password lockout configuration, whose limit the record names.</param>
+/// <param name="passwordLockout">
+/// Password lockout configuration, whose limit the record names.
+/// </param>
 /// <param name="twoFactor">Second-factor configuration, whose limit the record names.</param>
 /// <param name="logger">Logger of the lockouts.</param>
 /// <param name="audit">Writer of the audit entries.</param>

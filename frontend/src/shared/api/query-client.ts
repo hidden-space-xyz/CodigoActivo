@@ -9,7 +9,7 @@ import {
 declare module '@tanstack/vue-query' {
   interface Register {
     mutationMeta: {
-      /** Query keys, usually an entity's `all` key, whose data a successful mutation makes stale. */
+      /** Query keys, usually an entity's `all` key, that a successful mutation makes stale. */
       readonly invalidates?: readonly QueryKey[]
     }
   }

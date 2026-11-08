@@ -6,8 +6,8 @@ import { ROLE_LABELS, type RoleName } from '../../api/catalogs'
 export type AttendeeGroup = 'users' | 'dependents'
 
 /**
- * The «Asistentes» tab of the event page, which a confirmed leader sees: a confidentiality note and,
- * per activity they lead, the confirmed attendees grouped by role, adults and minors apart.
+ * The «Asistentes» tab of the event page, which a confirmed leader sees: a confidentiality note
+ * and, per activity they lead, the confirmed attendees grouped by role, adults and minors apart.
  */
 export class LeaderRoster {
   /** The note «Datos personales confidenciales». */

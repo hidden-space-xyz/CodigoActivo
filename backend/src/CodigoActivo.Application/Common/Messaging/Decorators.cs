@@ -93,18 +93,18 @@ public sealed class UnitOfWorkCommandDecorator<TCommand, TResult>(
 }
 
 /// <summary>
-/// Records the commands worth keeping in the audit log: who ran them and from where, what they acted
-/// on and how they ended. Registered outside validation and the commit, it queues the entry once
-/// both are over: a failed result, a concurrent update or a unique constraint violation is recorded
-/// as rejected and any other exception as failed. The main thing is the one the handler named
-/// through <see cref="IAuditSubject"/>, else the one a successful result created, else the first
-/// typed identifier of the command; every other identifier it names is related. Auditing never
-/// changes the outcome of a command. Commands marked <see cref="IUnaudited"/> are never recorded, a
-/// <see cref="IScheduledCommand"/> only when it changed something, a
-/// <see cref="IPreparatoryCommand"/> only when refused, a <see cref="IAccountLookupCommand"/> only
-/// when it found the account, and a <see cref="IRoutineCommand"/> refused only for lack of
-/// permission. Every command, audited or not, runs inside <see cref="ICommandScope"/>, so the data
-/// history names it.
+/// Records the commands worth keeping in the audit log: who ran them and from where, what they
+/// acted on and how they ended. Registered outside validation and the commit, it queues the entry
+/// once both are over: a failed result, a concurrent update or a unique constraint violation is
+/// recorded as rejected and any other exception as failed. The main thing is the one the handler
+/// named through <see cref="IAuditSubject"/>, else the one a successful result created, else the
+/// first typed identifier of the command; every other identifier it names is related. Auditing
+/// never changes the outcome of a command. Commands marked <see cref="IUnaudited"/> are never
+/// recorded, the success of a <see cref="IScheduledCommand"/> only when it changed something, a
+/// <see cref="IPreparatoryCommand"/> never on success, the success of a
+/// <see cref="IAccountLookupCommand"/> only when it found the account, and a
+/// <see cref="IRoutineCommand"/> refused only for lack of permission. Every command, audited or
+/// not, runs inside <see cref="ICommandScope"/>, so the data history names it.
 /// </summary>
 /// <typeparam name="TCommand">Type of command handled.</typeparam>
 /// <typeparam name="TResult">Result type of the command.</typeparam>
@@ -382,7 +382,9 @@ public static class UseCaseTiming
     /// </summary>
     /// <param name="logger">Logger to write to.</param>
     /// <param name="message">Type of the command or query.</param>
-    /// <param name="started">Timestamp from <see cref="Stopwatch.GetTimestamp()"/> when it started.</param>
+    /// <param name="started">
+    /// Timestamp from <see cref="Stopwatch.GetTimestamp()"/> when it started.
+    /// </param>
     public static void WarnIfSlow(ILogger logger, Type message, long started)
     {
         ArgumentNullException.ThrowIfNull(message);

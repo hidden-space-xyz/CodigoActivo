@@ -32,7 +32,9 @@ public class LegalPoliciesController : ApiControllerBase
     /// <param name="kind">Which policy to read.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing the policy, or an error response when none was published yet.</returns>
+    /// <returns>
+    /// An HTTP response containing the policy, or an error response when none was published yet.
+    /// </returns>
     [HttpGet("{kind}")]
     [AllowAnonymous]
     [OutputCache(PolicyName = CacheTags.LegalPolicies)]
@@ -77,7 +79,9 @@ public class LegalPoliciesController : ApiControllerBase
     /// <param name="kind">Which policy to read.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing the versions, or an error response when none was published yet.</returns>
+    /// <returns>
+    /// An HTTP response containing the versions, or an error response when none was published yet.
+    /// </returns>
     [HttpGet("{kind}/versions")]
     [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<IReadOnlyList<LegalPolicyVersionResponse>>> ListVersionsAsync(
@@ -100,7 +104,10 @@ public class LegalPoliciesController : ApiControllerBase
     /// <param name="version">Number of the version.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing the version, or an error response when the policy has none with that number.</returns>
+    /// <returns>
+    /// An HTTP response containing the version, or an error response when the policy has none with
+    /// that number.
+    /// </returns>
     [HttpGet("{kind}/versions/{version:int}")]
     [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<LegalPolicyResponse>> GetVersionAsync(

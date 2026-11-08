@@ -26,9 +26,9 @@ public sealed class DataHistoryEntry
     /// <summary>
     /// Gets the identifiers of the accounts the row concerns, every <c>UserId</c> it holds: the
     /// account itself, its guardian, the person a signup or decision is for, whoever decided,
-    /// recorded or authored it. The account that made the change is not one of them, so an extract
-    /// about an administrator does not carry every row they changed about other people; it stays in
-    /// the encrypted record.
+    /// recorded, authored or last updated it. The account that made the change is not one of them,
+    /// so an extract about an administrator does not carry every row they changed about other
+    /// people; it stays in the encrypted record.
     /// </summary>
     public Guid[] SubjectIds { get; init; } = [];
 

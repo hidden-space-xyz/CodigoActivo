@@ -12,7 +12,7 @@ public static class HttpContextExtensions
     /// Writes the error response of a failure the API decides itself.
     /// </summary>
     /// <param name="context">HTTP context of the request being answered.</param>
-    /// <param name="error">Failure with its status and wire code.</param>
+    /// <param name="error">Failure with its kind and wire code.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     public static Task WriteApiErrorAsync(this HttpContext context, ApiError error)
     {

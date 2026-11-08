@@ -49,9 +49,9 @@ public sealed class PlaceBlockedDataHoldCommandHandler(
     /// A task whose result carries the identifier of the hold;
     /// <see cref="ApplicationErrorCode.BlockedDataOfficerOnly"/> for any other account,
     /// <see cref="DomainErrorCode.BlockedDataConsultationNotFound"/> or
-    /// <see cref="DomainErrorCode.BlockedDataConsultationExpired"/> when the consultation may not be
-    /// used, or <see cref="DomainErrorCode.BlockedDataAccountNotFound"/> when none of its searches
-    /// found the account.
+    /// <see cref="DomainErrorCode.BlockedDataConsultationExpired"/> when the consultation may not
+    /// be used, or <see cref="DomainErrorCode.BlockedDataAccountNotFound"/> when none of its
+    /// searches found the account.
     /// </returns>
     public async Task<Result<BlockedDataHoldId>> HandleAsync(
         PlaceBlockedDataHoldCommand command,

@@ -20,9 +20,9 @@ function traceOf(value: unknown): string {
 /**
  * Diagnostic page: the entries the API logged, newest first, with a message search, level,
  * source and date filters, a trace filter the page owns (taken from and kept in `?traceId=`, so the
- * audit page can link here) and the dialog that loads one entry with its
- * exception. The way to the audit page is only for those who may read it (`opensAudit`): the
- * superadministrator and the data protection officer. Call it in `setup`.
+ * audit page can link here) and the dialog that loads one entry with its exception. The way to the
+ * audit page is only for those who may read it (`opensAudit`): the superadministrator and the data
+ * protection officer. Call it in `setup`.
  */
 export function useDiagnostics() {
   const { t } = useI18n()

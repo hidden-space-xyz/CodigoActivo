@@ -13,7 +13,9 @@ public sealed record LoginChallengeTicket(string CredentialStamp)
     /// of the current password, so a password change refuses a challenge opened before it.
     /// </summary>
     /// <param name="presentedStamp">Credential stamp the cookie carries.</param>
-    /// <returns><see langword="true"/> when the cookie was issued for the current password.</returns>
+    /// <returns>
+    /// <see langword="true"/> when the cookie was issued for the current password.
+    /// </returns>
     public bool Accepts(string presentedStamp)
     {
         return CredentialStamps.Matches(presentedStamp, CredentialStamp);

@@ -13,7 +13,9 @@ namespace CodigoActivo.Application.Activities.Signups;
 /// has no address to write to. An address its account has not confirmed yet gets none, since
 /// anyone may have registered it with someone else's address.
 /// </summary>
-/// <param name="readStore">Read side used to describe the activity and reach the participant.</param>
+/// <param name="readStore">
+/// Read side used to describe the activity and reach the participant.
+/// </param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="emailSender">Sender that delivers the message.</param>
 /// <param name="composer">Composer that renders the decision messages.</param>
@@ -30,8 +32,8 @@ public sealed class ActivitySignupNotifier(
 
     /// <summary>
     /// Tells the person signed up, or their guardian, that the signup was confirmed or denied,
-    /// replacing a pending decision on the same signup. Nothing is sent when the activity is gone or
-    /// neither has an address to write to; any failure but a cancellation is logged.
+    /// replacing a pending decision on the same signup. Nothing is sent when the activity is gone
+    /// or neither has an address to write to; any failure but a cancellation is logged.
     /// </summary>
     /// <param name="activityId">Identifier of the activity.</param>
     /// <param name="userId">Identifier of the person signed up.</param>

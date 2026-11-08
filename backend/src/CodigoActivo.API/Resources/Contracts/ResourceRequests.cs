@@ -20,7 +20,9 @@ namespace CodigoActivo.API.Resources.Contracts;
 /// <param name="Url">
 /// HTTP or HTTPS link; required for an external resource and refused for one written on the site.
 /// </param>
-/// <param name="ResourceTypeId">Identifier of the resource type, which decides which of the two applies.</param>
+/// <param name="ResourceTypeId">
+/// Identifier of the resource type, which decides which of the two applies.
+/// </param>
 /// <param name="ThumbnailId">Identifier of the uploaded thumbnail file, which must exist.</param>
 public record CreateResourceRequest(
     [Required] [MaxLength(200)] string Title,
@@ -70,7 +72,9 @@ public record CreateResourceRequest(
 /// <param name="Url">
 /// HTTP or HTTPS link; required for an external resource and refused for one written on the site.
 /// </param>
-/// <param name="ResourceTypeId">Identifier of the resource type, which decides which of the two applies.</param>
+/// <param name="ResourceTypeId">
+/// Identifier of the resource type, which decides which of the two applies.
+/// </param>
 /// <param name="ThumbnailId">Identifier of the uploaded thumbnail file, which must exist.</param>
 public record UpdateResourceRequest(
     [Required] [MaxLength(200)] string Title,

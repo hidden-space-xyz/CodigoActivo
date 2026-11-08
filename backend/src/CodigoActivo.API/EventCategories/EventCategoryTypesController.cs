@@ -50,7 +50,9 @@ public class EventCategoryTypesController : ApiControllerBase
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="getById">Query handler that reads the created category type.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A 201 response with the category type and its location, or an error response.</returns>
+    /// <returns>
+    /// A 201 response with the category type and its location, or an error response.
+    /// </returns>
     [HttpPost]
     [AllowOnlyStaff(StaffRole.Editor)]
     [ProducesResponseType<EventCategoryTypeResponse>(StatusCodes.Status201Created)]

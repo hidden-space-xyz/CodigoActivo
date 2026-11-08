@@ -25,7 +25,9 @@ export interface Actor {
 /** A shared account the setup project signed in, saved for the workers. */
 export type SharedActorName = 'initial-admin' | 'privacy-officer'
 
-/** How to create an account: what to register, its type and its staff role, which needs a member. */
+/**
+ * How to create an account: what to register, its type and its staff role, which needs a member.
+ */
 export interface ActorOptions extends Registration {
   readonly type?: UserTypeName
   readonly admin?: boolean

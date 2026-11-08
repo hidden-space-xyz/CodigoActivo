@@ -16,7 +16,7 @@ public interface IRepository<in TAggregate>
     /// </summary>
     /// <param name="aggregate">Aggregate to add.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task that completes when the aggregate is tracked.</returns>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public Task AddAsync(TAggregate aggregate, CancellationToken ct = default);
 
     /// <summary>

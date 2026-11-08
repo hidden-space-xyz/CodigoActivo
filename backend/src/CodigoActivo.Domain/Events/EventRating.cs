@@ -87,7 +87,9 @@ public class EventRating : AggregateRoot<EventRatingId>
     /// <see cref="MaxAnswerLength"/> and a rating without a score or any answer are refused and
     /// change nothing.
     /// </summary>
-    /// <param name="score">Score, or <see langword="null"/> when the participant gives none.</param>
+    /// <param name="score">
+    /// Score, or <see langword="null"/> when the participant gives none.
+    /// </param>
     /// <param name="mostLiked">What the participant liked most.</param>
     /// <param name="leastLiked">What the participant liked least.</param>
     /// <param name="suggestions">Suggestions of the participant.</param>

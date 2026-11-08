@@ -29,7 +29,9 @@ public interface ILogEntryReader
     /// </summary>
     /// <param name="id">Identifier of the entry.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the entry, or null when there is none.</returns>
+    /// <returns>
+    /// A task whose result contains the entry, or <see langword="null"/> when there is none.
+    /// </returns>
     public Task<DiagnosticLogEntryDetailResponse?> FindDiagnosticAsync(
         Guid id,
         CancellationToken ct = default

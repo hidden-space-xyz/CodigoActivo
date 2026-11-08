@@ -26,27 +26,28 @@ public sealed class EmailQueueOptions
     public const int AnonymousCodePriority = 1;
 
     /// <summary>
-    /// Identifies the stored priority of the automatic notices nobody waits for in front of a screen:
-    /// security alerts, activity decisions, the coming-of-age notice and the notices to the legal
-    /// contact.
+    /// Identifies the stored priority of the automatic notices nobody waits for in front of a
+    /// screen: security alerts, activity decisions, the coming-of-age notice and the notices to the
+    /// legal contact.
     /// </summary>
     public const int NoticePriority = 2;
 
     /// <summary>
-    /// Identifies the stored priority of administrator-written mail, which yields to everything else
-    /// because one batch can hold hundreds of recipients.
+    /// Identifies the stored priority of administrator-written mail, which yields to everything
+    /// else because one batch can hold hundreds of recipients.
     /// </summary>
     public const int BulkPriority = 3;
 
     /// <summary>
-    /// Identifies the default of <see cref="BatchSize"/>, the number of due messages claimed at once.
+    /// Identifies the default of <see cref="BatchSize"/>, the number of due messages claimed at
+    /// once.
     /// </summary>
     public const int DefaultBatchSize = 10;
 
     /// <summary>
-    /// Identifies how many different messages in a row may fail for a reason of their own before the
-    /// worker blames the server and pauses: one rejection is the message's, three in a row are the
-    /// server's. Copies of one content, such as an administrator's mailing, count once.
+    /// Identifies how many different messages in a row may fail for a reason of their own before
+    /// the worker blames the server and pauses: one rejection is the message's, three in a row are
+    /// the server's. Copies of one content, such as an administrator's mailing, count once.
     /// </summary>
     public const int FailuresBeforePause = 3;
 
@@ -87,8 +88,8 @@ public sealed class EmailQueueOptions
 
     /// <summary>
     /// Stores how long the whole delivery pauses after the first, second, third and fourth server
-    /// failure in a row and, from the fifth on, after every further one. A pause spends no attempt of
-    /// any message.
+    /// failure in a row and, from the fifth on, after every further one. A pause spends no attempt
+    /// of any message.
     /// </summary>
     public static readonly IReadOnlyList<TimeSpan> PauseDelays =
     [
@@ -100,8 +101,8 @@ public sealed class EmailQueueOptions
     ];
 
     /// <summary>
-    /// Gets or sets how many administrator-written messages may wait at once; a batch that would pass
-    /// it is refused with an error the administrator sees.
+    /// Gets or sets how many administrator-written messages may wait at once; a batch that would
+    /// pass it is refused with an error the administrator sees.
     /// </summary>
     public int Capacity { get; set; } = 2000;
 
@@ -113,15 +114,16 @@ public sealed class EmailQueueOptions
     public int BatchSize { get; set; } = DefaultBatchSize;
 
     /// <summary>
-    /// Gets or sets how long stopping the host waits for the send in flight. A message not delivered
-    /// by then stays in the outbox and is claimed again once its lease expires.
+    /// Gets or sets how long stopping the host waits for the send in flight; the rest of the
+    /// claimed batch is handed back untried at once. A send still running by then stays leased and
+    /// is claimed again once its lease expires.
     /// </summary>
     public TimeSpan ShutdownDrain { get; set; } = TimeSpan.FromSeconds(20);
 
     /// <summary>
     /// Gets or sets the longest time one send may take, connection to the SMTP server and
     /// authentication included; a send still running then is cancelled and counts as a failed
-    /// attempt.
+    /// attempt, while a connection still opening then pauses the delivery instead.
     /// </summary>
     public TimeSpan SendTimeout { get; set; } = TimeSpan.FromSeconds(60);
 
@@ -131,8 +133,8 @@ public sealed class EmailQueueOptions
     public TimeSpan PollInterval { get; set; } = TimeSpan.FromSeconds(5);
 
     /// <summary>
-    /// Gets how long a claimed message stays reserved for the worker that took it: the messages of a
-    /// batch are sent one after another, so the last one is done within <see cref="BatchSize"/>
+    /// Gets how long a claimed message stays reserved for the worker that took it: the messages of
+    /// a batch are sent one after another, so the last one is done within <see cref="BatchSize"/>
     /// sends, each of which may spend a full <see cref="SendTimeout"/>. The lease covers that worst
     /// case plus <see cref="LeaseMargin"/>, so no row becomes claimable again while the worker that
     /// claimed it may still be delivering it.
@@ -239,8 +241,8 @@ public sealed class EmailQueueOptions
     /// <param name="sentInWindow">Messages handed to the SMTP server within the window.</param>
     /// <param name="dailyLimit">Messages the SMTP provider accepts per day.</param>
     /// <returns>
-    /// The highest claimable priority value, or <see langword="null"/> when the whole daily limit is
-    /// spent.
+    /// The highest claimable priority value, or <see langword="null"/> when the whole daily limit
+    /// is spent.
     /// </returns>
     public static int? ClaimablePriority(long sentInWindow, int dailyLimit)
     {

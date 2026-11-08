@@ -2,7 +2,7 @@ import { queryOptions } from '@tanstack/vue-query'
 
 import { getEventRosterRequest } from './requests'
 
-/** Query keys of the roster report, under the root of every event report. */
+/** Query keys of the roster report, under the root of every report. */
 export const rosterKeys = {
   all: ['reports'] as const,
   ofEvent: (eventId: string) => [...rosterKeys.all, 'event-roster', eventId] as const,

@@ -183,7 +183,9 @@ export async function grantStaffRole(
   })
 }
 
-/** Designates `userId` for data protection; the initial administrator confirms with its password. */
+/**
+ * Designates `userId` for data protection; the initial administrator confirms with its password.
+ */
 export async function designatePrivacyOfficer(
   initialAdmin: ApiClient,
   userId: string,

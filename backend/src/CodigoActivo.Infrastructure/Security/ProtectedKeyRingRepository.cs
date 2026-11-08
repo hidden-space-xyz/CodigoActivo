@@ -8,10 +8,10 @@ namespace CodigoActivo.Infrastructure.Security;
 /// <summary>
 /// Reads the key ring through another repository and keeps only the keys whose secrets
 /// <see cref="AesGcmKeyRingProtection"/> protects: every encrypted secret of the key must name
-/// <see cref="AesGcmXmlDecryptor"/>, and no master key may be stored in clear. Otherwise anyone able
-/// to write to the key volume, without knowing the root key, could plant a key in clear and have it
-/// used to protect sessions and stored secrets. Elements that are not keys, such as revocations, are
-/// kept unchanged, and storing is delegated as is.
+/// <see cref="AesGcmXmlDecryptor"/>, and no master key may be stored in clear. Otherwise anyone
+/// able to write to the key volume, without knowing the root key, could plant a key in clear and
+/// have it used to protect sessions and stored secrets. Elements that are not keys, such as
+/// revocations, are kept unchanged, and storing is delegated as is.
 /// </summary>
 /// <param name="inner">Repository that stores the key ring.</param>
 /// <param name="logger">Logger used to record the keys that are ignored.</param>

@@ -22,7 +22,8 @@ public class MyActivitiesController : ApiControllerBase
     /// the activity; those of their dependents are not included.
     /// </summary>
     /// <param name="eventId">
-    /// Identifier of the event whose activities are listed, or null for every event.
+    /// Identifier of the event whose activities are listed, or <see langword="null"/> for every
+    /// event.
     /// </param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

@@ -40,7 +40,10 @@ public sealed class HandwrittenSignature
     /// Checks and copies a drawn signature.
     /// </summary>
     /// <param name="png">PNG image of the drawing.</param>
-    /// <returns>The signature, or <see cref="DomainErrorCode.EventTermsSignatureInvalid"/> when it is not a PNG image within the limits.</returns>
+    /// <returns>
+    /// The signature, or <see cref="DomainErrorCode.EventTermsSignatureInvalid"/> when it is not a
+    /// PNG image within the limits.
+    /// </returns>
     public static Result<HandwrittenSignature> Create(ReadOnlySpan<byte> png)
     {
         return

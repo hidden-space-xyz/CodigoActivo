@@ -151,10 +151,10 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Changes the staff role of a user; only the initial administrator does. Giving a role requires
-    /// the caller's password, so the endpoint shares the credential rate limits. The caller's own
-    /// role is refused, neither a dependent nor an account with an unconfirmed email gets one, and
-    /// the initial administrator always stays an administrator.
+    /// Changes the staff role of a user; only the initial administrator does. Giving a role
+    /// requires the caller's password, so the endpoint shares the credential rate limits. The
+    /// caller's own role is refused, neither a dependent nor an account with an unconfirmed email
+    /// gets one, and the initial administrator always stays an administrator.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>
@@ -175,9 +175,9 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Designates the account for data protection, the only one that consults the blocked data; only
-    /// the initial administrator does, with its password, so the endpoint shares the credential rate
-    /// limits. The account designated until now stops being designated.
+    /// Designates the account for data protection, the only one that consults the blocked data;
+    /// only the initial administrator does, with its password, so the endpoint shares the
+    /// credential rate limits. The account designated until now stops being designated.
     /// </summary>
     /// <param name="userId">Identifier of the account designated from now on.</param>
     /// <param name="request">Validated client request data.</param>

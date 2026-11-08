@@ -23,11 +23,11 @@ using Microsoft.EntityFrameworkCore;
 namespace CodigoActivo.Infrastructure.Database.Seeders;
 
 /// <summary>
-/// Creates the invented content of demo mode, so every page has something to show: accounts of every
-/// type and staff role with their children, a registration waiting for its verification, events in
-/// every stage with activities, signups, terms decisions and ratings, news, resources, partners, and
-/// terms documents and legal policies with an earlier version, illustrated with images downloaded
-/// from picsum.photos. The initial administrator gets signups of their own.
+/// Creates the invented content of demo mode, so every page has something to show: accounts of
+/// every type and staff role with their children, a registration waiting for its verification,
+/// events in every stage with activities, signups, terms decisions and ratings, news, resources,
+/// partners, and terms documents and legal policies with an earlier version, illustrated with
+/// images downloaded from picsum.photos. The initial administrator gets signups of their own.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
 /// <param name="storage">Storage the encoded variants of the demo images are written to.</param>

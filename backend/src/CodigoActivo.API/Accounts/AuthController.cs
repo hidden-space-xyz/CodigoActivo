@@ -38,7 +38,9 @@ public class AuthController : ApiControllerBase
     /// Issues an antiforgery request token, storing its cookie, and names the header that must echo
     /// the token on every unsafe request.
     /// </summary>
-    /// <param name="antiforgery">Antiforgery service that issues the cookie and request token pair.</param>
+    /// <param name="antiforgery">
+    /// Antiforgery service that issues the cookie and request token pair.
+    /// </param>
     /// <returns>An HTTP response containing the request token and its header name.</returns>
     [HttpGet("csrf")]
     [AllowAnonymous]
@@ -408,8 +410,8 @@ public class AuthController : ApiControllerBase
 
     /// <summary>
     /// Closes the caller's session: the server-side session row is revoked, and a pending
-    /// second-factor challenge is closed on the account, before the cookies are deleted, so neither
-    /// presented ticket stops being accepted only because a copy of it survives. The endpoint is
+    /// second-factor challenge is closed on the account, before the cookies are deleted, so a
+    /// surviving copy of either presented ticket stops being accepted too. The endpoint is
     /// idempotent and needs no valid session, so a ticket whose row is already gone is still
     /// answered by clearing both cookies. A session or challenge that fails to close is logged and
     /// never keeps the cookies.

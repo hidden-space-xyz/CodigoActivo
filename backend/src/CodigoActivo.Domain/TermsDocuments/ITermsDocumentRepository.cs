@@ -12,7 +12,9 @@ public interface ITermsDocumentRepository : IRepository<TermsDocument>
     /// </summary>
     /// <param name="id">Identifier of the document.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is the document, or <see langword="null"/> when it does not exist.</returns>
+    /// <returns>
+    /// A task whose result is the document, or <see langword="null"/> when it does not exist.
+    /// </returns>
     public Task<TermsDocument?> GetByIdAsync(TermsDocumentId id, CancellationToken ct = default);
 
     /// <summary>
@@ -22,7 +24,9 @@ public interface ITermsDocumentRepository : IRepository<TermsDocument>
     /// </summary>
     /// <param name="termsDocument">Document loaded in the unit of work.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result is <see langword="false"/> when the document no longer exists.</returns>
+    /// <returns>
+    /// A task whose result is <see langword="false"/> when the document no longer exists.
+    /// </returns>
     public Task<bool> LockAsync(TermsDocument termsDocument, CancellationToken ct = default);
 
     /// <summary>
@@ -54,7 +58,9 @@ public interface ITermsDocumentRepository : IRepository<TermsDocument>
     /// </summary>
     /// <param name="ids">Identifiers of the documents to look at.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the identifiers of the documents that ask for one.</returns>
+    /// <returns>
+    /// A task whose result contains the identifiers of the documents that ask for one.
+    /// </returns>
     public Task<IReadOnlyCollection<TermsDocumentId>> ListRequiringSignatureAsync(
         IReadOnlyCollection<TermsDocumentId> ids,
         CancellationToken ct = default

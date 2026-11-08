@@ -21,19 +21,26 @@ namespace CodigoActivo.Application.Users.Commands;
 /// <param name="Email">Email; required for an independent account, ignored for a dependent.</param>
 /// <param name="Phone">Phone; required for an independent account, ignored for a dependent.</param>
 /// <param name="BirthDate">
-/// Date of birth; required for a dependent, which a changed one must keep a minor, and refused for an
-/// independent account.
+/// Date of birth; required for a dependent, which a changed one must keep a minor, and refused for
+/// an independent account.
 /// </param>
-/// <param name="NationalId">DNI or NIE; required for an independent account, ignored for a dependent.</param>
-/// <param name="NewsConsent">Whether the holder agrees to receive news by email; ignored for a dependent.</param>
+/// <param name="NationalId">
+/// DNI or NIE; required for an independent account, ignored for a dependent.
+/// </param>
+/// <param name="NewsConsent">
+/// Whether the holder agrees to receive news by email; ignored for a dependent.
+/// </param>
 /// <param name="Gender">Gender.</param>
 /// <param name="ParentId">
 /// Guardian of a dependent, repeating the one it has, or <see langword="null"/>; refused for an
 /// independent account.
 /// </param>
-/// <param name="CurrentPassword">Password of the signed-in user, required to replace the email or the phones.</param>
+/// <param name="CurrentPassword">
+/// Password of the signed-in user, required to replace the email or the phones.
+/// </param>
 /// <param name="SecondaryPhone">
-/// Optional second phone of an independent account, different from the phone; ignored for a dependent.
+/// Optional second phone of an independent account, different from the phone; ignored for a
+/// dependent.
 /// </param>
 public sealed record UpdateUserCommand(
     UserId UserId,
@@ -57,7 +64,9 @@ public sealed record UpdateUserCommand(
 /// only applies once its holder confirms it through the emailed link; the rest applies at once.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
-/// <param name="actingUser">Policy that decides whose personal data the signed-in user manages.</param>
+/// <param name="actingUser">
+/// Policy that decides whose personal data the signed-in user manages.
+/// </param>
 /// <param name="passwordAttempts">Guard that verifies the password of the signed-in user.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="disposableEmails">Checker of disposable email domains.</param>
@@ -79,8 +88,8 @@ public sealed class UpdateUserCommandHandler(
     /// <returns>
     /// A task whose result reports success;
     /// <see cref="ApplicationErrorCode.ActingForAnotherUserForbidden"/> when the caller is neither
-    /// the user nor their guardian, <see cref="ApplicationErrorCode.UserNotFound"/>, the domain error
-    /// of the profile rule that refuses the change,
+    /// the user nor their guardian, <see cref="ApplicationErrorCode.UserNotFound"/>, the domain
+    /// error of the profile rule that refuses the change,
     /// <see cref="ApplicationErrorCode.DisposableEmailNotAllowed"/>,
     /// <see cref="ApplicationErrorCode.UserCurrentPasswordIncorrect"/> when replacing the email or
     /// the phones with a wrong, missing or locked password, or the error of

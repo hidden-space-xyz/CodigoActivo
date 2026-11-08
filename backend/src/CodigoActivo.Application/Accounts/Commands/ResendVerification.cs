@@ -27,8 +27,12 @@ public sealed record ResendVerificationCommand(
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="accountLock">Runs the issue of the link with the account locked.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="codeHasher">Hasher used so the verification code is never stored in plaintext.</param>
-/// <param name="verification">Account verification configuration: code lifetime and resend cooldown.</param>
+/// <param name="codeHasher">
+/// Hasher used so the verification code is never stored in plaintext.
+/// </param>
+/// <param name="verification">
+/// Account verification configuration: code lifetime and resend cooldown.
+/// </param>
 /// <param name="accountEmails">Sender of the verification link.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class ResendVerificationCommandHandler(

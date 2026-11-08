@@ -5,12 +5,18 @@ namespace CodigoActivo.Application.Abstractions.Auditing;
 /// </summary>
 public enum AuditActorType
 {
-    /// <summary>A signed-in user.</summary>
+    /// <summary>
+    /// A signed-in user.
+    /// </summary>
     User,
 
-    /// <summary>A caller without a session.</summary>
+    /// <summary>
+    /// A caller without a session.
+    /// </summary>
     Anonymous,
 
-    /// <summary>The application itself, on a schedule.</summary>
+    /// <summary>
+    /// The application itself, on a schedule.
+    /// </summary>
     System,
 }

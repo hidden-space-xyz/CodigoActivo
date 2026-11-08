@@ -14,7 +14,7 @@ public interface IUserSessionRepository : IRepository<UserSession>
     /// <param name="sessionId">Identifier of the session.</param>
     /// <param name="userId">Identifier of the account that owns it.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task that completes once the session no longer exists.</returns>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public Task EndAsync(UserSessionId sessionId, UserId userId, CancellationToken ct = default);
 
     /// <summary>
@@ -22,7 +22,7 @@ public interface IUserSessionRepository : IRepository<UserSession>
     /// </summary>
     /// <param name="userId">Identifier of the account.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task that completes once the account has no sessions.</returns>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public Task EndAllAsync(UserId userId, CancellationToken ct = default);
 
     /// <summary>

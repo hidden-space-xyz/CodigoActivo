@@ -11,8 +11,8 @@ public enum EmailEnqueueResult
     Queued,
 
     /// <summary>
-    /// The batch is administrator-written mail and the pending mail of that kind would pass its cap;
-    /// nothing was stored.
+    /// The batch is administrator-written mail and the pending mail of that kind would pass its
+    /// cap; nothing was stored.
     /// </summary>
     Full,
 
@@ -28,11 +28,11 @@ public enum EmailEnqueueResult
 public interface IEmailOutbox
 {
     /// <summary>
-    /// Stores every recipient of the batch as one pending message, all of them or none, in a unit of
-    /// work of its own that is committed before returning. A pending message with the topic of the
-    /// batch to the same address is replaced. Only administrator-written mail has a cap on pending
-    /// messages; every other kind is always stored, since the guard, the topics and the delivery pace
-    /// already bound it.
+    /// Stores every recipient of the batch as one pending message, all of them or none, in a unit
+    /// of work of its own that is committed before returning. A pending message with the topic of
+    /// the batch to the same address is replaced. Only administrator-written mail has a cap on
+    /// pending messages; every other kind is always stored, since the guard, the topics and the
+    /// delivery pace already bound it.
     /// </summary>
     /// <param name="batch">Email batch to store for delivery.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

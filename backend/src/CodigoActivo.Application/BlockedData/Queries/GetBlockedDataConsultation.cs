@@ -28,7 +28,10 @@ public sealed class GetBlockedDataConsultationQueryHandler(
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the consultation, or the error.</returns>
+    /// <returns>
+    /// A task whose result contains the consultation, or
+    /// <see cref="DomainErrorCode.BlockedDataConsultationNotFound"/>.
+    /// </returns>
     public async Task<Result<BlockedDataConsultationResponse>> HandleAsync(
         GetBlockedDataConsultationQuery query,
         CancellationToken ct = default
