@@ -12,7 +12,7 @@ public sealed class ConcurrentUpdateException : Exception
         "Another transaction changed the data after it was read, so the changes were not stored.";
 
     /// <summary>
-    /// Initializes a concurrent update without identifying the affected entity.
+    /// Initializes a concurrent update with the default diagnostic message.
     /// </summary>
     public ConcurrentUpdateException()
         : base(DefaultMessage) { }
@@ -31,21 +31,4 @@ public sealed class ConcurrentUpdateException : Exception
     /// <param name="innerException">Database error that rejected the commit.</param>
     public ConcurrentUpdateException(string message, Exception innerException)
         : base(message, innerException) { }
-
-    /// <summary>
-    /// Initializes a concurrent update for the entity whose row changed since it was read.
-    /// </summary>
-    /// <param name="entityType">Entity type stored in the row that changed, if known.</param>
-    /// <param name="innerException">Database error that rejected the commit.</param>
-    public ConcurrentUpdateException(Type? entityType, Exception innerException)
-        : base(DefaultMessage, innerException)
-    {
-        EntityType = entityType;
-    }
-
-    /// <summary>
-    /// Gets the entity type stored in the row that changed since it was read;
-    /// <see langword="null"/> when it is unknown.
-    /// </summary>
-    public Type? EntityType { get; }
 }

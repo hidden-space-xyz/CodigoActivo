@@ -11,6 +11,8 @@ export const SUBJECTS = {
   passwordReset: 'Restablece tu contraseña de Código Activo',
   loginCode: 'Tu código de acceso a Código Activo',
   accountDeletionCode: 'Confirma la eliminación de tu cuenta de Código Activo',
+  emailChangeCode: 'Confirma el cambio de correo de tu cuenta de Código Activo',
+  authenticatorSetupCode: 'Confirma la configuración de una app de autenticación en Código Activo',
   blockedDataCode: 'Confirma la consulta de datos bloqueados en Código Activo',
   blockedDataConsultation: 'Se ha abierto una consulta de datos bloqueados',
   securityAlert: 'Cambio de seguridad en tu cuenta de Código Activo',

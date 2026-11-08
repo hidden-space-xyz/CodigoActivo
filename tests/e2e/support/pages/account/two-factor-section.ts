@@ -1,6 +1,8 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
+import type { Credentials } from '../../api/accounts'
 import { AuthenticatorApp } from '../../api/my-account'
+import { codeIn, SUBJECTS, type Mailbox } from '../../mail/mailbox'
 import type { AccountPage } from './account-page'
 
 /** The section «Verificación en dos pasos» of the profile tab. */
@@ -26,8 +28,8 @@ export class TwoFactorSection {
 }
 
 /**
- * The dialog «Configurar aplicación de autenticación»: the password step unlocks the shared key and
- * the code step activates the application with its first code.
+ * The dialog «Configurar aplicación de autenticación»: the password step emails a code, the emailed
+ * code unlocks the shared key and the code step activates the application with its first code.
  */
 export class AuthenticatorSetupDialog {
   /** The dialog itself. */
@@ -36,7 +38,13 @@ export class AuthenticatorSetupDialog {
   /** «Tu contraseña», in the password step. */
   readonly password: Locator
 
-  /** «Continuar», which sends the password step. */
+  /** «Enviar código», which sends the password step. */
+  readonly sendCode: Locator
+
+  /** «Código del correo», in the emailed code step. */
+  readonly emailCode: Locator
+
+  /** «Continuar», which sends the emailed code step. */
   readonly continue: Locator
 
   /** The Base32 key to type into the application, in the code step. */
@@ -54,6 +62,8 @@ export class AuthenticatorSetupDialog {
   constructor(page: Page) {
     this.root = page.getByTestId('two-factor-setup-dialog')
     this.password = this.root.getByTestId('two-factor-setup-password')
+    this.sendCode = this.root.getByTestId('two-factor-setup-send-code')
+    this.emailCode = this.root.getByTestId('two-factor-setup-email-code')
     this.continue = this.root.getByTestId('two-factor-setup-continue')
     this.sharedKey = this.root.getByTestId('two-factor-shared-key')
     this.code = this.root.getByTestId('two-factor-setup-code')
@@ -61,9 +71,26 @@ export class AuthenticatorSetupDialog {
     this.error = this.root.getByTestId('two-factor-setup-error')
   }
 
-  /** Sends the password step and enrolls an application with the key the dialog then shows. */
-  async unlock(password: string): Promise<AuthenticatorApp> {
-    await this.password.fill(password)
+  /** Sends the password step and waits for the code it emails to `credentials.email`. */
+  async requestCode(mailbox: Mailbox, credentials: Credentials): Promise<string> {
+    await this.password.fill(credentials.password)
+    const sentAfter = new Date()
+    await this.sendCode.click()
+    await expect(this.emailCode).toBeVisible()
+    const email = await mailbox.waitFor({
+      to: credentials.email,
+      subject: SUBJECTS.authenticatorSetupCode,
+      sentAfter,
+    })
+    return codeIn(email)
+  }
+
+  /**
+   * Sends the password and the emailed code, and enrolls an application with the key the dialog
+   * then shows.
+   */
+  async unlock(mailbox: Mailbox, credentials: Credentials): Promise<AuthenticatorApp> {
+    await this.emailCode.fill(await this.requestCode(mailbox, credentials))
     await this.continue.click()
     await expect(this.sharedKey).toHaveText(/^[A-Z2-7 ]{16,}$/)
     return new AuthenticatorApp(await this.sharedKey.innerText())

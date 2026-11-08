@@ -17,34 +17,58 @@ namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 public sealed class BeginAuthenticatorSetupCommandHandlerTests
 {
     private const string Secret = "JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP";
+    private const string EmailCode = "482913";
 
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly ITotpService totp = Substitute.For<ITotpService>();
-    private readonly TwoFactorOptions options = new();
+    private readonly TwoFactorOptions options = new() { MaxFailedAttempts = 2 };
     private readonly TestCurrentUser currentUser = new();
     private readonly BeginAuthenticatorSetupCommandHandler sut;
 
     public BeginAuthenticatorSetupCommandHandlerTests()
     {
         totp.GenerateSecret().Returns(Secret);
+        uow.RunsTransactionsOf<Result<AuthenticatorSetup>>();
         sut = new BeginAuthenticatorSetupCommandHandler(
             users,
             currentUser,
+            AccountLocks.Create(users, uow),
             clock,
             PasswordGuards.Create(new FakePasswordHasher(), uow, clock),
+            SecondFactorGuards.Create(uow, clock, totp, options),
             totp,
             new FakeSecretProtector(),
             options
         );
     }
 
-    private Task<Result<AuthenticatorSetup>> SetupAsync(Guid userId, string password)
+    private User WithEmailedCode(User user)
+    {
+        Persisted.Overwrite(
+            user,
+            new
+            {
+                LoginCode = new
+                {
+                    Hash = FakeOneTimeCodeHasher.Prefix + EmailCode,
+                    ExpiresAt = clock.UtcNow.AddMinutes(5),
+                },
+            }
+        );
+        return users.FindReturns(user);
+    }
+
+    private Task<Result<AuthenticatorSetup>> SetupAsync(
+        Guid userId,
+        string password,
+        string code = EmailCode
+    )
     {
         currentUser.Id = UserId.From(userId);
         return sut.HandleAsync(
-            new AuthenticatorSetupRequest(password).ToCommand(),
+            new AuthenticatorSetupRequest(password, code).ToCommand(),
             TestContext.Current.CancellationToken
         );
     }
@@ -74,20 +98,22 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
         int countedFailures
     )
     {
-        var user = users.FindReturns(NewUser());
+        var user = WithEmailedCode(NewUser());
 
         var result = await SetupAsync(user.Id.Value, password);
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         user.Authenticator.PendingKey.Should().BeNull();
         user.PasswordLockout.FailedAttempts.Should().Be(countedFailures);
+        user.LoginCode.Hash.Should().NotBeNull("a wrong password does not spend the code");
+        user.TwoFactorLockout.FailedAttempts.Should().Be(0);
         await AssertNotSavedAsync();
     }
 
     [Fact]
     public async Task HandleAsyncPasswordNotSetReturnsBadRequest()
     {
-        var user = users.FindReturns(NewUser(passwordHash: null));
+        var user = WithEmailedCode(NewUser(passwordHash: null));
 
         var result = await SetupAsync(user.Id.Value, "password123");
 
@@ -95,9 +121,9 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncCorrectPasswordStoresProtectedPendingKeyAndReturnsEnrollmentData()
+    public async Task HandleAsyncCorrectPasswordAndCodeStoresProtectedPendingKeyAndSpendsTheCode()
     {
-        var user = users.FindReturns(NewUser(email: "ana@test.com"));
+        var user = WithEmailedCode(NewUser(email: "ana@test.com"));
 
         var result = await SetupAsync(user.Id.Value, "password123");
 
@@ -112,25 +138,92 @@ public sealed class BeginAuthenticatorSetupCommandHandlerTests
         user.Authenticator.PendingExpiresAt.Should().Be(clock.UtcNow + options.SetupLifetime);
         user.Authenticator.Key.Should().BeNull("the key only activates after confirmation");
         user.TwoFactorMethod.Should().Be(CodigoActivo.Domain.Users.TwoFactorMethod.Email);
+        user.LoginCode.Hash.Should().BeNull("the emailed code is spent by the enrollment");
+        await users.Received(1).LockAsync(user, Arg.Any<CancellationToken>());
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task HandleAsyncAuthenticatorAlreadyActiveReturnsConflictWithoutAPendingKey()
+    public async Task HandleAsyncWrongCodeCountsTheFailureWithoutStoringAKey()
+    {
+        var user = WithEmailedCode(NewUser());
+
+        var result = await SetupAsync(user.Id.Value, "password123", code: "000000");
+
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
+        user.Authenticator.PendingKey.Should().BeNull();
+        user.TwoFactorLockout.FailedAttempts.Should().Be(1);
+        user.LoginCode.Hash.Should().NotBeNull("a wrong guess must not consume the code");
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncRepeatedWrongCodesLockTheSecondFactorAndRefuseTheRightCode()
+    {
+        var user = WithEmailedCode(NewUser());
+
+        for (var attempt = 0; attempt < options.MaxFailedAttempts; attempt++)
+        {
+            var wrong = await SetupAsync(user.Id.Value, "password123", code: "000000");
+            wrong.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
+        }
+
+        var result = await SetupAsync(user.Id.Value, "password123");
+
+        result.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.TwoFactorLocked);
+        user.Authenticator.PendingKey.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task HandleAsyncExpiredCodeReturnsBadRequestWithoutStoringAKey()
+    {
+        var user = WithEmailedCode(NewUser());
+        clock.UtcNow += TimeSpan.FromMinutes(6);
+
+        var result = await SetupAsync(user.Id.Value, "password123");
+
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
+        user.Authenticator.PendingKey.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task HandleAsyncAuthenticatorAlreadyActiveReturnsConflictBeforeThePassword()
     {
         var user = users.FindReturns(NewUserWithAuthenticator(Secret));
+
+        var result = await SetupAsync(user.Id.Value, "wrong");
+
+        result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.AuthenticatorAlreadyEnabled);
+        user.Authenticator.PendingKey.Should().BeNull();
+        user.Authenticator.Key.Should().Be(FakeSecretProtector.Prefix + Secret);
+        user.PasswordLockout.FailedAttempts.Should().Be(0);
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncAuthenticatorEnabledBeforeTheLockReturnsConflictWithoutCheckingTheCode()
+    {
+        var user = WithEmailedCode(NewUser());
+        users.ReloadsAs(
+            user,
+            new
+            {
+                TwoFactorMethod = CodigoActivo.Domain.Users.TwoFactorMethod.Authenticator,
+                Authenticator = new { Key = FakeSecretProtector.Prefix + Secret },
+            }
+        );
 
         var result = await SetupAsync(user.Id.Value, "password123");
 
         result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.AuthenticatorAlreadyEnabled);
         user.Authenticator.PendingKey.Should().BeNull();
-        user.Authenticator.Key.Should().Be(FakeSecretProtector.Prefix + Secret);
-        await AssertNotSavedAsync();
+        user.TwoFactorLockout.FailedAttempts.Should().Be(0);
     }
 
     [Fact]
     public async Task HandleAsyncUserWithoutEmailLabelsTheAccountWithItsIdentifier()
     {
-        var user = users.FindReturns(NewUser(email: null));
+        var user = WithEmailedCode(NewUser(email: null));
 
         var result = await SetupAsync(user.Id.Value, "password123");
 

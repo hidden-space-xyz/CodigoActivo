@@ -29,7 +29,7 @@ services:
       LEGAL_EMAIL: contacto@codigoactivo.local
       LEGAL_PHONE: 600 00 00 00
     ports:
-      - "5150:8080"
+      - "127.0.0.1:5150:8080"
     read_only: false
     cap_add:
       - SYS_PTRACE
@@ -49,13 +49,13 @@ services:
 
   db:
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
 
   mailpit:
     image: axllent/mailpit:latest
     ports:
-      - "8025:8025"
-      - "1025:1025"
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
     networks: [backend]
     logging:
       driver: none

@@ -108,7 +108,7 @@ test.describe('login', () => {
     await expect(login.error).toHaveText(t('errors.UserAccountPendingVerification'))
   })
 
-  test('five wrong passwords lock the account until its holder resets the password', async ({
+  test('five wrong passwords lock the account and a password reset unlocks it', async ({
     page,
     accounts,
     anonymousApi,

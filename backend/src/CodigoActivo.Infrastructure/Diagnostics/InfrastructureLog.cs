@@ -136,8 +136,8 @@ public static partial class InfrastructureLog
 
     /// <summary>
     /// Records that the outcome of an attempt could not be written back: a retry, a release or the
-    /// removal of a delivered or dropped message. The message waits for its lease to expire and is
-    /// then claimed again.
+    /// removal of a delivered or dropped message. The message stays due and the next run claims it
+    /// again.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="attempts">Attempts already spent on the message.</param>
@@ -145,7 +145,7 @@ public static partial class InfrastructureLog
     /// <param name="exception">Failure raised while recording the attempt.</param>
     [LoggerMessage(
         Level = LogLevel.Error,
-        Message = "Could not record the failed attempt {Attempts} of a {Kind} email; its lease will expire and it will be retried"
+        Message = "Could not record the failed attempt {Attempts} of a {Kind} email; it stays due and will be retried"
     )]
     public static partial void EmailAttemptNotRecorded(
         this ILogger logger,

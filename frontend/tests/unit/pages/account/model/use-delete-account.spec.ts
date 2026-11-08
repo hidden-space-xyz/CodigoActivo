@@ -22,11 +22,11 @@ describe('useDeleteAccount', () => {
 
   it('keeps the cooldown error when the code cannot be sent again', async () => {
     server.use(
-      http.post('/api/me/deletion/code', () => apiError(409, 'TwoFactorResendCooldownActive')),
+      http.post('/api/me/confirmation-code', () => apiError(409, 'TwoFactorResendCooldownActive')),
     )
     const { result } = await mountComposable(() => useDeleteAccount(), { user: {} })
 
-    result.requestCode.mutate('secret')
+    result.requestCode.mutate({ currentPassword: 'secret', purpose: 'AccountDeletion' })
 
     await vi.waitFor(() =>
       expect(result.errorMessage.value).toBe(t('errors.TwoFactorResendCooldownActive')),

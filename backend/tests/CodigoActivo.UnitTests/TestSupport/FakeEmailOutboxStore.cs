@@ -10,7 +10,7 @@ public sealed record RescheduledMessage(
     string? Error
 );
 
-public sealed record ReleasedMessage(Guid Id, int AttemptCount, DateTimeOffset NextAttemptAt);
+public sealed record ReleasedMessage(Guid Id, DateTimeOffset NextAttemptAt);
 
 /// <summary>
 /// In-memory stand-in for the PostgreSQL outbox: it keeps the same rows, protects the stored
@@ -111,7 +111,6 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
                 messages.RemoveAll(message =>
                     message.Topic == topic
                     && batch.Recipients.Any(recipient => recipient.Address == message.ToAddress)
-                    && (message.LockedUntil is null || message.LockedUntil <= EnqueuedAt)
                 );
             }
 
@@ -158,7 +157,6 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
 
     public virtual Task<IReadOnlyList<EmailOutboxMessage>> ClaimDueAsync(
         DateTimeOffset now,
-        DateTimeOffset leaseUntil,
         int batchSize,
         int maxPriority,
         CancellationToken ct = default
@@ -176,7 +174,6 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
             var claimed = messages
                 .Where(message =>
                     message.NextAttemptAt <= now
-                    && (message.LockedUntil is null || message.LockedUntil <= now)
                     && (message.ExpiresAt is null || message.ExpiresAt > now)
                     && message.Priority <= maxPriority
                 )
@@ -187,7 +184,6 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
 
             foreach (var message in claimed)
             {
-                message.LockedUntil = leaseUntil;
                 message.AttemptCount++;
             }
 
@@ -196,9 +192,9 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
     }
 
     /// <summary>
-    /// Copies a claimed row the way the database does, so a worker sees the attempt it claimed and
-    /// never the changes another worker makes afterwards. The stored content stays shared, because
-    /// one claim reads it once for the whole batch.
+    /// Copies a claimed row the way the database returns it, untracked, so the worker keeps the
+    /// attempt it claimed whatever later happens to the stored row. The stored content stays
+    /// shared, because one claim reads it once for the whole batch.
     /// </summary>
     private static EmailOutboxMessage Claimed(EmailOutboxMessage message)
     {
@@ -215,32 +211,23 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
             ExpiresAt = message.ExpiresAt,
             AttemptCount = message.AttemptCount,
             NextAttemptAt = message.NextAttemptAt,
-            LockedUntil = message.LockedUntil,
             LastError = message.LastError,
         };
         Persisted.Overwrite(claimed, new { message.Id });
         return claimed;
     }
 
-    public virtual Task<int> RemoveAsync(
-        Guid messageId,
-        int attemptCount,
-        CancellationToken ct = default
-    )
+    public virtual Task RemoveAsync(Guid messageId, CancellationToken ct = default)
     {
         lock (messages)
         {
-            return Task.FromResult(
-                messages.RemoveAll(message =>
-                    message.Id == messageId && message.AttemptCount == attemptCount
-                )
-            );
+            messages.RemoveAll(message => message.Id == messageId);
+            return Task.CompletedTask;
         }
     }
 
-    public virtual Task<int> RescheduleAsync(
+    public virtual Task RescheduleAsync(
         Guid messageId,
-        int attemptCount,
         DateTimeOffset nextAttemptAt,
         string? error,
         CancellationToken ct = default
@@ -248,44 +235,35 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
     {
         lock (messages)
         {
-            var message = messages.Find(candidate =>
-                candidate.Id == messageId && candidate.AttemptCount == attemptCount
-            );
-            if (message is null)
+            if (messages.Find(candidate => candidate.Id == messageId) is { } message)
             {
-                return Task.FromResult(0);
+                message.NextAttemptAt = nextAttemptAt;
+                message.LastError = error;
+                rescheduled.Add(
+                    new RescheduledMessage(messageId, message.AttemptCount, nextAttemptAt, error)
+                );
             }
 
-            message.NextAttemptAt = nextAttemptAt;
-            message.LockedUntil = null;
-            message.LastError = error;
-            rescheduled.Add(new RescheduledMessage(messageId, attemptCount, nextAttemptAt, error));
-            return Task.FromResult(1);
+            return Task.CompletedTask;
         }
     }
 
-    public virtual Task<int> ReleaseAsync(
+    public virtual Task ReleaseAsync(
         Guid messageId,
-        int attemptCount,
         DateTimeOffset nextAttemptAt,
         CancellationToken ct = default
     )
     {
         lock (messages)
         {
-            var message = messages.Find(candidate =>
-                candidate.Id == messageId && candidate.AttemptCount == attemptCount
-            );
-            if (message is null)
+            if (messages.Find(candidate => candidate.Id == messageId) is { } message)
             {
-                return Task.FromResult(0);
+                message.NextAttemptAt = nextAttemptAt;
+                message.AttemptCount--;
+                released.Add(new ReleasedMessage(messageId, nextAttemptAt));
             }
 
-            message.NextAttemptAt = nextAttemptAt;
-            message.LockedUntil = null;
-            message.AttemptCount = attemptCount - 1;
-            released.Add(new ReleasedMessage(messageId, attemptCount, nextAttemptAt));
-            return Task.FromResult(1);
+            return Task.CompletedTask;
         }
     }
 
@@ -296,12 +274,7 @@ public class FakeEmailOutboxStore(EmailOutboxProtector protector, int capacity =
     {
         lock (messages)
         {
-            var expired = messages
-                .Where(message =>
-                    message.ExpiresAt <= now
-                    && (message.LockedUntil is null || message.LockedUntil <= now)
-                )
-                .ToList();
+            var expired = messages.Where(message => message.ExpiresAt <= now).ToList();
 
             foreach (var message in expired)
             {

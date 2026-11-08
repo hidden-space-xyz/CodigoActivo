@@ -6,7 +6,7 @@ import ActivityTimelineCard from '@/pages/event-detail/ui/ActivityTimelineCard.v
 import EventActivitiesTimeline from '@/pages/event-detail/ui/EventActivitiesTimeline.vue'
 
 import { renderWithProviders, t } from '../../../../support/render'
-import { apiError, http, server } from '../../../../support/server'
+import { apiError, http, HttpResponse, server } from '../../../../support/server'
 import {
   buildSignupActivity,
   CHILD,
@@ -1058,4 +1058,71 @@ describe('activities timeline household signup', () => {
     await waitForNotification(t('pages.eventDetail.toast.signupFailed'))
     expect(findDialog(t('pages.eventDetail.household.header'))).toBeDefined()
   })
+
+  it('sends the household signup once while it is in flight', async () => {
+    const { calls } = serveSignupApi({ children: [CHILD] })
+    let release: () => void = () => undefined
+    server.use(
+      http.post('/api/activities/:activityId/assign-household', async ({ params }) => {
+        calls.household.push({ path: String(params.activityId), body: null })
+        await new Promise<void>((resolve) => {
+          release = resolve
+        })
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    const { wrapper, dialog } = await openHousehold()
+    wrapper.findAllComponents(ElSelect)[1]?.vm.$emit('update:modelValue', 'role-volunteer')
+    await flushPromises()
+    const enroll = () => findButton(t('pages.eventDetail.household.enroll'), dialog)
+    await click(enroll())
+    await vi.waitFor(() => expect(calls.household).toHaveLength(1))
+
+    expect(enroll().disabled).toBe(true)
+    expect(enroll().classList).toContain('is-loading')
+    await click(enroll())
+    release()
+
+    await vi.waitFor(() =>
+      expect(findDialog(t('pages.eventDetail.household.header'))).toBeUndefined(),
+    )
+    expect(calls.household).toHaveLength(1)
+  })
+
+  it.each([
+    { status: 409, code: 'ActivityAssignmentAlreadyExists' as const, closed: false },
+    { status: 404, code: 'ActivityNotFound' as const, closed: false },
+    { status: 400, code: 'ActivitySignupClosed' as const, closed: true },
+  ])(
+    'reloads the activities and signups after a refusal with $code',
+    async ({ status, code, closed }) => {
+      const { calls } = serveSignupApi({
+        children: [CHILD],
+        householdError: () => apiError(status, code),
+      })
+
+      const { wrapper, dialog, queryClient } = await openHousehold()
+      wrapper.findAllComponents(ElSelect)[1]?.vm.$emit('update:modelValue', 'role-volunteer')
+      await flushPromises()
+      const invalidate = vi.spyOn(queryClient, 'invalidateQueries')
+      const before = { ...calls.counts }
+      await click(findButton(t('pages.eventDetail.household.enroll'), dialog))
+
+      await waitForNotification(t('pages.eventDetail.toast.signupFailed'))
+      await vi.waitFor(() =>
+        expect(calls.counts).toMatchObject({
+          activities: (before.activities ?? 0) + 1,
+          assigned: (before.assigned ?? 0) + 1,
+          household: (before.household ?? 0) + 1,
+        }),
+      )
+      const eventRefresh = { queryKey: ['events', 'detail', 'event-1'] }
+      expect(invalidate.mock.calls.map(([filters]) => filters)).toEqual(
+        closed
+          ? expect.arrayContaining([eventRefresh])
+          : expect.not.arrayContaining([eventRefresh]),
+      )
+    },
+  )
 })

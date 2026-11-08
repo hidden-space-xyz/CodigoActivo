@@ -20,11 +20,13 @@ public interface IEventRepository : IRepository<Event>
     public Task<Event?> GetByIdAsync(EventId id, CancellationToken ct = default);
 
     /// <summary>
-    /// Loads the events featured right now.
+    /// Loads the event featured right now; a unique index keeps it to one at most.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the featured events.</returns>
-    public Task<IReadOnlyList<Event>> ListFeaturedAsync(CancellationToken ct = default);
+    /// <returns>
+    /// A task whose result is the featured event, or <see langword="null"/> when none is.
+    /// </returns>
+    public Task<Event?> GetFeaturedAsync(CancellationToken ct = default);
 
     /// <summary>
     /// Tells whether any event links a terms document.

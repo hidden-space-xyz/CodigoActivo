@@ -12,7 +12,6 @@ namespace CodigoActivo.UnitTests.Application.Accounts.Queries;
 public sealed class GetLoginChallengeTicketQueryHandlerTests
 {
     private static readonly Guid ChallengeId = new("cccccccc-0000-0000-0000-000000000001");
-    private static readonly DateTimeOffset LockedAt = new(2026, 7, 1, 9, 0, 0, TimeSpan.Zero);
 
     private readonly FakeReadStore store = new();
     private readonly TestClock clock = new();
@@ -137,12 +136,27 @@ public sealed class GetLoginChallengeTicketQueryHandlerTests
         var user = NewUserRow(
             loginChallengeId: ChallengeId,
             loginChallengeStartedAt: OpenedAMinuteAgo,
-            passwordLockedAt: LockedAt
+            passwordLockedUntil: clock.UtcNow.AddMinutes(5)
         );
         store.Users.Add(user);
 
         var ticket = await QueryAsync(user.Id, ChallengeId);
 
         ticket.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task HandleAsyncPasswordLockExpiredReturnsTheTicket()
+    {
+        var user = NewUserRow(
+            loginChallengeId: ChallengeId,
+            loginChallengeStartedAt: OpenedAMinuteAgo,
+            passwordLockedUntil: clock.UtcNow
+        );
+        store.Users.Add(user);
+
+        var ticket = await QueryAsync(user.Id, ChallengeId);
+
+        ticket.Should().NotBeNull();
     }
 }

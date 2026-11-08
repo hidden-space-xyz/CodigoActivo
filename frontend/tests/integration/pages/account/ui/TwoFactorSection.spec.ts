@@ -33,6 +33,30 @@ function methodText(): string {
   return document.querySelector('[data-testid="two-factor-method"]')?.textContent.trim() ?? ''
 }
 
+function serveCode(response: () => Response = () => new HttpResponse(null, { status: 204 })) {
+  const bodies: unknown[] = []
+  server.use(
+    http.post('/api/me/confirmation-code', async ({ request }) => {
+      bodies.push(await request.json())
+      return response()
+    }),
+  )
+  return bodies
+}
+
+async function reachEmailCodeStep(dialog: HTMLElement): Promise<void> {
+  await typeInto('#tf-setup-password', 'secret', dialog)
+  await click(findButton(t('pages.account.twoFactor.sendCode'), dialog))
+  await vi.waitFor(() => expect(dialog.querySelector('#tf-setup-email-code')).not.toBeNull())
+}
+
+async function reachScanStep(dialog: HTMLElement): Promise<void> {
+  await reachEmailCodeStep(dialog)
+  await typeInto('#tf-setup-email-code', '482913', dialog)
+  await click(findButton(t('pages.account.twoFactor.continue'), dialog))
+  await vi.waitFor(() => expect(dialog.querySelector('#tf-setup-code')).not.toBeNull())
+}
+
 function serveSetup(response: () => Response = () => HttpResponse.json(SETUP)) {
   const bodies: unknown[] = []
   server.use(
@@ -72,7 +96,8 @@ describe('TwoFactorSection', () => {
     expect(findButton(t('pages.account.twoFactor.useEmail'), document.body)).toBeTruthy()
   })
 
-  it('enrolls an authenticator in two steps and updates the shown method', async () => {
+  it('enrolls an authenticator behind the emailed code and updates the shown method', async () => {
+    const codes = serveCode()
     const setups = serveSetup()
     const confirms = serveConfirm()
     server.use(
@@ -80,20 +105,29 @@ describe('TwoFactorSection', () => {
         HttpResponse.json(buildUserResponse({ twoFactorMethod: 'Authenticator' })),
       ),
     )
-    await renderSection()
+    await renderSection({ user: { email: 'ada@example.test' } })
 
     await click(findButton(t('pages.account.twoFactor.useAuthenticator'), document.body))
     const dialog = openDialog(t(SETUP_TITLE))
-    await click(findButton(t('pages.account.twoFactor.continue'), dialog))
+    await click(findButton(t('pages.account.twoFactor.sendCode'), dialog))
     expect(dialog.textContent).toContain(
       t('pages.account.twoFactor.form.problems.passwordRequired'),
     )
+    expect(codes).toHaveLength(0)
+
+    await reachEmailCodeStep(dialog)
+    expect(codes).toEqual([{ currentPassword: 'secret', purpose: 'AuthenticatorSetup' }])
+    expect(dialog.textContent).toContain(
+      t('pages.account.twoFactor.setupCodeSent', { email: 'ada@example.test' }),
+    )
+    await click(findButton(t('pages.account.twoFactor.continue'), dialog))
+    expect(dialog.textContent).toContain(t('pages.account.twoFactor.form.problems.codeRequired'))
     expect(setups).toHaveLength(0)
 
-    await typeInto('#tf-setup-password', 'secret', dialog)
+    await typeInto('#tf-setup-email-code', ' 482913 ', dialog)
     await click(findButton(t('pages.account.twoFactor.continue'), dialog))
     await vi.waitFor(() => expect(dialog.querySelector('#tf-setup-code')).not.toBeNull())
-    expect(setups).toEqual([{ currentPassword: 'secret' }])
+    expect(setups).toEqual([{ currentPassword: 'secret', code: '482913' }])
     expect(dialog.querySelector('[data-testid="two-factor-shared-key"]')?.textContent).toBe(
       SETUP.sharedKey,
     )
@@ -117,20 +151,22 @@ describe('TwoFactorSection', () => {
   })
 
   it('shows the API errors inside the enrollment dialog and resets it when cancelled', async () => {
-    serveSetup(() => apiError(400, 'UserCurrentPasswordIncorrect'))
+    serveCode(() => apiError(400, 'UserCurrentPasswordIncorrect'))
+    const setups = serveSetup()
     await renderSection()
 
     await click(findButton(t('pages.account.twoFactor.useAuthenticator'), document.body))
     const dialog = openDialog(t(SETUP_TITLE))
     await typeInto('#tf-setup-password', 'wrong', dialog)
-    await click(findButton(t('pages.account.twoFactor.continue'), dialog))
+    await click(findButton(t('pages.account.twoFactor.sendCode'), dialog))
 
     await vi.waitFor(() =>
       expect(dialog.querySelector('[role="alert"]')?.textContent).toBe(
         t('errors.UserCurrentPasswordIncorrect'),
       ),
     )
-    expect(dialog.querySelector('#tf-setup-code')).toBeNull()
+    expect(dialog.querySelector('#tf-setup-email-code')).toBeNull()
+    expect(setups).toHaveLength(0)
 
     await click(findButton(t('common.cancel'), dialog))
     expect(openDialogs()).toHaveLength(0)
@@ -141,16 +177,43 @@ describe('TwoFactorSection', () => {
     expect(reopened.querySelector<HTMLInputElement>('#tf-setup-password')?.value).toBe('')
   })
 
+  it('keeps the emailed code step open when the code is refused and sends it again', async () => {
+    const codes = serveCode()
+    serveSetup(() => apiError(400, 'TwoFactorCodeInvalid'))
+    await renderSection()
+
+    await click(findButton(t('pages.account.twoFactor.useAuthenticator'), document.body))
+    const dialog = openDialog(t(SETUP_TITLE))
+    await reachEmailCodeStep(dialog)
+    await typeInto('#tf-setup-email-code', '000000', dialog)
+    await click(findButton(t('pages.account.twoFactor.continue'), dialog))
+
+    await vi.waitFor(() =>
+      expect(dialog.querySelector('[role="alert"]')?.textContent).toBe(
+        t('errors.TwoFactorCodeInvalid'),
+      ),
+    )
+    expect(dialog.querySelector('#tf-setup-code')).toBeNull()
+    expect(dialog.querySelector('#tf-setup-email-code')).not.toBeNull()
+
+    await click(findButton(t('pages.account.twoFactor.resend'), dialog))
+    await vi.waitFor(() => expect(codes).toHaveLength(2))
+    expect(codes).toEqual([
+      { currentPassword: 'secret', purpose: 'AuthenticatorSetup' },
+      { currentPassword: 'secret', purpose: 'AuthenticatorSetup' },
+    ])
+    await vi.waitFor(() => expect(dialog.querySelector('[role="alert"]')).toBeNull())
+  })
+
   it('keeps the confirmation step open when the code is rejected', async () => {
+    serveCode()
     serveSetup()
     serveConfirm(() => apiError(400, 'TwoFactorCodeInvalid'))
     await renderSection()
 
     await click(findButton(t('pages.account.twoFactor.useAuthenticator'), document.body))
     const dialog = openDialog(t(SETUP_TITLE))
-    await typeInto('#tf-setup-password', 'secret', dialog)
-    await click(findButton(t('pages.account.twoFactor.continue'), dialog))
-    await vi.waitFor(() => expect(dialog.querySelector('#tf-setup-code')).not.toBeNull())
+    await reachScanStep(dialog)
     await typeInto('#tf-setup-code', '000000', dialog)
     await click(findButton(t('pages.account.twoFactor.confirm'), dialog))
 

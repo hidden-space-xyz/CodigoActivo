@@ -257,7 +257,8 @@ public class ActivitiesController : ApiControllerBase
     }
 
     /// <summary>
-    /// Deletes the selected activity with its signups, keeping their data history.
+    /// Deletes the selected activity with its signups, keeping their data history; only an
+    /// administrator may delete one that has signups.
     /// </summary>
     /// <param name="activityId">Identifier of the activity.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>

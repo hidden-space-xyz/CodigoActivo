@@ -14,21 +14,18 @@ public interface IEmailOutboxStore : IEmailOutbox, IPendingEmails
     /// <summary>
     /// Takes up to <paramref name="batchSize"/> unexpired messages whose next attempt is due and
     /// whose priority is at most <paramref name="maxPriority"/>, by priority and then by schedule,
-    /// leasing them until <paramref name="leaseUntil"/> so no other instance delivers the same row
-    /// and counting the attempt as started. Rows another transaction has locked are skipped. The
-    /// messages come back in claim order with their content and its parts loaded, and messages that
-    /// share stored content share one instance of it.
+    /// and counts the attempt as started. The claimed rows stay due: the single delivery worker
+    /// settles each one before it claims again, and after a crash the next start claims them at
+    /// once. The messages come back in claim order with their content and its parts loaded, and
+    /// messages that share stored content share one instance of it.
     /// </summary>
-    /// <param name="now">
-    /// Current timestamp compared against the schedule, the leases and the expiry.
-    /// </param>
-    /// <param name="leaseUntil">Timestamp until which the claimed rows stay reserved.</param>
+    /// <param name="now">Current timestamp compared against the schedule and the expiry.</param>
     /// <param name="batchSize">Largest number of messages to claim.</param>
     /// <param name="maxPriority">Highest stored priority value that may be claimed.</param>
     /// <param name="ct">
     /// Cancellation token that stops the claim itself. Once the claim is committed the attempt is
-    /// already spent, so the claimed rows are read and returned even when it is cancelled: a batch
-    /// dropped on the way out would wait for its lease to expire.
+    /// already spent, so the content is read even when it is cancelled and the caller can hand the
+    /// batch back untried.
     /// </param>
     /// <returns>
     /// A task whose result contains the claimed messages, untracked, each with the attempt count it
@@ -36,36 +33,25 @@ public interface IEmailOutboxStore : IEmailOutbox, IPendingEmails
     /// </returns>
     public Task<IReadOnlyList<EmailOutboxMessage>> ClaimDueAsync(
         DateTimeOffset now,
-        DateTimeOffset leaseUntil,
         int batchSize,
         int maxPriority,
         CancellationToken ct = default
     );
 
     /// <summary>
-    /// Removes a message that was delivered or rejected for good, as long as it is still on the
-    /// attempt the caller claimed. Its content stays until <see cref="RemoveOrphanContentAsync"/>.
+    /// Removes a message that was delivered or rejected for good, if it is still there. Its content
+    /// stays until <see cref="RemoveOrphanContentAsync"/>.
     /// </summary>
     /// <param name="messageId">Identifier of the message.</param>
-    /// <param name="attemptCount">
-    /// Attempt the caller claimed, which must still be the current one.
-    /// </param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>
-    /// A task whose result contains the number of deleted rows: zero when the message is gone or
-    /// was claimed again.
-    /// </returns>
-    public Task<int> RemoveAsync(Guid messageId, int attemptCount, CancellationToken ct = default);
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    public Task RemoveAsync(Guid messageId, CancellationToken ct = default);
 
     /// <summary>
-    /// Releases the lease of a failed message so it is retried later and stores the error, as long
-    /// as it is still on the attempt the caller claimed: a worker whose lease expired never
-    /// overwrites the schedule of the worker that claimed the message afterwards.
+    /// Schedules the next attempt of a failed message and stores the error, if the message is
+    /// still there.
     /// </summary>
     /// <param name="messageId">Identifier of the message.</param>
-    /// <param name="attemptCount">
-    /// Attempt the caller claimed, which must still be the current one.
-    /// </param>
     /// <param name="nextAttemptAt">Timestamp from which the message may be attempted again.</param>
     /// <param name="error">
     /// Diagnostic of the failure, without recipient data; it is cut to
@@ -73,13 +59,9 @@ public interface IEmailOutboxStore : IEmailOutbox, IPendingEmails
     /// <see langword="null"/>.
     /// </param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>
-    /// A task whose result contains the number of updated rows: zero when the message is gone or
-    /// was claimed again.
-    /// </returns>
-    public Task<int> RescheduleAsync(
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    public Task RescheduleAsync(
         Guid messageId,
-        int attemptCount,
         DateTimeOffset nextAttemptAt,
         string? error,
         CancellationToken ct = default
@@ -87,31 +69,23 @@ public interface IEmailOutboxStore : IEmailOutbox, IPendingEmails
 
     /// <summary>
     /// Hands back a message the worker claimed but did not try, because the delivery paused, its
-    /// recipient has to wait or the host is stopping: the lease is released and the attempt
-    /// returned, as long as it is still on the attempt the caller claimed.
+    /// recipient has to wait or the host is stopping: the attempt is returned and the message
+    /// waits until <paramref name="nextAttemptAt"/>, if it is still there.
     /// </summary>
     /// <param name="messageId">Identifier of the message.</param>
-    /// <param name="attemptCount">
-    /// Attempt the caller claimed, which must still be the current one.
-    /// </param>
     /// <param name="nextAttemptAt">Timestamp from which the message may be claimed again.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>
-    /// A task whose result contains the number of updated rows: zero when the message is gone or
-    /// was claimed again.
-    /// </returns>
-    public Task<int> ReleaseAsync(
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    public Task ReleaseAsync(
         Guid messageId,
-        int attemptCount,
         DateTimeOffset nextAttemptAt,
         CancellationToken ct = default
     );
 
     /// <summary>
-    /// Removes the messages that expired and whose lease, if any, has passed. Rows another
-    /// transaction has locked are left for a later call.
+    /// Removes the messages that expired.
     /// </summary>
-    /// <param name="now">Current timestamp compared against the expiry and the leases.</param>
+    /// <param name="now">Current timestamp compared against the expiry.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
     /// A task whose result contains the kind of every removed message, for the log.
@@ -221,7 +195,7 @@ public sealed class EmailOutboxStore(
 
         if (batch.Topic is { } topic)
         {
-            await ReplacePendingAsync(db, topic, batch.Recipients, now, ct);
+            await ReplacePendingAsync(db, topic, batch.Recipients, ct);
         }
 
         var content = protector.ToContent(batch, now);
@@ -267,7 +241,6 @@ public sealed class EmailOutboxStore(
     /// <inheritdoc />
     public async Task<IReadOnlyList<EmailOutboxMessage>> ClaimDueAsync(
         DateTimeOffset now,
-        DateTimeOffset leaseUntil,
         int batchSize,
         int maxPriority,
         CancellationToken ct = default
@@ -276,19 +249,31 @@ public sealed class EmailOutboxStore(
         await using var scope = scopes.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
 
-        var claimed = await ClaimIdsAsync(db, now, leaseUntil, batchSize, maxPriority, ct);
+        var due = now.ToUniversalTime();
+        FormattableString sql = $"""
+            UPDATE email_outbox_messages
+            SET attempt_count = attempt_count + 1
+            WHERE id IN (
+                SELECT id
+                FROM email_outbox_messages
+                WHERE next_attempt_at <= {due}
+                  AND (expires_at IS NULL OR expires_at > {due})
+                  AND priority <= {maxPriority}
+                ORDER BY priority, next_attempt_at
+                LIMIT {batchSize}
+            )
+            RETURNING *
+            """;
+        var claimed = await db.EmailOutboxMessages.FromSql(sql).AsNoTracking().ToListAsync(ct);
         if (claimed.Count is 0)
         {
             return [];
         }
 
-        var messages = await db
-            .EmailOutboxMessages.AsNoTracking()
-            .Where(message => claimed.Contains(message.Id))
+        var messages = claimed
             .OrderBy(message => message.Priority)
             .ThenBy(message => message.NextAttemptAt)
-            .ToListAsync(CancellationToken.None);
-
+            .ToList();
         var contentIds = messages.Select(message => message.ContentId).Distinct().ToList();
         var contents = await db
             .EmailOutboxContents.AsNoTracking()
@@ -305,26 +290,19 @@ public sealed class EmailOutboxStore(
     }
 
     /// <inheritdoc />
-    public async Task<int> RemoveAsync(
-        Guid messageId,
-        int attemptCount,
-        CancellationToken ct = default
-    )
+    public async Task RemoveAsync(Guid messageId, CancellationToken ct = default)
     {
         await using var scope = scopes.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
 
-        return await db
-            .EmailOutboxMessages.Where(message =>
-                message.Id == messageId && message.AttemptCount == attemptCount
-            )
+        await db
+            .EmailOutboxMessages.Where(message => message.Id == messageId)
             .ExecuteDeleteAsync(ct);
     }
 
     /// <inheritdoc />
-    public async Task<int> RescheduleAsync(
+    public async Task RescheduleAsync(
         Guid messageId,
-        int attemptCount,
         DateTimeOffset nextAttemptAt,
         string? error,
         CancellationToken ct = default
@@ -335,24 +313,20 @@ public sealed class EmailOutboxStore(
 
         var truncated = Truncate(error);
 
-        return await db
-            .EmailOutboxMessages.Where(message =>
-                message.Id == messageId && message.AttemptCount == attemptCount
-            )
+        await db
+            .EmailOutboxMessages.Where(message => message.Id == messageId)
             .ExecuteUpdateAsync(
                 update =>
                     update
                         .SetProperty(message => message.NextAttemptAt, nextAttemptAt)
-                        .SetProperty(message => message.LockedUntil, (DateTimeOffset?)null)
                         .SetProperty(message => message.LastError, truncated),
                 ct
             );
     }
 
     /// <inheritdoc />
-    public async Task<int> ReleaseAsync(
+    public async Task ReleaseAsync(
         Guid messageId,
-        int attemptCount,
         DateTimeOffset nextAttemptAt,
         CancellationToken ct = default
     )
@@ -360,16 +334,16 @@ public sealed class EmailOutboxStore(
         await using var scope = scopes.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
 
-        return await db
-            .EmailOutboxMessages.Where(message =>
-                message.Id == messageId && message.AttemptCount == attemptCount
-            )
+        await db
+            .EmailOutboxMessages.Where(message => message.Id == messageId)
             .ExecuteUpdateAsync(
                 update =>
                     update
                         .SetProperty(message => message.NextAttemptAt, nextAttemptAt)
-                        .SetProperty(message => message.LockedUntil, (DateTimeOffset?)null)
-                        .SetProperty(message => message.AttemptCount, attemptCount - 1),
+                        .SetProperty(
+                            message => message.AttemptCount,
+                            message => message.AttemptCount - 1
+                        ),
                 ct
             );
     }
@@ -383,16 +357,9 @@ public sealed class EmailOutboxStore(
         await using var scope = scopes.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
 
-        var due = now.ToUniversalTime();
         FormattableString sql = $"""
             DELETE FROM email_outbox_messages
-            WHERE id IN (
-                SELECT id
-                FROM email_outbox_messages
-                WHERE expires_at <= {due}
-                  AND (locked_until IS NULL OR locked_until <= {due})
-                FOR UPDATE SKIP LOCKED
-            )
+            WHERE expires_at <= {now.ToUniversalTime()}
             RETURNING *
             """;
         var removed = await db.EmailOutboxMessages.FromSql(sql).AsNoTracking().ToListAsync(ct);
@@ -465,7 +432,6 @@ public sealed class EmailOutboxStore(
         CodigoActivoDbContext db,
         string topic,
         IReadOnlyList<EmailRecipient> recipients,
-        DateTimeOffset now,
         CancellationToken ct
     )
     {
@@ -486,41 +452,9 @@ public sealed class EmailOutboxStore(
 
         await db
             .EmailOutboxMessages.Where(message =>
-                message.Topic == topic
-                && addresses.Contains(message.ToAddress)
-                && (message.LockedUntil == null || message.LockedUntil <= now)
+                message.Topic == topic && addresses.Contains(message.ToAddress)
             )
             .ExecuteDeleteAsync(ct);
-    }
-
-    private static Task<List<Guid>> ClaimIdsAsync(
-        CodigoActivoDbContext db,
-        DateTimeOffset now,
-        DateTimeOffset leaseUntil,
-        int batchSize,
-        int maxPriority,
-        CancellationToken ct
-    )
-    {
-        var due = now.ToUniversalTime();
-        FormattableString sql = $"""
-            UPDATE email_outbox_messages
-            SET locked_until = {leaseUntil.ToUniversalTime()},
-                attempt_count = attempt_count + 1
-            WHERE id IN (
-                SELECT id
-                FROM email_outbox_messages
-                WHERE next_attempt_at <= {due}
-                  AND (locked_until IS NULL OR locked_until <= {due})
-                  AND (expires_at IS NULL OR expires_at > {due})
-                  AND priority <= {maxPriority}
-                ORDER BY priority, next_attempt_at
-                LIMIT {batchSize}
-                FOR UPDATE SKIP LOCKED
-            )
-            RETURNING id AS "Value"
-            """;
-        return db.Database.SqlQuery<Guid>(sql).ToListAsync(ct);
     }
 
     private static DateTimeOffset HourOf(DateTimeOffset moment)

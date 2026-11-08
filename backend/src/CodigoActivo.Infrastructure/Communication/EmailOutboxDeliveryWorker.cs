@@ -34,8 +34,8 @@ public sealed class EmailOutboxDeliveryWorker(
     /// <summary>
     /// Stops claiming new messages and waits for the send in flight, up to
     /// <see cref="EmailQueueOptions.ShutdownDrain"/>; the rest of the claimed batch goes back to the
-    /// outbox untried. A message whose send is still running by then stays in the outbox and is
-    /// claimed again once its lease expires.
+    /// outbox untried. A message whose send is still running by then stays due in the outbox and
+    /// the next start claims it again.
     /// </summary>
     /// <param name="cancellationToken">
     /// Cancellation token used to stop the asynchronous operation.

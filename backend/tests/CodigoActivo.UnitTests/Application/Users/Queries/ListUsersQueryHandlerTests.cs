@@ -224,18 +224,11 @@ public sealed class ListUsersQueryHandlerTests
     [Fact]
     public async Task HandleAsyncSortByStatusOrdersByStatusTypeName()
     {
-        store.Users.AddRange([
-            NewUserRow(statusName: "Pending"),
-            NewUserRow(statusName: "Active"),
-            NewUserRow(statusName: "Blocked"),
-        ]);
+        store.Users.AddRange([NewUserRow(statusName: "Pending"), NewUserRow(statusName: "Active")]);
 
         var result = await ListAsAdminAsync(new UserListQuery { Sort = "status" });
 
-        result
-            .Items.Select(u => u.Status.Name)
-            .Should()
-            .ContainInOrder("Active", "Blocked", "Pending");
+        result.Items.Select(u => u.Status.Name).Should().ContainInOrder("Active", "Pending");
     }
 
     [Fact]

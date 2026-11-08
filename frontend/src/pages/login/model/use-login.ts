@@ -14,8 +14,8 @@ import { toLocalRedirect } from '@/shared/lib/navigation'
  * so on success the user is sent to the verification page, carrying the local `redirect` query
  * parameter along so the final destination survives both steps. A failure sets `errorMessage`:
  * wrong credentials and failures without a known code keep the generic login message, while the
- * account states the API only reveals after a correct password (unverified, blocked, second
- * factor locked) and other coded refusals show their own message.
+ * account states the API only reveals after a correct password (unverified, second factor
+ * locked) and other coded refusals show their own message.
  */
 export function useLogin() {
   const { t } = useI18n()

@@ -11,7 +11,7 @@ import {
 } from '../../support/data/people'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
-import { linkIn, SUBJECTS } from '../../support/mail/mailbox'
+import { codeIn, linkIn, SUBJECTS } from '../../support/mail/mailbox'
 import { AccountPage } from '../../support/pages/account/account-page'
 import { ProfileDialog } from '../../support/pages/account/profile-dialogs'
 import { LoginPage, signInThroughPages } from '../../support/pages/login-page'
@@ -136,7 +136,7 @@ test.describe('profile', () => {
     await expect(account.profileValue('national-id')).toHaveText(participant.account.nationalId)
   })
 
-  test('a new email replaces the old one only once its link is opened', async ({
+  test('a new email needs a code sent to the current one and applies once its link is opened', async ({
     accounts,
     pageAs,
     page,
@@ -152,6 +152,16 @@ test.describe('profile', () => {
 
     await dialog.email.fill(newEmail)
     await dialog.currentPassword.fill(PASSWORD)
+    await dialog.save.click()
+    await expect(dialog.codeError).toHaveText(t('pages.account.profile.emailChange.codeRequired'))
+    const codeSentAfter = new Date()
+    await dialog.sendCode.click()
+    const code = await mailbox.waitFor({
+      to: actor.account.email,
+      subject: SUBJECTS.emailChangeCode,
+      sentAfter: codeSentAfter,
+    })
+    await dialog.code.fill(codeIn(code))
     const sentAfter = new Date()
     await dialog.save.click()
 

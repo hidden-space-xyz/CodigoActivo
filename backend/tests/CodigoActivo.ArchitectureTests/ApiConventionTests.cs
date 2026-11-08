@@ -1,7 +1,12 @@
+using System.Reflection;
 using AwesomeAssertions;
 using CodigoActivo.API.Controllers.Abstractions;
+using CodigoActivo.API.Security;
+using CodigoActivo.Application.Abstractions.Messaging;
+using CodigoActivo.Application.Abstractions.Security;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
+using Microsoft.AspNetCore.RateLimiting;
 using Xunit;
 
 namespace CodigoActivo.ArchitectureTests;
@@ -70,5 +75,75 @@ public sealed class ApiConventionTests
 
         bodies.Should().NotBeEmpty();
         offenders.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void OnlyTheCredentialEndpointsThatRunArgon2WaitForThePasswordHashingPool()
+    {
+        var actions = ProductionAssemblies.ControllerActions.ToList();
+
+        var hashing = actions
+            .Where(action =>
+                action
+                    .GetParameters()
+                    .Any(parameter => HashesPasswords(parameter.ParameterType, []))
+            )
+            .Select(ActionName)
+            .ToList();
+        var marked = actions
+            .Where(action => action.IsDefined(typeof(PasswordHashingAttribute), inherit: false))
+            .ToList();
+        var outsideCredentials = marked
+            .Where(action =>
+                action.GetCustomAttribute<EnableRateLimitingAttribute>()?.PolicyName
+                    is not SecurityPolicies.Credentials
+            )
+            .Select(ActionName)
+            .ToList();
+
+        hashing.Should().HaveCountGreaterThan(10);
+        marked.Select(ActionName).Should().BeEquivalentTo(hashing);
+        outsideCredentials.Should().BeEmpty();
+    }
+
+    private static string ActionName(MethodInfo action)
+    {
+        return $"{action.DeclaringType!.Name}.{action.Name}";
+    }
+
+    private static bool HashesPasswords(Type type, HashSet<Type> visited)
+    {
+        if (type == typeof(IPasswordHasher))
+        {
+            return true;
+        }
+
+        if (!visited.Add(type))
+        {
+            return false;
+        }
+
+        return ImplementationsOf(type)
+            .SelectMany(implementation => implementation.GetConstructors())
+            .SelectMany(constructor => constructor.GetParameters())
+            .Any(parameter => HashesPasswords(parameter.ParameterType, visited));
+    }
+
+    private static IEnumerable<Type> ImplementationsOf(Type type)
+    {
+        if (type.IsInterface && type.IsConstructedGenericType)
+        {
+            var definition = type.GetGenericTypeDefinition();
+            return
+                definition == typeof(ICommandHandler<,>) || definition == typeof(IQueryHandler<,>)
+                ? ProductionAssemblies
+                    .Application.GetTypes()
+                    .Where(candidate => !candidate.IsAbstract && type.IsAssignableFrom(candidate))
+                : [];
+        }
+
+        return type.IsClass && !type.IsAbstract && type.Assembly == ProductionAssemblies.Application
+            ? [type]
+            : [];
     }
 }

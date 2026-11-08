@@ -44,7 +44,7 @@ describe('user requests', () => {
     ])
     await expect(getUserStatusesRequest()).resolves.toEqual([
       { id: 'status-active', name: 'Active', color: '#00FF00' },
-      { id: 'status-blocked', name: 'Blocked', color: '#FF0000' },
+      { id: 'status-pending', name: 'Pending', color: '#FF0000' },
     ])
   })
 

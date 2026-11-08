@@ -2,13 +2,15 @@ namespace CodigoActivo.API.Security;
 
 /// <summary>
 /// Names the rate-limit policies of the endpoints. Each one has its own per-minute budget in
-/// <see cref="ApiRateLimitOptions"/> and its own process-wide cap on concurrent requests.
+/// <see cref="ApiRateLimitOptions"/>, and each but <see cref="Credentials"/> its own process-wide
+/// cap on concurrent requests.
 /// </summary>
 public static class SecurityPolicies
 {
     /// <summary>
     /// Identifies the policy of the endpoints that check a password, a one-time code or an emailed
-    /// token, counted per IP whether or not the caller is signed in.
+    /// token, counted per IP whether or not the caller is signed in. Only those that run Argon2
+    /// share a concurrency cap, the one of <see cref="PasswordHashingAttribute"/>.
     /// </summary>
     public const string Credentials = "credentials";
 

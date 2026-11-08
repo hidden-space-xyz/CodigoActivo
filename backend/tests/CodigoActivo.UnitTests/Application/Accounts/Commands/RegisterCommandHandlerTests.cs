@@ -278,7 +278,7 @@ public sealed class RegisterCommandHandlerTests
     [Fact]
     public async Task HandleAsyncNoticeThatCannotBeQueuedStillSucceeds()
     {
-        HolderOfTheAddress(KnownIds.UserStatusTypes.Blocked);
+        HolderOfTheAddress(KnownIds.UserStatusTypes.Active);
         emailSender.ThrowOnSend = new InvalidOperationException("outbox unavailable");
 
         var result = await HandleAsync(NewRegister());

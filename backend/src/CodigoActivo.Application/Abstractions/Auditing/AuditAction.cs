@@ -69,9 +69,10 @@ public enum AuditAction
     PurgeUnverifiedAccounts,
 
     /// <summary>
-    /// Asked for the code that confirms deleting the own account.
+    /// Asked for the code that confirms deleting the own account, changing its email or enrolling
+    /// an authenticator application.
     /// </summary>
-    RequestAccountDeletionCode,
+    RequestConfirmationCode,
 
     /// <summary>
     /// Reset a password with an emailed code.

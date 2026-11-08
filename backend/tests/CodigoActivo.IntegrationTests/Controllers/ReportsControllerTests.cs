@@ -97,7 +97,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
                 ),
                 NewAssignment(
                     ActivityBId,
-                    TestSeedData.Users.BlockedId,
+                    TestSeedData.Users.OtherId,
                     KnownIds.ActivityRoleTypes.Leader,
                     KnownIds.AssignmentStatusTypes.Denied
                 )

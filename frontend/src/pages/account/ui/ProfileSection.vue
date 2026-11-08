@@ -5,6 +5,7 @@ import {
   PASSWORD_MAX_LENGTH,
   PERSON_NAME_MAX_LENGTH,
   PHONE_MAX_LENGTH,
+  TWO_FACTOR_CODE_MAX_LENGTH,
 } from '@/shared/config'
 import { BrandButton } from '@/shared/ui/brand-button'
 
@@ -26,7 +27,15 @@ const {
     requiresPassword,
     passwordMissing,
   },
+  isAuthenticator,
+  code,
+  codeError,
+  codeSent,
+  requiresCode,
+  codeMissing,
+  requestCode,
   open: openEdit,
+  sendCode,
   save: saveEdit,
 } = useProfileEditor(account)
 const {
@@ -257,6 +266,63 @@ const {
               >{{ $t('pages.account.profile.contactChange.passwordRequired') }}</small
             >
           </div>
+          <div v-if="requiresCode" class="ca-field ca-field--wide acc-form__field">
+            <label class="ca-field__label" for="p-code">{{
+              $t('pages.account.profile.emailChange.codeLabel')
+            }}</label>
+            <p class="ca-field__hint" data-testid="profile-dialog-code-hint">
+              <template v-if="isAuthenticator">{{
+                $t('pages.account.profile.emailChange.authenticatorHint')
+              }}</template>
+              <template v-else-if="codeSent">{{
+                $t('pages.account.profile.emailChange.codeSent', { email: user?.email })
+              }}</template>
+              <template v-else>{{
+                $t('pages.account.profile.emailChange.emailHint', { email: user?.email })
+              }}</template>
+            </p>
+            <div class="acc-form__code">
+              <el-input
+                id="p-code"
+                v-model="code"
+                data-testid="profile-dialog-code"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                :maxlength="TWO_FACTOR_CODE_MAX_LENGTH"
+                :aria-invalid="!!codeError || (editSubmitted && codeMissing)"
+                :aria-describedby="
+                  codeError || (editSubmitted && codeMissing) ? 'p-code-error' : undefined
+                "
+              />
+              <BrandButton
+                v-if="!isAuthenticator"
+                variant="ghost"
+                data-testid="profile-dialog-send-code"
+                :loading="requestCode.isPending.value"
+                @click="sendCode"
+              >
+                {{
+                  codeSent
+                    ? $t('pages.account.profile.emailChange.resend')
+                    : $t('pages.account.profile.emailChange.sendCode')
+                }}
+              </BrandButton>
+            </div>
+            <small
+              v-if="codeError"
+              id="p-code-error"
+              class="ca-field__error"
+              data-testid="profile-dialog-code-error"
+              >{{ codeError }}</small
+            >
+            <small
+              v-else-if="editSubmitted && codeMissing"
+              id="p-code-error"
+              class="ca-field__error"
+              data-testid="profile-dialog-code-error"
+              >{{ $t('pages.account.profile.emailChange.codeRequired') }}</small
+            >
+          </div>
         </div>
         <div class="acc-form__actions">
           <BrandButton
@@ -428,6 +494,16 @@ const {
   line-height: 1.5;
   color: var(--ca-text-muted);
   cursor: pointer;
+}
+
+.acc-form__code {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.acc-form__code > :first-child {
+  flex: 1;
 }
 
 .acc-form__actions {

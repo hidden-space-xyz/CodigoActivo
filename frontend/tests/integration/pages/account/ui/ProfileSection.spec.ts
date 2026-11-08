@@ -171,6 +171,7 @@ describe('ProfileSection', () => {
     await click(dialog.querySelector('#p-news-consent') as Element)
     await selectGender(wrapper, 'Other')
     await typeInto('#p-current', 'old-password', dialog)
+    await typeInto('#p-code', ' 482913 ', dialog)
     await click(findButton(t('common.save'), dialog))
 
     await vi.waitFor(() => expect(received).toBeDefined())
@@ -188,6 +189,7 @@ describe('ProfileSection', () => {
         gender: 'Other',
         parentId: null,
         currentPassword: 'old-password',
+        code: '482913',
       },
     })
     await vi.waitFor(() => expect(openDialogs()).toHaveLength(0))
@@ -223,6 +225,7 @@ describe('ProfileSection', () => {
     expect(updated).not.toHaveBeenCalled()
 
     await typeInto('#p-current', 'wrong', dialog)
+    await typeInto('#p-code', '482913', dialog)
     await click(findButton(t('common.save'), dialog))
 
     await vi.waitFor(() => expect(updated).toHaveBeenCalledTimes(1))
@@ -230,6 +233,134 @@ describe('ProfileSection', () => {
       expect(dialog.textContent).toContain(t('errors.UserCurrentPasswordIncorrect')),
     )
     expect(openDialogs()).toHaveLength(1)
+  })
+
+  it('asks for a code emailed to the current address before changing the email', async () => {
+    serveProfile()
+    const codes: unknown[] = []
+    const bodies: unknown[] = []
+    server.use(
+      http.post('/api/me/confirmation-code', async ({ request }) => {
+        codes.push(await request.json())
+        return new HttpResponse(null, { status: 204 })
+      }),
+      http.put('/api/users/:userId', async ({ request }) => {
+        bodies.push(await request.json())
+        return HttpResponse.json(buildUserResponse())
+      }),
+    )
+    await renderSection()
+
+    await click(findButton(t('pages.account.profile.editData'), document.body))
+    const dialog = openDialog(t('pages.account.profile.editDialogHeader'))
+    await typeInto('#p-phone', '611111111', dialog)
+    expect(dialog.querySelector('#p-code')).toBeNull()
+    await typeInto('#p-email', 'augusta@example.test', dialog)
+    expect(dialog.querySelector('#p-code')).not.toBeNull()
+    expect(
+      dialog.querySelector('[data-testid="profile-dialog-code-hint"]')?.textContent.trim(),
+    ).toBe(t('pages.account.profile.emailChange.emailHint', { email: 'ada@example.test' }))
+
+    await click(findButton(t('pages.account.profile.emailChange.sendCode'), dialog))
+    expect(dialog.textContent).toContain(t('pages.account.profile.emailChange.passwordFirst'))
+    expect(codes).toHaveLength(0)
+
+    await typeInto('#p-current', 'old-password', dialog)
+    await click(findButton(t('pages.account.profile.emailChange.sendCode'), dialog))
+    await vi.waitFor(() => expect(codes).toHaveLength(1))
+    expect(codes[0]).toEqual({ currentPassword: 'old-password', purpose: 'EmailChange' })
+    await vi.waitFor(() =>
+      expect(
+        dialog.querySelector('[data-testid="profile-dialog-code-hint"]')?.textContent.trim(),
+      ).toBe(t('pages.account.profile.emailChange.codeSent', { email: 'ada@example.test' })),
+    )
+    expect(findButton(t('pages.account.profile.emailChange.resend'), dialog)).toBeTruthy()
+
+    await click(findButton(t('common.save'), dialog))
+    expect(dialog.textContent).toContain(t('pages.account.profile.emailChange.codeRequired'))
+    expect(bodies).toHaveLength(0)
+
+    await typeInto('#p-code', '482913', dialog)
+    await click(findButton(t('common.save'), dialog))
+
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({
+      email: 'augusta@example.test',
+      phone: '611111111',
+      currentPassword: 'old-password',
+      code: '482913',
+    })
+    await vi.waitFor(() => expect(openDialogs()).toHaveLength(0))
+  })
+
+  it('shows a refused code under the code field and keeps the dialog open', async () => {
+    serveProfile()
+    server.use(http.put('/api/users/:userId', () => apiError(400, 'TwoFactorCodeInvalid')))
+    await renderSection()
+
+    await click(findButton(t('pages.account.profile.editData'), document.body))
+    const dialog = openDialog(t('pages.account.profile.editDialogHeader'))
+    await typeInto('#p-email', 'augusta@example.test', dialog)
+    await typeInto('#p-current', 'old-password', dialog)
+    await typeInto('#p-code', '000000', dialog)
+    await click(findButton(t('common.save'), dialog))
+
+    await vi.waitFor(() =>
+      expect(
+        dialog.querySelector('[data-testid="profile-dialog-code-error"]')?.textContent.trim(),
+      ).toBe(t('errors.TwoFactorCodeInvalid')),
+    )
+    expect(dialog.querySelector('#p-code')?.getAttribute('aria-describedby')).toBe('p-code-error')
+    expect(notificationTexts()).toHaveLength(0)
+    expect(openDialogs()).toHaveLength(1)
+  })
+
+  it('shows why a code cannot be emailed under the code field', async () => {
+    serveProfile()
+    server.use(
+      http.post('/api/me/confirmation-code', () => apiError(409, 'TwoFactorResendCooldownActive')),
+    )
+    await renderSection()
+
+    await click(findButton(t('pages.account.profile.editData'), document.body))
+    const dialog = openDialog(t('pages.account.profile.editDialogHeader'))
+    await typeInto('#p-email', 'augusta@example.test', dialog)
+    await typeInto('#p-current', 'old-password', dialog)
+    await click(findButton(t('pages.account.profile.emailChange.sendCode'), dialog))
+
+    await vi.waitFor(() =>
+      expect(
+        dialog.querySelector('[data-testid="profile-dialog-code-error"]')?.textContent.trim(),
+      ).toBe(t('errors.TwoFactorResendCooldownActive')),
+    )
+    expect(findButton(t('pages.account.profile.emailChange.sendCode'), dialog)).toBeTruthy()
+  })
+
+  it('asks an authenticator user for the app code without emailing one', async () => {
+    serveProfile(buildUserResponse({ twoFactorMethod: 'Authenticator' }))
+    const bodies: unknown[] = []
+    server.use(
+      http.put('/api/users/:userId', async ({ request }) => {
+        bodies.push(await request.json())
+        return HttpResponse.json(buildUserResponse({ twoFactorMethod: 'Authenticator' }))
+      }),
+    )
+    await renderSection({ user: { twoFactorMethod: 'Authenticator' } })
+
+    await click(findButton(t('pages.account.profile.editData'), document.body))
+    const dialog = openDialog(t('pages.account.profile.editDialogHeader'))
+    await typeInto('#p-email', 'augusta@example.test', dialog)
+
+    expect(
+      dialog.querySelector('[data-testid="profile-dialog-code-hint"]')?.textContent.trim(),
+    ).toBe(t('pages.account.profile.emailChange.authenticatorHint'))
+    expect(findButtons(t('pages.account.profile.emailChange.sendCode'), dialog)).toHaveLength(0)
+    await typeInto('#p-current', 'old-password', dialog)
+    await typeInto('#p-code', '123456', dialog)
+    await click(findButton(t('common.save'), dialog))
+
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({ currentPassword: 'old-password', code: '123456' })
   })
 
   it('asks for the current password when the secondary phone changes and sends a blank one as null', async () => {
@@ -253,7 +384,11 @@ describe('ProfileSection', () => {
     await click(findButton(t('common.save'), dialog))
 
     await vi.waitFor(() => expect(bodies).toHaveLength(1))
-    expect(bodies[0]).toMatchObject({ secondaryPhone: null, currentPassword: 'old-password' })
+    expect(bodies[0]).toMatchObject({
+      secondaryPhone: null,
+      currentPassword: 'old-password',
+      code: null,
+    })
     await vi.waitFor(() =>
       expect(notificationTexts().join()).toContain(t('pages.account.profile.savedDetail')),
     )

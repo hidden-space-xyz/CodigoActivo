@@ -16,6 +16,7 @@ import { ColorTag } from '@/shared/ui/color-tag'
 import { RichTextContent } from '@/shared/ui/rich-text-content'
 
 import { useLeaderRoster } from '../model/use-leader-roster'
+import { useSignupWindowRefresh } from '../model/use-signup-window-refresh'
 import EventActivitiesTimeline from './EventActivitiesTimeline.vue'
 import LeaderRosterPanel from './LeaderRosterPanel.vue'
 
@@ -29,6 +30,8 @@ const { t } = useI18n()
 const { data: event, isLoading } = useQuery(() => eventQueries.detail(props.eventId))
 const notFound = computed(() => !isLoading.value && event.value === null)
 const session = useSession()
+
+useSignupWindowRefresh(() => event.value)
 
 const tab = ref<'info' | 'activities' | 'attendees'>('info')
 

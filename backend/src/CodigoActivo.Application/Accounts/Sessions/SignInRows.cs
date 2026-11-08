@@ -14,32 +14,35 @@ internal static class SignInRows
 {
     /// <summary>
     /// Gets the condition of an account that may hold a challenge or session cookie: an active
-    /// account with a password that wrong passwords have not locked.
+    /// account with a password. A password lock does not end the sessions already open.
     /// </summary>
     public static Expression<Func<UserRow, bool>> MayHoldTicket { get; } =
         user =>
             user.UserStatusTypeId == CatalogIds.UserStatuses.IdOf(UserStatus.Active)
-            && user.PasswordHash != null
-            && user.PasswordLockedAt == null;
+            && user.PasswordHash != null;
 
     /// <summary>
-    /// Builds the condition of the account that has a second-factor challenge open and still young
-    /// enough to be answered. Together with <see cref="MayHoldTicket"/> it mirrors
-    /// <see cref="User.HasOpenLoginChallenge"/>.
+    /// Builds the condition of the account that has a second-factor challenge open, still young
+    /// enough to be answered, while wrong passwords do not lock it. Together with
+    /// <see cref="MayHoldTicket"/> it mirrors <see cref="User.HasOpenLoginChallenge"/>.
     /// </summary>
     /// <param name="challenge">Challenge named by the cookie.</param>
-    /// <param name="openedAfter">Earliest moment the challenge may have been opened.</param>
+    /// <param name="now">Current timestamp.</param>
+    /// <param name="lifetime">How long a challenge can be answered after it opens.</param>
     /// <returns>The condition.</returns>
     public static Expression<Func<UserRow, bool>> HasOpenChallenge(
         LoginChallengeKey challenge,
-        DateTimeOffset openedAfter
+        DateTimeOffset now,
+        TimeSpan lifetime
     )
     {
         var userId = challenge.UserId.Value;
         Guid? challengeId = challenge.ChallengeId.Value;
+        var openedAfter = now - lifetime;
         return user =>
             user.Id == userId
             && user.LoginChallengeId == challengeId
-            && user.LoginChallengeStartedAt > openedAfter;
+            && user.LoginChallengeStartedAt > openedAfter
+            && (user.PasswordLockedUntil == null || user.PasswordLockedUntil <= now);
     }
 }

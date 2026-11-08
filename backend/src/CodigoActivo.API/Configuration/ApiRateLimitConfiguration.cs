@@ -10,8 +10,8 @@ internal static class ApiRateLimitConfiguration
 {
     private const int MaxConcurrentApiRequests = 128;
     private const int MaxQueuedApiRequests = 256;
-    private const int MaxConcurrentCredentialRequests = 4;
-    private const int MaxQueuedCredentialRequests = 16;
+    private const int MaxConcurrentPasswordHashingRequests = 4;
+    private const int MaxQueuedPasswordHashingRequests = 64;
     private const int MaxConcurrentReportRequests = 16;
     private const int MaxQueuedReportRequests = 32;
     private const int MaxConcurrentSingleRecipientEmailRequests = 10;
@@ -95,10 +95,9 @@ internal static class ApiRateLimitConfiguration
                 MaxConcurrentApiRequests,
                 MaxQueuedApiRequests
             ),
-            EndpointConcurrencyLimiter.Create(
-                SecurityPolicies.Credentials,
-                MaxConcurrentCredentialRequests,
-                MaxQueuedCredentialRequests
+            EndpointConcurrencyLimiter.CreateForMarker<PasswordHashingAttribute>(
+                MaxConcurrentPasswordHashingRequests,
+                MaxQueuedPasswordHashingRequests
             ),
             EndpointConcurrencyLimiter.Create(
                 SecurityPolicies.Reports,

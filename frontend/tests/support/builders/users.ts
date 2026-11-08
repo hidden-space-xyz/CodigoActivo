@@ -74,5 +74,5 @@ export const userTypes: UserTypeResponse[] = [
 /** User status catalog. */
 export const userStatusTypes: UserStatusTypeResponse[] = [
   { id: 'status-active', name: 'Active', description: '', color: '#00FF00' },
-  { id: 'status-blocked', name: 'Blocked', description: '', color: '#FF0000' },
+  { id: 'status-pending', name: 'Pending', description: '', color: '#FF0000' },
 ]

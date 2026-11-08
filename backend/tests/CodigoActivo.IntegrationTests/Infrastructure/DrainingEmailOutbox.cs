@@ -7,10 +7,15 @@ namespace CodigoActivo.IntegrationTests.Infrastructure;
 /// <summary>
 /// Stores email in the real outbox and delivers it inline with a deliverer of its own for every
 /// drain, so a pause or a run of failures one test provokes never holds back the mail of the next.
+/// Drains run one at a time, like the runs of the single delivery worker, so parallel requests
+/// never deliver one message twice.
 /// </summary>
 public sealed class DrainingEmailOutbox(IEmailOutboxStore store, IServiceProvider services)
-    : IEmailOutbox
+    : IEmailOutbox,
+        IDisposable
 {
+    private readonly SemaphoreSlim drains = new(1, 1);
+
     public async Task<EmailEnqueueResult> TryEnqueueAsync(
         EmailBatch batch,
         CancellationToken ct = default
@@ -27,7 +32,20 @@ public sealed class DrainingEmailOutbox(IEmailOutboxStore store, IServiceProvide
 
     public async Task DrainAsync(CancellationToken ct)
     {
-        var deliverer = services.GetRequiredService<EmailOutboxDeliverer>();
-        while (await deliverer.DeliverDueAsync(ct) > 0) { }
+        await drains.WaitAsync(ct);
+        try
+        {
+            var deliverer = services.GetRequiredService<EmailOutboxDeliverer>();
+            while (await deliverer.DeliverDueAsync(ct) > 0) { }
+        }
+        finally
+        {
+            drains.Release();
+        }
+    }
+
+    public void Dispose()
+    {
+        drains.Dispose();
     }
 }

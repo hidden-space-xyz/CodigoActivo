@@ -367,6 +367,12 @@ public enum ErrorCode
     UserSelfTypeChangeForbidden,
 
     /// <summary>
+    /// An administrator tried to reset their own second factor through the endpoint for others;
+    /// returning to email themselves asks for their password and a current code.
+    /// </summary>
+    UserSelfTwoFactorResetRequiresVerification,
+
+    /// <summary>
     /// The initial administrator can never be deleted.
     /// </summary>
     UserDeleteInitialAdminForbidden,
@@ -502,11 +508,6 @@ public enum ErrorCode
     /// password or locked by wrong passwords, all answered alike.
     /// </summary>
     InvalidCredentials,
-
-    /// <summary>
-    /// The account is blocked and cannot sign in.
-    /// </summary>
-    UserAccountBlocked,
 
     /// <summary>
     /// The account has not verified its email yet and cannot sign in.
@@ -700,4 +701,10 @@ public enum ErrorCode
     /// The hold on the blocked data was already lifted.
     /// </summary>
     BlockedDataHoldLifted,
+
+    /// <summary>
+    /// Only an administrator may delete an event or an activity that has signups, or an event
+    /// with terms decisions or ratings.
+    /// </summary>
+    ParticipationDeletionRequiresAdministrator,
 }

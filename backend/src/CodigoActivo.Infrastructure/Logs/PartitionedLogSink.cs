@@ -13,11 +13,9 @@ namespace CodigoActivo.Infrastructure.Logs;
 /// is inside the window of the table, so a history of past days, such as the one of demo mode, or
 /// a start after the partitions ahead ran out is written without a failed copy first. A batch the
 /// database refuses for its data is written again row by row and only the refused rows are
-/// dropped; a batch that still finds no partition for its day, because one was dropped since,
-/// creates the partitions of the batch and is written once more, or row by row when none of its
-/// days is inside the window, which drops the rows that have no partition. Any other failure, such
-/// as an unreachable database, is thrown so Serilog retries the whole batch with backoff until its
-/// retry limit.
+/// dropped, among them the rows of a day outside the window, which has no partition. Any other
+/// failure, such as an unreachable database, is thrown so Serilog retries the whole batch with
+/// backoff until its retry limit.
 /// </summary>
 /// <typeparam name="TRow">Row type the events become.</typeparam>
 /// <param name="database">Connections of the log tables, owned by the host.</param>
@@ -29,7 +27,6 @@ public abstract class PartitionedLogSink<TRow>(
     LogTable table
 ) : IBatchedLogEventSink
 {
-    private const string NoPartitionForRow = "23514";
     private const string DataExceptionClass = "22";
     private const string IntegrityViolationClass = "23";
 
@@ -99,25 +96,6 @@ public abstract class PartitionedLogSink<TRow>(
         try
         {
             await CopyAsync(connection, rows);
-            return;
-        }
-        catch (PostgresException ex) when (ex.SqlState is NoPartitionForRow)
-        {
-            if (!await partitions.EnsurePartitionsAsync(connection, table, DaysOf(rows)))
-            {
-                await CopyEachAsync(connection, rows);
-                return;
-            }
-        }
-        catch (PostgresException ex) when (IsRefusedData(ex))
-        {
-            await CopyEachAsync(connection, rows);
-            return;
-        }
-
-        try
-        {
-            await CopyAsync(connection, rows);
         }
         catch (PostgresException ex) when (IsRefusedData(ex))
         {
@@ -156,14 +134,11 @@ public abstract class PartitionedLogSink<TRow>(
         return rows;
     }
 
-    private IEnumerable<DateOnly> DaysOf(List<TRow> rows)
-    {
-        return rows.Select(row => LogPartitions.DayOf(OccurredAtOf(row)));
-    }
-
     private async Task PrepareDaysAsync(NpgsqlConnection connection, List<TRow> rows)
     {
-        var days = DaysOf(rows).Except(preparedDays).ToList();
+        var days = rows.Select(row => LogPartitions.DayOf(OccurredAtOf(row)))
+            .Except(preparedDays)
+            .ToList();
         if (days.Count is 0)
         {
             return;

@@ -35,8 +35,8 @@ async function renderSection(options: Parameters<typeof renderWithProviders>[1] 
 function serveDeletion() {
   const calls: { url: string; body: unknown }[] = []
   server.use(
-    http.post('/api/me/deletion/code', async ({ request }) => {
-      calls.push({ url: '/api/me/deletion/code', body: await request.json() })
+    http.post('/api/me/confirmation-code', async ({ request }) => {
+      calls.push({ url: '/api/me/confirmation-code', body: await request.json() })
       return new HttpResponse(null, { status: 204 })
     }),
     http.post('/api/me/deletion', async ({ request }) => {
@@ -122,7 +122,10 @@ describe('DeleteAccountSection', () => {
 
     await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'))
     expect(calls).toEqual([
-      { url: '/api/me/deletion/code', body: { currentPassword: 'secret' } },
+      {
+        url: '/api/me/confirmation-code',
+        body: { currentPassword: 'secret', purpose: 'AccountDeletion' },
+      },
       { url: '/api/me/deletion', body: { currentPassword: 'secret', code: '123456' } },
       { url: '/api/auth/logout', body: null },
     ])
@@ -157,7 +160,7 @@ describe('DeleteAccountSection', () => {
 
   it('keeps the password step open when the password is not accepted', async () => {
     server.use(
-      http.post('/api/me/deletion/code', () => apiError(400, 'UserCurrentPasswordIncorrect')),
+      http.post('/api/me/confirmation-code', () => apiError(400, 'UserCurrentPasswordIncorrect')),
     )
     const { queryClient } = await renderSection()
 
@@ -177,7 +180,7 @@ describe('DeleteAccountSection', () => {
   it('shows a rejected code and lets the user ask for another one', async () => {
     const codeRequests: unknown[] = []
     server.use(
-      http.post('/api/me/deletion/code', async ({ request }) => {
+      http.post('/api/me/confirmation-code', async ({ request }) => {
         codeRequests.push(await request.json())
         return codeRequests.length > 1
           ? apiError(409, 'TwoFactorResendCooldownActive')
@@ -211,7 +214,10 @@ describe('DeleteAccountSection', () => {
         t('errors.TwoFactorResendCooldownActive'),
       ),
     )
-    expect(codeRequests).toEqual([{ currentPassword: 'secret' }, { currentPassword: 'secret' }])
+    expect(codeRequests).toEqual([
+      { currentPassword: 'secret', purpose: 'AccountDeletion' },
+      { currentPassword: 'secret', purpose: 'AccountDeletion' },
+    ])
   })
 
   it('refuses to submit the form until the consent box is ticked', async () => {
@@ -229,13 +235,18 @@ describe('DeleteAccountSection', () => {
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
     await flushPromises()
 
-    expect(calls).toEqual([{ url: '/api/me/deletion/code', body: { currentPassword: 'secret' } }])
+    expect(calls).toEqual([
+      {
+        url: '/api/me/confirmation-code',
+        body: { currentPassword: 'secret', purpose: 'AccountDeletion' },
+      },
+    ])
     expect(openDialogs()).toHaveLength(1)
   })
 
   it('forgets the typed password, code and error when the dialog is cancelled', async () => {
     server.use(
-      http.post('/api/me/deletion/code', () => apiError(400, 'UserCurrentPasswordIncorrect')),
+      http.post('/api/me/confirmation-code', () => apiError(400, 'UserCurrentPasswordIncorrect')),
     )
     const { queryClient } = await renderSection()
 

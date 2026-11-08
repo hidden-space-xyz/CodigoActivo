@@ -46,21 +46,35 @@ public sealed class LoginCodeIssuer(
     }
 
     /// <summary>
-    /// Emails a fresh code that confirms deleting the account and stages its hash on the entity.
-    /// The code lives in the same fields as the login code, so it shares its lifetime, its resend
-    /// cooldown and the second-factor lockout. The caller commits.
+    /// Emails a fresh code that confirms a change of the account, named by
+    /// <paramref name="purpose"/>, and stages its hash on the entity. The code lives in the same
+    /// fields as the login code, so it shares its lifetime, its resend cooldown and the
+    /// second-factor lockout. The caller commits.
     /// </summary>
-    /// <param name="user">User whose account deletion receives the code.</param>
+    /// <param name="user">User whose change receives the code.</param>
+    /// <param name="purpose">Change the code confirms, which the email names.</param>
     /// <param name="now">Current timestamp.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result indicates success or contains the application error.</returns>
-    public Task<Result> IssueAccountDeletionAsync(
+    public Task<Result> IssueConfirmationAsync(
         User user,
+        ConfirmationCodePurpose purpose,
         DateTimeOffset now,
         CancellationToken ct
     )
     {
-        return IssueCoreAsync(user, now, accountEmails.SendAccountDeletionCodeEmailAsync, ct);
+        return IssueCoreAsync(
+            user,
+            now,
+            (recipient, code, cancellation) =>
+                accountEmails.SendConfirmationCodeEmailAsync(
+                    recipient,
+                    purpose,
+                    code,
+                    cancellation
+                ),
+            ct
+        );
     }
 
     /// <summary>

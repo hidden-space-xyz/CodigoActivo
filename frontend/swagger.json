@@ -3539,7 +3539,7 @@
         }
       }
     },
-    "/api/me/deletion/code": {
+    "/api/me/confirmation-code": {
       "post": {
         "tags": [
           "Me"
@@ -3548,7 +3548,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/AccountDeletionCodeRequest"
+                "$ref": "#/components/schemas/ConfirmationCodeRequest"
               }
             }
           }
@@ -5029,18 +5029,6 @@
         },
         "additionalProperties": false
       },
-      "AccountDeletionCodeRequest": {
-        "required": [
-          "currentPassword"
-        ],
-        "type": "object",
-        "properties": {
-          "currentPassword": {
-            "type": "string"
-          }
-        },
-        "additionalProperties": false
-      },
       "ActivityModalityTypeResponse": {
         "required": [
           "id",
@@ -5445,7 +5433,7 @@
           "Login",
           "Register",
           "PurgeUnverifiedAccounts",
-          "RequestAccountDeletionCode",
+          "RequestConfirmationCode",
           "ResetPassword",
           "VerifyUser",
           "AssignActivity",
@@ -5670,11 +5658,15 @@
       },
       "AuthenticatorSetupRequest": {
         "required": [
+          "code",
           "currentPassword"
         ],
         "type": "object",
         "properties": {
           "currentPassword": {
+            "type": "string"
+          },
+          "code": {
             "type": "string"
           }
         },
@@ -6112,6 +6104,30 @@
         "properties": {
           "code": {
             "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ConfirmationCodePurpose": {
+        "enum": [
+          "AccountDeletion",
+          "EmailChange",
+          "AuthenticatorSetup"
+        ],
+        "type": "string"
+      },
+      "ConfirmationCodeRequest": {
+        "required": [
+          "currentPassword",
+          "purpose"
+        ],
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string"
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/ConfirmationCodePurpose"
           }
         },
         "additionalProperties": false
@@ -7123,6 +7139,7 @@
           "UserSelfDeleteRequiresVerification",
           "UserSelfStaffRoleChangeForbidden",
           "UserSelfTypeChangeForbidden",
+          "UserSelfTwoFactorResetRequiresVerification",
           "UserDeleteInitialAdminForbidden",
           "UserCannotRemoveInitialAdmin",
           "UserDependentCannotHoldStaffRole",
@@ -7149,7 +7166,6 @@
           "UserPhoneInvalid",
           "DisposableEmailNotAllowed",
           "InvalidCredentials",
-          "UserAccountBlocked",
           "UserAccountPendingVerification",
           "CurrentUserNotFound",
           "OtpInvalidOrExpired",
@@ -7186,7 +7202,8 @@
           "BlockedDataAccountNotFound",
           "BlockedDataOfficerOnly",
           "BlockedDataHoldNotFound",
-          "BlockedDataHoldLifted"
+          "BlockedDataHoldLifted",
+          "ParticipationDeletionRequiresAdministrator"
         ],
         "type": "string"
       },
@@ -10434,6 +10451,10 @@
             "nullable": true
           },
           "secondaryPhone": {
+            "type": "string",
+            "nullable": true
+          },
+          "code": {
             "type": "string",
             "nullable": true
           }

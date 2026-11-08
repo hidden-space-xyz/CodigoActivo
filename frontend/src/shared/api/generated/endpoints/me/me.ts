@@ -29,8 +29,8 @@ import type {
 } from 'vue';
 
 import type {
-  AccountDeletionCodeRequest,
   AssignedActivityResponse,
+  ConfirmationCodeRequest,
   DeleteAccountRequest,
   EventCertificateResponse,
   EventHistoryResponse,
@@ -546,27 +546,27 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getGetApiMePersonalDataMutationOptions(options), queryClient);
     }
-    export type postApiMeDeletionCodeResponse200 = {
+    export type postApiMeConfirmationCodeResponse200 = {
   data: void
   status: 200
 }
 
-export type postApiMeDeletionCodeResponseSuccess = (postApiMeDeletionCodeResponse200) & {
+export type postApiMeConfirmationCodeResponseSuccess = (postApiMeConfirmationCodeResponse200) & {
   headers: Headers;
 };
 ;
 
-export type postApiMeDeletionCodeResponse = (postApiMeDeletionCodeResponseSuccess)
+export type postApiMeConfirmationCodeResponse = (postApiMeConfirmationCodeResponseSuccess)
 
-export const getPostApiMeDeletionCodeUrl = () => {
-
-
+export const getPostApiMeConfirmationCodeUrl = () => {
 
 
-  return `/api/me/deletion/code`
+
+
+  return `/api/me/confirmation-code`
 }
 
-export const postApiMeDeletionCode = async (accountDeletionCodeRequest?: AccountDeletionCodeRequest, options?: Parameters<typeof httpClient>[1]): Promise<postApiMeDeletionCodeResponse> => {
+export const postApiMeConfirmationCode = async (confirmationCodeRequest?: ConfirmationCodeRequest, options?: Parameters<typeof httpClient>[1]): Promise<postApiMeConfirmationCodeResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -582,12 +582,12 @@ export const postApiMeDeletionCode = async (accountDeletionCodeRequest?: Account
     }
     return headers;
   };
-return httpClient<postApiMeDeletionCodeResponse>(getPostApiMeDeletionCodeUrl(),
+return httpClient<postApiMeConfirmationCodeResponse>(getPostApiMeConfirmationCodeUrl(),
   {
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(accountDeletionCodeRequest)
+    body: JSON.stringify(confirmationCodeRequest)
   }
 );}
 
@@ -595,42 +595,42 @@ return httpClient<postApiMeDeletionCodeResponse>(getPostApiMeDeletionCodeUrl(),
 
 
 
-export const getPostApiMeDeletionCodeQueryKey = (accountDeletionCodeRequest?: MaybeRefOrGetter<AccountDeletionCodeRequest>,) => {
+export const getPostApiMeConfirmationCodeQueryKey = (confirmationCodeRequest?: MaybeRefOrGetter<ConfirmationCodeRequest>,) => {
     return [
-    'POST', 'api','me','deletion','code', accountDeletionCodeRequest
+    'POST', 'api','me','confirmation-code', confirmationCodeRequest
     ] as const;
     }
 
 
-export const getPostApiMeDeletionCodeQueryOptions = <TData = Awaited<ReturnType<typeof postApiMeDeletionCode>>, TError = unknown>(accountDeletionCodeRequest?: MaybeRefOrGetter<AccountDeletionCodeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiMeDeletionCode>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+export const getPostApiMeConfirmationCodeQueryOptions = <TData = Awaited<ReturnType<typeof postApiMeConfirmationCode>>, TError = unknown>(confirmationCodeRequest?: MaybeRefOrGetter<ConfirmationCodeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiMeConfirmationCode>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  getPostApiMeDeletionCodeQueryKey(accountDeletionCodeRequest);
+  const queryKey =  getPostApiMeConfirmationCodeQueryKey(confirmationCodeRequest);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiMeDeletionCode>>> = ({ signal }) => postApiMeDeletionCode(toValue(accountDeletionCodeRequest), { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiMeConfirmationCode>>> = ({ signal }) => postApiMeConfirmationCode(toValue(confirmationCodeRequest), { signal, ...requestOptions });
 
 
 
 
 
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiMeDeletionCode>>, TError, TData>
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiMeConfirmationCode>>, TError, TData>
 }
 
-export type PostApiMeDeletionCodeQueryResult = NonNullable<Awaited<ReturnType<typeof postApiMeDeletionCode>>>
-export type PostApiMeDeletionCodeQueryError = unknown
+export type PostApiMeConfirmationCodeQueryResult = NonNullable<Awaited<ReturnType<typeof postApiMeConfirmationCode>>>
+export type PostApiMeConfirmationCodeQueryError = unknown
 
 
 
-export function usePostApiMeDeletionCode<TData = Awaited<ReturnType<typeof postApiMeDeletionCode>>, TError = unknown>(
- accountDeletionCodeRequest?: MaybeRefOrGetter<AccountDeletionCodeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiMeDeletionCode>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
+export function usePostApiMeConfirmationCode<TData = Awaited<ReturnType<typeof postApiMeConfirmationCode>>, TError = unknown>(
+ confirmationCodeRequest?: MaybeRefOrGetter<ConfirmationCodeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiMeConfirmationCode>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
  , queryClient?: QueryClient
  ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
 
-  const queryOptions = getPostApiMeDeletionCodeQueryOptions(accountDeletionCodeRequest,options)
+  const queryOptions = getPostApiMeConfirmationCodeQueryOptions(confirmationCodeRequest,options)
 
   const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
 

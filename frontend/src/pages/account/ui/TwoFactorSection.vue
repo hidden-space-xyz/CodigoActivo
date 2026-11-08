@@ -11,7 +11,7 @@ import { useTwoFactor } from '../model/use-two-factor'
 
 const { t } = useI18n()
 const twoFactor = useTwoFactor()
-const { isAuthenticator, setup, qrCodeUrl, errorMessage, beginSetup, confirmSetup, disable } =
+const { isAuthenticator, email, setup, qrCodeUrl, errorMessage, requestSetupCode, disable } =
   twoFactor
 
 const methodLabel = computed(() =>
@@ -23,11 +23,14 @@ const methodLabel = computed(() =>
 const {
   visible: setupVisible,
   step: setupStep,
+  submitting: setupSubmitting,
   passwordForm: { draft: setupPassword, errors: setupPasswordErrors },
+  emailCodeForm: { draft: setupEmailCode, errors: setupEmailCodeErrors },
   codeForm: { draft: setupCode, errors: setupCodeErrors },
   open: openSetup,
   close: closeSetup,
   submit: submitSetup,
+  resendCode: resendSetupCode,
 } = useAuthenticatorSetupDialog(twoFactor)
 
 const {
@@ -121,6 +124,48 @@ const {
           </div>
         </template>
 
+        <template v-else-if="setupStep === 'emailCode'">
+          <p class="acc-form__intro" data-testid="two-factor-setup-code-sent">
+            {{ $t('pages.account.twoFactor.setupCodeSent', { email }) }}
+          </p>
+          <div class="ca-field acc-form__field">
+            <label class="ca-field__label" for="tf-setup-email-code">{{
+              $t('pages.account.twoFactor.emailCodeLabel')
+            }}</label>
+            <el-input
+              id="tf-setup-email-code"
+              v-model="setupEmailCode.code"
+              data-testid="two-factor-setup-email-code"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              :maxlength="TWO_FACTOR_CODE_MAX_LENGTH"
+              :aria-invalid="!!setupEmailCodeErrors.code"
+              :aria-describedby="
+                setupEmailCodeErrors.code ? 'tf-setup-email-code-error' : undefined
+              "
+            />
+            <small
+              v-if="setupEmailCodeErrors.code"
+              id="tf-setup-email-code-error"
+              class="ca-field__error"
+              data-testid="two-factor-setup-email-code-error"
+              >{{ setupEmailCodeErrors.code }}</small
+            >
+          </div>
+          <p class="tf-resend">
+            {{ $t('pages.account.twoFactor.resendPrompt') }}
+            <BrandButton
+              variant="link"
+              class="tf-resend__button"
+              data-testid="two-factor-setup-resend"
+              :loading="requestSetupCode.isPending.value"
+              @click="resendSetupCode"
+            >
+              {{ $t('pages.account.twoFactor.resend') }}
+            </BrandButton>
+          </p>
+        </template>
+
         <template v-else-if="setup">
           <p class="acc-form__intro">{{ $t('pages.account.twoFactor.scanIntro') }}</p>
           <div class="tf-enroll">
@@ -183,18 +228,31 @@ const {
             >{{ $t('common.cancel') }}</BrandButton
           >
           <BrandButton
+            v-if="setupStep === 'password'"
             variant="primary"
             type="submit"
-            :loading="beginSetup.isPending.value || confirmSetup.isPending.value"
-            :data-testid="
-              setupStep === 'password' ? 'two-factor-setup-continue' : 'two-factor-setup-activate'
-            "
+            data-testid="two-factor-setup-send-code"
+            :loading="setupSubmitting"
           >
-            {{
-              setupStep === 'password'
-                ? $t('pages.account.twoFactor.continue')
-                : $t('pages.account.twoFactor.confirm')
-            }}
+            {{ $t('pages.account.twoFactor.sendCode') }}
+          </BrandButton>
+          <BrandButton
+            v-else-if="setupStep === 'emailCode'"
+            variant="primary"
+            type="submit"
+            data-testid="two-factor-setup-continue"
+            :loading="setupSubmitting"
+          >
+            {{ $t('pages.account.twoFactor.continue') }}
+          </BrandButton>
+          <BrandButton
+            v-else
+            variant="primary"
+            type="submit"
+            data-testid="two-factor-setup-activate"
+            :loading="setupSubmitting"
+          >
+            {{ $t('pages.account.twoFactor.confirm') }}
           </BrandButton>
         </div>
       </form>
@@ -364,6 +422,19 @@ const {
 
 .acc-form__alert {
   margin-bottom: 10px;
+}
+
+.tf-resend {
+  margin: 0 0 14px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ca-text-muted);
+}
+
+.tf-resend__button {
+  display: inline;
+  padding: 0;
+  font-size: inherit;
 }
 
 .tf-enroll {

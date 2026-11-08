@@ -20,6 +20,30 @@ export interface UpdateProfileInput {
    * changes, so a stolen session alone cannot redirect the account or its contact details.
    */
   currentPassword: string | null
+  /**
+   * Current second-factor code, emailed or read from the authenticator, required by the API only
+   * when the email changes, so a stolen session and the password cannot take the account over.
+   */
+  code: string | null
+}
+
+/** Change of the own account that an emailed confirmation code authorizes. */
+type ConfirmationCodePurpose = 'AccountDeletion' | 'EmailChange' | 'AuthenticatorSetup'
+
+/** Values needed to email the code that confirms a change of the own account. */
+export interface ConfirmationCodeInput {
+  /** Current password, verified before any code is emailed. */
+  currentPassword: string
+  /** Change the code authorizes, which the email names. */
+  purpose: ConfirmationCodePurpose
+}
+
+/** Values needed to start enrolling an authenticator application. */
+export interface AuthenticatorSetupInput {
+  /** Current password, re-entered so a stolen session cannot replace the second factor. */
+  currentPassword: string
+  /** Code emailed to the account, its current second factor. */
+  code: string
 }
 
 /** Password change form values; confirmation is checked by the form before this is built. */

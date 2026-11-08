@@ -92,11 +92,8 @@ public sealed class LogPartitionMaintainer(
     /// <param name="table">Log table the batch is written to.</param>
     /// <param name="days">UTC days the batch holds, repeats allowed.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>
-    /// A task whose result is <see langword="true"/> when at least one day is inside the window of
-    /// the table, so writing the batch again may succeed.
-    /// </returns>
-    public async Task<bool> EnsurePartitionsAsync(
+    /// <returns>A task that represents the asynchronous operation.</returns>
+    public async Task EnsurePartitionsAsync(
         NpgsqlConnection connection,
         LogTable table,
         IEnumerable<DateOnly> days,
@@ -111,19 +108,11 @@ public sealed class LogPartitionMaintainer(
         var tableRetention = retention.Of(table);
         var inWindow = days.Distinct()
             .Where(day => LogPartitions.IsWithinWindow(tableRetention, day, now))
-            .Order()
-            .ToList();
-        if (inWindow.Count is 0)
-        {
-            return false;
-        }
-
+            .Order();
         foreach (var day in inWindow)
         {
             await CreateAsync(connection, table, day, ct);
         }
-
-        return true;
     }
 
     private static Task CreateAsync(

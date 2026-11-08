@@ -2,6 +2,7 @@ import { currentUser } from '../../support/api/my-account'
 import { PASSWORD } from '../../support/config/environment'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
+import { SUBJECTS } from '../../support/mail/mailbox'
 import { AccountPage } from '../../support/pages/account/account-page'
 import {
   AuthenticatorSetupDialog,
@@ -15,9 +16,10 @@ import { notification } from '../../support/ui/element-plus'
 const INVALID_CODE = t('errors.TwoFactorCodeInvalid')
 
 test.describe('two-step verification', () => {
-  test('the setup refuses a wrong password and a wrong first code', async ({
+  test('the setup refuses a wrong password, a wrong emailed code and a wrong first code', async ({
     accounts,
     pageAs,
+    mailbox,
   }) => {
     const actor = await accounts.actor({ label: 'totp-refused' })
     const page = await pageAs(actor)
@@ -27,16 +29,31 @@ test.describe('two-step verification', () => {
     await twoFactor.useAuthenticator.click()
     const setup = new AuthenticatorSetupDialog(page)
 
-    await setup.continue.click()
+    await setup.sendCode.click()
     await expect(setup.root.getByTestId('two-factor-setup-password-error')).toHaveText(
       t('pages.account.twoFactor.form.problems.passwordRequired'),
     )
     await setup.password.fill(`${PASSWORD}-wrong`)
-    await setup.continue.click()
+    const sentAfter = new Date()
+    await setup.sendCode.click()
     await expect(setup.error).toHaveText(t('errors.UserCurrentPasswordIncorrect'))
-    await expect(setup.sharedKey).toBeHidden()
+    await expect(setup.emailCode).toBeHidden()
+    expect(
+      await mailbox.received({
+        to: actor.account.email,
+        subject: SUBJECTS.authenticatorSetupCode,
+        sentAfter,
+      }),
+    ).toBe(false)
 
-    await setup.unlock(PASSWORD)
+    const code = await setup.requestCode(mailbox, actor.account)
+    await setup.emailCode.fill(code === '000000' ? '111111' : '000000')
+    await setup.continue.click()
+    await expect(setup.error).toHaveText(INVALID_CODE)
+    await expect(setup.sharedKey).toBeHidden()
+    await setup.emailCode.fill(code)
+    await setup.continue.click()
+    await expect(setup.sharedKey).toHaveText(/^[A-Z2-7 ]{16,}$/)
     await setup.activate.click()
     await expect(setup.root.getByTestId('two-factor-setup-code-error')).toHaveText(
       t('pages.account.twoFactor.form.problems.codeRequired'),
@@ -55,6 +72,7 @@ test.describe('two-step verification', () => {
     accounts,
     pageAs,
     page,
+    mailbox,
   }) => {
     test.slow()
     const actor = await accounts.actor({ label: 'totp' })
@@ -65,7 +83,7 @@ test.describe('two-step verification', () => {
 
     await twoFactor.useAuthenticator.click()
     const setup = new AuthenticatorSetupDialog(accountPage)
-    const app = await setup.unlock(PASSWORD)
+    const app = await setup.unlock(mailbox, actor.account)
     await setup.code.fill(await app.nextCode())
     await setup.activate.click()
 

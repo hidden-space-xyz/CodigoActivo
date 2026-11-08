@@ -62,6 +62,40 @@ public sealed class UsersControllerTwoFactorResetTests(CodigoActivoWebAppFactory
         me.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
+    [Theory]
+    [InlineData(TestSeedData.Password)]
+    [InlineData("WrongPassword!")]
+    public async Task ResetTwoFactorOwnAccountIsForbiddenBeforeThePasswordAndKeepsTheAuthenticator(
+        string password
+    )
+    {
+        var admin = await LoginAsAdminAsync();
+        await Factory.SeedAsync(async db =>
+        {
+            var user = await db.Users.FindAsync([UserId.From(TestSeedData.Users.AdminId)], Ct);
+            Persisted.Overwrite(
+                user!,
+                new
+                {
+                    TwoFactorMethod = TwoFactorMethod.Authenticator,
+                    Authenticator = new { Key = FakeSecretProtector.Prefix + "SECRET" },
+                }
+            );
+        });
+
+        using var response = await admin.PostJsonAsync(
+            ResetUrl(TestSeedData.Users.AdminId),
+            new ResetTwoFactorRequest(password),
+            Ct
+        );
+
+        await response.ShouldBeForbiddenAsync(ErrorCode.UserSelfTwoFactorResetRequiresVerification);
+        var stored = await FindAsync<User>(TestSeedData.Users.AdminId);
+        stored!.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
+        stored.Authenticator.Key.Should().Be(FakeSecretProtector.Prefix + "SECRET");
+        stored.PasswordLockout.FailedAttempts.Should().Be(0);
+    }
+
     [Fact]
     public async Task ResetTwoFactorWrongAdminPasswordReturnsBadRequestAndChangesNothing()
     {

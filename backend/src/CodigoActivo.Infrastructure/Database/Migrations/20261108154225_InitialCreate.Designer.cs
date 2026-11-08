@@ -14,7 +14,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CodigoActivo.Infrastructure.Database.Migrations
 {
     [DbContext(typeof(CodigoActivoDbContext))]
-    [Migration("20261108105208_InitialCreate")]
+    [Migration("20261108154225_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -1329,9 +1329,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                                 .HasColumnType("integer")
                                 .HasColumnName("password_failed_attempts");
 
-                            b1.Property<DateTimeOffset?>("LockedAt")
+                            b1.Property<DateTimeOffset?>("LockedUntil")
                                 .HasColumnType("timestamp with time zone")
-                                .HasColumnName("password_locked_at");
+                                .HasColumnName("password_locked_until");
 
                             b1.HasPropertyAnnotation("CodigoActivo:DataHistoryExcluded", true);
                         });
@@ -1596,10 +1596,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("character varying(300)")
                         .HasColumnName("last_error");
-
-                    b.Property<DateTimeOffset?>("LockedUntil")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("locked_until");
 
                     b.Property<DateTimeOffset>("NextAttemptAt")
                         .HasColumnType("timestamp with time zone")

@@ -55,6 +55,7 @@ const {
   designatingOfficer,
   resetDialog,
   resetError,
+  mayResetTwoFactor,
   openResetTwoFactor,
   resetUserTwoFactor,
   resettingTwoFactor,
@@ -138,24 +139,24 @@ function userActions(user: User): RowAction[] {
     },
   ]
   if (user.email) {
-    actions.push(
-      {
-        key: 'sendEmail',
-        label: t('pages.admin.users.actions.sendEmail'),
-        icon: 'envelope',
-        run: () => {
-          openEmail(user)
-        },
+    actions.push({
+      key: 'sendEmail',
+      label: t('pages.admin.users.actions.sendEmail'),
+      icon: 'envelope',
+      run: () => {
+        openEmail(user)
       },
-      {
-        key: 'resetTwoFactor',
-        label: t('pages.admin.users.actions.resetTwoFactor'),
-        icon: 'lock',
-        run: () => {
-          openResetTwoFactor(user)
-        },
+    })
+  }
+  if (mayResetTwoFactor(user)) {
+    actions.push({
+      key: 'resetTwoFactor',
+      label: t('pages.admin.users.actions.resetTwoFactor'),
+      icon: 'lock',
+      run: () => {
+        openResetTwoFactor(user)
       },
-    )
+    })
   }
   if (mayChangeStaffRole(user)) {
     actions.push({

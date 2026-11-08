@@ -46,6 +46,64 @@ public static class AppStrings
         Get("emails.accountDeletionCode.subject");
 
     /// <summary>
+    /// Gets the heading of the email with the code that confirms changing one's email.
+    /// </summary>
+    public static string EmailsEmailChangeCodeHeading => Get("emails.emailChangeCode.heading");
+
+    /// <summary>
+    /// Gets the closing note of the email with the code that confirms changing one's email, for whoever did
+    /// not ask for it.
+    /// </summary>
+    public static string EmailsEmailChangeCodeIgnoreNote =>
+        Get("emails.emailChangeCode.ignoreNote");
+
+    /// <summary>
+    /// Gets the HTML introduction of the email with the code that confirms changing one's email.
+    /// </summary>
+    public static string EmailsEmailChangeCodeIntroHtml => Get("emails.emailChangeCode.introHtml");
+
+    /// <summary>
+    /// Gets the plain-text introduction of the email with the code that confirms changing one's email.
+    /// </summary>
+    public static string EmailsEmailChangeCodeIntroText => Get("emails.emailChangeCode.introText");
+
+    /// <summary>
+    /// Gets the subject of the email with the code that confirms changing one's email.
+    /// </summary>
+    public static string EmailsEmailChangeCodeSubject => Get("emails.emailChangeCode.subject");
+
+    /// <summary>
+    /// Gets the heading of the email with the code that confirms enrolling an authenticator application.
+    /// </summary>
+    public static string EmailsAuthenticatorSetupCodeHeading =>
+        Get("emails.authenticatorSetupCode.heading");
+
+    /// <summary>
+    /// Gets the closing note of the email with the code that confirms enrolling an authenticator application, for whoever did
+    /// not ask for it.
+    /// </summary>
+    public static string EmailsAuthenticatorSetupCodeIgnoreNote =>
+        Get("emails.authenticatorSetupCode.ignoreNote");
+
+    /// <summary>
+    /// Gets the HTML introduction of the email with the code that confirms enrolling an authenticator application.
+    /// </summary>
+    public static string EmailsAuthenticatorSetupCodeIntroHtml =>
+        Get("emails.authenticatorSetupCode.introHtml");
+
+    /// <summary>
+    /// Gets the plain-text introduction of the email with the code that confirms enrolling an authenticator application.
+    /// </summary>
+    public static string EmailsAuthenticatorSetupCodeIntroText =>
+        Get("emails.authenticatorSetupCode.introText");
+
+    /// <summary>
+    /// Gets the subject of the email with the code that confirms enrolling an authenticator application.
+    /// </summary>
+    public static string EmailsAuthenticatorSetupCodeSubject =>
+        Get("emails.authenticatorSetupCode.subject");
+
+    /// <summary>
     /// Gets the button label of the email that confirms an activity signup.
     /// </summary>
     public static string EmailsActivityDecisionConfirmedButtonLabel =>
@@ -557,7 +615,7 @@ public static class AppStrings
         Get("emails.securityAlert.unexpectedWarning");
 
     /// <summary>
-    /// Gets the advice for a password lock caused by someone else's attempts.
+    /// Gets the advice for a password lock caused by someone else's attempts: change the password.
     /// </summary>
     public static string EmailsSecurityAlertPasswordLockedWarning =>
         Get("emails.securityAlert.passwordLockedWarning");
@@ -569,7 +627,8 @@ public static class AppStrings
         Get("emails.securityAlert.passwordChanged");
 
     /// <summary>
-    /// Gets the security alert line for an account locked after repeated wrong passwords.
+    /// Gets the security alert line for an account locked for 15 minutes after repeated wrong
+    /// passwords.
     /// </summary>
     public static string EmailsSecurityAlertPasswordLocked =>
         Get("emails.securityAlert.passwordLocked");
@@ -602,6 +661,34 @@ public static class AppStrings
     /// </summary>
     public static string EmailsSecurityAlertTwoFactorReset =>
         Get("emails.securityAlert.twoFactorReset");
+
+    /// <summary>
+    /// Gets the security alert line for a second factor locked after repeated wrong codes that
+    /// followed a correct password.
+    /// </summary>
+    public static string EmailsSecurityAlertTwoFactorLocked =>
+        Get("emails.securityAlert.twoFactorLocked");
+
+    /// <summary>
+    /// Gets the advice for a second-factor lock the owner did not cause: someone knows the
+    /// password, so change it.
+    /// </summary>
+    public static string EmailsSecurityAlertTwoFactorLockedWarning =>
+        Get("emails.securityAlert.twoFactorLockedWarning");
+
+    /// <summary>
+    /// Gets the subject of the alert sent when wrong codes after a correct password lock the second
+    /// factor.
+    /// </summary>
+    public static string EmailsSecurityAlertTwoFactorLockedSubject =>
+        Get("emails.securityAlert.twoFactorLockedSubject");
+
+    /// <summary>
+    /// Gets the heading of the alert sent when wrong codes after a correct password lock the second
+    /// factor.
+    /// </summary>
+    public static string EmailsSecurityAlertTwoFactorLockedHeading =>
+        Get("emails.securityAlert.twoFactorLockedHeading");
 
     /// <summary>
     /// Gets the advice for any other change the owner did not make: reset the password and contact
@@ -697,6 +784,46 @@ public static class AppStrings
     public static string EmailsAccountDeletionCodeExpiryText(int minutes)
     {
         return Format("emails.accountDeletionCode.expiryText", minutes);
+    }
+
+    /// <summary>
+    /// Formats the HTML lifetime of the code that confirms changing one's email.
+    /// </summary>
+    /// <param name="minutes">Minutes the code stays valid.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsEmailChangeCodeExpiryHtml(int minutes)
+    {
+        return Format("emails.emailChangeCode.expiryHtml", minutes);
+    }
+
+    /// <summary>
+    /// Formats the plain-text lifetime of the code that confirms changing one's email.
+    /// </summary>
+    /// <param name="minutes">Minutes the code stays valid.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsEmailChangeCodeExpiryText(int minutes)
+    {
+        return Format("emails.emailChangeCode.expiryText", minutes);
+    }
+
+    /// <summary>
+    /// Formats the HTML lifetime of the code that confirms enrolling an authenticator application.
+    /// </summary>
+    /// <param name="minutes">Minutes the code stays valid.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsAuthenticatorSetupCodeExpiryHtml(int minutes)
+    {
+        return Format("emails.authenticatorSetupCode.expiryHtml", minutes);
+    }
+
+    /// <summary>
+    /// Formats the plain-text lifetime of the code that confirms enrolling an authenticator application.
+    /// </summary>
+    /// <param name="minutes">Minutes the code stays valid.</param>
+    /// <returns>The generated text.</returns>
+    public static string EmailsAuthenticatorSetupCodeExpiryText(int minutes)
+    {
+        return Format("emails.authenticatorSetupCode.expiryText", minutes);
     }
 
     /// <summary>

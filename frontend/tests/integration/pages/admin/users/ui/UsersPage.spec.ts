@@ -313,7 +313,7 @@ describe('admin users page', () => {
     )
     expect(status.props('options')).toEqual([
       { label: 'Active', value: 'status-active' },
-      { label: 'Blocked', value: 'status-blocked' },
+      { label: 'Pending', value: 'status-pending' },
     ])
     expect(consent.props('options')).toEqual([
       { label: t('common.yes'), value: true },
@@ -656,12 +656,7 @@ describe('admin users page', () => {
       '—',
     ])
     const ownMenu = await openRowMenu(rowElement(wrapper, 0))
-    expect(rowMenuLabels(ownMenu)).toEqual([
-      t(CHANGE_TYPE),
-      t(SEND_EMAIL),
-      t(RESET_2FA),
-      t('common.delete'),
-    ])
+    expect(rowMenuLabels(ownMenu)).toEqual([t(CHANGE_TYPE), t(SEND_EMAIL), t('common.delete')])
     const ownDelete = rowMenuItem(ownMenu, t('common.delete'))
     expect(ownDelete.getAttribute('aria-disabled')).toBe('true')
     expect(textOf(ownDelete.querySelector('.row-actions__item-reason'))).toBe(
@@ -692,7 +687,7 @@ describe('admin users page', () => {
     ])
   })
 
-  it('marks the own account and keeps its type out of reach', async () => {
+  it('marks the own account and keeps its type and second-factor reset out of reach', async () => {
     const requests: string[] = []
     serveUsers([
       buildUserResponse({ staffRole: 'Administrator' }),
@@ -712,7 +707,9 @@ describe('admin users page', () => {
     )
     expect(other?.find('.table-primary-cell__badges').exists()).toBe(false)
 
-    const ownType = rowMenuItem(await openRowMenu(rowElement(wrapper, 0)), t(CHANGE_TYPE))
+    const ownMenu = await openRowMenu(rowElement(wrapper, 0))
+    expect(rowMenuLabels(ownMenu)).toEqual([t(CHANGE_TYPE), t(SEND_EMAIL)])
+    const ownType = rowMenuItem(ownMenu, t(CHANGE_TYPE))
     expect(ownType.getAttribute('aria-disabled')).toBe('true')
     expect(textOf(ownType.querySelector('.row-actions__item-reason'))).toBe(
       t('pages.admin.users.blocked.selfRole'),
@@ -722,7 +719,9 @@ describe('admin users page', () => {
     expect(isDialogOpen(t(TYPE_TITLE))).toBe(false)
     expect(requests).toEqual([])
 
-    const otherType = rowMenuItem(await openRowMenu(rowElement(wrapper, 1)), t(CHANGE_TYPE))
+    const otherMenu = await openRowMenu(rowElement(wrapper, 1))
+    expect(rowMenuLabels(otherMenu)).toEqual([t(CHANGE_TYPE), t(SEND_EMAIL), t(RESET_2FA)])
+    const otherType = rowMenuItem(otherMenu, t(CHANGE_TYPE))
     expect(otherType.getAttribute('aria-disabled')).not.toBe('true')
   })
 

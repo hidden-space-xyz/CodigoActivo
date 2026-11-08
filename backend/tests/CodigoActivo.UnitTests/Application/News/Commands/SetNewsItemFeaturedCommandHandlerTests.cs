@@ -44,7 +44,7 @@ public sealed class SetNewsItemFeaturedCommandHandlerTests
     {
         var chosen = NewNewsItem();
         news.Finds(chosen);
-        news.ListFeaturedAsync(Arg.Any<CancellationToken>()).Returns([]);
+        news.GetFeaturedAsync(Arg.Any<CancellationToken>()).Returns((NewsItem?)null);
 
         var result = await sut.HandleAsync(
             new SetNewsItemFeaturedCommand(chosen.Id),
@@ -68,7 +68,7 @@ public sealed class SetNewsItemFeaturedCommandHandlerTests
         var chosen = NewNewsItem();
         var previous = NewNewsItem(featured: true);
         news.Finds(chosen);
-        news.ListFeaturedAsync(Arg.Any<CancellationToken>()).Returns([previous]);
+        news.GetFeaturedAsync(Arg.Any<CancellationToken>()).Returns(previous);
 
         var result = await sut.HandleAsync(
             new SetNewsItemFeaturedCommand(chosen.Id),
@@ -89,7 +89,7 @@ public sealed class SetNewsItemFeaturedCommandHandlerTests
         var chosen = NewNewsItem();
         var previous = NewNewsItem(featured: true);
         news.Finds(chosen);
-        news.ListFeaturedAsync(Arg.Any<CancellationToken>()).Returns([previous]);
+        news.GetFeaturedAsync(Arg.Any<CancellationToken>()).Returns(previous);
         var saved = new List<(bool Previous, bool Chosen)>();
         uow.When(u => u.SaveChangesAsync(Arg.Any<CancellationToken>()))
             .Do(_ => saved.Add((previous.Featured, chosen.Featured)));
@@ -108,7 +108,7 @@ public sealed class SetNewsItemFeaturedCommandHandlerTests
     {
         var chosen = NewNewsItem(featured: true);
         news.Finds(chosen);
-        news.ListFeaturedAsync(Arg.Any<CancellationToken>()).Returns([chosen]);
+        news.GetFeaturedAsync(Arg.Any<CancellationToken>()).Returns(chosen);
 
         var result = await sut.HandleAsync(
             new SetNewsItemFeaturedCommand(chosen.Id),

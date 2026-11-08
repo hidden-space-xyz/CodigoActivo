@@ -36,6 +36,7 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
         IAsyncLifetime
 {
     private static readonly DateTimeOffset Fixed = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
     private static readonly Guid AuthorId = new("aaaaaaaa-1111-1111-1111-111111111111");
     private static readonly Guid ThumbId = new("bbbbbbbb-2222-2222-2222-222222222222");
@@ -317,7 +318,7 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
         {
             var otherRepo = new UserRepository(other, TestUnitOfWork.For(other));
             var copy = await otherRepo.GetByIdAsync(user.Id, Ct);
-            copy!.RecordPasswordFailure(5, Fixed);
+            copy!.RecordPasswordFailure(Fixed, 5, LockoutDuration);
             await otherRepo.SavePasswordStateAsync(copy, Ct);
         }
 

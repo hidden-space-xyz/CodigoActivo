@@ -186,6 +186,34 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         page.Items.Should().ContainSingle(a => a.Title == "Ponencia");
     }
 
+    [Theory]
+    [InlineData("GUELL", "Visita")]
+    [InlineData("pabellòn", "Visita")]
+    [InlineData("placa", "Mercado")]
+    [InlineData("pena", null)]
+    public async Task ListLocationFilterFoldsVowelAccentsAndCedillaButKeepsEnye(
+        string term,
+        string? title
+    )
+    {
+        var thumb = await SeedThumbnailAsync();
+        var eventId = await SeedEventAsync(thumb);
+        await SeedActivityAsync(eventId, thumb, "Visita", location: "Pabellón Güell");
+        await SeedActivityAsync(eventId, thumb, "Mercado", location: "Plaça Major");
+        await SeedActivityAsync(eventId, thumb, "Ruta", location: "Peña Ubiña");
+        var client = CreateClient();
+
+        var response = await client.GetAsync(
+            TestUri.Rel($"/api/activities?location={Uri.EscapeDataString(term)}"),
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var page = await response.ReadJsonAsync<PagedResult<ActivityResponse>>(Ct);
+        string[] expected = title is null ? [] : [title];
+        page!.Items.Select(a => a.Title).Should().BeEquivalentTo(expected);
+    }
+
     [Fact]
     public async Task ListFilterByActivityDateRangeMatchesActivitiesOverlappingRange()
     {
@@ -680,6 +708,60 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var file = await FindAsync<StoredFile>(thumb);
         file.Should()
             .NotBeNull("a thumbnail still referenced by another entity must survive the cascade");
+    }
+
+    [Fact]
+    public async Task DeleteAsEditorActivityWithASignupIsRefusedAndKeepsIt()
+    {
+        var thumb = await SeedThumbnailAsync();
+        var eventId = await SeedEventAsync(thumb);
+        var id = await SeedActivityAsync(eventId, thumb);
+        await Factory.SeedAsync(db =>
+        {
+            db.Assignments.Add(
+                Persisted.As<Assignment>(
+                    new
+                    {
+                        UserId = TestSeedData.Users.MemberChildId,
+                        ActivityId = id,
+                        Role = ActivityRole.Participant,
+                        Status = AssignmentStatus.Requested,
+                        CreatedAt = SignupStart,
+                    }
+                )
+            );
+            return Task.CompletedTask;
+        });
+        var editor = await LoginAsEditorAsync();
+
+        using var response = await editor.DeleteWithCsrfAsync($"/api/activities/{id}", Ct);
+
+        await response.ShouldBeForbiddenAsync(ErrorCode.ParticipationDeletionRequiresAdministrator);
+        (await FindAsync<Activity>(id)).Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task DeleteAsEditorActivityWithoutSignupsRemovesIt()
+    {
+        var thumb = await SeedThumbnailAsync();
+        var eventId = await SeedEventAsync(thumb);
+        var id = await SeedActivityAsync(eventId, thumb);
+        var editor = await LoginAsEditorAsync();
+
+        using var response = await editor.DeleteWithCsrfAsync($"/api/activities/{id}", Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await FindAsync<Activity>(id)).Should().BeNull();
+    }
+
+    private async Task<HttpClient> LoginAsEditorAsync()
+    {
+        await Factory.SeedAsync(async db =>
+        {
+            var member = await db.Users.FindAsync([UserId.From(TestSeedData.Users.MemberId)], Ct);
+            Persisted.Overwrite(member!, new { StaffRole = StaffRole.Editor });
+        });
+        return await LoginAsMemberAsync();
     }
 
     [Fact]

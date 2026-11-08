@@ -5,6 +5,7 @@ using CodigoActivo.API.Errors;
 using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Querying;
+using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Application.BlockedData.Contracts;
 using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Users.Contracts;
@@ -37,7 +38,8 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         string? currentPassword = null,
         string? nationalId = TestSeedData.MemberNationalId,
         bool newsConsent = true,
-        string? secondaryPhone = null
+        string? secondaryPhone = null,
+        string? code = null
     )
     {
         return new UpdateUserRequest(
@@ -51,8 +53,22 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             gender,
             parentId,
             currentPassword,
-            secondaryPhone
+            secondaryPhone,
+            code
         );
+    }
+
+    private async Task<string> EmailChangeCodeAsync(HttpClient client)
+    {
+        using var requested = await client.PostJsonAsync(
+            "/api/me/confirmation-code",
+            new ConfirmationCodeRequest(TestSeedData.Password, ConfirmationCodePurpose.EmailChange),
+            Ct
+        );
+        requested.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var code = Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.MemberEmail);
+        Factory.EmailSender.Clear();
+        return code;
     }
 
     private static UpdateUserRequest ChildUpdate(
@@ -319,7 +335,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
             .Equal(
                 TestSeedData.MemberNationalId,
                 TestSeedData.PendingNationalId,
-                TestSeedData.BlockedNationalId
+                TestSeedData.OtherNationalId
             );
     }
 
@@ -426,7 +442,7 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var statuses = await response.ReadJsonAsync<List<UserStatusTypeResponse>>(Ct);
-        statuses.Should().HaveCount(3);
+        statuses.Should().HaveCount(2);
         statuses.Should().Contain(s => s.Id == KnownIds.UserStatusTypes.Active);
         statuses.Should().NotContain(s => s.Id == KnownIds.UserStatusTypes.Dependent);
     }
@@ -500,10 +516,11 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     {
         const string newEmail = "marta.nueva@codigoactivo.test";
         var client = await LoginAsMemberAsync();
+        var code = await EmailChangeCodeAsync(client);
 
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}",
-            AdultUpdate(email: newEmail, currentPassword: TestSeedData.Password),
+            AdultUpdate(email: newEmail, currentPassword: TestSeedData.Password, code: code),
             Ct
         );
 
@@ -536,14 +553,17 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     public async Task UpdateChangingOwnEmailIsNotConfirmedByAWrongCode()
     {
         var client = await LoginAsMemberAsync();
+        var code = await EmailChangeCodeAsync(client);
         using var update = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}",
             AdultUpdate(
                 email: "marta.nueva@codigoactivo.test",
-                currentPassword: TestSeedData.Password
+                currentPassword: TestSeedData.Password,
+                code: code
             ),
             Ct
         );
+        update.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var confirm = await client.PatchJsonAsync(
             $"/api/auth/{TestSeedData.Users.MemberId}/confirm-email",
@@ -554,6 +574,57 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         await confirm.ShouldBeBadRequestAsync(ErrorCode.OtpInvalidOrExpired);
         (await FindAsync<User>(TestSeedData.Users.MemberId))!
             .Email!.Value.Should()
+            .Be(TestSeedData.MemberEmail);
+    }
+
+    [Fact]
+    public async Task UpdateChangingOwnEmailWithThePasswordAloneIsRefusedAndWrongCodesLockIt()
+    {
+        const string newEmail = "marta.nueva@codigoactivo.test";
+        var client = await LoginAsMemberAsync();
+
+        using var withoutCode = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            AdultUpdate(email: newEmail, currentPassword: TestSeedData.Password),
+            Ct
+        );
+
+        await withoutCode.ShouldBeBadRequestAsync(ErrorCode.TwoFactorCodeInvalid);
+        Factory.EmailSender.Sent.Should().BeEmpty();
+        var untouched = await FindAsync<User>(TestSeedData.Users.MemberId);
+        untouched!.TwoFactorLockout.FailedAttempts.Should().Be(0);
+        untouched.EmailChange.NewEmail.Should().BeNull();
+        untouched.FirstName.Should().Be("Marta", "nothing of a refused edit applies");
+
+        var code = await EmailChangeCodeAsync(client);
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            using var wrong = await client.PutJsonAsync(
+                $"/api/users/{TestSeedData.Users.MemberId}",
+                AdultUpdate(
+                    email: newEmail,
+                    currentPassword: TestSeedData.Password,
+                    code: "000000"
+                ),
+                Ct
+            );
+            await wrong.ShouldBeBadRequestAsync(ErrorCode.TwoFactorCodeInvalid);
+        }
+
+        using var locked = await client.PutJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}",
+            AdultUpdate(email: newEmail, currentPassword: TestSeedData.Password, code: code),
+            Ct
+        );
+
+        await locked.ShouldBeForbiddenAsync(ErrorCode.TwoFactorLocked);
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
+        stored!.EmailChange.NewEmail.Should().BeNull();
+        stored.Email!.Value.Should().Be(TestSeedData.MemberEmail);
+        Factory
+            .EmailSender.Sent.Should()
+            .ContainSingle("the lock alerts the owner and no link reaches the new address")
+            .Which.ToAddress.Should()
             .Be(TestSeedData.MemberEmail);
     }
 
@@ -778,10 +849,15 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     public async Task UpdateChangingOwnEmailToAVerifiedAccountsAddressOnlyNotifiesItsHolder()
     {
         var client = await LoginAsMemberAsync();
+        var code = await EmailChangeCodeAsync(client);
 
         var response = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}",
-            AdultUpdate(email: TestSeedData.AdminEmail, currentPassword: TestSeedData.Password),
+            AdultUpdate(
+                email: TestSeedData.AdminEmail,
+                currentPassword: TestSeedData.Password,
+                code: code
+            ),
             Ct
         );
 
@@ -798,9 +874,14 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     public async Task UpdateChangingOwnEmailToAnUnverifiedAccountsAddressTakesItOverWhenConfirmed()
     {
         var client = await LoginAsMemberAsync();
+        var code = await EmailChangeCodeAsync(client);
         using var update = await client.PutJsonAsync(
             $"/api/users/{TestSeedData.Users.MemberId}",
-            AdultUpdate(email: TestSeedData.PendingEmail, currentPassword: TestSeedData.Password),
+            AdultUpdate(
+                email: TestSeedData.PendingEmail,
+                currentPassword: TestSeedData.Password,
+                code: code
+            ),
             Ct
         );
 

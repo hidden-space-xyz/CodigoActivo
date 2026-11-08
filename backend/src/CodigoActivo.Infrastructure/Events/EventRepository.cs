@@ -24,9 +24,9 @@ public class EventRepository(CodigoActivoDbContext context)
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<Event>> ListFeaturedAsync(CancellationToken ct = default)
+    public Task<Event?> GetFeaturedAsync(CancellationToken ct = default)
     {
-        return await Set.Where(e => e.Featured).ToListAsync(ct);
+        return Set.FirstOrDefaultAsync(e => e.Featured, ct);
     }
 
     /// <inheritdoc />

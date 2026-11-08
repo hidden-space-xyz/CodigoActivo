@@ -2,8 +2,8 @@ namespace CodigoActivo.Application.Accounts.Notifications;
 
 /// <summary>
 /// Identifies the security-relevant change to an account that its holder is told about: to its
-/// password or password lock, its second factor, its staff role or data protection designation, or
-/// the email and phones it is reached at.
+/// password or password lock, its second factor or its lock, its staff role or data protection
+/// designation, or the email and phones it is reached at.
 /// </summary>
 public enum AccountSecurityChange
 {
@@ -75,7 +75,13 @@ public enum AccountSecurityChange
     AddressAndPhoneChanged,
 
     /// <summary>
-    /// Selects the option for an account locked after repeated wrong passwords.
+    /// Selects the option for an account locked for a while after repeated wrong passwords.
     /// </summary>
     CredentialLocked,
+
+    /// <summary>
+    /// Selects the option for a second factor locked for a while after repeated wrong codes, which
+    /// only someone who entered the right password can try.
+    /// </summary>
+    TwoFactorLocked,
 }

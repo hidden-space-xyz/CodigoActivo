@@ -4,8 +4,11 @@ using AwesomeAssertions;
 using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.API.Errors;
 using CodigoActivo.API.Users.Contracts;
+using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Application.Accounts.Sessions;
+using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -27,6 +30,7 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
     private const string SetupUrl = "/api/auth/two-factor/authenticator/setup";
     private const string ConfirmUrl = "/api/auth/two-factor/authenticator/confirm";
     private const string EmailMethodUrl = "/api/auth/two-factor/email";
+    private const string ConfirmationCodeUrl = "/api/me/confirmation-code";
     private const string Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
 
     private string CurrentCode(string secret = Secret, int stepOffset = 0)
@@ -42,6 +46,20 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         var client = CreateClient();
         await PassPasswordStepAsync(client, TestSeedData.MemberCredentials, keepSignedIn);
         return client;
+    }
+
+    private async Task<string> EmailedSetupCodeAsync(HttpClient client)
+    {
+        using var requested = await client.PostJsonAsync(
+            ConfirmationCodeUrl,
+            new ConfirmationCodeRequest(
+                TestSeedData.Password,
+                ConfirmationCodePurpose.AuthenticatorSetup
+            ),
+            Ct
+        );
+        requested.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        return Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.MemberEmail);
     }
 
     private static Task<HttpResponseMessage> PresentAsync(HttpClient client, string code)
@@ -285,6 +303,13 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         stored!.TwoFactorLockout.LockedUntil.Should().Be(Factory.Clock.UtcNow.AddMinutes(15));
         stored.LoginCode.Hash.Should().BeNull("locking discards the challenged code");
         stored.LoginChallenge.Id.Should().BeNull("locking closes the open challenge");
+        var alert = Factory
+            .EmailSender.Sent.Should()
+            .ContainSingle(message => message.Kind == EmailKind.SecurityAlert)
+            .Subject;
+        alert.ToAddress.Should().Be(TestSeedData.MemberEmail);
+        alert.Subject.Should().Be(AppStrings.EmailsSecurityAlertTwoFactorLockedSubject);
+        alert.TextBody.Should().NotContain(code);
 
         Factory.Clock.UtcNow += TimeSpan.FromMinutes(16);
         var signedIn = await LoginAsMemberAsync();
@@ -445,22 +470,6 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task TwoFactorAccountBlockedAfterThePasswordStepInvalidatesTheChallenge()
-    {
-        var client = await StartMemberChallengeAsync();
-        var code = Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.MemberEmail);
-        await Factory.SeedAsync(async db =>
-        {
-            var user = await db.Users.FindAsync([UserId.From(TestSeedData.Users.MemberId)], Ct);
-            Persisted.Overwrite(user!, new { Status = UserStatus.Blocked });
-        });
-
-        var response = await PresentAsync(client, code);
-
-        await response.ShouldBeUnauthorizedAsync(ErrorCode.TwoFactorChallengeExpired);
-    }
-
-    [Fact]
     public async Task TwoFactorResetByAnAdministratorAfterThePasswordStepInvalidatesTheChallenge()
     {
         await SeedAuthenticatorAsync(TestSeedData.Users.MemberId);
@@ -536,17 +545,23 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
     public async Task AuthenticatorSetupThenConfirmSwitchesTheSecondFactorForFutureLogins()
     {
         var client = await LoginAsMemberAsync();
+        var code = await EmailedSetupCodeAsync(client);
+        Factory
+            .EmailSender.Sent.Should()
+            .ContainSingle()
+            .Which.Subject.Should()
+            .Be(AppStrings.EmailsAuthenticatorSetupCodeSubject);
 
         using var wrongPassword = await client.PostJsonAsync(
             SetupUrl,
-            new AuthenticatorSetupRequest("WrongPassword!"),
+            new AuthenticatorSetupRequest("WrongPassword!", code),
             Ct
         );
         await wrongPassword.ShouldBeBadRequestAsync(ErrorCode.UserCurrentPasswordIncorrect);
 
         using var setup = await client.PostJsonAsync(
             SetupUrl,
-            new AuthenticatorSetupRequest(TestSeedData.Password),
+            new AuthenticatorSetupRequest(TestSeedData.Password, code),
             Ct
         );
         setup.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -563,6 +578,7 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         pending
             .TwoFactorMethod.Should()
             .Be(TwoFactorMethod.Email, "the enrollment is not confirmed yet");
+        pending.LoginCode.Hash.Should().BeNull("the emailed code is spent by the enrollment");
 
         using var wrongCode = await client.PostJsonAsync(
             ConfirmUrl,
@@ -599,6 +615,45 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
+    public async Task AuthenticatorSetupWithThePasswordAloneIsRefusedAndAWrongCodeIsCounted()
+    {
+        var client = await LoginAsMemberAsync();
+
+        using var blank = await client.PostJsonAsync(
+            SetupUrl,
+            new AuthenticatorSetupRequest(TestSeedData.Password, " "),
+            Ct
+        );
+        await blank.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
+
+        var code = await EmailedSetupCodeAsync(client);
+        using var wrong = await client.PostJsonAsync(
+            SetupUrl,
+            new AuthenticatorSetupRequest(TestSeedData.Password, "000000"),
+            Ct
+        );
+
+        await wrong.ShouldBeBadRequestAsync(ErrorCode.TwoFactorCodeInvalid);
+        var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
+        stored!.TwoFactorLockout.FailedAttempts.Should().Be(1);
+        stored.Authenticator.PendingKey.Should().BeNull();
+        stored.LoginCode.Hash.Should().NotBeNull("a wrong guess must not consume the code");
+
+        using var right = await client.PostJsonAsync(
+            SetupUrl,
+            new AuthenticatorSetupRequest(TestSeedData.Password, code),
+            Ct
+        );
+        right.StatusCode.Should().Be(HttpStatusCode.OK);
+        using var replayed = await client.PostJsonAsync(
+            SetupUrl,
+            new AuthenticatorSetupRequest(TestSeedData.Password, code),
+            Ct
+        );
+        await replayed.ShouldBeBadRequestAsync(ErrorCode.TwoFactorCodeInvalid);
+    }
+
+    [Fact]
     public async Task AuthenticatorConfirmWithoutSetupReturnsBadRequest()
     {
         var client = await LoginAsMemberAsync();
@@ -616,9 +671,10 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
     public async Task AuthenticatorConfirmAfterSetupLifetimeReturnsBadRequest()
     {
         var client = await LoginAsMemberAsync();
+        var code = await EmailedSetupCodeAsync(client);
         using var setup = await client.PostJsonAsync(
             SetupUrl,
-            new AuthenticatorSetupRequest(TestSeedData.Password),
+            new AuthenticatorSetupRequest(TestSeedData.Password, code),
             Ct
         );
         var secret = (await setup.ReadJsonAsync<AuthenticatorSetupResponse>(Ct))!.SharedKey.Replace(
@@ -646,9 +702,10 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
         using var signedIn = await PresentAsync(client, CurrentCode());
         signedIn.StatusCode.Should().Be(HttpStatusCode.OK);
 
+        Factory.Clock.UtcNow += TimeSpan.FromSeconds(30);
         using var setup = await client.PostJsonAsync(
             SetupUrl,
-            new AuthenticatorSetupRequest(TestSeedData.Password),
+            new AuthenticatorSetupRequest(TestSeedData.Password, CurrentCode()),
             Ct
         );
 
@@ -662,7 +719,11 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
     public async Task AuthenticatorSetupAnonymousReturnsUnauthorized()
     {
         var response = await CreateClient()
-            .PostJsonAsync(SetupUrl, new AuthenticatorSetupRequest(TestSeedData.Password), Ct);
+            .PostJsonAsync(
+                SetupUrl,
+                new AuthenticatorSetupRequest(TestSeedData.Password, "123456"),
+                Ct
+            );
 
         await response.ShouldBeUnauthorizedAsync(ErrorCode.AuthenticationRequired);
     }

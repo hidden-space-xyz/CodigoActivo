@@ -9,10 +9,11 @@ namespace CodigoActivo.Application.Accounts.Notifications;
 
 /// <summary>
 /// Tells the owner of an account about a security-relevant change to it: its password or password
-/// lock, its second factor, its staff role or data protection designation, or the email and phones
-/// it is reached at. <see cref="AccountSecurityNotifications"/> calls it once the change is
-/// committed: the alert is always queued, replacing a pending alert about the same kind of change,
-/// and a failure to queue it is logged and swallowed, so it never undoes the change it reports.
+/// lock, its second factor or its lock, its staff role or data protection designation, or the email
+/// and phones it is reached at. <see cref="AccountSecurityNotifications"/> calls it once the change
+/// is committed: the alert is always queued, replacing a pending alert about the same kind of
+/// change, and a failure to queue it is logged and swallowed, so it never undoes the change it
+/// reports.
 /// </summary>
 /// <param name="emailSender">Sender that queues the alert.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>

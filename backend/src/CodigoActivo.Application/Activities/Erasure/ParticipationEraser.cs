@@ -22,6 +22,26 @@ public sealed class ParticipationEraser(
 )
 {
     /// <summary>
+    /// Tells whether the removal takes away anyone's signup, terms decision or rating, which only
+    /// an administrator may delete together with an event or an activity.
+    /// </summary>
+    /// <param name="deletion">What is removed.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>
+    /// A task whose result is <see langword="true"/> when the removal takes some participation
+    /// away.
+    /// </returns>
+    public Task<bool> TakesParticipationAsync(
+        ParticipationDeletion deletion,
+        CancellationToken ct = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(deletion);
+
+        return store.TakesParticipationAsync(deletion, ct);
+    }
+
+    /// <summary>
     /// Commits the removal staged in the unit of work.
     /// </summary>
     /// <param name="deletion">What is removed.</param>

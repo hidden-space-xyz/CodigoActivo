@@ -68,6 +68,7 @@ public class AuthController : ApiControllerBase
     [HttpPost("register")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
+    [PasswordHashing]
     public async Task<ActionResult> RegisterAsync(
         [FromBody] RegisterRequest request,
         [FromServices] ICommandHandler<RegisterCommand, Result> handler,
@@ -182,6 +183,7 @@ public class AuthController : ApiControllerBase
     [HttpPatch("{userId:guid}/reset-password")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
+    [PasswordHashing]
     public async Task<ActionResult> ResetPasswordAsync(
         Guid userId,
         [FromBody] ResetPasswordRequest request,
@@ -206,6 +208,7 @@ public class AuthController : ApiControllerBase
     [HttpPost("login")]
     [AllowAnonymous]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
+    [PasswordHashing]
     public async Task<ActionResult<LoginChallengeResponse>> LoginAsync(
         [FromBody] LoginRequest request,
         [FromServices] ICommandHandler<LoginCommand, Result<LoginChallengeKey>> handler,
@@ -348,7 +351,8 @@ public class AuthController : ApiControllerBase
     }
 
     /// <summary>
-    /// Starts enrolling an authenticator application for the signed-in user.
+    /// Starts enrolling an authenticator application for the signed-in user once the current
+    /// password and the code emailed through <c>POST /api/me/confirmation-code</c> are accepted.
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
@@ -357,6 +361,7 @@ public class AuthController : ApiControllerBase
     [HttpPost("two-factor/authenticator/setup")]
     [Authorize]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
+    [PasswordHashing]
     public async Task<ActionResult<AuthenticatorSetupResponse>> BeginAuthenticatorSetupAsync(
         [FromBody] AuthenticatorSetupRequest request,
         [FromServices]
@@ -399,6 +404,7 @@ public class AuthController : ApiControllerBase
     [HttpPost("two-factor/email")]
     [Authorize]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
+    [PasswordHashing]
     public async Task<ActionResult> DisableAuthenticatorAsync(
         [FromBody] DisableAuthenticatorRequest request,
         [FromServices] ICommandHandler<DisableAuthenticatorCommand, Result> handler,

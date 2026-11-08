@@ -1,6 +1,7 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts.Notifications;
+using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Domain.Users;
@@ -134,9 +135,14 @@ public sealed class AccountEmailComposerTests
     }
 
     [Fact]
-    public void AccountDeletionCodeValidRequestShowsTheCodeAndItsLifetimeOutsideTheSubject()
+    public void ConfirmationCodeValidRequestShowsTheCodeAndItsLifetimeOutsideTheSubject()
     {
-        var message = sut.AccountDeletionCode(Ana, "482913", Lifetime);
+        var message = sut.ConfirmationCode(
+            Ana,
+            ConfirmationCodePurpose.AccountDeletion,
+            "482913",
+            Lifetime
+        );
 
         message.Kind.Should().Be(EmailKind.TwoFactorCode);
         message.ToAddress.Should().Be("ana@test.com");

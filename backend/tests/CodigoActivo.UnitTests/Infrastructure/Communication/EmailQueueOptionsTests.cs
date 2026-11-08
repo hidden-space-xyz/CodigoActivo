@@ -61,33 +61,6 @@ public sealed class EmailQueueOptionsTests
     }
 
     [Theory]
-    [InlineData(EmailQueueOptions.DefaultBatchSize, 60, 630)]
-    [InlineData(1, 60, 90)]
-    [InlineData(0, 60, 90)]
-    [InlineData(100, 600, 60030)]
-    [InlineData(EmailQueueOptions.DefaultBatchSize, 0, 30)]
-    public void LeaseCoversEverySendOfTheClaimedBatch(
-        int batchSize,
-        int sendTimeoutSeconds,
-        int expectedLeaseSeconds
-    )
-    {
-        var options = new EmailQueueOptions
-        {
-            BatchSize = batchSize,
-            SendTimeout = TimeSpan.FromSeconds(sendTimeoutSeconds),
-        };
-
-        options
-            .Lease.Should()
-            .Be(TimeSpan.FromSeconds(expectedLeaseSeconds))
-            .And.BeGreaterThan(
-                Math.Max(batchSize, 1) * options.SendTimeout,
-                "a claimed row may not become claimable again while its own worker can still be sending it"
-            );
-    }
-
-    [Theory]
     [InlineData(EmailKind.TwoFactorCode, EmailQueueOptions.IdentifiedCodePriority)]
     [InlineData(EmailKind.AccessRecovery, EmailQueueOptions.AnonymousCodePriority)]
     [InlineData(EmailKind.AccountVerification, EmailQueueOptions.AnonymousCodePriority)]

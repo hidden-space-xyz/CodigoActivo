@@ -53,7 +53,7 @@ public sealed class ResetPasswordCommandHandler(
     /// <returns>
     /// A task whose result indicates success, <see cref="ApplicationErrorCode.UserNotFound"/>, or
     /// <see cref="ApplicationErrorCode.PasswordResetInvalidOrExpired"/> for a wrong, expired or
-    /// spent code or a blocked or dependent account.
+    /// spent code.
     /// </returns>
     public async Task<Result> HandleAsync(
         ResetPasswordCommand command,
@@ -87,9 +87,7 @@ public sealed class ResetPasswordCommandHandler(
 
     private bool MayReset(User user, string code)
     {
-        return !user.IsBlocked
-            && !user.IsDependent
-            && otpValidator.IsCodeValid(code, user.PasswordResetCode.UsableHash(clock.UtcNow));
+        return otpValidator.IsCodeValid(code, user.PasswordResetCode.UsableHash(clock.UtcNow));
     }
 
     private Result ResetLocked(User user, string code, string newHash)

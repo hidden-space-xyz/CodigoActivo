@@ -142,7 +142,7 @@ test.describe('admin user actions', () => {
     mailbox,
   }) => {
     const person = await accounts.actor({ label: 'reset-2fa' })
-    await enrollAuthenticator(person.api)
+    await enrollAuthenticator(person.api, mailbox, person.account.email)
     const { account } = person
     const page = await pageAs(admin)
     const users = new UsersAdminPage(page)

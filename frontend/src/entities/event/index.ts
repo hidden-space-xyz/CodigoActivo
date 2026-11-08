@@ -11,7 +11,7 @@ export type {
   LeaderRosterActivity,
   LeaderRosterDependent,
 } from './model/types'
-export { signupAccess, statusLabelKey, type SignupAccess } from './model/status'
+export { nextSignupChange, signupAccess, statusLabelKey, type SignupAccess } from './model/status'
 export { eventKeys, eventList, eventPages, eventQueries } from './api/queries'
 export { eventMutations } from './api/mutations'
 export { default as EventCard } from './ui/EventCard.vue'

@@ -54,15 +54,6 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
             },
             new UserStatusEntry
             {
-                Id = UserStatus.Blocked,
-                Name = "Bloqueado",
-                Description =
-                    "Cuenta suspendida por un administrador. El acceso queda restringido hasta que "
-                    + "se restablezca manualmente.",
-                Color = "#EF4444",
-            },
-            new UserStatusEntry
-            {
                 Id = UserStatus.Dependent,
                 Name = "Dependiente",
                 Description =

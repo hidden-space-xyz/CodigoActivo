@@ -222,25 +222,6 @@ describe('useSendEmailDialog', () => {
     expect(userAudienceQueries).toEqual([{ id: 'user-1' }])
   })
 
-  it('ignores an audience answered after the dialog was opened again', async () => {
-    const pending: ((audience: EmailAudience) => void)[] = []
-    const { result } = await setupDialog({
-      fetchAudience: () =>
-        new Promise<EmailAudience>((resolve) => {
-          pending.push(resolve)
-        }),
-    })
-
-    result.open(null)
-    result.open({ id: 'user-1', name: 'Ada' })
-    await vi.waitFor(() => expect(result.recipients.value).toBe(1))
-    pending[0]?.({ recipients: 9, withoutConsent: 9 })
-    await flushPromises()
-
-    expect(result.withoutConsent.value).toBe(1)
-    expect(result.recipients.value).toBe(1)
-  })
-
   it('leaves the audience unknown when it cannot be loaded', async () => {
     const { result } = await setupDialog({
       fetchAudience: () => Promise.reject(new Error('offline')),

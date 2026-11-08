@@ -109,26 +109,6 @@ public sealed class DiagnosticLogSinkTests(PostgresDatabaseFixture postgres)
     }
 
     [Fact]
-    public async Task EmitBatchAsyncRecreatesAPartitionDroppedAfterItsDayWasPrepared()
-    {
-        var sink = Sink;
-        await sink.EmitBatchAsync([Event(Now, "first")]);
-        await LogTables.DropPartitionAsync(
-            postgres,
-            LogTable.Diagnostics,
-            new DateOnly(2026, 7, 4)
-        );
-
-        await sink.EmitBatchAsync([Event(Now.AddMinutes(1), "second")]);
-
-        (await LogTables.DiagnosticEntriesAsync(postgres))
-            .Should()
-            .ContainSingle()
-            .Which.Message.Should()
-            .Be("Stored second");
-    }
-
-    [Fact]
     public async Task EmitBatchAsyncDropsOnlyTheRowsTheDatabaseRefuses()
     {
         var expired = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);

@@ -14,8 +14,8 @@ namespace CodigoActivo.Application.Events.Commands;
 public sealed record SetEventFeaturedCommand(EventId EventId) : ICommand<Result>, IUnaudited;
 
 /// <summary>
-/// Executes the command to make an event the featured one: every other featured event stops being
-/// featured first, in the same transaction, so at most one event is featured at a time.
+/// Executes the command to make an event the featured one: the event featured until then stops
+/// being featured first, in the same transaction, so at most one event is featured at a time.
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
@@ -44,7 +44,12 @@ public sealed class SetEventFeaturedCommandHandler(IEventRepository events, IUni
         await uow.ExecuteInTransactionAsync(
             async attempt =>
             {
-                FeaturedSelection.UnfeatureAllBut(chosen, await events.ListFeaturedAsync(attempt));
+                var current = await events.GetFeaturedAsync(attempt);
+                if (current is not null && current != chosen)
+                {
+                    current.Unfeature();
+                }
+
                 await uow.SaveChangesAsync(attempt);
                 chosen.Feature();
                 await uow.SaveChangesAsync(attempt);

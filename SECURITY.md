@@ -18,15 +18,17 @@ authentication are not supported.
   30 days. It is a browser-session cookie unless the user ticks «Mantener la sesión iniciada en este
   dispositivo» on the password step (`keepSignedIn`), which makes it persistent; the challenge cookie carries
   that choice to the second factor, and a claims refresh keeps it. The session, challenge and CSRF cookies are
-  `Secure` in every environment except Development and use a `__Host-` name in Production. The ticket is not self-sufficient: completing the second factor also writes a
-  `user_sessions` row whose id travels in the ticket's `sid` claim, dropping that user's already-expired rows;
-  a background worker additionally deletes every expired row every hour. The row carries the expiry that
-  decides access: refreshing the claims re-issues the cookie with a later expiry, so a cookie can outlive its
-  row, and the ticket is rejected as soon as the row is missing or expired.
-- Every authenticated request revalidates account status, password lock, password fingerprint, staff role,
-  data protection designation and the `sid` row in one query: it rejects the ticket when the account is not
-  active, is locked, has another password or has no live row, and refreshes its claims, such as the staff role,
-  when they changed. Blocking a user or changing their role or designation takes effect on existing sessions;
+  `Secure` in every environment except Development and use a `__Host-` name in Production. The ticket is not
+  self-sufficient: completing the second factor also writes a `user_sessions` row whose id travels in the
+  ticket's `sid` claim, dropping that user's already-expired rows; a background worker additionally deletes
+  every expired row every hour. The row carries the expiry that decides access: refreshing the claims re-issues
+  the cookie with a later expiry, so a cookie can outlive its row, and the ticket is rejected as soon as the row
+  is missing or expired.
+- Every authenticated request revalidates account status, password fingerprint, staff role, data protection
+  designation and the `sid` row in one query: it rejects the ticket when the account is not active, has another
+  password or has no live row, and refreshes its claims, such as the staff role, when they changed. A
+  [password lock](#passwords-and-credential-endpoints) leaves existing sessions working. Changing a user's role
+  or designation takes effect on existing sessions;
   changing or resetting the password invalidates them through the fingerprint, and the change then deletes that
   user's session rows. When the API answers `AuthenticationRequired` or `CurrentUserNotFound` to a signed-in SPA, or right after the user
   changes their password, the SPA drops its cached session and data and sends protected pages back to login.
@@ -40,7 +42,9 @@ authentication are not supported.
 - Authorization rests on the staff role of the account (`users.staff_role`, `StaffRole`): none, editor or
   administrator, each including the rights of the one before, carried by the session as role claims (`editor`,
   `administrator`). `[AllowOnlyStaff(StaffRole.Editor)]` protects the content endpoints: events and activities
-  with their catalogs and terms documents, news, partners, resources and files.
+  with their catalogs and terms documents, news, partners, resources and files. Deleting an event or an
+  activity erases its signups, terms decisions and ratings, so that use case refuses an editor while it has any
+  (`ParticipationDeletionRequiresAdministrator`).
   `[AllowOnlyStaff(StaffRole.Administrator)]` protects everything about people beyond the caller's own
   household: other users, signups, terms decisions, ratings, reports, every manual email, the diagnostic log
   and the legal policies; the audit log is [read](#audit-log) only by the initial administrator and the account
@@ -79,8 +83,8 @@ authentication are not supported.
   dependents, keeping their data history, by `PurgeUnverifiedAccounts`, which `UnverifiedAccountPurgeWorker` runs 30 seconds
   after startup and then hourly.
 - Only someone who knows an account's password learns its state: after a correct password, the password step
-  answers a blocked account with `UserAccountBlocked`, an unverified one with `UserAccountPendingVerification`
-  and a locked second factor with `TwoFactorLocked`.
+  answers an unverified account with `UserAccountPendingVerification` and a locked second factor with
+  `TwoFactorLocked`.
 - Giving a staff role (`PATCH /api/users/{id}/staff-role`) or designating the account for data protection
   (`POST /api/users/{id}/privacy-officer`) requires the initial administrator to re-enter their password (a
   stolen session cookie alone cannot promote another account); a wrong password returns
@@ -104,12 +108,18 @@ authentication are not supported.
 - `PUT /api/users/{id}` asks the caller (the user or their guardian) for their own
   password whenever the update would replace the account's email, phone or secondary phone. A missing or
   wrong password returns `UserCurrentPasswordIncorrect` and changes nothing; edits that leave all three
-  untouched need none.
+  untouched need none. Replacing the email also needs `code`, a current code of the caller's second factor
+  (emailed by `POST /api/me/confirmation-code` or read from the authenticator), checked like a login code; a
+  missing one (not counted) or a wrong one returns `TwoFactorCodeInvalid` and changes nothing, so a session and
+  the password alone cannot move the login codes and reset links to another mailbox. Only holders replace an
+  email: a dependent has none and administrators are refused.
   Changing the DNI/NIE needs no password. Holders who change their own email keep
   the current one until they open the link emailed to the new address (`PATCH /api/auth/{id}/confirm-email`,
   no session needed): the rest of the edit applies at once, nothing changes when the mail cannot be queued
-  (`OtpResendCooldownActive`, `EmailSendFailed`), and a newer request replaces the pending one. A pending
-  address whose link expired is dropped by `DiscardExpiredAccountChanges`, which
+  (`OtpResendCooldownActive`, `EmailSendFailed`), and a newer request replaces the pending one. Changing or
+  resetting the password drops the pending address, so a change asked for with a stolen password does not
+  survive the owner's reset, and confirming it voids the password reset and login codes already emailed to the
+  previous address. A pending address whose link expired is dropped by `DiscardExpiredAccountChanges`, which
   `ExpiredAccountChangeCleanupWorker` runs 30 seconds after startup and then hourly, keeping its data history,
   together with any authenticator enrollment nobody confirmed in time. When the new
   address belongs to a verified account, its holder gets the same notice as registration instead of the link,
@@ -143,7 +153,7 @@ authentication are not supported.
 Every account logs in in two steps; there is no opt-out. `POST /api/auth/login` verifies the password and
 issues a short-lived challenge cookie (`__Host-CodigoActivo.TwoFactor` in Production, 10 minutes,
 non-sliding) instead of a session; it is bound to the password fingerprint and account status, so a password
-change or block invalidates it. The ticket is not self-sufficient either: the password step stores a random
+change invalidates it. The ticket is not self-sufficient either: the password step stores a random
 challenge id and the time it opened on the account and puts the id in the ticket, so a copied challenge
 cookie is refused as soon as that id changes or is cleared — a newer password step rotates it, and an
 accepted second factor, a second-factor lockout, a password lockout, a password change or reset, a change of
@@ -168,36 +178,42 @@ Each user chooses one second factor from their account:
   the [email guard](#email-abuse-controls) under the second-factor budgets.
 - **Authenticator application**: RFC 6238 TOTP (HMAC-SHA1, six digits, 30-second steps, one step of clock
   drift) via Otp.NET; the project implements no cryptographic algorithm itself. Enrollment starts with the
-  user's password, stores the shared secret encrypted with ASP.NET Data Protection, and only activates once
-  the first code is confirmed; an unconfirmed enrollment expires after 15 minutes. Each accepted time step is
-  remembered so a code cannot be replayed. Returning to email requires the password and a current code, and
-  an account that already uses an authenticator cannot enroll another one (`AuthenticatorAlreadyEnabled`)
-  until it returns to email, so a session and the password alone cannot replace it.
+  user's password and a current emailed code (`POST /api/me/confirmation-code`), stores the shared secret
+  encrypted with ASP.NET Data Protection, and only activates once the first code is confirmed; an unconfirmed
+  enrollment expires after 15 minutes. Each accepted time step is remembered so a code cannot be replayed.
+  Returning to email requires the password and a current code, and an account that already uses an
+  authenticator cannot enroll another one (`AuthenticatorAlreadyEnabled`, before the password is checked)
+  until it returns to email, so a session and the password alone cannot change the second factor.
 
-Wrong codes are counted per account across logins, authenticator removal, account deletion and blocked data
-consultations (`SecondFactorGuard`): after five failures the second factor locks for 15 minutes
-(`TwoFactorLocked`). A successful code resets the counter. These checks run with the account row locked and
-reloaded, so parallel attempts are counted one by one and an emailed code or a time step is accepted only once.
-Confirming a new
+Wrong codes are counted per account across logins, authenticator enrollment and removal, email changes, account
+deletion and blocked data consultations (`SecondFactorGuard`): after five failures the second factor locks for
+15 minutes (`TwoFactorLocked`) and, since only someone who knew the password could try those codes, the owner is
+emailed a security alert telling them to change it. A successful code resets the counter. These checks run with
+the account row locked and reloaded, so parallel attempts are counted one by one and an emailed code or a time
+step is accepted only once. Confirming a new
 authenticator enrollment is not counted: it needs the session and the secret just issued to that session after
-its password. Enrollment URIs and shared keys are only returned to the authenticated
+its password and emailed code. Enrollment URIs and shared keys are only returned to the authenticated
 owner over HTTPS and never logged.
 
 **Recovery**: an administrator can reset a user's second factor to email
 (`POST /api/users/{id}/two-factor/reset`) after re-entering their own password, which also lifts a
-second-factor lockout; the user is only notified when the reset removed an authenticator. Losing the Data
+second-factor lockout; the user is only notified when the reset removed an authenticator. Nobody resets their
+own: on the caller's id it returns `UserSelfTwoFactorResetRequiresVerification` before any password is checked,
+and the SPA offers no reset on the caller's row. Losing the Data
 Protection keys makes stored authenticator secrets unreadable; affected users then need the same administrator
 reset.
 
 ### Account deletion
 
 Erasing one's own account requires the current password **and** the second factor on `POST /api/me/deletion`
-(email code via `POST /api/me/deletion/code`, or the authenticator code). The emailed deletion code is the login
-code: same stored code, lifetime and cooldown, so a code sent for either flow is accepted by the other, and each
-still needs the password. Deletion signs the caller out, cascades to remove the user, their dependents and their
-signups, terms decisions and [event ratings](#event-ratings), and is refused only to the initial administrator
-(`UserDeleteInitialAdminForbidden`), before the password is checked; the SPA hides the action from the initial
-administrator, whom its session identifies.
+(email code via `POST /api/me/confirmation-code`, or the authenticator code). That route checks the password
+first and emails the login code: same stored code, lifetime and cooldown, so a code sent for any of its
+purposes (`AccountDeletion`, `EmailChange`, `AuthenticatorSetup`, which only change what the email names) or
+for a login is accepted by the others, and each still needs the password. Deletion signs the caller out,
+cascades to remove the user, their dependents and their signups, terms decisions and
+[event ratings](#event-ratings), and is refused only to the initial administrator
+(`UserDeleteInitialAdminForbidden`, also for a deletion code), before the password is checked; the SPA hides
+the action from the initial administrator, whom its session identifies.
 `DELETE /api/users/{id}` refuses the initial administrator and the caller's own id
 (`UserSelfDeleteRequiresVerification`); the SPA disables that action on both rows. Only the initial administrator
 deletes other accounts, administrators included, without re-entering a password, and a guardian deletes their
@@ -302,34 +318,41 @@ performs fallback Argon2 work for unknown identifiers, and registration hashes t
 the address up, to reduce timing differences. A wrong password for an existing account also writes its
 failure count, so it is not timed exactly like an unknown address.
 
-Emailed one-time codes and link tokens (login and account-deletion codes, verification, password reset and
+Emailed one-time codes and link tokens (login and confirmation codes, verification, password reset and
 email-change links) are random, short-lived and stored only as HMAC-SHA256 under a server-side key
 (`HmacOneTimeCodeHasher`), so a copy of the database alone cannot test guesses against them. That key is
 derived with HKDF-SHA256 from `DATA_PROTECTION_KEY`, so it is never stored.
 
 Five consecutive wrong passwords for the same account — counted together by `PasswordAttemptGuard` across the
-login password step and every route that asks for a password again — lock the account.
-Once the lock commits, the `PasswordLocked` listeners delete its `user_sessions` rows and email its owner, even
-if the client has gone; one correct password before the limit clears the count.
-A locked account answers every password, right or wrong, with the same `InvalidCredentials` after the same
-Argon2 work, and only a completed password reset lifts it: `forgot-password` keeps working, while an
-administrator's second-factor reset does not unlock. The accepted trade-off is that anyone who knows an
-account's email can lock it, so recovery depends on the owner's mailbox.
+login password step and every route that asks for a password again — lock the account for 15 minutes
+(`PasswordLockoutOptions`); one correct password before the limit clears the count, and once the lock expires
+the count starts again. During the lock the login answers every password, right or wrong, with the same
+`InvalidCredentials` after the same Argon2 work, the routes that ask for a password again refuse it too, and
+nothing is counted. Once the lock commits, the `PasswordLocked` listeners record it and email its owner, even
+if the client has gone. The lock closes the open login challenge but leaves the account's sessions working, so
+guessing at someone's password cannot sign them out. A completed password reset lifts it at once
+(`forgot-password` keeps working), while an administrator's second-factor reset does not. The accepted
+trade-off is that anyone who knows an account's email can keep it locked, 15 minutes at a time.
 
 Credential routes (both login steps and code resend, registration, verification, email-change confirmation,
 password recovery/change, authenticator enrollment/removal, staff role grants and data protection designations,
-second-factor resets, user updates, the two self-service account-deletion steps, the two steps that open a blocked data consultation and
-both unsubscribe endpoints) have layered controls:
+second-factor resets, user updates, the confirmation code and self-service account deletion, the two steps that
+open a blocked data consultation and both unsubscribe endpoints) have layered controls:
 
 - nginx caps `login`, `register`, `forgot-password`, `resend-verification`,
   `/api/auth/{id}/(verify|reset-password|confirm-email)` and
-  `/api/users/{id}/(password|staff-role|privacy-officer)` at 10 requests/second per client IP, burst 100; the
+  `/api/users/{id}/(password|staff-role|privacy-officer)` at 10 requests/second per client IP, burst 100, and
+  the three that email anyone's address (`register`, `forgot-password`, `resend-verification`) also at one
+  request/minute per client IP, burst 30, so one client cannot drain the shared budget of that mail; the
   remaining credential routes (two-factor login/resend/authenticator/email, `users/{id}`,
-  `users/{id}/two-factor/reset`, `me/deletion*`, `blocked-data/consultations` and its `/code`,
-  `emails/unsubscribe*`) rely only on nginx's general 200 requests/second limit and the API controls below.
+  `users/{id}/two-factor/reset`, `me/confirmation-code`, `me/deletion`, `blocked-data/consultations` and
+  its `/code`, `emails/unsubscribe*`) rely only on nginx's general 200 requests/second limit and the API
+  controls below.
 - the API enforces 120 requests/minute per client IP in every environment on every credential route;
-- the credential routes share a process-wide concurrency limit of 4 executing requests and a FIFO queue of 16,
-  which bounds the memory-hard Argon2 work.
+- the credential routes that run Argon2 (`[PasswordHashing]`: the login password step, registration, password
+  reset and change, and every route that asks for the password again) share a process-wide concurrency limit of
+  4 executing requests and a FIFO queue of 64, which bounds the memory-hard Argon2 work; a queued request holds
+  no Argon2 memory. The other credential routes never wait behind them (`ApiConventionTests` checks the split).
 
 Normal API traffic uses different limits, since an IP may represent many legitimate users: nginx allows 200
 requests/second per IP, burst 500; the API applies a sliding one-minute budget of 300 requests per
@@ -632,8 +655,8 @@ account.
   or a news item and the housekeeping of expired sessions, expired account changes and unused uploads.
 - **Recorded in part**: scheduled purges and notices when they changed something (`IScheduledCommand`); a
   password reset request when its email has an account (`IAccountLookupCommand`); the steps that only prepare
-  a change another command records when refused (`IPreparatoryCommand`: starting an
-  authenticator enrollment, asking for the code that deletes an account or opens a consultation); and the
+  a change another command records when refused (`IPreparatoryCommand`: starting an authenticator
+  enrollment, asking for the code that confirms a change of the own account or opens a consultation); and the
   everyday commands on content and signups (`IRoutineCommand`), refused only when the caller lacked permission,
   since a closed activity or a lost concurrent edit changes nothing. A command that proves a credential is
   never routine (`AuditConventionTests`).
@@ -679,7 +702,8 @@ with AES-256-GCM.
 
 ### Files and multipart requests
 
-Uploads are limited to 10 MiB; nginx also enforces a `12m` request-body limit. Kestrel refuses any
+Uploads are limited to 10 MiB; nginx also enforces a `12m` request-body limit and receives each body
+completely before forwarding it, so a slow sender never holds an API request slot. Kestrel refuses any
 other request body above 2 MiB, which no valid JSON request reaches; only the multipart upload and email
 endpoints raise it, to the upload limit plus 64 KiB. Only JPEG, PNG and WebP are accepted, detected from their
 first bytes. No upload is stored as sent: `VipsImageProcessor` reads the dimensions from the header and refuses
@@ -717,7 +741,7 @@ their own new email the same way; there is no switch. Mail to an address nobody 
 so neither registration nor an email change relays a name typed by someone else to that mailbox, and opening the
 verification link (`PATCH /api/auth/{id}/verify`) answers 204 without any of the account's data. Verification
 and password-reset codes expire after 15 minutes with a 60-second resend cooldown; an email-change link also
-lasts 15 minutes, and each new one needs the password again. Login and account-deletion codes share storage and
+lasts 15 minutes, and each new one needs the password again. Login and confirmation codes share storage and
 expire after 10 minutes with the same cooldown. SMTP must be configured everywhere or the API refuses to start.
 Activity signup sends no message; confirming or denying one queues an outcome email after commit, always to the
 guardian address for a dependent. Delivery errors never roll back registration, recovery, activity decisions or
@@ -737,9 +761,8 @@ iCloud and Proton, plus `Organization.WebDomain`).
 
 Changing an account's password (by the user or through recovery), its second factor (authenticator confirmed,
 returned to email, or reset by an administrator), its staff role, its data protection designation or its email
-or phones queues a
-notification to the affected account after commit (`AccountSecurityNotifications`), whoever asked for the
-change. The notice
+or phones, and locking its password or its second factor after wrong attempts, queues a notification to the
+affected account after commit (`AccountSecurityNotifications`), whoever caused it. The notice
 names the change and its timestamp and carries no code, secret or link that performs an action; an email
 change is reported to the **previous** address once it applies (for a holder's own change, when the new
 address is confirmed) and only ever quotes the new one masked, and a phone change only states that the phone
@@ -749,7 +772,8 @@ recipient.
 
 Every code (second-factor, verification, email change, email-in-use notice and password reset) passes the email
 guard in `ThrottledEmailSender` before it is stored, and a refused code is answered at once: each normalized
-destination has burst/hourly/daily budgets, second-factor codes have per-destination budgets of their own, and
+destination has three sets of burst/hourly/daily budgets, one for second-factor codes, one for password reset
+links and one for the rest, so registrations naming an address never stop its login codes or reset links, and
 the mail anyone can ask for (everything but the second-factor codes) shares one budget that never exceeds half
 of `SMTP_MAX_PER_MINUTE` over an hour, so a flood of it never stops a login code. Every other automatic
 email and administrator-written mail is never refused by the guard: topics keep one waiting message per
@@ -762,9 +786,9 @@ disabled nor configured (`EmailGuardOptions`); they are in-memory and reset on r
 
 | Limit                                                                    | Value  |
 | ------------------------------------------------------------------------ | ------ |
-| Immediate messages allowed per normalized address                        | 20     |
-| Sustained hourly limit per address                                       | 10     |
-| Daily limit per address                                                  | 50     |
+| Immediate messages allowed per normalized address and budget             | 20     |
+| Sustained hourly limit per address and budget                            | 10     |
+| Daily limit per address and budget                                       | 50     |
 | Immediate budget of mail anyone can ask for                              | 1000   |
 | Sustained hourly budget of mail anyone can ask for                       | 1000   |
 | Maximum address budgets held in memory                                   | 50000  |

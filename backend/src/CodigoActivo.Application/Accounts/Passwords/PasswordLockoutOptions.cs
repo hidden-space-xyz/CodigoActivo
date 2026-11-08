@@ -1,7 +1,8 @@
 namespace CodigoActivo.Application.Accounts.Passwords;
 
 /// <summary>
-/// Defines configuration values for the account lock that follows repeated wrong passwords.
+/// Defines configuration values for the temporary account lock that follows repeated wrong
+/// passwords.
 /// </summary>
 public sealed class PasswordLockoutOptions
 {
@@ -11,8 +12,13 @@ public sealed class PasswordLockoutOptions
     public const int DefaultMaxFailedAttempts = 5;
 
     /// <summary>
-    /// Gets or sets the wrong passwords tolerated before the account locks. The lock has no
-    /// duration: regaining access requires completing a password reset.
+    /// Gets or sets the wrong passwords tolerated before the account locks.
     /// </summary>
     public int MaxFailedAttempts { get; set; } = DefaultMaxFailedAttempts;
+
+    /// <summary>
+    /// Gets or sets how long the account refuses every password after too many wrong ones. A
+    /// password reset lifts the lock earlier.
+    /// </summary>
+    public TimeSpan LockoutDuration { get; set; } = TimeSpan.FromMinutes(15);
 }

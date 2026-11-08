@@ -62,6 +62,8 @@ async function save(): Promise<void> {
 <template>
   <el-dialog
     v-model="visible"
+    :close-on-click-modal="false"
+    :close-on-press-escape="false"
     data-testid="resource-form-dialog"
     :title="
       resource

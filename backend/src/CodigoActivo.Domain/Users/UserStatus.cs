@@ -16,11 +16,6 @@ public enum UserStatus
     Active,
 
     /// <summary>
-    /// Account an administrator suspended.
-    /// </summary>
-    Blocked,
-
-    /// <summary>
     /// Dependent of a guardian, which never signs in by itself.
     /// </summary>
     Dependent,

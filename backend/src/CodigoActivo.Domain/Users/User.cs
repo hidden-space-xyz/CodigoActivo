@@ -194,7 +194,7 @@ public class User : AggregateRoot<UserId>
     public TwoFactorLockout TwoFactorLockout { get; private set; }
 
     /// <summary>
-    /// Gets the wrong passwords counted and the lock they lead to.
+    /// Gets the wrong passwords counted and the temporary lock they lead to.
     /// </summary>
     public PasswordLockout PasswordLockout { get; private set; }
 
@@ -451,7 +451,9 @@ public class User : AggregateRoot<UserId>
 
     /// <summary>
     /// Moves the account to the pending email once the code emailed to it was accepted, and raises
-    /// <see cref="ProfileChanged"/> and <see cref="ContactDetailsReplaced"/>.
+    /// <see cref="ProfileChanged"/> and <see cref="ContactDetailsReplaced"/>. The password reset
+    /// code and the login code emailed to the previous address stop working, so that mailbox can
+    /// no longer act on the account.
     /// </summary>
     /// <param name="now">Current timestamp, stored as the update time.</param>
     /// <exception cref="InvalidOperationException">No email change is waiting.</exception>
@@ -462,6 +464,8 @@ public class User : AggregateRoot<UserId>
             EmailChange.NewEmail
             ?? throw new InvalidOperationException("No email change is waiting for confirmation.");
         ClearEmailChange();
+        ClearPasswordResetCode();
+        ClearLoginCode();
         UpdatedAt = now;
         Raise(new ProfileChanged(Id));
         Raise(
@@ -688,8 +692,9 @@ public class User : AggregateRoot<UserId>
 
     /// <summary>
     /// Replaces the password once the emailed reset code was accepted, and raises
-    /// <see cref="PasswordReset"/>. It spends the reset code, lifts the password lock and closes
-    /// the open second-factor challenge.
+    /// <see cref="PasswordReset"/>. It spends the reset code, lifts the password lock, closes the
+    /// open second-factor challenge and drops the email change waiting for confirmation, so a
+    /// change asked for by whoever knew the old password does not survive it.
     /// </summary>
     /// <param name="passwordHash">Hash of the new password.</param>
     /// <param name="now">Current timestamp, stored as the update time.</param>
@@ -702,7 +707,8 @@ public class User : AggregateRoot<UserId>
     /// <summary>
     /// Replaces the password at the request of the holder, who proved the current one, and raises
     /// <see cref="PasswordChanged"/>. Like <see cref="ResetPassword"/>, it spends any reset code,
-    /// lifts the password lock and closes the open second-factor challenge.
+    /// lifts the password lock, closes the open second-factor challenge and drops the email change
+    /// waiting for confirmation.
     /// </summary>
     /// <param name="passwordHash">Hash of the new password.</param>
     /// <param name="now">Current timestamp, stored as the update time.</param>
@@ -718,6 +724,7 @@ public class User : AggregateRoot<UserId>
         ClearPasswordResetCode();
         PasswordLockout = default;
         ClearLoginChallenge();
+        ClearEmailChange();
         UpdatedAt = now;
     }
 
@@ -1046,11 +1053,6 @@ public class User : AggregateRoot<UserId>
     public bool CanSignIn => Status == UserStatus.Active && PasswordHash is not null;
 
     /// <summary>
-    /// Gets a value indicating whether an administrator blocked the account.
-    /// </summary>
-    public bool IsBlocked => Status == UserStatus.Blocked;
-
-    /// <summary>
     /// Gets a value indicating whether the account is a dependent, which never signs in by itself.
     /// </summary>
     public bool IsDependent => Status == UserStatus.Dependent;
@@ -1166,7 +1168,7 @@ public class User : AggregateRoot<UserId>
     /// <summary>
     /// Tells whether a second-factor challenge can still be answered: it is the one the account has
     /// open, it is young enough, and the account may still sign in and is not locked by wrong
-    /// passwords.
+    /// passwords now.
     /// </summary>
     /// <param name="challengeId">Identifier of the challenge.</param>
     /// <param name="now">Current timestamp.</param>
@@ -1179,7 +1181,7 @@ public class User : AggregateRoot<UserId>
     )
     {
         return CanSignIn
-            && !PasswordLockout.IsLocked
+            && !PasswordLockout.IsLocked(now)
             && LoginChallenge.IsOpen(challengeId, now, lifetime);
     }
 
@@ -1201,16 +1203,21 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Counts a wrong password and locks the account once it reaches the maximum, raising
-    /// <see cref="PasswordLocked"/>; a locked account counts nothing more until its password is
-    /// reset. Locking also closes the open second-factor challenge.
+    /// Counts a wrong password and locks the account for a while once it reaches the maximum,
+    /// raising <see cref="PasswordLocked"/>; while the lock lasts nothing more is counted, and once
+    /// it expires the count starts again. Locking also closes the open second-factor challenge.
     /// </summary>
-    /// <param name="maxFailedAttempts">Wrong passwords that lock the account.</param>
     /// <param name="now">Current time.</param>
-    public void RecordPasswordFailure(int maxFailedAttempts, DateTimeOffset now)
+    /// <param name="maxFailedAttempts">Wrong passwords that lock the account.</param>
+    /// <param name="lockoutDuration">How long the lock lasts.</param>
+    public void RecordPasswordFailure(
+        DateTimeOffset now,
+        int maxFailedAttempts,
+        TimeSpan lockoutDuration
+    )
     {
-        var locks = PasswordLockout.LocksOnNextFailure(maxFailedAttempts);
-        PasswordLockout = PasswordLockout.AfterFailure(maxFailedAttempts, now);
+        var locks = PasswordLockout.LocksOnNextFailure(now, maxFailedAttempts);
+        PasswordLockout = PasswordLockout.AfterFailure(now, maxFailedAttempts, lockoutDuration);
         if (!locks)
         {
             return;

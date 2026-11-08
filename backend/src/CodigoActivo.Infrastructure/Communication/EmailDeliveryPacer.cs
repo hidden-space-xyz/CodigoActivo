@@ -16,7 +16,6 @@ public sealed class EmailDeliveryPacer(SmtpOptions smtp, EmailGuardOptions guard
 {
     private const double MinutesPerHour = 60;
 
-    private readonly Lock gate = new();
     private readonly RecipientBudgets recipients = new(guard, clock.UtcNow);
     private readonly int perMinute = Math.Max(smtp.MaxPerMinute, 1);
 
@@ -29,11 +28,8 @@ public sealed class EmailDeliveryPacer(SmtpOptions smtp, EmailGuardOptions guard
     /// <returns>The whole messages the per-minute budget holds.</returns>
     public int Available(DateTimeOffset now)
     {
-        lock (gate)
-        {
-            provider = provider.Refill(now, perMinute, perMinute * MinutesPerHour);
-            return (int)Math.Floor(provider.Tokens);
-        }
+        provider = provider.Refill(now, perMinute, perMinute * MinutesPerHour);
+        return (int)Math.Floor(provider.Tokens);
     }
 
     /// <summary>
@@ -43,10 +39,7 @@ public sealed class EmailDeliveryPacer(SmtpOptions smtp, EmailGuardOptions guard
     /// <param name="now">Current time.</param>
     public void Spend(DateTimeOffset now)
     {
-        lock (gate)
-        {
-            provider = provider.Refill(now, perMinute, perMinute * MinutesPerHour).Consume();
-        }
+        provider = provider.Refill(now, perMinute, perMinute * MinutesPerHour).Consume();
     }
 
     /// <summary>

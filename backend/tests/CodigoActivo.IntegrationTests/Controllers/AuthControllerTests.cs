@@ -856,21 +856,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task MeAccountBlockedAfterLoginRevokesExistingSession()
-    {
-        var client = await LoginAsMemberAsync();
-        await Factory.SeedAsync(async db =>
-        {
-            var user = await db.Users.FindAsync([UserId.From(TestSeedData.Users.MemberId)], Ct);
-            Persisted.Overwrite(user!, new { Status = UserStatus.Blocked });
-        });
-
-        var response = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
     public async Task AdminDemotedAfterLoginLosesPrivilegeOnExistingSession()
     {
         var client = await LoginAsAdminAsync();
@@ -1010,21 +995,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync(
             "/api/auth/forgot-password",
             new ForgotPasswordRequest("nobody@codigoactivo.test"),
-            Ct
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        Factory.EmailSender.Sent.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task ForgotPasswordBlockedUserReturnsNoContentWithoutSending()
-    {
-        var client = CreateClient();
-
-        var response = await client.PostJsonAsync(
-            "/api/auth/forgot-password",
-            new ForgotPasswordRequest(TestSeedData.BlockedEmail),
             Ct
         );
 

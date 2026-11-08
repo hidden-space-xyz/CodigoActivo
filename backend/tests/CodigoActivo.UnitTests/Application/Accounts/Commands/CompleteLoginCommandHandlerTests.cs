@@ -91,7 +91,7 @@ public sealed class CompleteLoginCommandHandlerTests
         var user = Prepare(NewUserWithLoginCode(clock, code: "123456"));
         Persisted.Overwrite(
             user,
-            new { PasswordLockout = new { LockedAt = clock.UtcNow.AddMinutes(-1) } }
+            new { PasswordLockout = new { LockedUntil = clock.UtcNow.AddMinutes(14) } }
         );
 
         var result = await VerifyAsync(user.Id.Value, "123456");
@@ -183,7 +183,6 @@ public sealed class CompleteLoginCommandHandlerTests
         return new()
         {
             { UserStatus.Pending, "fake:secret" },
-            { UserStatus.Blocked, "fake:secret" },
             { UserStatus.Dependent, null },
             { UserStatus.Active, null },
         };

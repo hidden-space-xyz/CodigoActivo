@@ -84,7 +84,6 @@ describe('useLogin', () => {
 
   it.each([
     [403, 'UserAccountPendingVerification'],
-    [403, 'UserAccountBlocked'],
     [403, 'TwoFactorLocked'],
     [429, 'TooManyRequests'],
   ] as const)(

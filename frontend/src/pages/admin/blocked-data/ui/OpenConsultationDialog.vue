@@ -76,6 +76,7 @@ function confirm(): void {
     :title="$t('pages.admin.blockedData.open.title')"
     width="520px"
     :close-on-click-modal="false"
+    :close-on-press-escape="false"
   >
     <form class="form" @submit.prevent="confirm">
       <template v-if="!codeStep">

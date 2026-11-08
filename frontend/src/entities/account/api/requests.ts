@@ -19,8 +19,8 @@ import {
   getApiMeConsents,
   getApiMeEventHistory,
   getApiMePersonalData,
+  postApiMeConfirmationCode,
   postApiMeDeletion,
-  postApiMeDeletionCode,
 } from '@/shared/api/generated/endpoints/me/me'
 import {
   deleteApiUsersUserId,
@@ -34,7 +34,9 @@ import { MAX_PAGE_SIZE } from '@/shared/config'
 import type { Translate } from '@/shared/i18n'
 
 import type {
+  AuthenticatorSetupInput,
   ChangePasswordInput,
+  ConfirmationCodeInput,
   DeleteAccountInput,
   DisableAuthenticatorInput,
   EventRatingInput,
@@ -90,12 +92,16 @@ export async function updateAccountProfileRequest(
 }
 
 /**
- * Asks the API to email the confirmation code that authorizes deleting the own account
- * (`POST /api/me/deletion/code`). The password is verified first and nothing is deleted yet; users
- * with an authenticator application do not need it, since they read the code from their app.
+ * Asks the API to email to the current address the code that confirms a change of the own account
+ * (`POST /api/me/confirmation-code`): deleting it, changing its email or enrolling an authenticator.
+ * The password is verified first and nothing changes yet; users with an authenticator application
+ * do not need it, since they read the code from their app.
  */
-export async function requestAccountDeletionCodeRequest(currentPassword: string): Promise<void> {
-  await postApiMeDeletionCode({ currentPassword })
+export async function requestConfirmationCodeRequest(input: ConfirmationCodeInput): Promise<void> {
+  await postApiMeConfirmationCode({
+    currentPassword: input.currentPassword,
+    purpose: input.purpose,
+  })
 }
 
 /**
@@ -135,13 +141,16 @@ export async function changeAccountPasswordRequest(
 
 /**
  * Starts enrolling an authenticator application (`POST /api/auth/two-factor/authenticator/setup`).
- * The API verifies `currentPassword` and answers with the key to scan or type; nothing changes
- * until `confirmAuthenticatorRequest` succeeds.
+ * The API verifies the password and the code emailed to the account and answers with the key to
+ * scan or type; the second factor only changes once `confirmAuthenticatorRequest` succeeds.
  */
 export async function beginAuthenticatorSetupRequest(
-  currentPassword: string,
+  input: AuthenticatorSetupInput,
 ): Promise<AuthenticatorSetup> {
-  const response = await postApiAuthTwoFactorAuthenticatorSetup({ currentPassword })
+  const response = await postApiAuthTwoFactorAuthenticatorSetup({
+    currentPassword: input.currentPassword,
+    code: input.code,
+  })
   return toAuthenticatorSetup(response.data)
 }
 

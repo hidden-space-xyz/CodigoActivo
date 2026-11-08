@@ -16,7 +16,7 @@ import {
   getAccountHistoryRequest,
   getAccountPersonalDataRequest,
   getAccountProfileRequest,
-  requestAccountDeletionCodeRequest,
+  requestConfirmationCodeRequest,
   saveAccountEventRatingRequest,
   updateAccountChildRequest,
   updateAccountProfileRequest,
@@ -94,7 +94,9 @@ describe('account requests', () => {
       }),
     )
 
-    await expect(beginAuthenticatorSetupRequest('secret')).resolves.toEqual({
+    await expect(
+      beginAuthenticatorSetupRequest({ currentPassword: 'secret', code: '482913' }),
+    ).resolves.toEqual({
       sharedKey: 'ABCD EFGH',
       authenticatorUri: 'otpauth://totp/x',
     })
@@ -106,7 +108,7 @@ describe('account requests', () => {
     expect(calls).toEqual([
       {
         url: '/api/auth/two-factor/authenticator/setup',
-        body: { currentPassword: 'secret' },
+        body: { currentPassword: 'secret', code: '482913' },
         csrf: TEST_CSRF_TOKEN,
       },
       {
@@ -129,9 +131,9 @@ describe('account requests', () => {
       ),
     )
 
-    await expect(beginAuthenticatorSetupRequest('wrong')).rejects.toMatchObject({
-      code: 'UserCurrentPasswordIncorrect',
-    })
+    await expect(
+      beginAuthenticatorSetupRequest({ currentPassword: 'wrong', code: '482913' }),
+    ).rejects.toMatchObject({ code: 'UserCurrentPasswordIncorrect' })
   })
 
   it('lists the children of a parent sorted by first name', async () => {
@@ -185,7 +187,8 @@ describe('account requests', () => {
       nationalId: '12345678Z',
       newsConsent: true,
       gender: 'Female',
-      currentPassword: null,
+      currentPassword: 'secret',
+      code: '482913',
     })
 
     expect(profile.lastName).toBe('King')
@@ -200,7 +203,8 @@ describe('account requests', () => {
       newsConsent: true,
       gender: 'Female',
       parentId: null,
-      currentPassword: null,
+      currentPassword: 'secret',
+      code: '482913',
     })
     expect(csrf).toBe(TEST_CSRF_TOKEN)
   })
@@ -239,7 +243,7 @@ describe('account requests', () => {
         csrf: request.headers.get('X-CSRF-TOKEN'),
       })
     server.use(
-      http.post('/api/me/deletion/code', async ({ request }) => {
+      http.post('/api/me/confirmation-code', async ({ request }) => {
         await record(request)
         return new HttpResponse(null, { status: 204 })
       }),
@@ -249,13 +253,19 @@ describe('account requests', () => {
       }),
     )
 
-    await expect(requestAccountDeletionCodeRequest('secret')).resolves.toBeUndefined()
+    await expect(
+      requestConfirmationCodeRequest({ currentPassword: 'secret', purpose: 'AccountDeletion' }),
+    ).resolves.toBeUndefined()
     await expect(
       deleteAccountRequest({ currentPassword: 'secret', code: '123456' }),
     ).resolves.toBeUndefined()
 
     expect(calls).toEqual([
-      { url: '/api/me/deletion/code', body: { currentPassword: 'secret' }, csrf: TEST_CSRF_TOKEN },
+      {
+        url: '/api/me/confirmation-code',
+        body: { currentPassword: 'secret', purpose: 'AccountDeletion' },
+        csrf: TEST_CSRF_TOKEN,
+      },
       {
         url: '/api/me/deletion',
         body: { currentPassword: 'secret', code: '123456' },
@@ -266,13 +276,13 @@ describe('account requests', () => {
 
   it('surfaces the API error when the own account cannot be deleted', async () => {
     server.use(
-      http.post('/api/me/deletion/code', () => apiError(409, 'TwoFactorResendCooldownActive')),
+      http.post('/api/me/confirmation-code', () => apiError(409, 'TwoFactorResendCooldownActive')),
       http.post('/api/me/deletion', () => apiError(403, 'UserDeleteInitialAdminForbidden')),
     )
 
-    await expect(requestAccountDeletionCodeRequest('secret')).rejects.toMatchObject({
-      code: 'TwoFactorResendCooldownActive',
-    })
+    await expect(
+      requestConfirmationCodeRequest({ currentPassword: 'secret', purpose: 'EmailChange' }),
+    ).rejects.toMatchObject({ code: 'TwoFactorResendCooldownActive' })
     await expect(
       deleteAccountRequest({ currentPassword: 'secret', code: '123456' }),
     ).rejects.toMatchObject({ status: 403, code: 'UserDeleteInitialAdminForbidden' })

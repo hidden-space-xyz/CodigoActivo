@@ -54,6 +54,46 @@ public sealed class AccountSecurityNotificationsTests
     }
 
     [Fact]
+    public async Task HandleAsyncTwoFactorLockedWarnsTheHolderUnderItsOwnTopic()
+    {
+        var user = users.FindReturns(NewUser());
+
+        await sut.HandleAsync(new TwoFactorLocked(user.Id), TestContext.Current.CancellationToken);
+
+        composer
+            .Composed.Should()
+            .Equal(
+                new ComposedAccountEmail(
+                    nameof(IAccountEmailComposer.SecurityAlert),
+                    new EmailRecipient(user.Email!.Value, user.FirstName)
+                )
+                {
+                    Change = AccountSecurityChange.TwoFactorLocked,
+                    OccurredAt = clock.UtcNow,
+                }
+            );
+        var sent = emailSender.Sent.Should().ContainSingle().Subject;
+        sent.ToAddress.Should().Be(user.Email!.Value);
+        sent.Topic.Should()
+            .Be(EmailTopics.SecurityAlert(AccountSecurityChange.TwoFactorLocked))
+            .And.NotBe(EmailTopics.SecurityAlert(AccountSecurityChange.CredentialLocked));
+    }
+
+    [Fact]
+    public async Task HandleAsyncTwoFactorLockedOfAnAccountNoLongerStoredSendsNothing()
+    {
+        users.Finds(null);
+
+        await sut.HandleAsync(
+            new TwoFactorLocked(UserId.New()),
+            TestContext.Current.CancellationToken
+        );
+
+        composer.Composed.Should().BeEmpty();
+        emailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task HandleAsyncPasswordLockedOfAnAccountNoLongerStoredSendsNothing()
     {
         users.Finds(null);

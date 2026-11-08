@@ -280,6 +280,7 @@
     "UserSelfDeleteRequiresVerification": "Para eliminar tu propia cuenta debes confirmarlo con tu contraseña y tu segundo factor desde «Mi cuenta».",
     "UserSelfStaffRoleChangeForbidden": "No puedes cambiar tu propio cargo.",
     "UserSelfTypeChangeForbidden": "No puedes cambiar tu propio tipo de usuario: debe hacerlo otro administrador.",
+    "UserSelfTwoFactorResetRequiresVerification": "Tu propio segundo factor no se restablece desde aquí: cámbialo desde «Mi cuenta» con tu contraseña y un código actual.",
     "UserDeleteInitialAdminForbidden": "La cuenta del superadministrador no se puede eliminar.",
     "UserCannotRemoveInitialAdmin": "No se puede cambiar el cargo del superadministrador.",
     "UserDependentCannotHoldStaffRole": "Un menor no puede tener un cargo ni ser responsable de protección de datos.",
@@ -306,7 +307,6 @@
     "UserPhoneInvalid": "El teléfono no es válido. Usa solo números (entre 7 y 15), con espacios, guiones o un prefijo con +.",
     "DisposableEmailNotAllowed": "Por motivos de seguridad no se permite usar direcciones de correo electrónico temporales o desechables. Utiliza una dirección de correo permanente.",
     "InvalidCredentials": "El correo electrónico o la contraseña no son correctos.",
-    "UserAccountBlocked": "Tu cuenta está bloqueada. Contacta al administrador.",
     "UserAccountPendingVerification": "Tu cuenta aún no ha sido verificada.",
     "CurrentUserNotFound": "No se encontró el usuario de la sesión actual.",
     "OtpInvalidOrExpired": "El enlace de verificación no es válido o ha expirado.",
@@ -343,7 +343,8 @@
     "BlockedDataAccountNotFound": "Ninguna búsqueda de esta consulta encontró esa cuenta.",
     "BlockedDataOfficerOnly": "Solo la persona responsable de protección de datos puede consultar los datos bloqueados.",
     "BlockedDataHoldNotFound": "Esa retención no existe.",
-    "BlockedDataHoldLifted": "Esa retención ya estaba levantada."
+    "BlockedDataHoldLifted": "Esa retención ya estaba levantada.",
+    "ParticipationDeletionRequiresAdministrator": "Solo un administrador puede eliminar un evento o una actividad que ya tiene inscripciones, decisiones sobre documentos o valoraciones."
   },
   "pages": {
     "news": {
@@ -583,6 +584,16 @@
           "passwordLabel": "Tu contraseña actual",
           "passwordRequired": "Introduce tu contraseña actual."
         },
+        "emailChange": {
+          "codeLabel": "Código de verificación",
+          "emailHint": "Para cambiar el correo también necesitas un código de verificación: te lo enviaremos a tu correo actual, {email}.",
+          "codeSent": "Te hemos enviado un código a {email}. Escríbelo aquí para confirmar el cambio.",
+          "authenticatorHint": "Para cambiar el correo, escribe también el código que muestra ahora tu aplicación de autenticación.",
+          "sendCode": "Enviar código",
+          "resend": "Reenviar código",
+          "passwordFirst": "Escribe tu contraseña actual para recibir el código.",
+          "codeRequired": "Introduce el código de verificación."
+        },
         "currentPassword": "Contraseña actual",
         "newPassword": "Nueva contraseña",
         "confirmNewPassword": "Repite la nueva contraseña",
@@ -608,8 +619,13 @@
         "useAuthenticator": "Usar una aplicación de autenticación",
         "useEmail": "Volver al código por correo",
         "setupHeader": "Configurar aplicación de autenticación",
-        "setupPasswordIntro": "Para cambiar tu método de verificación, confirma primero tu contraseña.",
+        "setupPasswordIntro": "Para cambiar tu método de verificación, confirma primero tu contraseña. Después te enviaremos un código a tu correo.",
         "passwordLabel": "Tu contraseña",
+        "sendCode": "Enviar código",
+        "setupCodeSent": "Te hemos enviado un código a {email}. Escríbelo aquí para continuar.",
+        "emailCodeLabel": "Código del correo",
+        "resendPrompt": "¿No te ha llegado?",
+        "resend": "Reenviar código",
         "continue": "Continuar",
         "scanIntro": "Escanea este código QR con tu aplicación de autenticación (Google Authenticator, Microsoft Authenticator, Aegis…) o introduce la clave a mano.",
         "qrAlt": "Código QR para la aplicación de autenticación",
@@ -1516,7 +1532,7 @@
           "Login": "Iniciar sesión",
           "Register": "Registrarse",
           "PurgeUnverifiedAccounts": "Eliminar cuentas sin activar",
-          "RequestAccountDeletionCode": "Pedir el código para eliminar la cuenta",
+          "RequestConfirmationCode": "Pedir un código para confirmar un cambio de la cuenta",
           "ResetPassword": "Restablecer la contraseña",
           "VerifyUser": "Verificar la cuenta",
           "AssignActivity": "Inscribir en una actividad",
@@ -1715,7 +1731,7 @@
       "identifierLabel": "Correo electrónico",
       "forgotLink": "¿Has olvidado tu contraseña?",
       "keepSignedIn": "Mantener la sesión iniciada en este dispositivo (guarda una cookie durante 30 días)",
-      "error": "No hemos podido iniciar sesión. Revisa tus datos e inténtalo de nuevo. Tras varios intentos fallidos seguidos bloqueamos la cuenta por seguridad; si te ha pasado, tendrás que restablecer la contraseña desde el enlace de arriba.",
+      "error": "No hemos podido iniciar sesión. Revisa tus datos e inténtalo de nuevo. Tras varios intentos fallidos seguidos bloqueamos la cuenta 15 minutos por seguridad; si te ha pasado, espera o restablece la contraseña desde el enlace de arriba.",
       "noAccount": "¿Aún no tienes cuenta?"
     },
     "loginTwoFactor": {
@@ -1835,7 +1851,9 @@
       "defaultError": "El enlace de verificación no es válido o ha caducado.",
       "hint": "Si el enlace ha caducado o no está completo, escribe tu correo y te enviaremos uno nuevo.",
       "resend": "Enviarme un enlace nuevo",
-      "incompleteLink": "El enlace de verificación no es válido o está incompleto."
+      "incompleteLink": "El enlace de verificación no es válido o está incompleto.",
+      "staleLink": "Este enlace ya no sirve: puede que ya lo hayas usado o que haya caducado.",
+      "staleLinkHint": "Si ya activaste tu cuenta, inicia sesión. Si no, escribe tu correo y te enviaremos un enlace nuevo. Las cuentas que no se activan en {hours} horas se eliminan: en ese caso, tendrás que registrarte de nuevo."
     },
     "confirmEmail": {
       "eyebrow": "// correo",
@@ -1845,7 +1863,9 @@
       "successText": "Tu cuenta ya usa esta dirección. Hemos avisado del cambio a la anterior.",
       "errorTitle": "No hemos podido confirmar el correo",
       "incompleteLink": "El enlace de confirmación no es válido o está incompleto.",
-      "hint": "Si el enlace ha caducado, vuelve a cambiar el correo desde «Mi cuenta» y te enviaremos uno nuevo."
+      "hint": "Si el enlace ha caducado, vuelve a cambiar el correo desde «Mi cuenta» y te enviaremos uno nuevo.",
+      "staleLink": "Este enlace ya no sirve: puede que ya lo hayas usado o que haya caducado.",
+      "staleLinkHint": "Si ya confirmaste el cambio, tu cuenta ya usa el correo nuevo: compruébalo en «Mi cuenta» o inicia sesión con él. Si no, vuelve a cambiar el correo desde «Mi cuenta» y te enviaremos un enlace nuevo."
     },
     "home": {
       "hero": {

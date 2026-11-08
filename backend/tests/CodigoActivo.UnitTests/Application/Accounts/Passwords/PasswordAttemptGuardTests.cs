@@ -52,7 +52,7 @@ public sealed class PasswordAttemptGuardTests
 
         accepted.Should().BeTrue();
         user.PasswordLockout.FailedAttempts.Should().Be(0);
-        user.PasswordLockout.IsLocked.Should().BeFalse();
+        user.PasswordLockout.IsLocked(clock.UtcNow).Should().BeFalse();
         await AssertPasswordStateSavedAsync(1);
     }
 
@@ -67,7 +67,14 @@ public sealed class PasswordAttemptGuardTests
             {
                 Persisted.Overwrite(
                     user,
-                    new { PasswordLockout = new { FailedAttempts = 3, LockedAt = clock.UtcNow } }
+                    new
+                    {
+                        PasswordLockout = new
+                        {
+                            FailedAttempts = 0,
+                            LockedUntil = clock.UtcNow.AddMinutes(15),
+                        },
+                    }
                 );
                 return true;
             });
@@ -79,7 +86,7 @@ public sealed class PasswordAttemptGuardTests
         );
 
         accepted.Should().BeFalse();
-        user.PasswordLockout.IsLocked.Should().BeTrue();
+        user.PasswordLockout.IsLocked(clock.UtcNow).Should().BeTrue();
         await AssertPasswordStateSavedAsync(0);
     }
 
@@ -93,7 +100,14 @@ public sealed class PasswordAttemptGuardTests
             {
                 Persisted.Overwrite(
                     user,
-                    new { PasswordLockout = new { FailedAttempts = 3, LockedAt = clock.UtcNow } }
+                    new
+                    {
+                        PasswordLockout = new
+                        {
+                            FailedAttempts = 0,
+                            LockedUntil = clock.UtcNow.AddMinutes(15),
+                        },
+                    }
                 );
                 return true;
             });
@@ -154,7 +168,7 @@ public sealed class PasswordAttemptGuardTests
 
         accepted.Should().BeFalse();
         user.PasswordLockout.FailedAttempts.Should().Be(1);
-        user.PasswordLockout.IsLocked.Should().BeFalse();
+        user.PasswordLockout.IsLocked(clock.UtcNow).Should().BeFalse();
         await AssertPasswordStateSavedAsync(1);
         Received.InOrder(() =>
         {
@@ -185,7 +199,7 @@ public sealed class PasswordAttemptGuardTests
 
         accepted.Should().BeFalse();
         user.PasswordLockout.FailedAttempts.Should().Be(2);
-        user.PasswordLockout.IsLocked.Should().BeFalse();
+        user.PasswordLockout.IsLocked(clock.UtcNow).Should().BeFalse();
         await AssertPasswordStateSavedAsync(0);
         user.PullDomainEvents().Should().BeEmpty();
     }
@@ -209,8 +223,8 @@ public sealed class PasswordAttemptGuardTests
         );
 
         accepted.Should().BeFalse();
-        user.PasswordLockout.IsLocked.Should().BeTrue();
-        user.PasswordLockout.LockedAt.Should().Be(clock.UtcNow);
+        user.PasswordLockout.IsLocked(clock.UtcNow).Should().BeTrue();
+        user.PasswordLockout.LockedUntil.Should().Be(clock.UtcNow + options.LockoutDuration);
         await AssertPasswordStateSavedAsync(1);
         saved.Should().Equal(new PasswordLocked(user.Id));
         user.PullDomainEvents().Should().BeEmpty();
@@ -230,7 +244,7 @@ public sealed class PasswordAttemptGuardTests
 
         await sut.VerifyLoginPasswordAsync(user, "wrong", TestContext.Current.CancellationToken);
 
-        user.PasswordLockout.IsLocked.Should().BeTrue();
+        user.PasswordLockout.IsLocked(clock.UtcNow).Should().BeTrue();
         user.LoginChallenge.Id.Should().BeNull();
     }
 
@@ -240,7 +254,7 @@ public sealed class PasswordAttemptGuardTests
         var user = Account();
         Persisted.Overwrite(user, new { PasswordLockout = new { FailedAttempts = 2 } });
         await sut.VerifyLoginPasswordAsync(user, "wrong", TestContext.Current.CancellationToken);
-        var lockedAt = user.PasswordLockout.LockedAt;
+        var lockedUntil = user.PasswordLockout.LockedUntil;
 
         var accepted = await sut.VerifyLoginPasswordAsync(
             user,
@@ -249,7 +263,7 @@ public sealed class PasswordAttemptGuardTests
         );
 
         accepted.Should().BeFalse();
-        user.PasswordLockout.LockedAt.Should().Be(lockedAt);
+        user.PasswordLockout.LockedUntil.Should().Be(lockedUntil);
         await AssertPasswordStateSavedAsync(1);
         user.PullDomainEvents()
             .Should()
@@ -262,7 +276,7 @@ public sealed class PasswordAttemptGuardTests
         var user = Account();
         Persisted.Overwrite(
             user,
-            new { PasswordLockout = new { LockedAt = clock.UtcNow.AddDays(-1) } }
+            new { PasswordLockout = new { LockedUntil = clock.UtcNow.AddMinutes(1) } }
         );
 
         var withCorrect = await sut.VerifyLoginPasswordAsync(
@@ -281,6 +295,44 @@ public sealed class PasswordAttemptGuardTests
         await AssertPasswordStateSavedAsync(0);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task VerifyLoginPasswordAsyncExpiredLockAcceptsTheCorrectPassword()
+    {
+        var user = Account();
+        Persisted.Overwrite(user, new { PasswordLockout = new { LockedUntil = clock.UtcNow } });
+
+        var accepted = await sut.VerifyLoginPasswordAsync(
+            user,
+            Correct,
+            TestContext.Current.CancellationToken
+        );
+
+        accepted.Should().BeTrue();
+        await AssertPasswordStateSavedAsync(0);
+    }
+
+    [Fact]
+    public async Task VerifyLoginPasswordAsyncWrongPasswordAfterTheLockExpiredCountsFromTheStart()
+    {
+        var user = Account();
+        Persisted.Overwrite(
+            user,
+            new { PasswordLockout = new { LockedUntil = clock.UtcNow.AddMinutes(-1) } }
+        );
+
+        var accepted = await sut.VerifyLoginPasswordAsync(
+            user,
+            "wrong",
+            TestContext.Current.CancellationToken
+        );
+
+        accepted.Should().BeFalse();
+        user.PasswordLockout.FailedAttempts.Should().Be(1);
+        user.PasswordLockout.IsLocked(clock.UtcNow).Should().BeFalse();
+        await AssertPasswordStateSavedAsync(1);
+        user.PullDomainEvents().Should().BeEmpty();
     }
 
     [Fact]
@@ -315,7 +367,7 @@ public sealed class PasswordAttemptGuardTests
 
         accepted.Should().BeFalse();
         user.PasswordLockout.FailedAttempts.Should().Be(0);
-        user.PasswordLockout.IsLocked.Should().BeFalse();
+        user.PasswordLockout.IsLocked(clock.UtcNow).Should().BeFalse();
         await AssertPasswordStateSavedAsync(0);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
@@ -344,7 +396,7 @@ public sealed class PasswordAttemptGuardTests
         var user = Account();
         Persisted.Overwrite(
             user,
-            new { PasswordLockout = new { LockedAt = clock.UtcNow.AddMinutes(-5) } }
+            new { PasswordLockout = new { LockedUntil = clock.UtcNow.AddMinutes(10) } }
         );
 
         var accepted = await sut.VerifyReauthenticationAsync(

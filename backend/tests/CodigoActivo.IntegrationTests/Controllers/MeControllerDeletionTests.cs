@@ -3,6 +3,8 @@ using System.Text.Json;
 using AwesomeAssertions;
 using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.API.Errors;
+using CodigoActivo.Application.Accounts.SecondFactor;
+using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -23,7 +25,7 @@ namespace CodigoActivo.IntegrationTests.Controllers;
 public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
-    private const string CodeUrl = "/api/me/deletion/code";
+    private const string CodeUrl = "/api/me/confirmation-code";
     private const string DeletionUrl = "/api/me/deletion";
     private const string Secret = "GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ";
 
@@ -169,10 +171,11 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
 
     private static Task<HttpResponseMessage> RequestCodeAsync(
         HttpClient client,
-        string password = TestSeedData.Password
+        string password = TestSeedData.Password,
+        ConfirmationCodePurpose purpose = ConfirmationCodePurpose.AccountDeletion
     )
     {
-        return client.PostJsonAsync(CodeUrl, new AccountDeletionCodeRequest(password), Ct);
+        return client.PostJsonAsync(CodeUrl, new ConfirmationCodeRequest(password, purpose), Ct);
     }
 
     private static Task<HttpResponseMessage> DeleteAsync(
@@ -319,6 +322,49 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task DeletionCodeEmailNamesTheDeletionAndACodeOfAnotherChangeAlsoDeletes()
+    {
+        await SeedParticipationAsync();
+        var (client, _) = await SignedInMemberWithCodeAsync();
+        Factory
+            .EmailSender.Sent.Should()
+            .ContainSingle()
+            .Which.Subject.Should()
+            .Be(AppStrings.EmailsAccountDeletionCodeSubject);
+
+        Factory.Clock.UtcNow += TimeSpan.FromSeconds(61);
+        using var other = await RequestCodeAsync(
+            client,
+            purpose: ConfirmationCodePurpose.EmailChange
+        );
+        other.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Factory.EmailSender.Sent[^1].Subject.Should().Be(AppStrings.EmailsEmailChangeCodeSubject);
+
+        using var response = await DeleteAsync(
+            client,
+            Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.MemberEmail)
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await FindAsync<User>(TestSeedData.Users.MemberId)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ConfirmationCodeWithoutPurposeReturnsValidationErrorWithoutEmailing()
+    {
+        var client = await LoginAsMemberAsync();
+
+        using var response = await client.PostJsonAsync(
+            CodeUrl,
+            new { CurrentPassword = TestSeedData.Password },
+            Ct
+        );
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
+        Factory.EmailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task DeletionCodeWrongPasswordReturnsBadRequestWithoutEmailing()
     {
         var client = await LoginAsMemberAsync();
@@ -374,6 +420,11 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
 
         using var code = await RequestCodeAsync(client);
         await code.ShouldBeForbiddenAsync(ErrorCode.UserDeleteInitialAdminForbidden);
+        using var other = await RequestCodeAsync(
+            client,
+            purpose: ConfirmationCodePurpose.EmailChange
+        );
+        await other.ShouldBeConflictAsync(ErrorCode.TwoFactorResendNotAllowed);
 
         using var response = await DeleteAsync(client, CurrentCode());
         await response.ShouldBeForbiddenAsync(ErrorCode.UserDeleteInitialAdminForbidden);

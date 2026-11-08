@@ -164,7 +164,7 @@ public sealed class AuditConventionTests
             .Should()
             .BeEquivalentTo(
                 "BeginAuthenticatorSetupCommand",
-                "RequestAccountDeletionCodeCommand",
+                "RequestConfirmationCodeCommand",
                 "RequestBlockedDataConsultationCodeCommand"
             );
     }

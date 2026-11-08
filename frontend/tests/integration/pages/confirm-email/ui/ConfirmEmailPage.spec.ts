@@ -68,13 +68,42 @@ describe('confirm email page', () => {
     expect(calls).toHaveLength(0)
   })
 
-  it('shows the API error for an expired link', async () => {
+  it('tells a guest with a reopened or expired link that the change may be done', async () => {
     serveConfirm(() => apiError(400, 'OtpInvalidOrExpired'))
 
-    const { wrapper } = await renderApp(`/confirm-email#userId=${USER_ID}&code=expired`)
+    const { wrapper, router } = await renderApp(`/confirm-email#userId=${USER_ID}&code=used`)
 
     await vi.waitFor(() =>
-      expect(wrapper.find('[role="alert"]').text()).toBe(t('errors.OtpInvalidOrExpired')),
+      expect(wrapper.find('[role="alert"]').text()).toBe(t('pages.confirmEmail.staleLink')),
     )
+    expect(wrapper.text()).toContain(t('pages.confirmEmail.staleLinkHint'))
+    expect(wrapper.get('.status-panel__actions a').attributes('href')).toBe(
+      router.resolve({ name: 'login' }).href,
+    )
+  })
+
+  it('sends a signed-in holder with a reopened link to their account', async () => {
+    serveConfirm(() => apiError(400, 'OtpInvalidOrExpired'))
+
+    const { wrapper, router } = await renderApp(`/confirm-email#userId=${USER_ID}&code=used`, {
+      user: {},
+    })
+
+    await vi.waitFor(() => expect(wrapper.text()).toContain(t('pages.confirmEmail.staleLinkHint')))
+    expect(wrapper.get('.status-panel__actions a').attributes('href')).toBe(
+      router.resolve({ name: 'account' }).href,
+    )
+  })
+
+  it('shows any other API error with the usual advice', async () => {
+    serveConfirm(() => apiError(409, 'UserEmailAlreadyInUse'))
+
+    const { wrapper } = await renderApp(`/confirm-email#userId=${USER_ID}&code=code-1`)
+
+    await vi.waitFor(() =>
+      expect(wrapper.find('[role="alert"]').text()).toBe(t('errors.UserEmailAlreadyInUse')),
+    )
+    expect(wrapper.text()).toContain(t('pages.confirmEmail.hint'))
+    expect(wrapper.get('.status-panel__actions a').attributes('href')).toBe('/')
   })
 })

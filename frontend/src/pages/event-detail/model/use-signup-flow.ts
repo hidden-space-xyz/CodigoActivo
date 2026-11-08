@@ -1,12 +1,13 @@
 import { computed, reactive, ref } from 'vue'
-import { useQueryClient } from '@tanstack/vue-query'
+import { useQueryClient, type QueryKey } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import type {
-  ActivityOverlap,
-  HouseholdAssignmentInput,
-  TermsDecisionInput,
+import {
+  activityKeys,
+  type ActivityOverlap,
+  type HouseholdAssignmentInput,
+  type TermsDecisionInput,
 } from '@/entities/activity'
 import { eventKeys } from '@/entities/event'
 import { hasErrorCode } from '@/shared/api'
@@ -24,6 +25,13 @@ type PendingSignup =
       readonly activityId: string
       readonly assignments: readonly HouseholdAssignmentInput[]
     }
+
+/** Refusals telling that the page shows activities, signups or a signup window no longer true. */
+const STALE_SIGNUP_ERRORS = [
+  'ActivityAssignmentAlreadyExists',
+  'ActivityNotFound',
+  'ActivitySignupClosed',
+] as const
 
 /** A household member offered in the household signup dialog. */
 interface HouseholdRow {
@@ -52,9 +60,10 @@ interface SignupFlowOptions {
  * offered before sending, each decided by the user or, for the consents of a minor from the age of
  * 14, by the minor. A signup the API refuses for missing terms reopens them when the event lists
  * some, and one refused for a document changed since it was shown warns, refreshes the terms and
- * reopens them. Withdrawals ask for confirmation first. Own signups and withdrawals are ignored
- * while signup is closed or once the activity has started. Only one activity is busy at a time.
- * Call it in `setup`.
+ * reopens them. One refused because the person is already signed up, the activity is gone or the
+ * signup has closed refreshes the activities and signups, and the event too when it has closed.
+ * Withdrawals ask for confirmation first. Own signups and withdrawals are ignored while signup is
+ * closed or once the activity has started. Only one activity is busy at a time. Call it in `setup`.
  */
 export function useSignupFlow(options: SignupFlowOptions) {
   const { t } = useI18n()
@@ -118,7 +127,20 @@ export function useSignupFlow(options: SignupFlowOptions) {
     termsDialog.visible = true
   }
 
+  function refreshStaleSignups(error: unknown): void {
+    if (!STALE_SIGNUP_ERRORS.some((code) => hasErrorCode(error, code))) return
+    const eventId = options.eventId()
+    const keys: QueryKey[] = [
+      activityKeys.ofEvent(eventId),
+      activityKeys.myAssignments(eventId),
+      activityKeys.householdAssignments(eventId),
+    ]
+    if (hasErrorCode(error, 'ActivitySignupClosed')) keys.push(eventKeys.detail(eventId))
+    for (const queryKey of keys) void queryClient.invalidateQueries({ queryKey })
+  }
+
   function handleSignupError(error: unknown, action: PendingSignup): void {
+    refreshStaleSignups(error)
     if (hasErrorCode(error, 'EventTermsDocumentChanged')) {
       feedback.warn(
         t('pages.eventDetail.toast.termsChanged'),

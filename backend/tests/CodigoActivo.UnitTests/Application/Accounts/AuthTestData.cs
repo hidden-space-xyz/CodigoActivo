@@ -50,7 +50,7 @@ internal static class AuthTestData
         Guid? statusId = null,
         TwoFactorMethod twoFactorMethod = TwoFactorMethod.Email,
         Guid? loginChallengeId = null,
-        DateTimeOffset? passwordLockedAt = null,
+        DateTimeOffset? passwordLockedUntil = null,
         bool isAdmin = false,
         DateTimeOffset? loginChallengeStartedAt = null
     )
@@ -69,7 +69,7 @@ internal static class AuthTestData
             TwoFactorMethod = twoFactorMethod,
             LoginChallengeId = loginChallengeId,
             LoginChallengeStartedAt = loginChallengeStartedAt,
-            PasswordLockedAt = passwordLockedAt,
+            PasswordLockedUntil = passwordLockedUntil,
             CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
         };
     }

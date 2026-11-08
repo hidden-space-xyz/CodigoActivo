@@ -18,9 +18,11 @@ public interface INewsItemRepository : IRepository<NewsItem>
     public Task<NewsItem?> GetByIdAsync(NewsItemId id, CancellationToken ct = default);
 
     /// <summary>
-    /// Loads the news items featured right now.
+    /// Loads the news item featured right now; a unique index keeps it to one at most.
     /// </summary>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the featured news items.</returns>
-    public Task<IReadOnlyList<NewsItem>> ListFeaturedAsync(CancellationToken ct = default);
+    /// <returns>
+    /// A task whose result is the featured news item, or <see langword="null"/> when none is.
+    /// </returns>
+    public Task<NewsItem?> GetFeaturedAsync(CancellationToken ct = default);
 }

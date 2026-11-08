@@ -151,16 +151,23 @@ public sealed class AccountEmails(
     }
 
     /// <summary>
-    /// Sends the email carrying the one-time code that confirms deleting an account.
+    /// Sends the email carrying the one-time code that confirms a change of an account.
     /// </summary>
-    /// <param name="user">Account to delete; it must have an email.</param>
+    /// <param name="user">Account to change; it must have an email.</param>
+    /// <param name="purpose">Change the code confirms, which the email names.</param>
     /// <param name="code">Plain code the user must type; only its hash is stored.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
-    public Task SendAccountDeletionCodeEmailAsync(User user, string code, CancellationToken ct)
+    public Task SendConfirmationCodeEmailAsync(
+        User user,
+        ConfirmationCodePurpose purpose,
+        string code,
+        CancellationToken ct
+    )
     {
-        var message = composer.AccountDeletionCode(
+        var message = composer.ConfirmationCode(
             Recipient(user),
+            purpose,
             code,
             twoFactor.ChallengeLifetime
         );

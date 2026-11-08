@@ -282,7 +282,7 @@ public sealed class EventTermsWithdrawalTests(CodigoActivoWebAppFactory factory)
         await SeedAsync();
         var client = await LoginAsMemberAsync();
 
-        using var response = await WithdrawAsync(client, TestSeedData.Users.BlockedId, imageId);
+        using var response = await WithdrawAsync(client, TestSeedData.Users.OtherId, imageId);
 
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         (await DecisionAsync(imageId)).Accepted.Should().BeTrue();

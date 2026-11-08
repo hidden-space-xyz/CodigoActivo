@@ -62,6 +62,13 @@ public enum ApplicationErrorCode
     EventThumbnailNotFound,
 
     /// <summary>
+    /// An editor tried to delete an event or an activity that somebody signed up to, or an event
+    /// that someone took a terms decision about or rated: only an administrator may delete them,
+    /// since that removal takes participation data with it.
+    /// </summary>
+    ParticipationDeletionRequiresAdministrator,
+
+    /// <summary>
     /// A file embedded in the rich text of content no longer exists.
     /// </summary>
     RichTextFileNotFound,
@@ -230,6 +237,13 @@ public enum ApplicationErrorCode
     UserSelfTypeChangeForbidden,
 
     /// <summary>
+    /// The signed-in administrator tried to reset their own second factor the way another
+    /// account's is reset, instead of returning to email themselves, which asks for the password
+    /// and a current code.
+    /// </summary>
+    UserSelfTwoFactorResetRequiresVerification,
+
+    /// <summary>
     /// The guardian a dependent is added to does not exist.
     /// </summary>
     ParentUserNotFound,
@@ -268,11 +282,6 @@ public enum ApplicationErrorCode
     InvalidCredentials,
 
     /// <summary>
-    /// The account signing in with the right password is blocked.
-    /// </summary>
-    UserAccountBlocked,
-
-    /// <summary>
     /// The account signing in with the right password has not confirmed its email yet.
     /// </summary>
     UserAccountPendingVerification,
@@ -295,8 +304,7 @@ public enum ApplicationErrorCode
     OtpResendCooldownActive,
 
     /// <summary>
-    /// The password reset code is wrong, expired or already used, or the account is blocked or a
-    /// dependent.
+    /// The password reset code is wrong, expired or already used, or the account is a dependent.
     /// </summary>
     PasswordResetInvalidOrExpired,
 

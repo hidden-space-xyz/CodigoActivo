@@ -17,13 +17,15 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// in a row that fail for an unknown cause are blamed on the server too, while copies of one
 /// content that fail together are that content's; a recipient the server defers never is. Repeated
 /// failures are logged at most once per <see cref="EmailGuardOptions.AlertInterval"/>. Delivery is
-/// at least once: a sent message whose row cannot be removed is attempted again.
+/// at least once: a sent message whose row cannot be removed is attempted again. Runs never
+/// overlap: the single API instance makes them one after another from the loop of
+/// <see cref="EmailOutboxDeliveryWorker"/>.
 /// </summary>
 /// <param name="store">Outbox rows this run works with.</param>
 /// <param name="transport">Transport each run opens one session of.</param>
 /// <param name="protector">Protector applied to the stored subject, bodies and attachments.</param>
 /// <param name="pacer">Pace of the SMTP provider and of every recipient.</param>
-/// <param name="options">Outbox policy: batch size, lease, send timeout and schedules.</param>
+/// <param name="options">Outbox policy: batch size, send timeout and schedules.</param>
 /// <param name="smtp">Daily limit of the SMTP provider.</param>
 /// <param name="guard">
 /// Email guard configuration, whose alert interval spaces repeated failures.
@@ -42,14 +44,12 @@ public sealed class EmailOutboxDeliverer(
     ILogger<EmailOutboxDeliverer> logger
 )
 {
-    private readonly Lock gate = new();
     private readonly LogThrottle attemptFailures = new(guard.AlertInterval);
     private readonly LogThrottle expiredRemovalFailures = new(guard.AlertInterval);
     private readonly LogThrottle pauses = new(guard.AlertInterval);
     private readonly LogThrottle dailyLimitAlerts = new(guard.AlertInterval);
     private readonly HashSet<Guid> contentsFailedInARow = [];
 
-    private DateTimeOffset pausedUntil = DateTimeOffset.MinValue;
     private DateTimeOffset nextOverdueCheckAt = DateTimeOffset.MinValue;
     private int serverFailures;
 
@@ -57,16 +57,7 @@ public sealed class EmailOutboxDeliverer(
     /// Gets the time until which the delivery is paused because the SMTP server could not take
     /// mail; a time in the past when it is not paused.
     /// </summary>
-    public DateTimeOffset PausedUntil
-    {
-        get
-        {
-            lock (gate)
-            {
-                return pausedUntil;
-            }
-        }
-    }
+    public DateTimeOffset PausedUntil { get; private set; } = DateTimeOffset.MinValue;
 
     /// <summary>
     /// Removes the expired messages, claims and delivers the messages that are due and allowed, and
@@ -79,7 +70,7 @@ public sealed class EmailOutboxDeliverer(
     /// Cancellation token that stops the removal, the overdue count and the claim; in a claimed
     /// batch it lets the send in flight finish, bounded by
     /// <see cref="EmailQueueOptions.SendTimeout"/>, and hands the rest back untried, due at once,
-    /// so the next instance delivers it before its codes expire.
+    /// so the next start delivers it before its codes expire.
     /// </param>
     /// <returns>A task whose result contains the number of claimed messages.</returns>
     public async Task<int> DeliverDueAsync(CancellationToken ct = default)
@@ -117,7 +108,7 @@ public sealed class EmailOutboxDeliverer(
         }
 
         return claimable is { } maxPriority
-            ? await store.ClaimDueAsync(now, now + options.Lease, slots, maxPriority, ct)
+            ? await store.ClaimDueAsync(now, slots, maxPriority, ct)
             : [];
     }
 
@@ -252,34 +243,23 @@ public sealed class EmailOutboxDeliverer(
 
     private void Succeeded()
     {
-        lock (gate)
-        {
-            serverFailures = 0;
-            contentsFailedInARow.Clear();
-        }
+        serverFailures = 0;
+        contentsFailedInARow.Clear();
     }
 
     private int FailedInARow(Guid contentId)
     {
-        lock (gate)
-        {
-            contentsFailedInARow.Add(contentId);
-            return contentsFailedInARow.Count;
-        }
+        contentsFailedInARow.Add(contentId);
+        return contentsFailedInARow.Count;
     }
 
     private void Pause(Exception cause)
     {
-        TimeSpan delay;
-        DateTimeOffset now;
-        lock (gate)
-        {
-            serverFailures++;
-            contentsFailedInARow.Clear();
-            delay = EmailQueueOptions.PauseDelayAfter(serverFailures);
-            now = clock.UtcNow;
-            pausedUntil = now + delay;
-        }
+        serverFailures++;
+        contentsFailedInARow.Clear();
+        var delay = EmailQueueOptions.PauseDelayAfter(serverFailures);
+        var now = clock.UtcNow;
+        PausedUntil = now + delay;
 
         if (pauses.TryEnter(now))
         {
@@ -302,12 +282,7 @@ public sealed class EmailOutboxDeliverer(
     {
         try
         {
-            await store.ReleaseAsync(
-                message.Id,
-                message.AttemptCount,
-                nextAttemptAt,
-                CancellationToken.None
-            );
+            await store.ReleaseAsync(message.Id, nextAttemptAt, CancellationToken.None);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -319,7 +294,7 @@ public sealed class EmailOutboxDeliverer(
     {
         try
         {
-            await store.RemoveAsync(message.Id, message.AttemptCount, CancellationToken.None);
+            await store.RemoveAsync(message.Id, CancellationToken.None);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -345,7 +320,6 @@ public sealed class EmailOutboxDeliverer(
             var now = clock.UtcNow;
             await store.RescheduleAsync(
                 message.Id,
-                attempts,
                 now + EmailQueueOptions.RetryDelayAfter(attempts),
                 Describe(failure),
                 CancellationToken.None
@@ -382,15 +356,12 @@ public sealed class EmailOutboxDeliverer(
 
     private async Task ReportOverdueAsync(DateTimeOffset now, CancellationToken ct)
     {
-        lock (gate)
+        if (now < nextOverdueCheckAt)
         {
-            if (now < nextOverdueCheckAt)
-            {
-                return;
-            }
-
-            nextOverdueCheckAt = now + guard.AlertInterval;
+            return;
         }
+
+        nextOverdueCheckAt = now + guard.AlertInterval;
 
         try
         {

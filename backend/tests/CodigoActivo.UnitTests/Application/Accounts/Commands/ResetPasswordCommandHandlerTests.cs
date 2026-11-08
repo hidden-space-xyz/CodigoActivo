@@ -41,7 +41,7 @@ public sealed class ResetPasswordCommandHandlerTests
                     NullLogger<AccountSecurityNotifier>.Instance
                 )
             ),
-            new SessionsEndOnPasswordReplacedOrLocked(sessions)
+            new SessionsEndOnPasswordReplaced(sessions)
         );
         sut = new ResetPasswordCommandHandler(
             users,
@@ -112,20 +112,6 @@ public sealed class ResetPasswordCommandHandlerTests
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.PasswordResetInvalidOrExpired);
         user.PasswordHash.Should().Be(previousPasswordHash);
         user.PasswordResetCode.Hash.Should().NotBeNull("a wrong guess must not consume the code");
-    }
-
-    [Fact]
-    public async Task HandleAsyncUserBlockedAfterRequestReturnsBadRequest()
-    {
-        var user = users.FindReturns(NewUserWithResetCode(clock, code: "the-reset-code"));
-        Persisted.Overwrite(user, new { Status = UserStatus.Blocked });
-
-        var result = await sut.HandleAsync(
-            new ResetPasswordRequest("the-reset-code", "newPassword123").ToCommand(user.Id),
-            TestContext.Current.CancellationToken
-        );
-
-        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.PasswordResetInvalidOrExpired);
     }
 
     [Fact]

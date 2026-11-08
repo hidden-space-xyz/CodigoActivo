@@ -7,14 +7,15 @@ namespace CodigoActivo.Application.Accounts.SecondFactor;
 
 /// <summary>
 /// Checks the codes of an account's active second factor: on login and on the routes that ask the
-/// caller for a code before an irreversible change. The caller holds the account row locked and
-/// reloaded, so parallel attempts are counted one after another. A locked second factor refuses
-/// every code; a wrong code is counted and saved here, inside the caller's transaction and together
-/// with any other staged change, because the calling handler then fails, and it locks the second
-/// factor for a while once the limit is reached, so short codes cannot be brute forced. The lock
-/// raises <see cref="TwoFactorLocked"/>, recorded in the security log once it is committed. An
-/// accepted code is spent on the account, an authenticator code by recording its time step and an
-/// emailed code by clearing it, for the caller to save with its change.
+/// caller for a code before a change that a session and the password alone may not make. The
+/// caller holds the account row locked and reloaded, so parallel attempts are counted one after
+/// another. A locked second factor refuses every code; a wrong code is counted and saved here,
+/// inside the caller's transaction and together with any other staged change, because the calling
+/// handler then fails, and it locks the second factor for a while once the limit is reached, so
+/// short codes cannot be brute forced. The lock raises <see cref="TwoFactorLocked"/>, recorded in
+/// the security log and emailed to the owner once it is committed. An accepted code is spent on
+/// the account, an authenticator code by recording its time step and an emailed code by
+/// clearing it, for the caller to save with its change.
 /// </summary>
 /// <param name="uow">Unit of work used to commit the counted failure.</param>
 /// <param name="otpValidator">Validator of emailed codes.</param>

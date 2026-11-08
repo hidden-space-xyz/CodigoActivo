@@ -97,6 +97,7 @@ public class BlockedDataController : ApiControllerBase
     /// <returns>A 204 response, or an error response.</returns>
     [HttpPost("consultations/code")]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
+    [PasswordHashing]
     public async Task<ActionResult> RequestConsultationCodeAsync(
         [FromBody] BlockedDataConsultationCodeRequest request,
         [FromServices] ICommandHandler<RequestBlockedDataConsultationCodeCommand, Result> handler,
@@ -119,6 +120,7 @@ public class BlockedDataController : ApiControllerBase
     /// </returns>
     [HttpPost("consultations")]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
+    [PasswordHashing]
     [ProducesResponseType<BlockedDataConsultationResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<BlockedDataConsultationResponse>> OpenConsultationAsync(
         [FromBody] OpenBlockedDataConsultationRequest request,

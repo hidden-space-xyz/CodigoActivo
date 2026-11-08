@@ -35,6 +35,15 @@ export class ProfileDialog {
   /** The error of «Tu contraseña actual», for a missing or refused password. */
   readonly currentPasswordError: Locator
 
+  /** «Código de verificación», asked only when the email changes. */
+  readonly code: Locator
+
+  /** «Enviar código», which emails the code to the current address. */
+  readonly sendCode: Locator
+
+  /** The error of «Código de verificación», for a missing, refused or unsent code. */
+  readonly codeError: Locator
+
   /** The save button. */
   readonly save: Locator
 
@@ -54,6 +63,9 @@ export class ProfileDialog {
     this.newsConsent = this.root.getByTestId('profile-dialog-news-consent')
     this.currentPassword = this.root.getByTestId('profile-dialog-current-password')
     this.currentPasswordError = this.root.getByTestId('profile-dialog-current-password-error')
+    this.code = this.root.getByTestId('profile-dialog-code')
+    this.sendCode = this.root.getByTestId('profile-dialog-send-code')
+    this.codeError = this.root.getByTestId('profile-dialog-code-error')
     this.save = this.root.getByTestId('profile-dialog-save')
     this.cancel = this.root.getByTestId('profile-dialog-cancel')
   }

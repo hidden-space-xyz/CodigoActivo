@@ -42,7 +42,7 @@ public sealed class SetEventFeaturedCommandHandlerTests
         var chosen = NewEvent();
         var previous = NewEvent(featured: true);
         events.GetByIdAsync(chosen.Id, Arg.Any<CancellationToken>()).Returns(chosen);
-        events.ListFeaturedAsync(Arg.Any<CancellationToken>()).Returns([previous]);
+        events.GetFeaturedAsync(Arg.Any<CancellationToken>()).Returns(previous);
 
         var result = await sut.HandleAsync(
             new SetEventFeaturedCommand(chosen.Id),
@@ -62,7 +62,7 @@ public sealed class SetEventFeaturedCommandHandlerTests
         var chosen = NewEvent();
         var previous = NewEvent(featured: true);
         events.GetByIdAsync(chosen.Id, Arg.Any<CancellationToken>()).Returns(chosen);
-        events.ListFeaturedAsync(Arg.Any<CancellationToken>()).Returns([previous]);
+        events.GetFeaturedAsync(Arg.Any<CancellationToken>()).Returns(previous);
         var saved = new List<(bool Previous, bool Chosen)>();
         uow.When(u => u.SaveChangesAsync(Arg.Any<CancellationToken>()))
             .Do(_ => saved.Add((previous.Featured, chosen.Featured)));

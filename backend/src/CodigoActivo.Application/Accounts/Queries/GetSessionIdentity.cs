@@ -16,10 +16,9 @@ public sealed record GetSessionIdentityQuery(UserId UserId, UserSessionId Sessio
     : IQuery<SessionIdentity?>;
 
 /// <summary>
-/// Resolves the account behind a live session: an active account with a password that is not
-/// locked after repeated wrong passwords, whose session row exists and has not expired. Locking an
-/// account also deletes its sessions; checking the lock here keeps a session the deletion missed
-/// from outliving it.
+/// Resolves the account behind a live session: an active account with a password whose session row
+/// exists and has not expired. A lock after repeated wrong passwords leaves the session working, so
+/// whoever guesses at the password cannot sign its owner out.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>

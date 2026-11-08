@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { UNVERIFIED_ACCOUNT_RETENTION_HOURS } from '@/shared/config'
+
 import { renderApp, t } from '../../../../support/render'
 import { apiError, http, HttpResponse, noContent, server } from '../../../../support/server'
 
@@ -84,15 +86,33 @@ describe('verify account page', () => {
     expect(bodies).toEqual([{ email: 'ada@example.test' }])
   })
 
-  it('shows the API error for an expired link and reports resend failures', async () => {
+  it('sends a reopened or expired link to log in or register again', async () => {
     serveVerify(() => apiError(400, 'OtpInvalidOrExpired'))
-    serveResend(() => apiError(400, 'RequestValidationFailed'))
 
-    const { wrapper } = await renderApp(`/verify-account#userId=${USER_ID}&code=expired`)
+    const { wrapper, router } = await renderApp(`/verify-account#userId=${USER_ID}&code=used`)
 
     await vi.waitFor(() =>
-      expect(wrapper.find('[role="alert"]').text()).toBe(t('errors.OtpInvalidOrExpired')),
+      expect(wrapper.find('[role="alert"]').text()).toBe(t('pages.verifyAccount.staleLink')),
     )
+    expect(wrapper.text()).toContain(
+      t('pages.verifyAccount.staleLinkHint', { hours: UNVERIFIED_ACCOUNT_RETENTION_HOURS }),
+    )
+    expect(wrapper.find('form.verify-resend').exists()).toBe(true)
+    expect(
+      wrapper.findAll('.status-panel__actions a').map((link) => link.attributes('href')),
+    ).toEqual([router.resolve({ name: 'login' }).href, router.resolve({ name: 'register' }).href])
+  })
+
+  it('shows the API error for a refused link and reports resend failures', async () => {
+    serveVerify(() => apiError(429, 'TooManyRequests'))
+    serveResend(() => apiError(400, 'RequestValidationFailed'))
+
+    const { wrapper } = await renderApp(`/verify-account#userId=${USER_ID}&code=otp-1`)
+
+    await vi.waitFor(() =>
+      expect(wrapper.find('[role="alert"]').text()).toBe(t('errors.TooManyRequests')),
+    )
+    expect(wrapper.text()).toContain(t('pages.verifyAccount.hint'))
 
     await requestNewLink(wrapper, 'ada@example.test')
 

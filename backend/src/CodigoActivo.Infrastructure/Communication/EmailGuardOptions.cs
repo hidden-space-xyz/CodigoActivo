@@ -11,8 +11,8 @@ public sealed class EmailGuardOptions
 {
     /// <summary>
     /// Gets or sets how many messages one normalized address can receive at once: the capacity of
-    /// its hourly budget, which refills at <see cref="RecipientPerHour"/>. Second-factor codes have
-    /// budgets of their own per address.
+    /// its hourly budget, which refills at <see cref="RecipientPerHour"/>. Second-factor codes and
+    /// password reset links have budgets of their own per address.
     /// </summary>
     public int RecipientBurst { get; set; } = 20;
 

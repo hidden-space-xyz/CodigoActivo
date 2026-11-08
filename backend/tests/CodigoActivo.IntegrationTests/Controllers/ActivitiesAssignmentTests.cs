@@ -342,7 +342,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         var request = new AssignRequest(KnownIds.ActivityRoleTypes.Leader);
 
         var response = await client.PatchJsonAsync(
-            $"/api/activities/{activityId}/{TestSeedData.Users.BlockedId}/assign",
+            $"/api/activities/{activityId}/{TestSeedData.Users.OtherId}/assign",
             request,
             Ct
         );

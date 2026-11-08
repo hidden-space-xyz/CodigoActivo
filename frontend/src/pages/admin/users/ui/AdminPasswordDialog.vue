@@ -57,7 +57,13 @@ function confirm(): void {
 </script>
 
 <template>
-  <el-dialog v-model="visible" :title="title" :width="width" :close-on-click-modal="false">
+  <el-dialog
+    v-model="visible"
+    :title="title"
+    :width="width"
+    :close-on-click-modal="false"
+    :close-on-press-escape="false"
+  >
     <form class="form" @submit.prevent="confirm">
       <p class="form__message">{{ message }}</p>
       <slot />

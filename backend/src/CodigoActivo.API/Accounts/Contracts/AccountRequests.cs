@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Application.Common.Mapping;
 using CodigoActivo.Domain.Users;
 using Gender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
@@ -43,7 +45,13 @@ public record TwoFactorLoginRequest([Required] [MaxLength(16)] string Code);
 /// <param name="CurrentPassword">
 /// Password of the signed-in user, re-entered to authorize the change.
 /// </param>
-public record AuthenticatorSetupRequest([Required] [MaxLength(128)] string CurrentPassword)
+/// <param name="Code">
+/// Code emailed through <c>POST /api/me/confirmation-code</c>, proving the current second factor.
+/// </param>
+public record AuthenticatorSetupRequest(
+    [Required] [MaxLength(128)] string CurrentPassword,
+    [Required] [MaxLength(16)] string Code
+)
 {
     /// <summary>
     /// Builds the command that starts the enrollment.
@@ -51,7 +59,7 @@ public record AuthenticatorSetupRequest([Required] [MaxLength(128)] string Curre
     /// <returns>The command.</returns>
     public BeginAuthenticatorSetupCommand ToCommand()
     {
-        return new BeginAuthenticatorSetupCommand(CurrentPassword);
+        return new BeginAuthenticatorSetupCommand(CurrentPassword, Code);
     }
 }
 
@@ -254,20 +262,30 @@ public record ResetPasswordRequest(
 }
 
 /// <summary>
-/// Contains the client-supplied data used to request the code that confirms account deletion.
+/// Contains the client-supplied data used to request the code that confirms a change of the
+/// signed-in user's own account.
 /// </summary>
 /// <param name="CurrentPassword">
 /// Password of the signed-in user, re-entered to authorize the request.
 /// </param>
-public record AccountDeletionCodeRequest([Required] [MaxLength(128)] string CurrentPassword)
+/// <param name="Purpose">
+/// Change the code is asked for: deleting the account, changing its email or enrolling an
+/// authenticator application. It must be present.
+/// </param>
+public record ConfirmationCodeRequest(
+    [Required] [MaxLength(128)] string CurrentPassword,
+    [property: JsonRequired]
+    [EnumDataType(typeof(ConfirmationCodePurpose))]
+        ConfirmationCodePurpose Purpose
+)
 {
     /// <summary>
-    /// Builds the command that emails the deletion code.
+    /// Builds the command that emails the confirmation code.
     /// </summary>
     /// <returns>The command.</returns>
-    public RequestAccountDeletionCodeCommand ToCommand()
+    public RequestConfirmationCodeCommand ToCommand()
     {
-        return new RequestAccountDeletionCodeCommand(CurrentPassword);
+        return new RequestConfirmationCodeCommand(CurrentPassword, Purpose);
     }
 }
 

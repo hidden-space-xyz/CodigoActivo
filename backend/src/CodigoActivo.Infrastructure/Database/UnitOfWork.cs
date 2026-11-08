@@ -34,7 +34,7 @@ public sealed class UnitOfWork(CodigoActivoDbContext context, IDomainEventPublis
         catch (DbUpdateConcurrencyException ex)
         {
             throw new ConcurrentUpdateException(
-                ex.Entries is [var changed, ..] ? changed.Metadata.ClrType : null,
+                "A row the commit changes was written or removed after it was read.",
                 ex
             );
         }
@@ -102,7 +102,10 @@ public sealed class UnitOfWork(CodigoActivoDbContext context, IDomainEventPublis
                 uncommitted.Clear();
                 if (IsDeadlock(ex))
                 {
-                    throw new ConcurrentUpdateException(entityType: null, ex);
+                    throw new ConcurrentUpdateException(
+                        "The transaction was aborted to resolve a deadlock with a concurrent one.",
+                        ex
+                    );
                 }
 
                 throw;

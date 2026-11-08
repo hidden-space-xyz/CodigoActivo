@@ -31,3 +31,18 @@ export function signupAccess(
   if (event.status !== 'earlySignupOpen') return 'closed'
   return earlySignupEligible ? 'open' : 'earlyOnly'
 }
+
+/**
+ * Next instant after `now`, in epoch milliseconds, at which early signup opens, signup opens or
+ * signup closes, so the stage of the event changes; `null` once all of them have passed.
+ */
+export function nextSignupChange(
+  event: Pick<EventDetail, 'earlySignupStartsAt' | 'signupStartsAt' | 'signupEndsAt'>,
+  now: number,
+): number | null {
+  const upcoming = [event.earlySignupStartsAt, event.signupStartsAt, event.signupEndsAt]
+    .filter((instant): instant is string => instant !== null)
+    .map((instant) => Date.parse(instant))
+    .filter((time) => time > now)
+  return upcoming.length > 0 ? Math.min(...upcoming) : null
+}

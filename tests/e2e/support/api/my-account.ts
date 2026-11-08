@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
+import type { AuthenticatorSetupRequest } from '@contract/authenticatorSetupRequest'
 import type { AuthenticatorSetupResponse } from '@contract/authenticatorSetupResponse'
+import type { ConfirmationCodeRequest } from '@contract/confirmationCodeRequest'
 import type { EventCertificateResponse } from '@contract/eventCertificateResponse'
 import type { EventHistoryResponse } from '@contract/eventHistoryResponse'
 import type { MyConsentResponse } from '@contract/myConsentResponse'
@@ -10,6 +12,7 @@ import { Secret, TOTP } from 'otpauth'
 import { PASSWORD } from '../config/environment'
 import { birthDateForAge } from '../data/time'
 import type { Actor } from '../fixtures/actors'
+import { codeIn, SUBJECTS, type Mailbox } from '../mail/mailbox'
 import type { Dependent } from './accounts'
 import type { ApiClient } from './api-client'
 
@@ -141,11 +144,33 @@ export class AuthenticatorApp {
   }
 }
 
-/** Replaces the emailed code of the signed-in person of `api` with an authenticator application. */
-export async function enrollAuthenticator(api: ApiClient): Promise<AuthenticatorApp> {
+/**
+ * Replaces the emailed code of the signed-in person of `api` with an authenticator application,
+ * proving the emailed second factor with the code that reaches `email` first.
+ */
+export async function enrollAuthenticator(
+  api: ApiClient,
+  mailbox: Mailbox,
+  email: string,
+): Promise<AuthenticatorApp> {
+  const sentAfter = new Date()
+  const codeRequest: ConfirmationCodeRequest = {
+    currentPassword: PASSWORD,
+    purpose: 'AuthenticatorSetup',
+  }
+  await api.post('/api/me/confirmation-code', codeRequest)
+  const emailed = await mailbox.waitFor({
+    to: email,
+    subject: SUBJECTS.authenticatorSetupCode,
+    sentAfter,
+  })
+  const setupRequest: AuthenticatorSetupRequest = {
+    currentPassword: PASSWORD,
+    code: codeIn(emailed),
+  }
   const { sharedKey } = await api.post<AuthenticatorSetupResponse>(
     '/api/auth/two-factor/authenticator/setup',
-    { currentPassword: PASSWORD },
+    setupRequest,
   )
   const app = new AuthenticatorApp(sharedKey)
   await api.post('/api/auth/two-factor/authenticator/confirm', { code: await app.nextCode() })

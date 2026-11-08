@@ -99,7 +99,7 @@ public sealed class RequestBlockedDataConsultationCodeCommandHandler(
         CancellationToken ct
     )
     {
-        if (!PasswordAttemptGuard.StillVerified(user, verifiedHash))
+        if (!PasswordAttemptGuard.StillVerified(user, verifiedHash, clock.UtcNow))
         {
             return CurrentPasswordIncorrect();
         }

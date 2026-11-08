@@ -26,6 +26,7 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
         IAsyncLifetime
 {
     private static readonly DateTimeOffset Fixed = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
     private static readonly Guid UserId = new("cccccccc-0000-0000-0000-000000000001");
     private static readonly Guid FileId = new("cccccccc-0000-0000-0000-000000000002");
@@ -290,7 +291,6 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
         var save = () => uow.SaveChangesAsync(Ct);
 
         var thrown = await save.Should().ThrowAsync<ConcurrentUpdateException>();
-        thrown.Which.EntityType.Should().Be<User>();
         thrown.Which.InnerException.Should().BeOfType<DbUpdateConcurrencyException>();
         await using var verify = postgres.CreateContext();
         var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
@@ -311,7 +311,7 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
                 async attempt =>
                 {
                     await users.LockPasswordStateAsync(user, attempt);
-                    user.RecordPasswordFailure(5, Fixed);
+                    user.RecordPasswordFailure(Fixed, 5, LockoutDuration);
                     await users.SavePasswordStateAsync(user, attempt);
                     return true;
                 },
@@ -350,7 +350,7 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
                 async attempt =>
                 {
                     await users.LockPasswordStateAsync(user, attempt);
-                    user.RecordPasswordFailure(5, Fixed);
+                    user.RecordPasswordFailure(Fixed, 5, LockoutDuration);
                     await users.SavePasswordStateAsync(user, attempt);
                     return true;
                 },
@@ -461,8 +461,8 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
 
         await using var verify = postgres.CreateContext();
         (await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct))
-            .PasswordLockout.LockedAt.Should()
-            .Be(Fixed);
+            .PasswordLockout.LockedUntil.Should()
+            .Be(Fixed + LockoutDuration);
     }
 
     [Fact]
@@ -491,7 +491,7 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
 
         await using var verify = postgres.CreateContext();
         var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
-        stored.PasswordLockout.IsLocked.Should().BeFalse();
+        stored.PasswordLockout.IsLocked(Fixed).Should().BeFalse();
         stored.PasswordLockout.FailedAttempts.Should().Be(0);
     }
 
@@ -533,7 +533,7 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
             await using (var meanwhile = postgres.CreateContext())
             {
                 var committed = await meanwhile.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
-                committed.PasswordLockout.IsLocked.Should().BeTrue();
+                committed.PasswordLockout.IsLocked(Fixed).Should().BeTrue();
                 committed.StaffRole.Should().Be(StaffRole.None);
                 committed.IsPrivacyOfficer.Should().BeFalse();
             }
@@ -551,7 +551,7 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
 
         await using var verify = postgres.CreateContext();
         var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
-        stored.PasswordLockout.IsLocked.Should().BeTrue();
+        stored.PasswordLockout.IsLocked(Fixed).Should().BeTrue();
         stored.StaffRole.Should().Be(StaffRole.Administrator);
         stored.IsPrivacyOfficer.Should().BeTrue();
     }
@@ -565,7 +565,7 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
         var users = new UserRepository(db, uow);
         var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
         user.ChangeType(UserType.Sponsor, Fixed);
-        user.RecordPasswordFailure(1, Fixed);
+        user.RecordPasswordFailure(Fixed, 1, LockoutDuration);
 
         await users.SavePasswordStateAsync(user, Ct);
 
@@ -573,7 +573,7 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
         user.PullDomainEvents().Should().Equal(new UserTypeChanged(SeededUserId));
         await using var verify = postgres.CreateContext();
         var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
-        stored.PasswordLockout.LockedAt.Should().Be(Fixed);
+        stored.PasswordLockout.LockedUntil.Should().Be(Fixed + LockoutDuration);
         stored.UserType.Should().Be(UserType.Member);
     }
 
@@ -584,7 +584,7 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
     )
     {
         await users.LockPasswordStateAsync(user, attempt);
-        user.RecordPasswordFailure(1, Fixed);
+        user.RecordPasswordFailure(Fixed, 1, LockoutDuration);
         await users.SavePasswordStateAsync(user, attempt);
         return true;
     }

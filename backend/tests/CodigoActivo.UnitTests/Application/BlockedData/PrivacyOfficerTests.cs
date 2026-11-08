@@ -25,15 +25,10 @@ public sealed class PrivacyOfficerTests
     private User SignedIn(
         bool isPrivacyOfficer = true,
         StaffRole staffRole = StaffRole.Administrator,
-        Guid? statusId = null,
         TwoFactorMethod method = TwoFactorMethod.Authenticator
     )
     {
-        var user = NewUser(
-            staffRole: staffRole,
-            isPrivacyOfficer: isPrivacyOfficer,
-            statusId: statusId
-        );
+        var user = NewUser(staffRole: staffRole, isPrivacyOfficer: isPrivacyOfficer);
         Persisted.Overwrite(user, new { TwoFactorMethod = method });
         currentUser.Id = user.Id;
         users.GetByIdAsync(user.Id, Arg.Any<CancellationToken>()).Returns(user);
@@ -67,16 +62,6 @@ public sealed class PrivacyOfficerTests
     public async Task SignedInOfficerAsyncAnotherAdministratorIsRefused()
     {
         SignedIn(isPrivacyOfficer: false);
-
-        var result = await sut.SignedInOfficerAsync(TestContext.Current.CancellationToken);
-
-        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.BlockedDataOfficerOnly);
-    }
-
-    [Fact]
-    public async Task SignedInOfficerAsyncBlockedAccountIsRefused()
-    {
-        SignedIn(statusId: KnownIds.UserStatusTypes.Blocked);
 
         var result = await sut.SignedInOfficerAsync(TestContext.Current.CancellationToken);
 

@@ -1,4 +1,5 @@
 using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Accounts.Notifications;
@@ -75,14 +76,16 @@ public interface IAccountEmailComposer
     public EmailMessage LoginCode(EmailRecipient recipient, string code, TimeSpan lifetime);
 
     /// <summary>
-    /// Composes the message carrying the code that confirms an account deletion.
+    /// Composes the message carrying the code that confirms a change of the account.
     /// </summary>
     /// <param name="recipient">Account holder receiving the message.</param>
-    /// <param name="code">One-time deletion code.</param>
+    /// <param name="purpose">Change the code confirms, which the message names.</param>
+    /// <param name="code">One-time confirmation code.</param>
     /// <param name="lifetime">Validity of the code.</param>
     /// <returns>The composed message.</returns>
-    public EmailMessage AccountDeletionCode(
+    public EmailMessage ConfirmationCode(
         EmailRecipient recipient,
+        ConfirmationCodePurpose purpose,
         string code,
         TimeSpan lifetime
     );

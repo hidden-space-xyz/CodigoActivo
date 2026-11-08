@@ -6,7 +6,6 @@
  */
 
 export * from './accountAuditEntryResponse';
-export * from './accountDeletionCodeRequest';
 export * from './activityModalityTypeResponse';
 export * from './activityResponse';
 export * from './activityResponsePagedResult';
@@ -46,6 +45,8 @@ export * from './blockedDataSearch';
 export * from './changeAssignmentRoleRequest';
 export * from './changeAssignmentStatusRequest';
 export * from './changePasswordRequest';
+export * from './confirmationCodePurpose';
+export * from './confirmationCodeRequest';
 export * from './confirmAuthenticatorRequest';
 export * from './createActivityRequest';
 export * from './createEventCategoryTypeRequest';

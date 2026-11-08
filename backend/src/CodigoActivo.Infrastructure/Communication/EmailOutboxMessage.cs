@@ -89,11 +89,11 @@ public class EmailOutboxMessage
     public DateTimeOffset? ExpiresAt { get; set; }
 
     /// <summary>
-    /// Gets or sets how many delivery attempts have been started. The claim increments it together
-    /// with the lease, so an attempt counts even when the process delivering it dies, and every
-    /// result is written back only while it still holds the attempt the worker claimed. A message
-    /// the worker hands back untried, because the delivery paused, its recipient must wait or the
-    /// host is stopping, gets its attempt back.
+    /// Gets or sets how many delivery attempts have been started. The claim increments it and
+    /// leaves the message due, so an attempt counts even when the process delivering it dies and
+    /// the next start claims the message again at once. A message the worker hands back untried,
+    /// because the delivery paused, its recipient must wait or the host is stopping, gets its
+    /// attempt back.
     /// </summary>
     public int AttemptCount { get; set; }
 
@@ -103,14 +103,6 @@ public class EmailOutboxMessage
     /// untried, the time it may be tried again.
     /// </summary>
     public DateTimeOffset NextAttemptAt { get; set; }
-
-    /// <summary>
-    /// Gets or sets the UTC timestamp until which a worker holds the message;
-    /// <see langword="null"/> before the first claim and once a failed attempt is rescheduled or
-    /// the message is handed back. A row whose lease has passed is claimable again, so a process
-    /// that died mid-send neither loses the message nor blocks it forever.
-    /// </summary>
-    public DateTimeOffset? LockedUntil { get; set; }
 
     /// <summary>
     /// Gets or sets the exception type and message of the most recent failed attempt that was

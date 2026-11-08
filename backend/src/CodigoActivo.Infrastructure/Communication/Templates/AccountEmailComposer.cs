@@ -1,6 +1,7 @@
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Notifications;
+using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Application.Common;
 using CodigoActivo.Domain.Users;
 
@@ -99,16 +100,18 @@ public sealed class AccountEmailComposer(ApplicationOptions application, IClock 
     }
 
     /// <inheritdoc />
-    public EmailMessage AccountDeletionCode(
+    public EmailMessage ConfirmationCode(
         EmailRecipient recipient,
+        ConfirmationCodePurpose purpose,
         string code,
         TimeSpan lifetime
     )
     {
         ArgumentNullException.ThrowIfNull(recipient);
-        return AccountDeletionCodeEmail.Create(
+        return ConfirmationCodeEmail.Create(
             recipient.Address,
             recipient.Name,
+            purpose,
             code,
             SiteUrl,
             lifetime

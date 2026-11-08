@@ -15,8 +15,8 @@ public static class EmailTopics
     public const int MaxLength = 100;
 
     /// <summary>
-    /// Topic of the codes that confirm a login, an account deletion or a consultation of the
-    /// blocked data, which share one stored code per account.
+    /// Topic of the codes that confirm a login, a change of the own account or a consultation of
+    /// the blocked data, which share one stored code per account.
     /// </summary>
     public const string AccountCode = "account-code";
 

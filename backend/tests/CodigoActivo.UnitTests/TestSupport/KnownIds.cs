@@ -21,7 +21,6 @@ public static class KnownIds
     {
         public static readonly Guid Pending = CatalogIds.UserStatuses.IdOf(UserStatus.Pending);
         public static readonly Guid Active = CatalogIds.UserStatuses.IdOf(UserStatus.Active);
-        public static readonly Guid Blocked = CatalogIds.UserStatuses.IdOf(UserStatus.Blocked);
         public static readonly Guid Dependent = CatalogIds.UserStatuses.IdOf(UserStatus.Dependent);
     }
 

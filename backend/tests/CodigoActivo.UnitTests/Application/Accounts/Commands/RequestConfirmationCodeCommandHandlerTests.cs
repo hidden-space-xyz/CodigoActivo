@@ -19,7 +19,7 @@ using TwoFactorMethod = CodigoActivo.Domain.Users.TwoFactorMethod;
 
 namespace CodigoActivo.UnitTests.Application.Accounts.Commands;
 
-public sealed class RequestAccountDeletionCodeCommandHandlerTests
+public sealed class RequestConfirmationCodeCommandHandlerTests
 {
     private const string Password = "Str0ngPass!23";
 
@@ -33,9 +33,9 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     private readonly PasswordLockoutOptions lockout = new();
     private readonly TestCurrentUser currentUser = new();
     private readonly CommittedEvents events;
-    private readonly RequestAccountDeletionCodeCommandHandler sut;
+    private readonly RequestConfirmationCodeCommandHandler sut;
 
-    public RequestAccountDeletionCodeCommandHandlerTests()
+    public RequestConfirmationCodeCommandHandlerTests()
     {
         var hasher = new FakePasswordHasher();
         var accountEmails = new AccountEmails(
@@ -55,9 +55,9 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
                     NullLogger<AccountSecurityNotifier>.Instance
                 )
             ),
-            new SessionsEndOnPasswordReplacedOrLocked(sessions)
+            new SessionsEndOnPasswordReplaced(sessions)
         );
-        sut = new RequestAccountDeletionCodeCommandHandler(
+        sut = new RequestConfirmationCodeCommandHandler(
             users,
             AccountLocks.Create(users, uow),
             currentUser,
@@ -75,19 +75,24 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     private User Signed(
         bool isAdmin = false,
         string? passwordHash = FakePasswordHasher.Prefix + Password,
-        string? email = "ana@test.com"
+        string? email = "ana@test.com",
+        Guid? id = null
     )
     {
-        var user = NewUser(isAdmin: isAdmin, email: email, passwordHash: passwordHash);
+        var user = NewUser(id: id, isAdmin: isAdmin, email: email, passwordHash: passwordHash);
         users.Finds(user);
         return user;
     }
 
-    private Task<Result> RequestAsync(Guid userId, string password = Password)
+    private Task<Result> RequestAsync(
+        Guid userId,
+        string password = Password,
+        ConfirmationCodePurpose purpose = ConfirmationCodePurpose.AccountDeletion
+    )
     {
         currentUser.Id = UserId.From(userId);
         return sut.HandleAsync(
-            new AccountDeletionCodeRequest(password).ToCommand(),
+            new ConfirmationCodeRequest(password, purpose).ToCommand(),
             TestContext.Current.CancellationToken
         );
     }
@@ -123,6 +128,22 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         await AssertNotSavedAsync();
     }
 
+    [Theory]
+    [InlineData(ConfirmationCodePurpose.EmailChange)]
+    [InlineData(ConfirmationCodePurpose.AuthenticatorSetup)]
+    public async Task HandleAsyncInitialAdministratorEmailsTheCodeOfAnyOtherChange(
+        ConfirmationCodePurpose purpose
+    )
+    {
+        var user = Signed(isAdmin: true, id: KnownIds.Users.InitialAdministrator);
+
+        var result = await RequestAsync(user.Id.Value, purpose: purpose);
+
+        result.IsSuccess.Should().BeTrue();
+        composer.Composed.Should().ContainSingle().Which.Purpose.Should().Be(purpose);
+        user.LoginCode.Hash.Should().NotBeNull();
+    }
+
     [Fact]
     public async Task HandleAsyncAdministratorEmailsTheCode()
     {
@@ -149,7 +170,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncRepeatedWrongPasswordsLockTheAccountAndItsCommitWarnsTheOwner()
+    public async Task HandleAsyncRepeatedWrongPasswordsLockTheAccountAndItsCommitWarnsTheOwnerOnly()
     {
         var user = Signed();
 
@@ -161,11 +182,12 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
                 ErrorKind.Validation,
                 ApplicationErrorCode.UserCurrentPasswordIncorrect
             );
-            user.PasswordLockout.FailedAttempts.Should().Be(attempt);
-            user.PasswordLockout.IsLocked.Should().Be(attempt == lockout.MaxFailedAttempts);
+            var locked = attempt == lockout.MaxFailedAttempts;
+            user.PasswordLockout.FailedAttempts.Should().Be(locked ? 0 : attempt);
+            user.PasswordLockout.IsLocked(clock.UtcNow).Should().Be(locked);
         }
 
-        user.PasswordLockout.LockedAt.Should().Be(clock.UtcNow);
+        user.PasswordLockout.LockedUntil.Should().Be(clock.UtcNow + lockout.LockoutDuration);
         user.LoginCode.Hash.Should().BeNull();
         await sessions
             .DidNotReceiveWithAnyArgs()
@@ -174,7 +196,9 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
 
         await events.PublishAsync(user);
 
-        await sessions.Received(1).EndAllAsync(user.Id, Arg.Any<CancellationToken>());
+        await sessions
+            .DidNotReceiveWithAnyArgs()
+            .EndAllAsync(default, TestContext.Current.CancellationToken);
         composer
             .Composed.Should()
             .Equal(
@@ -196,7 +220,7 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         var user = Signed();
         Persisted.Overwrite(
             user,
-            new { PasswordLockout = new { LockedAt = clock.UtcNow.AddMinutes(-5) } }
+            new { PasswordLockout = new { LockedUntil = clock.UtcNow.AddMinutes(10) } }
         );
 
         var result = await RequestAsync(user.Id.Value);
@@ -218,13 +242,18 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         emailSender.Sent.Should().BeEmpty();
     }
 
-    [Fact]
-    public async Task HandleAsyncAuthenticatorUserReturnsConflictBecauseNoCodeIsEmailed()
+    [Theory]
+    [InlineData(ConfirmationCodePurpose.AccountDeletion)]
+    [InlineData(ConfirmationCodePurpose.EmailChange)]
+    [InlineData(ConfirmationCodePurpose.AuthenticatorSetup)]
+    public async Task HandleAsyncAuthenticatorUserReturnsConflictBecauseNoCodeIsEmailed(
+        ConfirmationCodePurpose purpose
+    )
     {
         var user = Signed();
         Persisted.Overwrite(user, new { TwoFactorMethod = TwoFactorMethod.Authenticator });
 
-        var result = await RequestAsync(user.Id.Value);
+        var result = await RequestAsync(user.Id.Value, purpose: purpose);
 
         result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.TwoFactorResendNotAllowed);
         emailSender.Sent.Should().BeEmpty();
@@ -301,7 +330,8 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         var email = composer.Composed.Should().ContainSingle().Subject;
-        email.Name.Should().Be(nameof(IAccountEmailComposer.AccountDeletionCode));
+        email.Name.Should().Be(nameof(IAccountEmailComposer.ConfirmationCode));
+        email.Purpose.Should().Be(ConfirmationCodePurpose.AccountDeletion);
         email.Recipient.Should().Be(new EmailRecipient("ana@test.com", user.FirstName));
         email.Lifetime.Should().Be(options.ChallengeLifetime);
         var code = email.Code;
@@ -323,6 +353,25 @@ public sealed class RequestAccountDeletionCodeCommandHandlerTests
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         emailSender.Sent.Should().BeEmpty();
         user.LoginCode.Hash.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData(ConfirmationCodePurpose.EmailChange)]
+    [InlineData(ConfirmationCodePurpose.AuthenticatorSetup)]
+    public async Task HandleAsyncOtherChangeEmailsItsCodeToTheCurrentAddressAsTheLoginCode(
+        ConfirmationCodePurpose purpose
+    )
+    {
+        var user = Signed();
+
+        var result = await RequestAsync(user.Id.Value, purpose: purpose);
+
+        result.IsSuccess.Should().BeTrue();
+        var email = composer.Composed.Should().ContainSingle().Subject;
+        email.Name.Should().Be(nameof(IAccountEmailComposer.ConfirmationCode));
+        email.Purpose.Should().Be(purpose);
+        email.Recipient.Should().Be(new EmailRecipient("ana@test.com", user.FirstName));
+        user.LoginCode.Hash.Should().Be(FakeOneTimeCodeHasher.Prefix + email.Code);
     }
 
     [Fact]

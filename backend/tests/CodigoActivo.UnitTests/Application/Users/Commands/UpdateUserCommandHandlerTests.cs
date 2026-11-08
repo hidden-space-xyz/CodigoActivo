@@ -3,6 +3,7 @@ using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Accounts.EmailAddresses;
 using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Accounts.SecondFactor;
@@ -24,6 +25,8 @@ namespace CodigoActivo.UnitTests.Application.Users.Commands;
 public sealed class UpdateUserCommandHandlerTests
 {
     private const string ActingPassword = "acting-user-password";
+    private const string EmailCode = "482913";
+    private const string Secret = "JBSWY3DPEHPK3PXP";
 
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly FakePasswordHasher hasher = new();
@@ -35,6 +38,8 @@ public sealed class UpdateUserCommandHandlerTests
     private readonly RecordingLogger<EmailChangeLinkIssuer> issuerLogger = new();
     private readonly FakeDisposableEmailDomainStore disposableDomains = new();
     private readonly AccountVerificationOptions verification = new();
+    private readonly ITotpService totp = Substitute.For<ITotpService>();
+    private readonly TwoFactorOptions twoFactor = new() { MaxFailedAttempts = 2 };
     private readonly User actingUser;
     private readonly TestCurrentUser currentUser = new();
     private readonly FakeReadStore readStore = new();
@@ -65,10 +70,12 @@ public sealed class UpdateUserCommandHandlerTests
                     composer,
                     verification,
                     new PasswordResetOptions(),
-                    new TwoFactorOptions()
+                    twoFactor
                 ),
                 issuerLogger
-            )
+            ),
+            AccountLocks.Create(users, uow),
+            SecondFactorGuards.Create(uow, clock, totp, twoFactor)
         );
     }
 
@@ -90,6 +97,17 @@ public sealed class UpdateUserCommandHandlerTests
 
     private void EditOwnAccount(User? newAddressHolder = null)
     {
+        Persisted.Overwrite(
+            actingUser,
+            new
+            {
+                LoginCode = new
+                {
+                    Hash = FakeOneTimeCodeHasher.Prefix + EmailCode,
+                    ExpiresAt = clock.UtcNow.AddMinutes(5),
+                },
+            }
+        );
         users.FindReturns(actingUser, actingUser);
         users
             .GetByEmailAsync(Arg.Any<EmailAddress>(), Arg.Any<CancellationToken>())
@@ -99,7 +117,8 @@ public sealed class UpdateUserCommandHandlerTests
     private static UpdateUserRequest ContactChange(
         string email,
         string phone = "555-0100",
-        string firstName = "Ana"
+        string firstName = "Ana",
+        string? code = EmailCode
     )
     {
         return new UpdateUserRequest(
@@ -112,7 +131,8 @@ public sealed class UpdateUserCommandHandlerTests
             false,
             Gender.Female,
             null,
-            ActingPassword
+            ActingPassword,
+            Code: code
         );
     }
 
@@ -515,8 +535,8 @@ public sealed class UpdateUserCommandHandlerTests
     [Fact]
     public async Task HandleAsyncOwnNewEmailWaitsForTheLinkEmailedToIt()
     {
-        EditOwnAccount();
         clock.UtcNow = new DateTimeOffset(2026, 9, 1, 0, 0, 0, TimeSpan.Zero);
+        EditOwnAccount();
 
         var result = await HandleAsync(
             actingUser.Id.Value,
@@ -541,6 +561,114 @@ public sealed class UpdateUserCommandHandlerTests
                 "another account asking for the same address never replaces this link"
             );
         actingUser.EmailChange.CodeHash.Should().Be(FakeOneTimeCodeHasher.Prefix + link.Code);
+        actingUser.LoginCode.Hash.Should().BeNull("the second-factor code is spent by the change");
+        await users.Received(1).LockAsync(actingUser, Arg.Any<CancellationToken>());
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("   ")]
+    public async Task HandleAsyncOwnNewEmailWithoutCodeReturnsBadRequestWithoutCountingIt(
+        string? code
+    )
+    {
+        EditOwnAccount();
+
+        var result = await HandleAsync(
+            actingUser.Id.Value,
+            ContactChange("new@test.com", code: code)
+        );
+
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
+        actingUser.EmailChange.NewEmail.Should().BeNull();
+        actingUser.TwoFactorLockout.FailedAttempts.Should().Be(0);
+        actingUser.LoginCode.Hash.Should().NotBeNull();
+        emailSender.Sent.Should().BeEmpty();
+        await AssertNotSavedAsync();
+    }
+
+    [Fact]
+    public async Task HandleAsyncOwnNewEmailWithWrongCodeCountsTheFailureAndChangesNothing()
+    {
+        EditOwnAccount();
+
+        var result = await HandleAsync(
+            actingUser.Id.Value,
+            ContactChange("new@test.com", phone: "555-0199", code: "000000")
+        );
+
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
+        actingUser.EmailChange.NewEmail.Should().BeNull();
+        actingUser.Phone!.Value.Should().Be("555-0100");
+        actingUser.TwoFactorLockout.FailedAttempts.Should().Be(1);
+        actingUser.LoginCode.Hash.Should().NotBeNull("a wrong guess must not consume the code");
+        emailSender.Sent.Should().BeEmpty();
+        await users.Received(1).LockAsync(actingUser, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncOwnNewEmailAfterRepeatedWrongCodesIsRefusedByTheSecondFactorLock()
+    {
+        EditOwnAccount();
+        for (var attempt = 0; attempt < twoFactor.MaxFailedAttempts; attempt++)
+        {
+            var wrong = await HandleAsync(
+                actingUser.Id.Value,
+                ContactChange("new@test.com", code: "000000")
+            );
+            wrong.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
+        }
+
+        var result = await HandleAsync(actingUser.Id.Value, ContactChange("new@test.com"));
+
+        result.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.TwoFactorLocked);
+        actingUser.EmailChange.NewEmail.Should().BeNull();
+        emailSender.Sent.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task HandleAsyncOwnNewEmailOfAnAuthenticatorUserTakesTheAppCode()
+    {
+        Persisted.Overwrite(
+            actingUser,
+            new
+            {
+                TwoFactorMethod = CodigoActivo.Domain.Users.TwoFactorMethod.Authenticator,
+                Authenticator = new { Key = FakeSecretProtector.Prefix + Secret },
+            }
+        );
+        totp.MatchStep(Secret, "123456", clock.UtcNow).Returns(50);
+        EditOwnAccount();
+
+        var refused = await HandleAsync(actingUser.Id.Value, ContactChange("new@test.com"));
+        var result = await HandleAsync(
+            actingUser.Id.Value,
+            ContactChange("new@test.com", code: "123456")
+        );
+
+        refused.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TwoFactorCodeInvalid);
+        result.IsSuccess.Should().BeTrue();
+        actingUser.EmailChange.NewEmail!.Value.Should().Be("new@test.com");
+        actingUser.Authenticator.LastUsedStep.Should().Be(50);
+    }
+
+    [Fact]
+    public async Task HandleAsyncOnlyThePhoneChangedNeedsNoCode()
+    {
+        EditOwnAccount();
+
+        var result = await HandleAsync(
+            actingUser.Id.Value,
+            ContactChange("acting@test.com", phone: "555-0199", code: null)
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        actingUser.Phone!.Value.Should().Be("555-0199");
+        actingUser.LoginCode.Hash.Should().NotBeNull();
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .LockAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]

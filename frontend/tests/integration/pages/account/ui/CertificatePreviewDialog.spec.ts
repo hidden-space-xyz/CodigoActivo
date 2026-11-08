@@ -16,12 +16,10 @@ vi.mock('@/pages/account/lib/certificate-sheet', async (importOriginal) => ({
 
 function deferred() {
   let resolve: () => void = () => undefined
-  let reject: (error: unknown) => void = () => undefined
-  const promise = new Promise<void>((onResolve, onReject) => {
+  const promise = new Promise<void>((onResolve) => {
     resolve = onResolve
-    reject = onReject
   })
-  return { promise, resolve, reject }
+  return { promise, resolve }
 }
 
 async function renderDialog(props: Record<string, unknown> = {}) {
@@ -79,27 +77,6 @@ describe('CertificatePreviewDialog', () => {
     await flushPromises()
 
     expect(veilText()).toBe(t('pages.account.certificates.renderError'))
-  })
-
-  it('ignores the outcome of a superseded paint when another certificate is opened', async () => {
-    const first = deferred()
-    const second = deferred()
-    vi.mocked(renderCertificatePreview)
-      .mockReturnValueOnce(first.promise)
-      .mockReturnValueOnce(second.promise)
-
-    const wrapper = await renderDialog()
-    await wrapper.setProps({ certificate: buildCertificate({ eventId: 'event-2' }) })
-    await flushPromises()
-    expect(renderCertificatePreview).toHaveBeenCalledTimes(2)
-
-    first.reject(new Error('stale failure'))
-    await flushPromises()
-    expect(veilText()).toBe(t('common.loading'))
-
-    second.resolve()
-    await flushPromises()
-    expect(veilText()).toBeUndefined()
   })
 
   it('emits downloads for the previewed certificate in each format', async () => {

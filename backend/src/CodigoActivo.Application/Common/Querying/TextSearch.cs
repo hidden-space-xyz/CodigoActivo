@@ -4,17 +4,19 @@ using System.Reflection;
 namespace CodigoActivo.Application.Common.Querying;
 
 /// <summary>
-/// Matches search terms in the database without regard to case or to the acute accents of vowels.
+/// Matches search terms in the database without regard to case, to the acute, grave, circumflex or
+/// diaeresis accent of a vowel or to the cedilla of a c; ñ stays a letter of its own.
 /// </summary>
 public static class TextSearch
 {
     private static readonly (string Accented, string Plain)[] Folds =
     [
-        ("á", "a"),
-        ("é", "e"),
-        ("í", "i"),
-        ("ó", "o"),
-        ("ú", "u"),
+        .. FoldsOf("áàâä", "a"),
+        .. FoldsOf("éèêë", "e"),
+        .. FoldsOf("íìîï", "i"),
+        .. FoldsOf("óòôö", "o"),
+        .. FoldsOf("úùûü", "u"),
+        .. FoldsOf("ç", "c"),
     ];
 
     private static readonly MethodInfo ToLowerMethod = typeof(string).GetMethod(
@@ -33,8 +35,8 @@ public static class TextSearch
     )!;
 
     /// <summary>
-    /// Trims a text, lowercases it and drops the acute accent of its vowels, the same folding
-    /// <see cref="Contains{T}"/> applies to the text it searches.
+    /// Trims a text, lowercases it and drops the accents of its vowels and the cedilla, the same
+    /// folding <see cref="Contains{T}"/> applies to the text it searches.
     /// </summary>
     /// <param name="value">Search term, or a text to compare or order the same way.</param>
     /// <returns>The normalized text.</returns>
@@ -51,8 +53,8 @@ public static class TextSearch
 
     /// <summary>
     /// Builds a predicate, translatable to SQL, that tells whether the selected text, lowercased
-    /// with the acute accent of its vowels dropped, contains the term. A <see langword="null"/>
-    /// text counts as empty, and the term is sent as a query parameter.
+    /// with the accents of its vowels and the cedilla dropped, contains the term. A
+    /// <see langword="null"/> text counts as empty, and the term is sent as a query parameter.
     /// </summary>
     /// <typeparam name="T">Type of the rows filtered.</typeparam>
     /// <param name="selector">Text of the row searched.</param>
@@ -105,6 +107,14 @@ public static class TextSearch
         return string.IsNullOrWhiteSpace(term)
             ? source
             : source.Where(Contains(selector, Normalize(term)));
+    }
+
+    private static IEnumerable<(string Accented, string Plain)> FoldsOf(
+        string accented,
+        string plain
+    )
+    {
+        return accented.Select(letter => (char.ToString(letter), plain));
     }
 
     private sealed record Term(string Value);

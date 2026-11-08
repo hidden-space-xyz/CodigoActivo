@@ -30,21 +30,18 @@ const canvasEl = ref<HTMLCanvasElement | null>(null)
 const painting = ref(false)
 const failed = ref(false)
 
-let renderToken = 0
-
 watch(
   () => [props.certificate, canvasEl.value] as const,
   async ([certificate, canvas]) => {
     if (!certificate || !canvas) return
-    const token = ++renderToken
     painting.value = true
     failed.value = false
     try {
       await renderCertificatePreview(canvas, certificate, t)
     } catch {
-      if (token === renderToken) failed.value = true
+      failed.value = true
     } finally {
-      if (token === renderToken) painting.value = false
+      painting.value = false
     }
   },
   { immediate: true, flush: 'post' },

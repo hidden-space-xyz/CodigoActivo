@@ -56,8 +56,9 @@ export interface UserRelationFilter {
  * and giving any staff role but none need the caller's password: a refused one is shown in the
  * dialog instead of a toast. Only the superadministrator deletes, after confirmation; they can
  * never be deleted, and the caller can neither change their own type nor delete their own account
- * here; the block reasons explain why. Designating the officer away from or onto the caller
- * reloads their session. Call it in `setup`.
+ * here; the block reasons explain why. The caller is not offered a reset of their own second
+ * factor, which they change from «Mi cuenta» with a current code. Designating the officer away
+ * from or onto the caller reloads their session. Call it in `setup`.
  */
 export function useUsersAdmin() {
   const { t } = useI18n()
@@ -175,6 +176,10 @@ export function useUsersAdmin() {
     return session.isSuperAdmin && !user.parentId && !isOwnAccount(user)
   }
 
+  function mayResetTwoFactor(user: User): boolean {
+    return Boolean(user.email) && !isOwnAccount(user)
+  }
+
   function mayDesignatePrivacyOfficer(user: User): boolean {
     return session.isSuperAdmin && user.staffRole === 'Administrator' && !user.isPrivacyOfficer
   }
@@ -290,6 +295,7 @@ export function useUsersAdmin() {
     designatingOfficer: designateOfficer.isPending,
     resetDialog,
     resetError,
+    mayResetTwoFactor,
     openResetTwoFactor,
     resetUserTwoFactor,
     resettingTwoFactor: resetTwoFactor.isPending,

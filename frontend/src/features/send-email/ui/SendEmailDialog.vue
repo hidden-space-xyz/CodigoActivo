@@ -137,7 +137,7 @@ function send(): void {
     :title="$t('features.sendEmail.header')"
     width="min(92vw, 560px)"
     :show-close="!sending"
-    :close-on-press-escape="!sending"
+    :close-on-press-escape="false"
     :close-on-click-modal="false"
     @update:model-value="close"
   >

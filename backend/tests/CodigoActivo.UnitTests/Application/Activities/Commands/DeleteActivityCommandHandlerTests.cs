@@ -29,7 +29,78 @@ public sealed class DeleteActivityCommandHandlerTests
 
     public DeleteActivityCommandHandlerTests()
     {
-        sut = new DeleteActivityCommandHandler(activities, ParticipationErasers.Create(store, uow));
+        sut = new DeleteActivityCommandHandler(
+            activities,
+            currentUser,
+            ParticipationErasers.Create(store, uow)
+        );
+    }
+
+    [Fact]
+    public async Task HandleAsyncEditorAndActivityWithSignupsReturnsForbiddenAndKeepsIt()
+    {
+        var activity = NewActivity();
+        activities.Finds(activity);
+        currentUser.IsAdmin = false;
+        store
+            .TakesParticipationAsync(
+                ParticipationDeletion.OfActivity(activity),
+                Arg.Any<CancellationToken>()
+            )
+            .Returns(true);
+
+        var result = await sut.HandleAsync(
+            new DeleteActivityCommand(activity.Id),
+            TestContext.Current.CancellationToken
+        );
+
+        result.ShouldFail(
+            ErrorKind.Forbidden,
+            ApplicationErrorCode.ParticipationDeletionRequiresAdministrator
+        );
+        activities.DidNotReceiveWithAnyArgs().Remove(Arg.Any<Activity>());
+        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncEditorAndActivityWithoutSignupsRemovesIt()
+    {
+        var activity = NewActivity();
+        activities.Finds(activity);
+        currentUser.IsAdmin = false;
+
+        var result = await sut.HandleAsync(
+            new DeleteActivityCommand(activity.Id),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        activities.Received(1).Remove(activity);
+        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsyncAdministratorRemovesTheActivityWithoutAskingForItsSignups()
+    {
+        var activity = NewActivity();
+        activities.Finds(activity);
+        store
+            .TakesParticipationAsync(Arg.Any<ParticipationDeletion>(), Arg.Any<CancellationToken>())
+            .Returns(true);
+
+        var result = await sut.HandleAsync(
+            new DeleteActivityCommand(activity.Id),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        activities.Received(1).Remove(activity);
+        await store
+            .DidNotReceive()
+            .TakesParticipationAsync(
+                Arg.Any<ParticipationDeletion>(),
+                Arg.Any<CancellationToken>()
+            );
     }
 
     [Fact]

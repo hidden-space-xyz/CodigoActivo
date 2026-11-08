@@ -34,7 +34,7 @@ namespace CodigoActivo.Application.Users.Contracts;
 /// <see cref="UserProjections.UserWithType"/>.
 /// </param>
 /// <param name="Status">
-/// Stage of the account: pending verification, active, blocked or dependent.
+/// Stage of the account: pending verification, active or dependent.
 /// </param>
 /// <param name="StaffRole">Staff role of the user.</param>
 /// <param name="IsPrivacyOfficer">

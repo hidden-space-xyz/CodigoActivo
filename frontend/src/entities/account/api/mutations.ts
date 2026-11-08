@@ -3,7 +3,9 @@ import { mutationOptions } from '@tanstack/vue-query'
 import type { Translate } from '@/shared/i18n'
 
 import type {
+  AuthenticatorSetupInput,
   ChangePasswordInput,
+  ConfirmationCodeInput,
   DeleteAccountInput,
   DisableAuthenticatorInput,
   EventRatingInput,
@@ -26,7 +28,7 @@ import {
   forgotPasswordRequest,
   getAccountPersonalDataRequest,
   registerRequest,
-  requestAccountDeletionCodeRequest,
+  requestConfirmationCodeRequest,
   resendVerificationRequest,
   resetPasswordRequest,
   saveAccountEventRatingRequest,
@@ -50,10 +52,15 @@ export const accountMutations = {
     mutationOptions({
       mutationFn: (input: ChangePasswordInput) => changeAccountPasswordRequest(userId, input),
     }),
+  /** Checks the password and emails the code that confirms a change of the own account. */
+  requestConfirmationCode: () =>
+    mutationOptions({
+      mutationFn: (input: ConfirmationCodeInput) => requestConfirmationCodeRequest(input),
+    }),
   /** Starts enrolling an authenticator and resolves to the key to scan. */
   beginAuthenticatorSetup: () =>
     mutationOptions({
-      mutationFn: (currentPassword: string) => beginAuthenticatorSetupRequest(currentPassword),
+      mutationFn: (input: AuthenticatorSetupInput) => beginAuthenticatorSetupRequest(input),
     }),
   confirmAuthenticator: () =>
     mutationOptions({
@@ -82,11 +89,6 @@ export const accountMutations = {
     mutationOptions({
       mutationFn: (childId: string) => deleteAccountChildRequest(childId),
       meta: { invalidates: [accountKeys.children()] },
-    }),
-  /** Checks the password and emails the code that confirms deleting the own account. */
-  requestDeletionCode: () =>
-    mutationOptions({
-      mutationFn: (currentPassword: string) => requestAccountDeletionCodeRequest(currentPassword),
     }),
   /** Deletes the own account and the minors in its care; the API also ends the session. */
   deleteAccount: () =>

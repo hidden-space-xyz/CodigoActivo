@@ -154,9 +154,9 @@ public sealed class UserRow
     public DateTimeOffset? LoginChallengeStartedAt { get; init; }
 
     /// <summary>
-    /// Gets when the account was locked after wrong passwords.
+    /// Gets until when the account refuses every password after wrong ones.
     /// </summary>
-    public DateTimeOffset? PasswordLockedAt { get; init; }
+    public DateTimeOffset? PasswordLockedUntil { get; init; }
 
     /// <summary>
     /// Gets the dependents of a guardian.

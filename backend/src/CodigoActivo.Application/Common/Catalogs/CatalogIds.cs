@@ -20,7 +20,6 @@ public static class CatalogIds
             {
                 [UserStatus.Pending] = new("086e64b7-79e4-4b2d-a6c9-f69ff8243df1"),
                 [UserStatus.Active] = new("766f114c-6168-4be5-89f2-bae2a7a919e4"),
-                [UserStatus.Blocked] = new("37e9d1e6-1cf3-4c13-a1d8-41b86986d282"),
                 [UserStatus.Dependent] = new("45a26e12-404b-43b8-b7a7-cdf5f0fc1c4d"),
             }
         );

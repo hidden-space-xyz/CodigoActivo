@@ -1,9 +1,14 @@
 import { computed, ref } from 'vue'
 
+import type { ConfirmationCodeInput } from '@/entities/account'
 import { useForm } from '@/shared/lib/form'
 
 import { readDeletionPassword, toDeletionConfirmation, toDeletionDraft } from './deletion-form'
 import type { useDeleteAccount } from './use-delete-account'
+
+function deletionCode(currentPassword: string): ConfirmationCodeInput {
+  return { currentPassword, purpose: 'AccountDeletion' }
+}
 
 /**
  * Dialog of the account deletion: the password step asks for the password and, unless the user
@@ -40,7 +45,7 @@ export function useDeleteAccountDialog(
       codeStep.value = true
       return
     }
-    deletion.requestCode.mutate(password, {
+    deletion.requestCode.mutate(deletionCode(password), {
       onSuccess: () => {
         codeStep.value = true
       },
@@ -48,7 +53,7 @@ export function useDeleteAccountDialog(
   }
 
   function resendCode(): void {
-    deletion.requestCode.mutate(form.draft.password)
+    deletion.requestCode.mutate(deletionCode(form.draft.password))
   }
 
   function submitDeletion(): void {

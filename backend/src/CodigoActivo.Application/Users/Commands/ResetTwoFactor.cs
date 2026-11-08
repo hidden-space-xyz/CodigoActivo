@@ -1,9 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Persistence;
+using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Passwords;
 using CodigoActivo.Application.Common.Errors;
+using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -25,13 +27,17 @@ public sealed record ResetTwoFactorCommand(
 /// <summary>
 /// Executes the command to reset a user's second factor to email: it drops the authenticator, the
 /// pending login code and the open login challenge, and lifts the second-factor lock. The holder is
-/// told by email only when the account used an authenticator.
+/// told by email only when the account used an authenticator. An administrator never resets their
+/// own second factor here: they return to email from their account, which asks for the password and
+/// a current code, so a session and the password alone cannot remove it.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
+/// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="passwordAttempts">Guard that verifies, counts and locks account passwords.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class ResetTwoFactorCommandHandler(
     IUserRepository users,
+    ICurrentUser currentUser,
     PasswordAttemptGuard passwordAttempts,
     IClock clock
 ) : ICommandHandler<ResetTwoFactorCommand, Result>
@@ -43,6 +49,8 @@ public sealed class ResetTwoFactorCommandHandler(
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
     /// A task whose result reports success;
+    /// <see cref="ApplicationErrorCode.UserSelfTwoFactorResetRequiresVerification"/> for the
+    /// caller's own account, before any password is checked;
     /// <see cref="ApplicationErrorCode.UserCurrentPasswordIncorrect"/> when the administrator's
     /// password is wrong or locked, or <see cref="ApplicationErrorCode.UserNotFound"/>.
     /// </returns>
@@ -52,6 +60,11 @@ public sealed class ResetTwoFactorCommandHandler(
     )
     {
         ArgumentNullException.ThrowIfNull(command);
+
+        if (command.UserId == currentUser.RequiredId())
+        {
+            return Error.Forbidden(ApplicationErrorCode.UserSelfTwoFactorResetRequiresVerification);
+        }
 
         if (!await passwordAttempts.VerifyActingUserAsync(command.CurrentPassword, ct))
         {

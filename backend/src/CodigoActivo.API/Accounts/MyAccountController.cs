@@ -15,8 +15,8 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace CodigoActivo.API.Accounts;
 
 /// <summary>
-/// Exposes HTTP endpoints for the signed-in user to copy their personal data and delete their own
-/// account.
+/// Exposes HTTP endpoints for the signed-in user to copy their personal data, ask for the code that
+/// confirms a change of their own account and delete it.
 /// </summary>
 [ApiController]
 [Route("api/me")]
@@ -42,19 +42,21 @@ public class MyAccountController : ApiControllerBase
     }
 
     /// <summary>
-    /// Emails the one-time code that confirms deleting the signed-in user's own account. The
-    /// current password is required, and users whose second factor is an authenticator
-    /// application read their code from it instead.
+    /// Emails the one-time code that confirms a change of the signed-in user's own account:
+    /// deleting it, changing its email or enrolling an authenticator application. The current
+    /// password is required, and users whose second factor is an authenticator application read
+    /// their code from it instead.
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 204 response, or an error response.</returns>
-    [HttpPost("deletion/code")]
+    [HttpPost("confirmation-code")]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
-    public async Task<ActionResult> RequestDeletionCodeAsync(
-        [FromBody] AccountDeletionCodeRequest request,
-        [FromServices] ICommandHandler<RequestAccountDeletionCodeCommand, Result> handler,
+    [PasswordHashing]
+    public async Task<ActionResult> RequestConfirmationCodeAsync(
+        [FromBody] ConfirmationCodeRequest request,
+        [FromServices] ICommandHandler<RequestConfirmationCodeCommand, Result> handler,
         CancellationToken ct
     )
     {
@@ -72,6 +74,7 @@ public class MyAccountController : ApiControllerBase
     /// <returns>A 204 response, or an error response.</returns>
     [HttpPost("deletion")]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
+    [PasswordHashing]
     public async Task<ActionResult> DeleteAccountAsync(
         [FromBody] DeleteAccountRequest request,
         [FromServices] ICommandHandler<DeleteOwnAccountCommand, Result> handler,

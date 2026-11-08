@@ -42,6 +42,8 @@ function save(): void {
 <template>
   <el-dialog
     v-model="visible"
+    :close-on-click-modal="false"
+    :close-on-press-escape="false"
     data-testid="event-category-form-dialog"
     :title="
       category

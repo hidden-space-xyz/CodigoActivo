@@ -91,7 +91,7 @@ neither Infrastructure nor EF Core) and further conventions over the compiled as
   `ICommittedEventsHandler`s see the whole commit once (`CacheInvalidationOnCommit` evicts the tags
   `CacheTagsByEvent` maps; `ReleasedFilesCleanup` removes the files that events implementing `IReleasesFiles`
   stopped referencing, when nothing else references them) and then every `IDomainEventListener<T>` of each event
-  runs (`AssignmentDecisionNotification`, `AccountSecurityNotifications`, `SessionsEndOnPasswordReplacedOrLocked`,
+  runs (`AssignmentDecisionNotification`, `AccountSecurityNotifications`, `SessionsEndOnPasswordReplaced`,
   `AccountLockoutLog`). Effects run in the request after the commit and to their end even when the client
   disconnects; a failing effect is logged and neither stops the others nor fails the committed request. A crash
   between the commit and an effect loses that effect, because there is no transactional outbox for events
@@ -104,9 +104,8 @@ neither Infrastructure nor EF Core) and further conventions over the compiled as
   variants (`FileVariant`), the content that pages and rich text show and the thumbnail at
   `/api/files/{id}/thumbnail` that lists, cards and logos show.
 - Rules that span aggregates are domain policies (`SignupEligibility`, `SignupRoles`, `EarlySignup`,
-  `EventTimeline`, `AssignmentDecisions`, `TermsConsent`, `FeaturedSelection`,
-  `InitialAdministrator`, `Household`); `EventTimeline` also decides the stage the read side
-  shows, so it always agrees with signup.
+  `EventTimeline`, `AssignmentDecisions`, `TermsConsent`, `InitialAdministrator`, `Household`);
+  `EventTimeline` also decides the stage the read side shows, so it always agrees with signup.
   Handlers load and call the domain; the commit and the effects that follow it belong to the decorators and the
   domain events; Application collaborators only load what a policy needs or run the checks that need I/O
   (`SignupGate`, `TermsGate`, `ActivityValidator`, `EventCategoryChecker`, `DisposableEmailChecker`).
@@ -327,7 +326,8 @@ list every version under `/versions` and read one under `/versions/{version}`.
   reloads once when a lazy chunk of the previous build is gone (`stale-build-reload.ts`).
 - The SPA holds no data cache: TanStack Query refetches on every mount, focus and reconnect and drops data
   as soon as no view observes it, so freshness is decided only by the API. The one exception is the session
-  query (`GET /api/auth/me`), kept until a mutation invalidates it or the session ends.
+  query (`GET /api/auth/me`), kept until a mutation invalidates it or the session ends. The event page also
+  refetches the event and its activities two seconds after its signup next opens or closes.
 
 ### Results, validation and HTTP errors
 
@@ -451,7 +451,8 @@ dependents forms only bind fields and show its messages.
 
 - Forms use `useForm` (`shared/lib/form`) around a pure `read(draft)` that returns the problem of each field
   (a translation key in a `form.problems` group, or `true` for a red border only) and, without problems, the
-  value to send. Admin create/edit dialogs follow the `useCrudDialog` state machine.
+  value to send. Admin create/edit dialogs follow the `useCrudDialog` state machine; an admin dialog holding a
+  `<form>` closes only through its buttons, never on an outside click or Escape, so no draft is lost.
 - Admin tables render through `shared/ui/data-table`: a card with a toolbar (an optional search box bound to
   a column filter, filter pills, the result count and page actions), a chip per active filter except the
   search box, with «Limpiar filtros», the table and a pager hidden while every row fits on the smallest page.

@@ -48,10 +48,7 @@ public sealed class BlockedDataConsultationEmailTests
 
         var message = Create(Consultation, other);
 
-        message
-            .TextBody.Should()
-            .Contain("«Juzgado <b>2</b>»")
-            .And.Contain("«Persona reclamante»");
+        message.TextBody.Should().Contain("«Juzgado <b>2</b>»").And.Contain("«Persona reclamante»");
     }
 
     [Theory]

@@ -101,8 +101,9 @@ public class UsersController : ApiControllerBase
     /// <summary>
     /// Updates the selected user with the validated request. Only the user or their guardian may,
     /// never an administrator. Replacing the email or the phones requires the caller's password, so
-    /// the endpoint shares the credential rate limits, and a new email only applies once its holder
-    /// confirms it through the emailed link.
+    /// the endpoint shares the credential rate limits; replacing the email also requires a current
+    /// code of the caller's second factor, and the new email only applies once its holder confirms
+    /// it through the emailed link.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>
@@ -113,6 +114,7 @@ public class UsersController : ApiControllerBase
     [HttpPut("{userId:guid}")]
     [AllowOnlySelf(AdministratorsAllowed = false)]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
+    [PasswordHashing]
     public async Task<ActionResult<UserResponse>> UpdateAsync(
         Guid userId,
         [FromBody] UpdateUserRequest request,
@@ -164,6 +166,7 @@ public class UsersController : ApiControllerBase
     [HttpPatch("{userId:guid}/staff-role")]
     [AllowOnlyStaff(StaffRole.Administrator)]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
+    [PasswordHashing]
     public async Task<IActionResult> SetStaffRoleAsync(
         Guid userId,
         [FromBody] SetStaffRoleRequest request,
@@ -187,6 +190,7 @@ public class UsersController : ApiControllerBase
     [HttpPost("{userId:guid}/privacy-officer")]
     [AllowOnlyStaff(StaffRole.Administrator)]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
+    [PasswordHashing]
     public async Task<IActionResult> DesignatePrivacyOfficerAsync(
         Guid userId,
         [FromBody] DesignatePrivacyOfficerRequest request,
@@ -200,7 +204,8 @@ public class UsersController : ApiControllerBase
     /// <summary>
     /// Returns a user's second factor to email so they can log in again after losing their
     /// authenticator; it also drops a pending login code and lifts the second-factor lock. The
-    /// acting administrator confirms their own password.
+    /// acting administrator confirms their own password, and is refused on their own account,
+    /// whose authenticator they remove themselves with its current code.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
     /// <param name="request">Validated client request data.</param>
@@ -210,6 +215,7 @@ public class UsersController : ApiControllerBase
     [HttpPost("{userId:guid}/two-factor/reset")]
     [AllowOnlyStaff(StaffRole.Administrator)]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
+    [PasswordHashing]
     public async Task<IActionResult> ResetTwoFactorAsync(
         Guid userId,
         [FromBody] ResetTwoFactorRequest request,
@@ -262,6 +268,7 @@ public class UsersController : ApiControllerBase
     [HttpPatch("{userId:guid}/password")]
     [AllowOnlySelf]
     [EnableRateLimiting(SecurityPolicies.Credentials)]
+    [PasswordHashing]
     public async Task<IActionResult> ChangePasswordAsync(
         Guid userId,
         [FromBody] ChangePasswordRequest request,

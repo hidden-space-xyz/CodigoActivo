@@ -53,10 +53,10 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
                     {
                         Id = OtherChildId,
                         FirstName = "Olga",
-                        LastName = "Bloqueado",
+                        LastName = "Bravo",
                         BirthDate = new DateOnly(2016, 6, 6),
                         Gender = Gender.Female,
-                        ParentId = TestSeedData.Users.BlockedId,
+                        ParentId = TestSeedData.Users.OtherId,
                         Status = UserStatus.Dependent,
                         UserType = UserType.Participant,
                         CreatedAt = SeededAt,
@@ -123,7 +123,7 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
             db.Assignments.AddRange(
                 Assignment(TestSeedData.Users.MemberId, ActivityRole.Volunteer),
                 Assignment(TestSeedData.Users.MemberChildId, ActivityRole.Participant),
-                Assignment(TestSeedData.Users.BlockedId, ActivityRole.Participant),
+                Assignment(TestSeedData.Users.OtherId, ActivityRole.Participant),
                 Assignment(OtherChildId, ActivityRole.Participant)
             );
             var withdrawn = Decision(
@@ -137,7 +137,7 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
             );
             db.EventTermsAcceptances.AddRange(
                 withdrawn,
-                Decision(TestSeedData.Users.BlockedId, null)
+                Decision(TestSeedData.Users.OtherId, null)
             );
             db.LegalPolicies.Add(
                 LegalPolicy
@@ -152,11 +152,11 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
             );
             db.NewsConsentChanges.AddRange(
                 ConsentChange(TestSeedData.Users.MemberId, true),
-                ConsentChange(TestSeedData.Users.BlockedId, false)
+                ConsentChange(TestSeedData.Users.OtherId, false)
             );
             db.EventRatings.AddRange(
                 Rating(TestSeedData.Users.MemberId, 5, "El taller"),
-                Rating(TestSeedData.Users.BlockedId, 1, "De otra cuenta")
+                Rating(TestSeedData.Users.OtherId, 1, "De otra cuenta")
             );
             db.AddRange(
                 Audit(0, AuditAction.Login, null, TestSeedData.Users.MemberId),
@@ -182,8 +182,8 @@ public sealed class MeControllerPersonalDataTests(CodigoActivoWebAppFactory fact
                 Audit(
                     4,
                     AuditAction.ChangePassword,
-                    TestSeedData.Users.BlockedId,
-                    TestSeedData.Users.BlockedId
+                    TestSeedData.Users.OtherId,
+                    TestSeedData.Users.OtherId
                 ),
                 Audit(
                     5,

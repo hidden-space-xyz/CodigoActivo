@@ -1,20 +1,22 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Infrastructure.Communication.Templates;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Communication.Templates;
 
-public sealed class AccountDeletionCodeEmailTests
+public sealed class ConfirmationCodeEmailTests
 {
     private const string SiteUrl = "https://app.test";
 
     [Fact]
     public void CreateValidRequestAddressesRecipientWithCodeAndLifetime()
     {
-        var message = AccountDeletionCodeEmail.Create(
+        var message = ConfirmationCodeEmail.Create(
             "ana@test.com",
             "Ana",
+            ConfirmationCodePurpose.AccountDeletion,
             "482913",
             SiteUrl,
             TimeSpan.FromMinutes(10)
@@ -45,9 +47,10 @@ public sealed class AccountDeletionCodeEmailTests
     [Fact]
     public void CreateShortLifetimeRoundsUpToOneMinute()
     {
-        var message = AccountDeletionCodeEmail.Create(
+        var message = ConfirmationCodeEmail.Create(
             "ana@test.com",
             "Ana",
+            ConfirmationCodePurpose.AccountDeletion,
             "000000",
             SiteUrl,
             TimeSpan.FromSeconds(20)
@@ -59,9 +62,10 @@ public sealed class AccountDeletionCodeEmailTests
     [Fact]
     public void CreateScriptInNameOrCodeHtmlEncodesThem()
     {
-        var message = AccountDeletionCodeEmail.Create(
+        var message = ConfirmationCodeEmail.Create(
             "ana@test.com",
             "<script>alert(1)</script>",
+            ConfirmationCodePurpose.AccountDeletion,
             "<b>1</b>",
             SiteUrl,
             TimeSpan.FromMinutes(10)
@@ -74,14 +78,64 @@ public sealed class AccountDeletionCodeEmailTests
     [Fact]
     public void CreateWarningNoteTellsTheReaderWhatToDoWhenTheyDidNotAskForIt()
     {
-        var message = AccountDeletionCodeEmail.Create(
+        var message = ConfirmationCodeEmail.Create(
             "ana@test.com",
             "Ana",
+            ConfirmationCodePurpose.AccountDeletion,
             "482913",
             SiteUrl,
             TimeSpan.FromMinutes(10)
         );
 
         message.TextBody.Should().Contain("Si no has solicitado eliminar tu cuenta");
+    }
+
+    [Theory]
+    [InlineData(ConfirmationCodePurpose.EmailChange, "cambio de correo", "cambiar tu correo")]
+    [InlineData(
+        ConfirmationCodePurpose.AuthenticatorSetup,
+        "app de autenticación",
+        "configurar una aplicación de autenticación"
+    )]
+    public void CreateOtherChangeNamesItInTheSubjectAndTheWarningNote(
+        ConfirmationCodePurpose purpose,
+        string subject,
+        string warning
+    )
+    {
+        var message = ConfirmationCodeEmail.Create(
+            "ana@test.com",
+            "Ana",
+            purpose,
+            "482913",
+            SiteUrl,
+            TimeSpan.FromMinutes(10)
+        );
+
+        message.Kind.Should().Be(EmailKind.TwoFactorCode);
+        message.Subject.Should().Contain(subject).And.NotContain("482913");
+        message
+            .TextBody.Should()
+            .Contain("\n482913\n")
+            .And.Contain("10 minutos")
+            .And.Contain($"Si no has solicitado {warning}")
+            .And.NotContain("menores a tu cargo");
+        message.HtmlBody.Should().Contain(">482913<");
+    }
+
+    [Fact]
+    public void CreateUnknownPurposeThrows()
+    {
+        var act = () =>
+            ConfirmationCodeEmail.Create(
+                "ana@test.com",
+                "Ana",
+                (ConfirmationCodePurpose)99,
+                "482913",
+                SiteUrl,
+                TimeSpan.FromMinutes(10)
+            );
+
+        act.Should().Throw<ArgumentOutOfRangeException>();
     }
 }

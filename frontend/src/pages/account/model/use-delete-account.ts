@@ -40,7 +40,7 @@ export function useDeleteAccount() {
   }
 
   const requestCode = useMutation({
-    ...accountMutations.requestDeletionCode(),
+    ...accountMutations.requestConfirmationCode(),
     onSuccess: reset,
     onError: showError,
   })

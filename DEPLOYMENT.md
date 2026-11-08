@@ -53,7 +53,8 @@ serves directly (`gzip_static`). A reverse proxy in front must not strip `Accept
 ### Capacity and rate limits
 
 nginx allows 8,192 connections per worker, 4,000 active client connections and 2,000 per IP (`web`'s open-file
-limit is raised to 65,536). Application request and credential-work rate limits are documented once, in
+limit is raised to 65,536). It buffers each request body in `web`'s `/tmp`, a 256 MB tmpfs, before passing it to
+the API. Application request and credential-work rate limits are documented once, in
 [SECURITY.md](SECURITY.md#passwords-and-credential-endpoints).
 
 ## First production start
@@ -216,9 +217,8 @@ still waiting. Administrator bulk email is refused with `EmailSendFailed` when i
 such messages waiting, or with `EmailAttachmentsTooLarge` when it is larger than the `SIZE` the SMTP server
 announced; its response (`{ queued, skipped }`) reports what was accepted, not what was delivered.
 
-The API runs as one instance, whose worker delivers the outbox. It polls every 5 seconds, is woken at once by
-enqueues, and claims up to 10
-due messages with `FOR UPDATE SKIP LOCKED` and a lease, in priority order: login and other identified codes,
+The API runs as one instance, whose worker delivers the outbox one run at a time. It polls every 5 seconds, is
+woken at once by enqueues, and claims up to 10 due messages in priority order: login and other identified codes,
 then verification, email-in-use and password-reset mail, then notices, then administrator-written mail. A run
 sends them one after another over one SMTP connection, each within 60 seconds, never faster than
 `SMTP_MAX_PER_MINUTE`. Over a rolling 24 hours, counted in `email_delivery_hours` so restarts keep it, notices
@@ -237,7 +237,8 @@ of running out of attempts: codes with their own lifetime, other mail after 3 da
 and the notices to the legal contact never expire. Delivery is at-least-once: a crash between a successful send
 and removing the row can resend it. Shutdown only waits for the send in flight, up to 20 seconds, below the API
 service's 30-second `stop_grace_period`, and hands the rest of the claimed messages back untried, due at once; a
-send still running by then is claimed again once its lease expires. These values live in `EmailQueueOptions` and cannot be configured; only the provider pace is.
+send still running by then stays due and goes again after the restart. These values live in `EmailQueueOptions`
+and cannot be configured; only the provider pace is.
 
 The legal contact (`LEGAL_EMAIL`) is told about withdrawn consents and opened consultations of the blocked data
 by `LegalNoticeWorker`, 30 seconds after startup and then every minute: each kind goes in one email listing up
@@ -272,15 +273,10 @@ The source is fixed in code: the project's `disposable_email_blocklist.conf` on 
 
 ## Locked accounts
 
-An account locked by wrong passwords stays locked until a completed password reset
-([SECURITY.md](SECURITY.md#passwords-and-credential-endpoints)), which needs working SMTP; each lock logs
-`PasswordLockoutTriggered`. If every administrator is locked while email is unavailable, unlock against the
-`db` container:
-
-```bash
-docker compose exec db psql -U codigoactivo -d codigoactivo -c \
-  "UPDATE users SET password_failed_attempts = 0, password_locked_at = NULL WHERE email = 'admin@example.org';"
-```
+An account locked by wrong passwords unlocks by itself after 15 minutes, or at once with a completed password
+reset ([SECURITY.md](SECURITY.md#passwords-and-credential-endpoints)); its sessions stay open, so no manual
+unlock is needed. Each lock logs `PasswordLockoutTriggered`; frequent ones mean someone keeps guessing
+passwords, and the audit log names the accounts (`PasswordLocked`).
 
 ## Demo mode and initial administrator
 
@@ -339,7 +335,8 @@ Inside the repository, `docker compose up --build` merges `docker-compose.overri
 publishing SMTP on port `1025` and its inbox UI on port `8025` and points the SMTP connection and sender at it,
 fixes `APP_BASE_URL`, `APP_TIMEZONE`, `DEMO_MODE=true` and every `LEGAL_*` value (so `.env` only needs
 `BOOTSTRAP_ADMIN_EMAIL`), exposes PostgreSQL on port `5432` and makes the backend network non-internal, and
-disables the API read-only root filesystem in favor of debugger-oriented privileges. Visual Studio uses the same
+disables the API read-only root filesystem in favor of debugger-oriented privileges. It publishes those ports on
+`127.0.0.1` only, since the Mailpit inbox shows every login code and reset link. Visual Studio uses the same
 Compose project through `backend/docker-compose.dcproj`. In Development the API also writes its log to the
 console, which the overlay keeps at 5 MB per file, two files.
 

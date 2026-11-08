@@ -1,6 +1,8 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts.Notifications;
+using CodigoActivo.Application.Accounts.Passwords;
+using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Infrastructure.Communication.Templates;
 using Xunit;
@@ -56,6 +58,10 @@ public sealed class SecurityAlertEmailTests
                 AccountSecurityChange.CredentialLocked,
                 AppStrings.EmailsSecurityAlertPasswordLocked
             },
+            {
+                AccountSecurityChange.TwoFactorLocked,
+                AppStrings.EmailsSecurityAlertTwoFactorLocked
+            },
         };
     }
 
@@ -104,6 +110,10 @@ public sealed class SecurityAlertEmailTests
                 AccountSecurityChange.CredentialLocked,
                 AppStrings.EmailsSecurityAlertPasswordLockedWarning
             },
+            {
+                AccountSecurityChange.TwoFactorLocked,
+                AppStrings.EmailsSecurityAlertTwoFactorLockedWarning
+            },
         };
     }
 
@@ -130,6 +140,7 @@ public sealed class SecurityAlertEmailTests
             AppStrings.EmailsSecurityAlertUnexpectedWarning,
             AppStrings.EmailsSecurityAlertEmailChangedWarning,
             AppStrings.EmailsSecurityAlertPasswordLockedWarning,
+            AppStrings.EmailsSecurityAlertTwoFactorLockedWarning,
         }.Where(warning => warning != expected);
         foreach (var other in others)
         {
@@ -160,7 +171,7 @@ public sealed class SecurityAlertEmailTests
 
     [Theory]
     [MemberData(nameof(Sentences))]
-    public void CreateTitlesAPasswordLockApartFromTheOtherChanges(
+    public void CreateTitlesEachLockApartFromTheOtherChanges(
         AccountSecurityChange change,
         string sentence
     )
@@ -174,22 +185,29 @@ public sealed class SecurityAlertEmailTests
             "https://app.test"
         );
 
-        var locked = change is AccountSecurityChange.CredentialLocked;
-        message
-            .Subject.Should()
-            .Be(
-                locked
-                    ? AppStrings.EmailsSecurityAlertPasswordLockedSubject
-                    : AppStrings.EmailsSecurityAlertSubject,
-                sentence
-            );
-        message
-            .TextBody.Should()
-            .Contain(
-                locked
-                    ? AppStrings.EmailsSecurityAlertPasswordLockedHeading
-                    : AppStrings.EmailsSecurityAlertHeading
-            );
+        var (subject, heading) = change switch
+        {
+            AccountSecurityChange.CredentialLocked => (
+                AppStrings.EmailsSecurityAlertPasswordLockedSubject,
+                AppStrings.EmailsSecurityAlertPasswordLockedHeading
+            ),
+            AccountSecurityChange.TwoFactorLocked => (
+                AppStrings.EmailsSecurityAlertTwoFactorLockedSubject,
+                AppStrings.EmailsSecurityAlertTwoFactorLockedHeading
+            ),
+            _ => (AppStrings.EmailsSecurityAlertSubject, AppStrings.EmailsSecurityAlertHeading),
+        };
+        message.Subject.Should().Be(subject, sentence);
+        message.TextBody.Should().Contain(heading);
+    }
+
+    [Fact]
+    public void LockSentencesNameTheDurationOfTheirOptions()
+    {
+        AppStrings.EmailsSecurityAlertPasswordLocked.Should().Contain("15 minutos");
+        AppStrings.EmailsSecurityAlertTwoFactorLocked.Should().Contain("15 minutos");
+        new PasswordLockoutOptions().LockoutDuration.Should().Be(TimeSpan.FromMinutes(15));
+        new TwoFactorOptions().LockoutDuration.Should().Be(TimeSpan.FromMinutes(15));
     }
 
     [Fact]

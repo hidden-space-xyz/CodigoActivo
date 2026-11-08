@@ -1,4 +1,3 @@
-using System.Data.Common;
 using System.Text;
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
@@ -7,7 +6,6 @@ using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -192,7 +190,7 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task TryEnqueueAsyncSameTopicLeavesAMessageBeingDeliveredAlone()
+    public async Task TryEnqueueAsyncSameTopicAlsoReplacesAClaimedMessage()
     {
         var topic = EmailTopics.SecurityAlert(EmailKind.SecurityAlert);
         await Store.TryEnqueueAsync(
@@ -202,8 +200,7 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
             },
             Ct
         );
-        var now = Factory.Clock.UtcNow;
-        await Store.ClaimDueAsync(now, now + Options.Lease, 10, AnyPriority, Ct);
+        var claimed = await Store.ClaimDueAsync(Factory.Clock.UtcNow, 10, AnyPriority, Ct);
 
         await Store.TryEnqueueAsync(
             NotificationBatch("ana@example.test") with
@@ -213,7 +210,9 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
             Ct
         );
 
-        (await PendingAsync()).Should().HaveCount(2, "a leased message may already be on its way");
+        var pending = (await PendingAsync()).Should().ContainSingle().Subject;
+        pending.Id.Should().NotBe(claimed[0].Id);
+        pending.AttemptCount.Should().Be(0);
         (await Store.AnyAsync(EmailKind.ActivityNotification, Ct)).Should().BeTrue();
         (await Store.AnyAsync(EmailKind.ConsentWithdrawalNotice, Ct)).Should().BeFalse();
     }
@@ -295,9 +294,7 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task ClaimDueAsyncWithoutDueMessagesReturnsNothing()
     {
-        var now = Factory.Clock.UtcNow;
-
-        var claimed = await Store.ClaimDueAsync(now, now + Options.Lease, 10, AnyPriority, Ct);
+        var claimed = await Store.ClaimDueAsync(Factory.Clock.UtcNow, 10, AnyPriority, Ct);
 
         claimed.Should().BeEmpty();
     }
@@ -307,11 +304,9 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     {
         await Store.TryEnqueueAsync(NotificationBatch("aviso@example.test"), Ct);
         await Store.TryEnqueueAsync(Batch("codigo@example.test"), Ct);
-        var now = Factory.Clock.UtcNow;
 
         var claimed = await Store.ClaimDueAsync(
-            now,
-            now + Options.Lease,
+            Factory.Clock.UtcNow,
             10,
             EmailQueueOptions.AnonymousCodePriority,
             Ct
@@ -326,9 +321,25 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
         await Store.TryEnqueueAsync(Batch("ana@example.test"), Ct);
         var later = Factory.Clock.UtcNow.AddMinutes(10);
 
-        var claimed = await Store.ClaimDueAsync(later, later + Options.Lease, 10, AnyPriority, Ct);
+        var claimed = await Store.ClaimDueAsync(later, 10, AnyPriority, Ct);
 
         claimed.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ClaimDueAsyncClaimedMessageStaysDueForTheNextStart()
+    {
+        await Store.TryEnqueueAsync(Batch("ana@example.test"), Ct);
+        var now = Factory.Clock.UtcNow;
+        await Store.ClaimDueAsync(now, 10, AnyPriority, Ct);
+
+        var reclaimed = await Store.ClaimDueAsync(now, 10, AnyPriority, Ct);
+
+        reclaimed
+            .Should()
+            .ContainSingle("a process that died mid-send must not hold the message back")
+            .Which.AttemptCount.Should()
+            .Be(2, "a claim nothing finished still spent an attempt");
     }
 
     [Fact]
@@ -336,22 +347,17 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     {
         await Store.TryEnqueueAsync(Batch("ana@example.test"), Ct);
         var now = Factory.Clock.UtcNow;
-        var message = (await Store.ClaimDueAsync(now, now + Options.Lease, 10, AnyPriority, Ct))[0];
+        var message = (await Store.ClaimDueAsync(now, 10, AnyPriority, Ct))[0];
         var longError = new string('e', EmailOutboxMessage.LastErrorMaxLength + 50);
 
-        await Store.RescheduleAsync(
-            message.Id,
-            message.AttemptCount,
-            now.AddMinutes(1),
-            longError,
-            Ct
-        );
+        await Store.RescheduleAsync(message.Id, now.AddMinutes(1), longError, Ct);
 
         var stored = (await PendingAsync())[0];
         stored.LastError.Should().HaveLength(EmailOutboxMessage.LastErrorMaxLength);
         stored.AttemptCount.Should().Be(1, "the claim already counted the attempt");
+        stored.NextAttemptAt.Should().Be(now.AddMinutes(1));
 
-        await Store.RescheduleAsync(message.Id, message.AttemptCount, now.AddMinutes(5), "   ", Ct);
+        await Store.RescheduleAsync(message.Id, now.AddMinutes(5), "   ", Ct);
 
         (await PendingAsync())[0].LastError.Should().BeNull();
     }
@@ -361,51 +367,13 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     {
         await Store.TryEnqueueAsync(Batch("ana@example.test"), Ct);
         var now = Factory.Clock.UtcNow;
-        var message = (await Store.ClaimDueAsync(now, now + Options.Lease, 10, AnyPriority, Ct))[0];
+        var message = (await Store.ClaimDueAsync(now, 10, AnyPriority, Ct))[0];
 
-        var released = await Store.ReleaseAsync(
-            message.Id,
-            message.AttemptCount,
-            now.AddMinutes(2),
-            Ct
-        );
+        await Store.ReleaseAsync(message.Id, now.AddMinutes(2), Ct);
 
-        released.Should().Be(1);
         var stored = (await PendingAsync()).Should().ContainSingle().Subject;
         stored.AttemptCount.Should().Be(0, "a message handed back untried spent no attempt");
-        stored.LockedUntil.Should().BeNull();
         stored.NextAttemptAt.Should().Be(now.AddMinutes(2));
-    }
-
-    [Fact]
-    public async Task RescheduleAsyncOfAnExpiredLeaseLeavesTheReclaimedMessageAlone()
-    {
-        await Store.TryEnqueueAsync(Batch("ana@example.test"), Ct);
-        var now = Factory.Clock.UtcNow;
-        var lost = (await Store.ClaimDueAsync(now, now, 10, AnyPriority, Ct))[0];
-        var afterLease = now.AddSeconds(1);
-        var reclaimed = (
-            await Store.ClaimDueAsync(afterLease, afterLease + Options.Lease, 10, AnyPriority, Ct)
-        )[0];
-
-        var rescheduled = await Store.RescheduleAsync(
-            lost.Id,
-            lost.AttemptCount,
-            now.AddDays(1),
-            "the worker that lost its lease",
-            Ct
-        );
-        var released = await Store.ReleaseAsync(lost.Id, lost.AttemptCount, now.AddDays(1), Ct);
-        var removed = await Store.RemoveAsync(lost.Id, lost.AttemptCount, Ct);
-
-        rescheduled.Should().Be(0, "the message moved on to the next attempt");
-        released.Should().Be(0);
-        removed.Should().Be(0);
-        reclaimed.AttemptCount.Should().Be(2);
-        var stored = (await PendingAsync()).Should().ContainSingle().Subject;
-        stored.AttemptCount.Should().Be(2);
-        stored.LastError.Should().BeNull();
-        stored.LockedUntil.Should().Be(afterLease + Options.Lease);
     }
 
     [Fact]
@@ -417,9 +385,8 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
         );
         Factory.Clock.UtcNow = Factory.Clock.UtcNow.AddMinutes(10);
         await Store.TryEnqueueAsync(Batch("ana@example.test"), Ct);
-        var now = Factory.Clock.UtcNow;
 
-        var claimed = await Store.ClaimDueAsync(now, now + Options.Lease, 1, AnyPriority, Ct);
+        var claimed = await Store.ClaimDueAsync(Factory.Clock.UtcNow, 1, AnyPriority, Ct);
 
         claimed
             .Should()
@@ -435,9 +402,8 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
             ManualBatchWithAttachment("uno@example.test", "dos@example.test", "tres@example.test"),
             Ct
         );
-        var now = Factory.Clock.UtcNow;
 
-        var claimed = await Store.ClaimDueAsync(now, now + Options.Lease, 10, AnyPriority, Ct);
+        var claimed = await Store.ClaimDueAsync(Factory.Clock.UtcNow, 10, AnyPriority, Ct);
 
         claimed.Should().HaveCount(3);
         claimed
@@ -450,63 +416,6 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
             message.Content.Should().BeSameAs(claimed[0].Content);
             message.Content.Parts.Should().HaveCount(2);
         }
-    }
-
-    /// <summary>
-    /// Stops the host in the narrowest window there is: the claim is already committed, so every
-    /// row of the batch has spent an attempt, and the rows still have to be read out before
-    /// anything can be delivered. The batch has to come back whole; a claim dropped here would sit
-    /// out its lease and nobody would have tried to send it.
-    /// </summary>
-    [Fact]
-    public async Task ClaimDueAsyncShutdownAfterTheClaimStillReturnsTheLeasedBatch()
-    {
-        await Store.TryEnqueueAsync(Batch("uno@example.test", "dos@example.test"), Ct);
-        var protector = Factory.Services.GetRequiredService<EmailOutboxProtector>();
-        using var shutdown = new CancellationTokenSource();
-        await using var provider = BuildScopes(
-            await ConnectionStringAsync(),
-            new ShutdownAfterClaimInterceptor(shutdown)
-        );
-        var store = new EmailOutboxStore(
-            provider.GetRequiredService<IServiceScopeFactory>(),
-            protector,
-            new EmailOutboxSignal(),
-            new SmtpServerLimits(),
-            Options,
-            Factory.Clock
-        );
-        var now = Factory.Clock.UtcNow;
-
-        var claimed = await store.ClaimDueAsync(
-            now,
-            now + Options.Lease,
-            10,
-            AnyPriority,
-            shutdown.Token
-        );
-
-        shutdown
-            .IsCancellationRequested.Should()
-            .BeTrue("the host stopped as soon as the claim was committed");
-        claimed
-            .Select(message => message.ToAddress)
-            .Should()
-            .BeEquivalentTo("uno@example.test", "dos@example.test");
-        claimed
-            .Should()
-            .AllSatisfy(message =>
-            {
-                message.AttemptCount.Should().Be(1);
-                protector.Unprotect(message.Content).TextBody.Should().Be(Code);
-            });
-        (await PendingAsync())
-            .Should()
-            .AllSatisfy(message =>
-            {
-                message.AttemptCount.Should().Be(1, "the claim spent an attempt on every row");
-                message.LockedUntil.Should().Be(now + Options.Lease);
-            });
     }
 
     [Fact]
@@ -609,74 +518,6 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task ClaimDueAsyncTwoConcurrentProcessorsNeverTakeTheSameMessage()
-    {
-        await Store.TryEnqueueAsync(
-            Batch(
-                "uno@example.test",
-                "dos@example.test",
-                "tres@example.test",
-                "cuatro@example.test"
-            ),
-            Ct
-        );
-        var now = Factory.Clock.UtcNow;
-
-        var claims = await Task.WhenAll(
-            Store.ClaimDueAsync(now, now + Options.Lease, 4, AnyPriority, Ct),
-            Store.ClaimDueAsync(now, now + Options.Lease, 4, AnyPriority, Ct)
-        );
-
-        var ids = claims.SelectMany(claim => claim.Select(message => message.Id)).ToList();
-        ids.Should().OnlyHaveUniqueItems().And.HaveCount(4);
-    }
-
-    [Fact]
-    public async Task DeliverDueAsyncTwoConcurrentRunsDeliverEveryMessageExactlyOnce()
-    {
-        await Store.TryEnqueueAsync(
-            Batch("uno@example.test", "dos@example.test", "tres@example.test"),
-            Ct
-        );
-
-        await Task.WhenAll(Deliverer().DeliverDueAsync(Ct), Deliverer().DeliverDueAsync(Ct));
-
-        Factory
-            .EmailSender.Sent.Select(m => m.ToAddress)
-            .Should()
-            .BeEquivalentTo("uno@example.test", "dos@example.test", "tres@example.test");
-        (await PendingAsync()).Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task ClaimDueAsyncLeasedMessageIsSkippedUntilTheLeaseExpires()
-    {
-        await Store.TryEnqueueAsync(Batch("ana@example.test"), Ct);
-        var now = Factory.Clock.UtcNow;
-        var leaseUntil = now + TimeSpan.FromMinutes(1);
-
-        (await Store.ClaimDueAsync(now, leaseUntil, 10, AnyPriority, Ct)).Should().ContainSingle();
-        (await Store.ClaimDueAsync(now, leaseUntil, 10, AnyPriority, Ct))
-            .Should()
-            .BeEmpty("the message is leased to the first claim");
-
-        var afterLease = leaseUntil.AddSeconds(1);
-        var reclaimed = await Store.ClaimDueAsync(
-            afterLease,
-            afterLease + TimeSpan.FromMinutes(1),
-            10,
-            AnyPriority,
-            Ct
-        );
-
-        reclaimed
-            .Should()
-            .ContainSingle("a process that died mid-send must not block the message forever")
-            .Which.AttemptCount.Should()
-            .Be(2, "a claim nothing finished still spent an attempt");
-    }
-
-    [Fact]
     public async Task DeliverDueAsyncFailuresAreRetriedUntilTheMessageExpires()
     {
         Factory.EmailSender.ThrowOnSend = new InvalidOperationException("Connection reset");
@@ -689,7 +530,6 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
 
             var message = (await PendingAsync()).Should().ContainSingle().Subject;
             message.AttemptCount.Should().Be(attempt);
-            message.LockedUntil.Should().BeNull();
             message.LastError.Should().Contain("Connection reset");
             message
                 .NextAttemptAt.Should()
@@ -804,45 +644,5 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
         (await PendingAsync()).Should().BeEmpty();
         var code = Factory.EmailSender.LastLoginCodeSentTo(TestSeedData.MemberEmail);
         await CompleteTwoFactorAsync(client, code);
-    }
-
-    private Task<string> ConnectionStringAsync()
-    {
-        return Factory.QueryAsync(db => Task.FromResult(db.Database.GetConnectionString()!));
-    }
-
-    private static ServiceProvider BuildScopes(string connectionString, IInterceptor interceptor)
-    {
-        return new ServiceCollection()
-            .AddDbContext<CodigoActivoDbContext>(options =>
-                options
-                    .UseNpgsql(connectionString)
-                    .UseSnakeCaseNamingConvention()
-                    .AddInterceptors(interceptor)
-            )
-            .BuildServiceProvider();
-    }
-
-    /// <summary>
-    /// Cancels the supplied source before the first command the outbox runs after its claim, which
-    /// is the read that materializes the claimed rows.
-    /// </summary>
-    private sealed class ShutdownAfterClaimInterceptor(CancellationTokenSource shutdown)
-        : DbCommandInterceptor
-    {
-        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
-            DbCommand command,
-            CommandEventData eventData,
-            InterceptionResult<DbDataReader> result,
-            CancellationToken cancellationToken = default
-        )
-        {
-            if (eventData.CommandSource is not CommandSource.FromSqlQuery)
-            {
-                shutdown.Cancel();
-            }
-
-            return ValueTask.FromResult(result);
-        }
     }
 }

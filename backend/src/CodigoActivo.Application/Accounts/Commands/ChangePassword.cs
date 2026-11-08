@@ -111,7 +111,7 @@ public sealed class ChangePasswordCommandHandler(
 
     private Result ChangeLocked(User user, string verifiedHash, string newHash)
     {
-        if (!PasswordAttemptGuard.StillVerified(user, verifiedHash))
+        if (!PasswordAttemptGuard.StillVerified(user, verifiedHash, clock.UtcNow))
         {
             return CurrentPasswordIncorrect();
         }

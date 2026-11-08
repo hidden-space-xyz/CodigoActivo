@@ -16,7 +16,7 @@ public sealed record SetNewsItemFeaturedCommand(NewsItemId NewsItemId)
         IUnaudited;
 
 /// <summary>
-/// Executes the command to make a news item the featured one: every other featured item stops
+/// Executes the command to make a news item the featured one: the item featured until then stops
 /// being featured first, in the same transaction, so at most one item is featured at a time.
 /// </summary>
 /// <param name="news">Repository used to persist and retrieve news items.</param>
@@ -46,7 +46,12 @@ public sealed class SetNewsItemFeaturedCommandHandler(INewsItemRepository news, 
         await uow.ExecuteInTransactionAsync(
             async attempt =>
             {
-                FeaturedSelection.UnfeatureAllBut(chosen, await news.ListFeaturedAsync(attempt));
+                var current = await news.GetFeaturedAsync(attempt);
+                if (current is not null && current != chosen)
+                {
+                    current.Unfeature();
+                }
+
                 await uow.SaveChangesAsync(attempt);
                 chosen.Feature();
                 await uow.SaveChangesAsync(attempt);

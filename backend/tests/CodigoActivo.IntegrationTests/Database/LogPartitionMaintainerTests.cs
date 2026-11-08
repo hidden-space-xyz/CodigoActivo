@@ -176,21 +176,19 @@ public sealed class LogPartitionMaintainerTests(PostgresDatabaseFixture postgres
         );
         await using var connection = await database.OpenConnectionAsync(Ct);
 
-        var outside = await Maintainer.EnsurePartitionsAsync(
+        await Maintainer.EnsurePartitionsAsync(
             connection,
             LogTable.Diagnostics,
             [new DateOnly(2026, 1, 1), new DateOnly(2026, 3, 20)],
             Ct
         );
-        var inside = await Maintainer.EnsurePartitionsAsync(
+        await Maintainer.EnsurePartitionsAsync(
             connection,
             LogTable.Diagnostics,
             [new DateOnly(2026, 1, 1), new DateOnly(2026, 3, 1), new DateOnly(2026, 3, 1)],
             Ct
         );
 
-        outside.Should().BeFalse();
-        inside.Should().BeTrue();
         var partitions = await LogTables.PartitionsAsync(postgres, LogTable.Diagnostics);
         partitions.Should().Contain("diagnostic_log_entries_p20260301");
         partitions.Should().NotContain("diagnostic_log_entries_p20260101");
@@ -203,13 +201,13 @@ public sealed class LogPartitionMaintainerTests(PostgresDatabaseFixture postgres
         var day = new DateOnly(2026, 3, 2);
         await LogTables.DropPartitionAsync(postgres, LogTable.Diagnostics, day);
 
-        var created = await Task.WhenAll(
+        await Task.WhenAll(
             Enumerable
                 .Range(0, 3)
                 .Select(async _ =>
                 {
                     await using var connection = await database.OpenConnectionAsync(Ct);
-                    return await Maintainer.EnsurePartitionsAsync(
+                    await Maintainer.EnsurePartitionsAsync(
                         connection,
                         LogTable.Diagnostics,
                         [day],
@@ -218,7 +216,6 @@ public sealed class LogPartitionMaintainerTests(PostgresDatabaseFixture postgres
                 })
         );
 
-        created.Should().AllSatisfy(inside => inside.Should().BeTrue());
         (await LogTables.PartitionsAsync(postgres, LogTable.Diagnostics))
             .Should()
             .Contain("diagnostic_log_entries_p20260302");

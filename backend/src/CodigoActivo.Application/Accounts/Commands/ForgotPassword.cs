@@ -23,7 +23,7 @@ public sealed record ForgotPasswordCommand(
 
 /// <summary>
 /// Executes the command that emails a password reset link, replacing the previous one, to an
-/// account that has a password and is neither blocked nor a dependent.
+/// account that has a password and is not a dependent.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="accountLock">Runs the issue of the code with the account locked.</param>
@@ -82,7 +82,6 @@ public sealed class ForgotPasswordCommandHandler(
     private bool MayIssue(User user)
     {
         return !string.IsNullOrEmpty(user.PasswordHash)
-            && !user.IsBlocked
             && !user.IsDependent
             && !user.PasswordResetCode.IsResendCoolingDown(
                 clock.UtcNow,

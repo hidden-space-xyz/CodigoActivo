@@ -110,20 +110,27 @@ public sealed class LoginCodeIssuerTests
         user.LoginCode.Hash.Should().BeNull();
     }
 
-    [Fact]
-    public async Task IssueAccountDeletionAsyncEmailsTheDeletionCodeAndStoresOnlyItsHash()
+    [Theory]
+    [InlineData(ConfirmationCodePurpose.AccountDeletion)]
+    [InlineData(ConfirmationCodePurpose.EmailChange)]
+    [InlineData(ConfirmationCodePurpose.AuthenticatorSetup)]
+    public async Task IssueConfirmationAsyncEmailsTheCodeOfItsPurposeAndStoresOnlyItsHash(
+        ConfirmationCodePurpose purpose
+    )
     {
         var user = NewUser(email: "ana@test.com");
 
-        var result = await sut.IssueAccountDeletionAsync(
+        var result = await sut.IssueConfirmationAsync(
             user,
+            purpose,
             clock.UtcNow,
             TestContext.Current.CancellationToken
         );
 
         result.IsSuccess.Should().BeTrue();
         var email = composer.Composed.Should().ContainSingle().Subject;
-        email.Name.Should().Be(nameof(IAccountEmailComposer.AccountDeletionCode));
+        email.Name.Should().Be(nameof(IAccountEmailComposer.ConfirmationCode));
+        email.Purpose.Should().Be(purpose);
         email.Recipient.Should().Be(new EmailRecipient("ana@test.com", "Ana"));
         email.Lifetime.Should().Be(TimeSpan.FromMinutes(7));
         var code = email.Code;
@@ -156,12 +163,13 @@ public sealed class LoginCodeIssuerTests
     }
 
     [Fact]
-    public async Task IssueAccountDeletionAsyncUserWithoutEmailReturnsConflictWithoutEmailing()
+    public async Task IssueConfirmationAsyncUserWithoutEmailReturnsConflictWithoutEmailing()
     {
         var user = NewUser(email: null);
 
-        var result = await sut.IssueAccountDeletionAsync(
+        var result = await sut.IssueConfirmationAsync(
             user,
+            ConfirmationCodePurpose.AccountDeletion,
             clock.UtcNow,
             TestContext.Current.CancellationToken
         );
@@ -172,13 +180,14 @@ public sealed class LoginCodeIssuerTests
     }
 
     [Fact]
-    public async Task IssueAccountDeletionAsyncQuotaDeniedReturnsConflictWithoutStagingACode()
+    public async Task IssueConfirmationAsyncQuotaDeniedReturnsConflictWithoutStagingACode()
     {
         emailSender.ThrowOnSend = new EmailRateLimitedException(EmailLimitScope.Recipient);
         var user = NewUser();
 
-        var result = await sut.IssueAccountDeletionAsync(
+        var result = await sut.IssueConfirmationAsync(
             user,
+            ConfirmationCodePurpose.AccountDeletion,
             clock.UtcNow,
             TestContext.Current.CancellationToken
         );
@@ -188,13 +197,14 @@ public sealed class LoginCodeIssuerTests
     }
 
     [Fact]
-    public async Task IssueAccountDeletionAsyncDeliveryFailureReturnsConflictWithoutStagingACode()
+    public async Task IssueConfirmationAsyncDeliveryFailureReturnsConflictWithoutStagingACode()
     {
         emailSender.ThrowOnSend = new InvalidOperationException("smtp down");
         var user = NewUser();
 
-        var result = await sut.IssueAccountDeletionAsync(
+        var result = await sut.IssueConfirmationAsync(
             user,
+            ConfirmationCodePurpose.AccountDeletion,
             clock.UtcNow,
             TestContext.Current.CancellationToken
         );

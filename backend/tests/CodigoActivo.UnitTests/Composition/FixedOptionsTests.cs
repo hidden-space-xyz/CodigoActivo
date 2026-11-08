@@ -35,6 +35,7 @@ public sealed class FixedOptionsTests : IDisposable
                     ["AccountVerification:OtpLifetimeMinutes"] = "10080",
                     ["PasswordReset:CodeLifetimeMinutes"] = "10080",
                     ["PasswordLockout:MaxFailedAttempts"] = "100000",
+                    ["PasswordLockout:LockoutMinutes"] = "0.01",
                     ["TwoFactor:ChallengeLifetimeMinutes"] = "10080",
                     ["TwoFactor:MaxFailedAttempts"] = "100000",
                     ["TwoFactor:LockoutMinutes"] = "0.01",

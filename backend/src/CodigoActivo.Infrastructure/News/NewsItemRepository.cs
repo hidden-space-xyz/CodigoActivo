@@ -20,8 +20,8 @@ public class NewsItemRepository(CodigoActivoDbContext context)
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<NewsItem>> ListFeaturedAsync(CancellationToken ct = default)
+    public Task<NewsItem?> GetFeaturedAsync(CancellationToken ct = default)
     {
-        return await Set.Where(newsItem => newsItem.Featured).ToListAsync(ct);
+        return Set.FirstOrDefaultAsync(newsItem => newsItem.Featured, ct);
     }
 }

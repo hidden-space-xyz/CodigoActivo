@@ -49,7 +49,8 @@ public sealed class GetLoginChallengeTicketQueryHandler(
                 .Where(
                     SignInRows.HasOpenChallenge(
                         query.Challenge,
-                        clock.UtcNow - options.ChallengeLifetime
+                        clock.UtcNow,
+                        options.ChallengeLifetime
                     )
                 )
                 .Select(user => user.PasswordHash),

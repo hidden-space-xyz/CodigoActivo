@@ -112,6 +112,11 @@ public record ResetTwoFactorRequest([Required] [MaxLength(128)] string CurrentPa
 /// Optional second contact phone; blank removes it and it must differ from
 /// <paramref name="Phone"/>. Ignored for a dependent.
 /// </param>
+/// <param name="Code">
+/// Current code of the caller's second factor: emailed through
+/// <c>POST /api/me/confirmation-code</c> or read from the authenticator. Required when the update
+/// changes the email; ignored otherwise.
+/// </param>
 public record UpdateUserRequest(
     [Required] [MaxLength(120)] string FirstName,
     [Required] [MaxLength(120)] string LastName,
@@ -123,7 +128,8 @@ public record UpdateUserRequest(
     [EnumDataType(typeof(Gender))] Gender Gender,
     Guid? ParentId,
     [MaxLength(128)] string? CurrentPassword,
-    [MaxLength(40)] string? SecondaryPhone = null
+    [MaxLength(40)] string? SecondaryPhone = null,
+    [MaxLength(16)] string? Code = null
 )
 {
     /// <summary>
@@ -145,7 +151,8 @@ public record UpdateUserRequest(
             Gender.ToDomain(),
             ParentId is { } parentId ? UserId.From(parentId) : null,
             CurrentPassword,
-            SecondaryPhone
+            SecondaryPhone,
+            Code
         );
     }
 }

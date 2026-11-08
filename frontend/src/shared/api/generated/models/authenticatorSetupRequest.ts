@@ -7,4 +7,5 @@
 
 export interface AuthenticatorSetupRequest {
   currentPassword: string;
+  code: string;
 }

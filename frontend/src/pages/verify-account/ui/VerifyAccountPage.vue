@@ -2,14 +2,15 @@
 import { onMounted } from 'vue'
 
 import { useAccountVerification } from '../model/use-account-verification'
-import { EMAIL_ADDRESS_MAX_LENGTH } from '@/shared/config'
+import { EMAIL_ADDRESS_MAX_LENGTH, UNVERIFIED_ACCOUNT_RETENTION_HOURS } from '@/shared/config'
 import { useLinkFragment } from '@/shared/lib/navigation'
 import { BrandButton } from '@/shared/ui/brand-button'
 import { PageHead } from '@/shared/ui/page-head'
 import { StatusPanel } from '@/shared/ui/status-panel'
 
 const linkParam = useLinkFragment()
-const { state, errorMessage, verify, resendForm, resend, isResending } = useAccountVerification()
+const { state, errorMessage, staleLink, verify, resendForm, resend, isResending } =
+  useAccountVerification()
 
 onMounted(() => {
   verify(linkParam('userId'), linkParam('code'))
@@ -53,7 +54,13 @@ onMounted(() => {
           state="error"
           :title="$t('pages.verifyAccount.errorTitle')"
           :text="errorMessage ?? $t('pages.verifyAccount.defaultError')"
-          :hint="$t('pages.verifyAccount.hint')"
+          :hint="
+            staleLink
+              ? $t('pages.verifyAccount.staleLinkHint', {
+                  hours: UNVERIFIED_ACCOUNT_RETENTION_HOURS,
+                })
+              : $t('pages.verifyAccount.hint')
+          "
           data-testid="verify-account-error"
         >
           <form class="verify-resend" @submit.prevent="resend">
@@ -77,7 +84,15 @@ onMounted(() => {
             </BrandButton>
           </form>
           <template #actions>
-            <BrandButton :to="{ name: 'home' }" variant="ghost">{{
+            <template v-if="staleLink">
+              <BrandButton :to="{ name: 'login' }" variant="primary">{{
+                $t('common.login')
+              }}</BrandButton>
+              <BrandButton :to="{ name: 'register' }" variant="ghost">{{
+                $t('common.register')
+              }}</BrandButton>
+            </template>
+            <BrandButton v-else :to="{ name: 'home' }" variant="ghost">{{
               $t('common.backToHome')
             }}</BrandButton>
           </template>

@@ -51,7 +51,7 @@ public sealed record PasswordChanged(UserId UserId) : IDomainEvent;
 public sealed record PasswordReset(UserId UserId) : IDomainEvent;
 
 /// <summary>
-/// Too many wrong passwords locked an account until its password is reset.
+/// Too many wrong passwords locked an account for a while.
 /// </summary>
 /// <param name="UserId">Identifier of the account.</param>
 public sealed record PasswordLocked(UserId UserId) : IDomainEvent;

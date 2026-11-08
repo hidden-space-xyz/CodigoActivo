@@ -436,12 +436,18 @@ public sealed class AuditCommandDecoratorTests
     [Fact]
     public async Task HandleAsyncPreparatoryCommandIsRecordedOnlyWhenRefused()
     {
-        await HandleAsync<RequestAccountDeletionCodeCommand, Result>(
-            new RequestAccountDeletionCodeCommand("right-password"),
+        await HandleAsync<RequestConfirmationCodeCommand, Result>(
+            new RequestConfirmationCodeCommand(
+                "right-password",
+                ConfirmationCodePurpose.AccountDeletion
+            ),
             _ => Result.Success()
         );
-        await HandleAsync<RequestAccountDeletionCodeCommand, Result>(
-            new RequestAccountDeletionCodeCommand("wrong-password"),
+        await HandleAsync<RequestConfirmationCodeCommand, Result>(
+            new RequestConfirmationCodeCommand(
+                "wrong-password",
+                ConfirmationCodePurpose.AccountDeletion
+            ),
             _ => Error.Validation(ApplicationErrorCode.UserCurrentPasswordIncorrect)
         );
 

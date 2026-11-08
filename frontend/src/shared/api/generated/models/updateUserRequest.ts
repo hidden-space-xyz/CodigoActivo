@@ -25,4 +25,6 @@ export interface UpdateUserRequest {
   currentPassword?: string | null;
   /** @nullable */
   secondaryPhone?: string | null;
+  /** @nullable */
+  code?: string | null;
 }

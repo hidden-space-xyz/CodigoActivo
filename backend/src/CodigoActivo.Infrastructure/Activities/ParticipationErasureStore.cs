@@ -15,6 +15,36 @@ public sealed class ParticipationErasureStore(CodigoActivoDbContext context)
     : IParticipationErasureStore
 {
     /// <inheritdoc />
+    public async Task<bool> TakesParticipationAsync(
+        ParticipationDeletion deletion,
+        CancellationToken ct = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(deletion);
+
+        if (
+            deletion is
+            { Origin: ParticipationDeletionOrigin.ActivityDeleted, ActivityId: { } activityId }
+        )
+        {
+            return await context.Assignments.AnyAsync(a => a.ActivityId == activityId, ct);
+        }
+
+        if (deletion.Origin is not ParticipationDeletionOrigin.EventDeleted)
+        {
+            return true;
+        }
+
+        var eventId = deletion.EventId;
+        return await context.Activities.AnyAsync(
+                a => a.EventId == eventId && a.Assignments.Any(),
+                ct
+            )
+            || await context.EventTermsAcceptances.AnyAsync(t => t.EventId == eventId, ct)
+            || await context.EventRatings.AnyAsync(r => r.EventId == eventId, ct);
+    }
+
+    /// <inheritdoc />
     public async Task LoadAsync(ParticipationDeletion deletion, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(deletion);

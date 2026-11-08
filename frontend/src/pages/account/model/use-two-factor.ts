@@ -9,11 +9,12 @@ import { getErrorMessage, useCrudFeedback } from '@/shared/lib/feedback'
 import { toQrCodeDataUrl } from '../lib/qr-code'
 
 /**
- * Second-factor settings of the signed-in user. Enrolling an authenticator is a two-step
- * dialog: the password unlocks the shared key (shown as a QR code and in text), and the first
- * code the application generates activates it. Dropping the authenticator needs the password and
- * a current code. Both changes refresh the cached profile and the session user afterwards. A
- * failed request is kept in `errorMessage` until `reset` or the next success. Call it in `setup`.
+ * Second-factor settings of the signed-in user. Enrolling an authenticator is a three-step
+ * dialog: the password emails a code to the current address (`requestSetupCode`), that code
+ * unlocks the shared key (shown as a QR code and in text), and the first code the application
+ * generates activates it. Dropping the authenticator needs the password and a current code. Both
+ * changes refresh the cached profile and the session user afterwards. A failed request is kept in
+ * `errorMessage` until `reset` or the next success. Call it in `setup`.
  */
 export function useTwoFactor() {
   const { t } = useI18n()
@@ -22,6 +23,7 @@ export function useTwoFactor() {
   const queryClient = useQueryClient()
 
   const isAuthenticator = computed(() => session.user?.twoFactorMethod === 'Authenticator')
+  const email = computed(() => session.user?.email ?? '')
   const setup = ref<AuthenticatorSetup | null>(null)
   const qrCodeUrl = ref<string | null>(null)
   const errorMessage = ref('')
@@ -35,6 +37,14 @@ export function useTwoFactor() {
   function showError(error: unknown): void {
     errorMessage.value = getErrorMessage(error)
   }
+
+  const requestSetupCode = useMutation({
+    ...accountMutations.requestConfirmationCode(),
+    onSuccess: () => {
+      errorMessage.value = ''
+    },
+    onError: showError,
+  })
 
   const beginSetup = useMutation({
     ...accountMutations.beginAuthenticatorSetup(),
@@ -74,10 +84,12 @@ export function useTwoFactor() {
 
   return {
     isAuthenticator,
+    email,
     setup,
     qrCodeUrl,
     errorMessage,
     reset,
+    requestSetupCode,
     beginSetup,
     confirmSetup,
     disable,

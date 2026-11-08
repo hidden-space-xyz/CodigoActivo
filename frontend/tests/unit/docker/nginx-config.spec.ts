@@ -36,7 +36,8 @@ const securityHeaderNames = [
 const proxiedLocationHeaders = [
   'location = /sitemap.xml',
   'location = /robots.txt',
-  'location ~* ^/api/auth/(login|register|forgot-password|resend-verification|[^/]+/(verify|reset-password|confirm-email))/?$',
+  'location ~* ^/api/auth/(register|forgot-password|resend-verification)/?$',
+  'location ~* ^/api/auth/(login|[^/]+/(verify|reset-password|confirm-email))/?$',
   'location ~* ^/api/users/[^/]+/(password|staff-role|privacy-officer)/?$',
   'location /api/',
 ]
@@ -320,7 +321,7 @@ function mapKeyRegex(entry: NginxMapEntry): RegExp {
 describe('nginx configuration parsing', () => {
   it('reads every statement of the shared configurations', () => {
     expect(statements(nginxConf).length, 'nginx.conf').toBeGreaterThanOrEqual(20)
-    expect(statements(proxyApiConf).length, 'proxy-api.conf').toBeGreaterThanOrEqual(17)
+    expect(statements(proxyApiConf).length, 'proxy-api.conf').toBeGreaterThanOrEqual(16)
     expect(statements(securityHeadersConf).length, 'security-headers.conf').toBeGreaterThanOrEqual(
       10,
     )

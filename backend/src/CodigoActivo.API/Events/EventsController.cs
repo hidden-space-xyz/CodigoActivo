@@ -313,7 +313,8 @@ public class EventsController : ApiControllerBase
 
     /// <summary>
     /// Deletes the selected event with its activities, their signups and the terms decisions and
-    /// ratings taken about it, keeping their data history.
+    /// ratings taken about it, keeping their data history; only an administrator may delete one
+    /// that has any of them.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>

@@ -28,6 +28,8 @@ watch(visible, (open) => {
 <template>
   <el-dialog
     v-model="visible"
+    :close-on-click-modal="false"
+    :close-on-press-escape="false"
     :title="$t('pages.admin.events.categoryDialog.header')"
     width="min(380px, 92vw)"
     append-to-body

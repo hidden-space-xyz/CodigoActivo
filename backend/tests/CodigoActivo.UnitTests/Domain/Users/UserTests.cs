@@ -11,14 +11,14 @@ public sealed class UserTests
 {
     private static readonly DateTimeOffset Seeded = new(2020, 1, 1, 0, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset Now = new(2026, 7, 4, 12, 0, 0, TimeSpan.Zero);
+    private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
-    public static TheoryData<Guid, bool, bool, bool> StatusFlags =>
+    public static TheoryData<Guid, bool, bool> StatusFlags =>
         new()
         {
-            { KnownIds.UserStatusTypes.Pending, false, false, true },
-            { KnownIds.UserStatusTypes.Active, false, false, false },
-            { KnownIds.UserStatusTypes.Blocked, true, false, false },
-            { KnownIds.UserStatusTypes.Dependent, false, true, false },
+            { KnownIds.UserStatusTypes.Pending, false, true },
+            { KnownIds.UserStatusTypes.Active, false, false },
+            { KnownIds.UserStatusTypes.Dependent, true, false },
         };
 
     public static TheoryData<Guid, string?, bool> SignInStates =>
@@ -27,7 +27,6 @@ public sealed class UserTests
             { KnownIds.UserStatusTypes.Active, "hash", true },
             { KnownIds.UserStatusTypes.Active, null, false },
             { KnownIds.UserStatusTypes.Pending, "hash", false },
-            { KnownIds.UserStatusTypes.Blocked, "hash", false },
             { KnownIds.UserStatusTypes.Dependent, "hash", false },
         };
 
@@ -481,13 +480,13 @@ public sealed class UserTests
         var user = NewPendingUser();
         Persisted.Overwrite(
             user,
-            new { PasswordLockout = new { FailedAttempts = 5, LockedAt = Now } }
+            new { PasswordLockout = new { FailedAttempts = 0, LockedUntil = Now.AddMinutes(15) } }
         );
 
         user.ClearPasswordFailures();
 
         user.PasswordLockout.FailedAttempts.Should().Be(0);
-        user.PasswordLockout.IsLocked.Should().BeTrue();
+        user.PasswordLockout.IsLocked(Now).Should().BeTrue();
     }
 
     [Fact]
@@ -496,7 +495,7 @@ public sealed class UserTests
         var user = NewPendingUser();
         Persisted.Overwrite(
             user,
-            new { PasswordLockout = new { FailedAttempts = 5, LockedAt = Now } }
+            new { PasswordLockout = new { FailedAttempts = 0, LockedUntil = Now.AddMinutes(15) } }
         );
         user.IssuePasswordResetCode("HASH", Now, TimeSpan.FromMinutes(15));
 
@@ -504,8 +503,8 @@ public sealed class UserTests
 
         user.PasswordHash.Should().Be("new-hash");
         user.PasswordLockout.FailedAttempts.Should().Be(0);
-        user.PasswordLockout.LockedAt.Should().BeNull();
-        user.PasswordLockout.IsLocked.Should().BeFalse();
+        user.PasswordLockout.LockedUntil.Should().BeNull();
+        user.PasswordLockout.IsLocked(Now).Should().BeFalse();
         user.PasswordResetCode.Hash.Should().BeNull();
         user.UpdatedAt.Should().Be(Now.AddMinutes(1));
     }
@@ -516,13 +515,13 @@ public sealed class UserTests
         var user = NewPendingUser();
         Persisted.Overwrite(
             user,
-            new { PasswordLockout = new { FailedAttempts = 5, LockedAt = Now } }
+            new { PasswordLockout = new { FailedAttempts = 0, LockedUntil = Now.AddMinutes(15) } }
         );
 
         var leftAuthenticator = user.ResetTwoFactor(Now);
 
         leftAuthenticator.Should().BeFalse();
-        user.PasswordLockout.IsLocked.Should().BeTrue();
+        user.PasswordLockout.IsLocked(Now).Should().BeTrue();
     }
 
     [Fact]
@@ -557,14 +556,12 @@ public sealed class UserTests
     [MemberData(nameof(StatusFlags))]
     public void StatusFlagsEachStatusRaisesOnlyItsOwnFlag(
         Guid statusId,
-        bool blocked,
         bool dependent,
         bool pending
     )
     {
         var user = UserWithStatus(statusId);
 
-        user.IsBlocked.Should().Be(blocked);
         user.IsDependent.Should().Be(dependent);
         user.IsPendingVerification.Should().Be(pending);
         user.OwnsEmail.Should().Be(!pending);
@@ -676,27 +673,28 @@ public sealed class UserTests
         var challengeId = LoginChallengeId.New();
         user.StartLoginChallenge(challengeId, Now);
 
-        user.RecordPasswordFailure(3, Now);
+        user.RecordPasswordFailure(Now, 3, LockoutDuration);
 
         user.PasswordLockout.FailedAttempts.Should().Be(1);
-        user.PasswordLockout.LockedAt.Should().BeNull();
-        user.PasswordLockout.IsLocked.Should().BeFalse();
+        user.PasswordLockout.LockedUntil.Should().BeNull();
+        user.PasswordLockout.IsLocked(Now).Should().BeFalse();
         user.LoginChallenge.Id.Should().Be(challengeId);
         user.PullDomainEvents().Should().BeEmpty();
     }
 
     [Fact]
-    public void RecordPasswordFailureReachingTheLimitLocksClosesTheChallengeAndRaisesTheLock()
+    public void RecordPasswordFailureReachingTheLimitLocksForAWhileClosesTheChallengeAndRaisesTheLock()
     {
         var user = NewPendingUser();
         user.StartLoginChallenge(LoginChallengeId.New(), Now);
         Persisted.Overwrite(user, new { PasswordLockout = new { FailedAttempts = 2 } });
 
-        user.RecordPasswordFailure(3, Now);
+        user.RecordPasswordFailure(Now, 3, LockoutDuration);
 
-        user.PasswordLockout.FailedAttempts.Should().Be(3);
-        user.PasswordLockout.LockedAt.Should().Be(Now);
-        user.PasswordLockout.IsLocked.Should().BeTrue();
+        user.PasswordLockout.FailedAttempts.Should().Be(0);
+        user.PasswordLockout.LockedUntil.Should().Be(Now + LockoutDuration);
+        user.PasswordLockout.IsLocked(Now.AddMinutes(14)).Should().BeTrue();
+        user.PasswordLockout.IsLocked(Now.AddMinutes(15)).Should().BeFalse();
         user.LoginChallenge.Id.Should().BeNull();
         user.PullDomainEvents().Should().Equal(new PasswordLocked(user.Id));
     }
@@ -705,20 +703,42 @@ public sealed class UserTests
     public void RecordPasswordFailureLockedAccountCountsNothing()
     {
         var user = NewPendingUser();
-        var lockedAt = Now.AddDays(-1);
+        var lockedUntil = Now.AddMinutes(1);
         var challengeId = LoginChallengeId.New();
         Persisted.Overwrite(
             user,
-            new { PasswordLockout = new { FailedAttempts = 3, LockedAt = lockedAt } }
+            new { PasswordLockout = new { FailedAttempts = 0, LockedUntil = lockedUntil } }
         );
         user.StartLoginChallenge(challengeId, Now);
 
-        user.RecordPasswordFailure(3, Now);
+        user.RecordPasswordFailure(Now, 1, LockoutDuration);
 
-        user.PasswordLockout.FailedAttempts.Should().Be(3);
-        user.PasswordLockout.LockedAt.Should().Be(lockedAt);
+        user.PasswordLockout.FailedAttempts.Should().Be(0);
+        user.PasswordLockout.LockedUntil.Should().Be(lockedUntil);
         user.LoginChallenge.Id.Should().Be(challengeId);
         user.PullDomainEvents().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void RecordPasswordFailureAfterTheLockExpiredCountsFromTheStartAgain()
+    {
+        var user = NewPendingUser();
+        Persisted.Overwrite(
+            user,
+            new { PasswordLockout = new { FailedAttempts = 0, LockedUntil = Now } }
+        );
+
+        user.RecordPasswordFailure(Now, 3, LockoutDuration);
+        user.RecordPasswordFailure(Now, 3, LockoutDuration);
+
+        user.PasswordLockout.FailedAttempts.Should().Be(2);
+        user.PasswordLockout.IsLocked(Now).Should().BeFalse();
+        user.PullDomainEvents().Should().BeEmpty();
+
+        user.RecordPasswordFailure(Now, 3, LockoutDuration);
+
+        user.PasswordLockout.LockedUntil.Should().Be(Now + LockoutDuration);
+        user.PullDomainEvents().Should().Equal(new PasswordLocked(user.Id));
     }
 
     [Fact]
@@ -726,7 +746,7 @@ public sealed class UserTests
     {
         var user = NewPendingUser();
         user.ChangeType(UserType.Sponsor, Now).IsSuccess.Should().BeTrue();
-        user.RecordPasswordFailure(1, Now);
+        user.RecordPasswordFailure(Now, 1, LockoutDuration);
         user.ChangeType(UserType.Member, Now);
 
         var locks = user.PullDomainEvents<PasswordLocked>();
@@ -1118,15 +1138,18 @@ public sealed class UserTests
     [Fact]
     public void HasOpenLoginChallengeAccountThatMayNoLongerSignInClosesIt()
     {
-        var blocked = NewSignInUser();
+        var pending = NewSignInUser();
         var passwordLocked = NewSignInUser();
         var challengeId = LoginChallengeId.New();
-        blocked.StartLoginChallenge(challengeId, Now);
+        pending.StartLoginChallenge(challengeId, Now);
         passwordLocked.StartLoginChallenge(challengeId, Now);
-        Persisted.Overwrite(blocked, new { Status = UserStatus.Blocked });
-        Persisted.Overwrite(passwordLocked, new { PasswordLockout = new { LockedAt = Now } });
+        Persisted.Overwrite(pending, new { Status = UserStatus.Pending });
+        Persisted.Overwrite(
+            passwordLocked,
+            new { PasswordLockout = new { LockedUntil = Now.AddMinutes(15) } }
+        );
 
-        blocked
+        pending
             .HasOpenLoginChallenge(challengeId, Now, TimeSpan.FromMinutes(10))
             .Should()
             .BeFalse();
@@ -1134,6 +1157,17 @@ public sealed class UserTests
             .HasOpenLoginChallenge(challengeId, Now, TimeSpan.FromMinutes(10))
             .Should()
             .BeFalse();
+    }
+
+    [Fact]
+    public void HasOpenLoginChallengeExpiredPasswordLockLeavesItOpen()
+    {
+        var user = NewSignInUser();
+        var challengeId = LoginChallengeId.New();
+        user.StartLoginChallenge(challengeId, Now);
+        Persisted.Overwrite(user, new { PasswordLockout = new { LockedUntil = Now } });
+
+        user.HasOpenLoginChallenge(challengeId, Now, TimeSpan.FromMinutes(10)).Should().BeTrue();
     }
 
     [Fact]

@@ -20,9 +20,9 @@ public readonly record struct EmailSendDecision(EmailLimitScope Scope, EmailGuar
 /// Enforces the email guard on the codes, the only mail limited before it is stored: an hourly and
 /// a daily budget per normalized address, and a budget shared by the mail anyone can ask for, the
 /// verification, email-in-use and password-reset mail, which second-factor codes never spend.
-/// Second-factor codes also have address budgets of their own, so flooding an address with mail
-/// anyone can ask for never stops its owner from receiving a login code. The budgets live in
-/// memory behind a lock.
+/// Second-factor codes and password reset links also have address budgets of their own, so
+/// flooding an address with registrations never stops its owner from receiving a login code or
+/// recovering the account. The budgets live in memory behind a lock.
 /// </summary>
 /// <param name="options">Limits applied, and the interval that spaces repeated alerts.</param>
 /// <param name="smtp">SMTP provider pace, which caps the anonymous budget at half of it.</param>
@@ -30,6 +30,7 @@ public readonly record struct EmailSendDecision(EmailLimitScope Scope, EmailGuar
 public sealed class EmailSendLimiter(EmailGuardOptions options, SmtpOptions smtp, IClock clock)
 {
     private const string TwoFactorPrefix = "2fa:";
+    private const string AccessRecoveryPrefix = "reset:";
 
     private readonly Lock gate = new();
     private readonly RecipientBudgets recipients = new(options, clock.UtcNow);
@@ -46,8 +47,8 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, SmtpOptions smtp
     );
 
     /// <summary>
-    /// Gets how many address budgets the limiter holds; an address that received second-factor
-    /// codes and other codes counts twice.
+    /// Gets how many address budgets the limiter holds; an address counts once for its
+    /// second-factor codes, once for its password reset links and once for the rest of its codes.
     /// </summary>
     public int TrackedRecipients => recipients.Count;
 
@@ -67,7 +68,7 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, SmtpOptions smtp
     {
         var now = clock.UtcNow;
         var twoFactor = kind is EmailKind.TwoFactorCode;
-        var key = (twoFactor ? TwoFactorPrefix : string.Empty) + NormalizeKey(address);
+        var key = BudgetPrefix(kind) + NormalizeKey(address);
 
         lock (gate)
         {
@@ -137,6 +138,16 @@ public sealed class EmailSendLimiter(EmailGuardOptions options, SmtpOptions smtp
         }
 
         return string.Concat(local, "@", domain);
+    }
+
+    private static string BudgetPrefix(EmailKind kind)
+    {
+        return kind switch
+        {
+            EmailKind.TwoFactorCode => TwoFactorPrefix,
+            EmailKind.AccessRecovery => AccessRecoveryPrefix,
+            _ => string.Empty,
+        };
     }
 
     private static bool FoldsDots(string domain)

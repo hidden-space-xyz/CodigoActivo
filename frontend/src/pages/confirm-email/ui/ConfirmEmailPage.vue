@@ -10,7 +10,7 @@ import { StatusPanel } from '@/shared/ui/status-panel'
 
 const linkParam = useLinkFragment()
 const session = useSession()
-const { state, errorMessage, confirm } = useEmailChangeConfirmation()
+const { state, errorMessage, staleLink, confirm } = useEmailChangeConfirmation()
 
 onMounted(() => {
   confirm(linkParam('userId'), linkParam('code'))
@@ -56,11 +56,23 @@ onMounted(() => {
           state="error"
           :title="$t('pages.confirmEmail.errorTitle')"
           :text="errorMessage"
-          :hint="$t('pages.confirmEmail.hint')"
+          :hint="staleLink ? $t('pages.confirmEmail.staleLinkHint') : $t('pages.confirmEmail.hint')"
           data-testid="confirm-email-error"
         >
           <template #actions>
-            <BrandButton :to="{ name: 'home' }" variant="ghost">{{
+            <template v-if="staleLink">
+              <BrandButton
+                v-if="session.isAuthenticated"
+                :to="{ name: 'account' }"
+                variant="primary"
+              >
+                {{ $t('common.myAccount') }}
+              </BrandButton>
+              <BrandButton v-else :to="{ name: 'login' }" variant="primary">
+                {{ $t('common.login') }}
+              </BrandButton>
+            </template>
+            <BrandButton v-else :to="{ name: 'home' }" variant="ghost">{{
               $t('common.backToHome')
             }}</BrandButton>
           </template>

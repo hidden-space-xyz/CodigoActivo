@@ -310,7 +310,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                     ChildSignedUpAt
                 ),
                 NewAssignment(
-                    TestSeedData.Users.BlockedId,
+                    TestSeedData.Users.OtherId,
                     TalkId,
                     KnownIds.ActivityRoleTypes.Participant,
                     KnownIds.AssignmentStatusTypes.Confirmed,
@@ -336,7 +336,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                 ),
                 NewDecision(
                     ConferenceId,
-                    TestSeedData.Users.BlockedId,
+                    TestSeedData.Users.OtherId,
                     ConditionsId,
                     accepted: true,
                     SeededAt
@@ -356,7 +356,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                 EventRating
                     .Submit(
                         EventId.From(ConferenceId),
-                        UserId.From(TestSeedData.Users.BlockedId),
+                        UserId.From(TestSeedData.Users.OtherId),
                         2,
                         null,
                         null,
@@ -616,10 +616,10 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         (await HistoryAsync())
             .Should()
             .OnlyContain(item => item.Entry.SubjectIds.Intersect(household).Any())
-            .And.NotContain(item => item.Entry.SubjectIds.Contains(TestSeedData.Users.BlockedId));
+            .And.NotContain(item => item.Entry.SubjectIds.Contains(TestSeedData.Users.OtherId));
         (await Factory.QueryAsync(db => db.Assignments.CountAsync(Ct)))
             .Should()
-            .Be(1, "the signup of the blocked user stays");
+            .Be(1, "the signup of the other user stays");
     }
 
     [Fact]
@@ -734,8 +734,7 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         var erase = () =>
             scope.ServiceProvider.GetRequiredService<AccountEraser>().EraseAsync(stale, Ct);
 
-        var thrown = await erase.Should().ThrowAsync<ConcurrentUpdateException>();
-        thrown.Which.EntityType.Should().Be<User>();
+        await erase.Should().ThrowAsync<ConcurrentUpdateException>();
         (await FindAsync<User>(TestSeedData.Users.PendingId))!
             .Status.Should()
             .Be(UserStatus.Active);
@@ -986,13 +985,13 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         await using var scope = Factory.Services.CreateAsyncScope();
         var users = scope.ServiceProvider.GetRequiredService<IUserRepository>();
         var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-        var user = await users.GetByIdAsync(UserId.From(TestSeedData.Users.BlockedId), Ct);
+        var user = await users.GetByIdAsync(UserId.From(TestSeedData.Users.OtherId), Ct);
         users.Remove(user!);
 
         var save = () => uow.SaveChangesAsync(Ct);
 
         await save.Should()
             .ThrowAsync<DbUpdateException>("the signups it did not load would leave no history");
-        (await FindAsync<User>(TestSeedData.Users.BlockedId)).Should().NotBeNull();
+        (await FindAsync<User>(TestSeedData.Users.OtherId)).Should().NotBeNull();
     }
 }

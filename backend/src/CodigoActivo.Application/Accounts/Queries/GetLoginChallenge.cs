@@ -55,7 +55,8 @@ public sealed class GetLoginChallengeQueryHandler(
                 .Where(
                     SignInRows.HasOpenChallenge(
                         query.Challenge,
-                        clock.UtcNow - options.ChallengeLifetime
+                        clock.UtcNow,
+                        options.ChallengeLifetime
                     )
                 )
                 .Select(user => new { user.TwoFactorMethod, user.Email }),

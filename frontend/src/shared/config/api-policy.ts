@@ -133,5 +133,8 @@ export const IMAGE_UPLOAD_ACCEPT = 'image/jpeg,image/png,image/webp'
 /** Minutes an emailed verification code or password reset link stays valid. */
 export const ONE_TIME_CODE_LIFETIME_MINUTES = 15
 
+/** Hours an unverified account lasts before it is erased (`User.UnverifiedRetentionDays`). */
+export const UNVERIFIED_ACCOUNT_RETENTION_HOURS = 24
+
 /** Seconds the API makes a person wait before it emails another code to the same account. */
 export const RESEND_COOLDOWN_SECONDS = 60

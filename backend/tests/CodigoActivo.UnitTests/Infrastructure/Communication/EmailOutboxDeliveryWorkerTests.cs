@@ -258,7 +258,6 @@ public sealed class EmailOutboxDeliveryWorkerTests
 
         public override async Task<IReadOnlyList<EmailOutboxMessage>> ClaimDueAsync(
             DateTimeOffset now,
-            DateTimeOffset leaseUntil,
             int batchSize,
             int maxPriority,
             CancellationToken ct = default

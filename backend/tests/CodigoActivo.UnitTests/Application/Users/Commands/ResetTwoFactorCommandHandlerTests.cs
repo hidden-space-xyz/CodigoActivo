@@ -48,6 +48,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
         );
         sut = new ResetTwoFactorCommandHandler(
             users,
+            currentUser,
             PasswordGuards.Create(hasher, uow, clock, users: users, currentUser: currentUser),
             clock
         );
@@ -105,6 +106,36 @@ public sealed class ResetTwoFactorCommandHandlerTests
         actingAdmin.PasswordLockout.FailedAttempts.Should().Be(1);
         await uow.DidNotReceiveWithAnyArgs()
             .SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Theory]
+    [InlineData(ActingPassword)]
+    [InlineData("wrong")]
+    public async Task HandleAsyncOwnAccountIsForbiddenBeforeThePasswordIsChecked(string password)
+    {
+        Persisted.Overwrite(
+            actingAdmin,
+            new
+            {
+                TwoFactorMethod = TwoFactorMethod.Authenticator,
+                Authenticator = new { Key = "protected:secret" },
+            }
+        );
+        users.FindReturns(actingAdmin, actingAdmin);
+
+        var result = await HandleAsync(actingAdmin.Id.Value, password);
+
+        result.ShouldFail(
+            ErrorKind.Forbidden,
+            ApplicationErrorCode.UserSelfTwoFactorResetRequiresVerification
+        );
+        actingAdmin.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
+        actingAdmin.Authenticator.Key.Should().Be("protected:secret");
+        actingAdmin.PasswordLockout.FailedAttempts.Should().Be(0);
+        await users
+            .DidNotReceiveWithAnyArgs()
+            .GetByIdAsync(default, TestContext.Current.CancellationToken);
+        await AssertNotSavedAsync();
     }
 
     [Fact]

@@ -183,6 +183,18 @@ describe('useUsersAdmin', () => {
     expect(anonymous.result.deleteBlockReason(own)).toBeUndefined()
   })
 
+  it('offers the second-factor reset only for other accounts with an email', async () => {
+    serveUserPages([[]])
+    const own = toUser(buildUserResponse({ staffRole: 'Administrator' }))
+    const other = toUser(buildUserResponse({ id: 'user-2' }))
+    const dependent = toUser(buildDependentResponse())
+    const { result } = await mountComposable(() => useUsersAdmin(), {
+      user: { id: 'user-1', staffRole: 'Administrator' },
+    })
+
+    expect([own, other, dependent].map(result.mayResetTwoFactor)).toEqual([false, true, false])
+  })
+
   it('leaves cargos, the data protection designation and deletions to the superadministrator', async () => {
     serveUserPages([[]])
     const superAdmin = toUser(

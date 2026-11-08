@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts.Notifications;
+using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.UnitTests.TestSupport;
@@ -11,6 +12,8 @@ public sealed record ComposedAccountEmail(string Name, EmailRecipient Recipient)
     public string? Code { get; init; }
 
     public TimeSpan? Lifetime { get; init; }
+
+    public ConfirmationCodePurpose? Purpose { get; init; }
 
     public bool? NewsConsent { get; init; }
 
@@ -109,15 +112,21 @@ public sealed class FakeAccountEmailComposer : IAccountEmailComposer
         );
     }
 
-    public EmailMessage AccountDeletionCode(
+    public EmailMessage ConfirmationCode(
         EmailRecipient recipient,
+        ConfirmationCodePurpose purpose,
         string code,
         TimeSpan lifetime
     )
     {
         return Compose(
             EmailKind.TwoFactorCode,
-            new(nameof(AccountDeletionCode), recipient) { Code = code, Lifetime = lifetime }
+            new(nameof(ConfirmationCode), recipient)
+            {
+                Purpose = purpose,
+                Code = code,
+                Lifetime = lifetime,
+            }
         );
     }
 

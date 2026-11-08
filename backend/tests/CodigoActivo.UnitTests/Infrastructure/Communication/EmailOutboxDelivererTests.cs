@@ -165,7 +165,7 @@ public sealed class EmailOutboxDelivererTests
         retry.AttemptCount.Should().Be(expectedAttempts);
         retry.NextAttemptAt.Should().Be(Now.AddMinutes(expectedDelayMinutes));
         retry.Error.Should().Contain("Connection reset");
-        store.Messages.Should().ContainSingle().Which.LockedUntil.Should().BeNull();
+        store.Messages.Should().ContainSingle().Which.AttemptCount.Should().Be(expectedAttempts);
     }
 
     [Fact]
@@ -188,7 +188,6 @@ public sealed class EmailOutboxDelivererTests
             {
                 message.AttemptCount.Should().Be(0, "a pause spends no attempt");
                 message.NextAttemptAt.Should().Be(Now.AddMinutes(1));
-                message.LockedUntil.Should().BeNull();
             });
         logger.LevelEntries.Should().ContainSingle(entry => entry.Level == LogLevel.Error);
         store.SentRecorded.Should().Be(0);
@@ -578,8 +577,7 @@ public sealed class EmailOutboxDelivererTests
             .And.AllSatisfy(message =>
             {
                 message.AttemptCount.Should().Be(0, "a shutdown spends no attempt");
-                message.NextAttemptAt.Should().Be(Now);
-                message.LockedUntil.Should().BeNull("the next instance takes it at once");
+                message.NextAttemptAt.Should().Be(Now, "the next start takes it at once");
             });
         store.Rescheduled.Should().BeEmpty();
     }
@@ -598,12 +596,11 @@ public sealed class EmailOutboxDelivererTests
         var waiting = store.Messages.Should().ContainSingle().Subject;
         waiting.ToAddress.Should().NotBe(transport.Sent[0].ToAddress);
         waiting.AttemptCount.Should().Be(0);
-        waiting.LockedUntil.Should().BeNull();
         store.SentRecorded.Should().Be(1);
     }
 
     [Fact]
-    public async Task DeliverDueAsyncRecordingTheFailureFailsLeavesTheMessageToItsLease()
+    public async Task DeliverDueAsyncRecordingTheFailureFailsLeavesTheMessageDue()
     {
         var store = new ThrowingOnWriteStore(protector) { EnqueuedAt = Now };
         await store.TryEnqueueAsync(Batch("ana@example.test"), Ct());
@@ -613,11 +610,10 @@ public sealed class EmailOutboxDelivererTests
         var delivered = await Create(store, logger).DeliverDueAsync(Ct());
 
         delivered.Should().Be(1);
+        store.Messages.Should().ContainSingle().Which.NextAttemptAt.Should().Be(Now);
         logger
             .LevelEntries.Should()
-            .Contain(entry =>
-                entry.Level == LogLevel.Error && entry.Message.Contains("lease will expire")
-            );
+            .Contain(entry => entry.Level == LogLevel.Error && entry.Message.Contains("stays due"));
     }
 
     [Fact]
@@ -700,45 +696,17 @@ public sealed class EmailOutboxDelivererTests
     }
 
     [Fact]
-    public async Task DeliverDueAsyncFailureAfterLosingTheLeaseLeavesTheReclaimedRowAlone()
-    {
-        var store = Store();
-        await store.TryEnqueueAsync(Batch("ana@example.test"), Ct());
-        var gate = new GatedFailingTransport();
-        var lost = Create(store, with: gate);
-        transport.ThrowOnSend = new InvalidOperationException("Connection reset");
-
-        var abandoned = lost.DeliverDueAsync(Ct());
-        await gate.Reached.Task.WaitAsync(TimeSpan.FromSeconds(30), Ct());
-        clock.UtcNow = clock.UtcNow + options.Lease + TimeSpan.FromSeconds(1);
-        var reclaimedAt = clock.UtcNow;
-        await Create(store).DeliverDueAsync(Ct());
-        gate.Release();
-        await abandoned;
-
-        var pending = store.Messages.Should().ContainSingle().Subject;
-        pending.AttemptCount.Should().Be(2);
-        pending.NextAttemptAt.Should().Be(reclaimedAt + EmailQueueOptions.RetryDelayAfter(2));
-        store
-            .Rescheduled.Should()
-            .ContainSingle("the worker that lost its lease never writes again")
-            .Which.AttemptCount.Should()
-            .Be(2);
-    }
-
-    [Fact]
     public async Task DeliverDueAsyncEmptyOutboxStillClearsOrphanContent()
     {
         var store = Store();
         await store.TryEnqueueAsync(Batch("ana@example.test"), Ct());
         var claimed = await store.ClaimDueAsync(
             clock.UtcNow,
-            clock.UtcNow + options.Lease,
             options.BatchSize,
             EmailQueueOptions.BulkPriority,
             Ct()
         );
-        await store.RemoveAsync(claimed[0].Id, claimed[0].AttemptCount, Ct());
+        await store.RemoveAsync(claimed[0].Id, Ct());
         store.Contents.Should().ContainSingle("the content outlived the message it belonged to");
 
         var delivered = await Create(store).DeliverDueAsync(Ct());
@@ -750,38 +718,6 @@ public sealed class EmailOutboxDelivererTests
     private static CancellationToken Ct()
     {
         return TestContext.Current.CancellationToken;
-    }
-
-    private sealed class GatedFailingTransport : IEmailTransport, IEmailTransportSession
-    {
-        private readonly TaskCompletionSource gate = new(
-            TaskCreationOptions.RunContinuationsAsynchronously
-        );
-
-        public TaskCompletionSource Reached { get; } =
-            new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        public void Release()
-        {
-            gate.TrySetResult();
-        }
-
-        public Task<IEmailTransportSession> OpenAsync(CancellationToken ct = default)
-        {
-            return Task.FromResult<IEmailTransportSession>(this);
-        }
-
-        public async Task SendAsync(EmailMessage message, CancellationToken ct = default)
-        {
-            Reached.TrySetResult();
-            await gate.Task;
-            throw new InvalidOperationException("The connection dropped after the lease expired.");
-        }
-
-        public ValueTask DisposeAsync()
-        {
-            return ValueTask.CompletedTask;
-        }
     }
 
     private sealed class CountingDataProtectionProvider : IDataProtectionProvider
@@ -845,9 +781,8 @@ public sealed class EmailOutboxDelivererTests
     private sealed class ThrowingOnWriteStore(EmailOutboxProtector protector)
         : FakeEmailOutboxStore(protector)
     {
-        public override Task<int> RescheduleAsync(
+        public override Task RescheduleAsync(
             Guid messageId,
-            int attemptCount,
             DateTimeOffset nextAttemptAt,
             string? error,
             CancellationToken ct = default

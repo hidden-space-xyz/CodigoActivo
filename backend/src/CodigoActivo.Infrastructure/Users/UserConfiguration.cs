@@ -130,7 +130,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             {
                 lockout.ExcludedFromHistory();
                 lockout.Property(l => l.FailedAttempts).HasColumnName("password_failed_attempts");
-                lockout.Property(l => l.LockedAt).HasColumnName("password_locked_at");
+                lockout.Property(l => l.LockedUntil).HasColumnName("password_locked_until");
             }
         );
 

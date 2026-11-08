@@ -295,6 +295,25 @@ describe('event detail page', () => {
     })
   })
 
+  it('opens signup by itself once the signup window opens on a page left open', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'], shouldAdvanceTime: true })
+    vi.setSystemTime(new Date('2026-09-01T07:59:00Z'))
+    const opening = { signupStartsAt: '2026-09-01T08:00:00Z' }
+    serveEvent(buildEventResponse({ ...opening, stage: 'Upcoming' }))
+    serveSignupApi()
+
+    const { wrapper } = await renderPage()
+    await wrapper.findAll('.detail-tab')[1]?.trigger('click')
+    const timeline = () => wrapper.findComponent(EventActivitiesTimeline)
+    expect(timeline().props('signupOpen')).toBe(false)
+
+    serveEvent(buildEventResponse({ ...opening, stage: 'SignupOpen' }))
+    await vi.advanceTimersByTimeAsync(62_000)
+
+    await vi.waitFor(() => expect(timeline().props('signupOpen')).toBe(true))
+    expect(wrapper.find('[data-testid="event-activities-closed"]').exists()).toBe(false)
+  })
+
   it('does not open signup once the signup window has closed', async () => {
     serveEvent(buildEventResponse({ signupEndsAt: LONG_AGO, stage: 'SignupClosed' }))
     serveSignupApi()

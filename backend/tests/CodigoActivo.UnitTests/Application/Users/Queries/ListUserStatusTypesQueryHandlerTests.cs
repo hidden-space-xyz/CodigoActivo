@@ -20,18 +20,14 @@ public sealed class ListUserStatusTypesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncMultipleStatusTypesProjectsOrderedByName()
     {
-        store.UserStatusTypes.AddRange([
-            NewStatusTypeRow("Pending"),
-            NewStatusTypeRow("Active"),
-            NewStatusTypeRow("Blocked"),
-        ]);
+        store.UserStatusTypes.AddRange([NewStatusTypeRow("Pending"), NewStatusTypeRow("Active")]);
 
         var result = await sut.HandleAsync(
             new ListUserStatusTypesQuery(),
             TestContext.Current.CancellationToken
         );
 
-        result.Select(s => s.Name).Should().ContainInOrder("Active", "Blocked", "Pending");
+        result.Select(s => s.Name).Should().ContainInOrder("Active", "Pending");
     }
 
     [Fact]

@@ -97,6 +97,8 @@ async function save(): Promise<void> {
 <template>
   <el-dialog
     v-model="visible"
+    :close-on-click-modal="false"
+    :close-on-press-escape="false"
     :title="
       activity
         ? $t('pages.admin.eventDetail.activities.form.editHeader')

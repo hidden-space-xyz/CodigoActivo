@@ -129,7 +129,7 @@ public sealed class GlobalExceptionHandlerTests
 
         await Sut.TryHandleAsync(
             context,
-            new ConcurrentUpdateException(typeof(User), new InvalidOperationException()),
+            new ConcurrentUpdateException("Concurrent update.", new InvalidOperationException()),
             TestContext.Current.CancellationToken
         );
 

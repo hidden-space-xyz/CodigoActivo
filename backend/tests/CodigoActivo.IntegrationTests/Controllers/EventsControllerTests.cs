@@ -9,10 +9,12 @@ using CodigoActivo.Application.EventCategories.Contracts;
 using CodigoActivo.Application.Events.Contracts;
 using CodigoActivo.Application.TermsDecisions.Contracts;
 using CodigoActivo.Application.TermsDocuments.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.DataHistory;
@@ -681,6 +683,141 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         var file = await FindAsync<StoredFile>(thumbnailId.Value);
         file.Should()
             .BeNull("the deleted event's thumbnail is orphaned and must be cascade-deleted");
+    }
+
+    [Theory]
+    [InlineData("signup")]
+    [InlineData("terms decision")]
+    [InlineData("rating")]
+    public async Task DeleteAsEditorEventWithParticipationIsRefusedAndKeepsIt(string participation)
+    {
+        var id = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 5));
+        await SeedParticipationAsync(id, participation);
+        var editor = await LoginAsEditorAsync();
+
+        using var response = await editor.DeleteWithCsrfAsync($"/api/events/{id}", Ct);
+
+        await response.ShouldBeForbiddenAsync(ErrorCode.ParticipationDeletionRequiresAdministrator);
+        (await FindAsync<Event>(id)).Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task DeleteAsEditorEventWithoutParticipationRemovesIt()
+    {
+        var id = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 5));
+        await SeedActivityAsync(id);
+        var editor = await LoginAsEditorAsync();
+
+        using var response = await editor.DeleteWithCsrfAsync($"/api/events/{id}", Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await FindAsync<Event>(id)).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task DeleteAsAdminEventWithParticipationRemovesIt()
+    {
+        var id = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 5));
+        await SeedParticipationAsync(id, "signup");
+        var admin = await LoginAsAdminAsync();
+
+        using var response = await admin.DeleteWithCsrfAsync($"/api/events/{id}", Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await FindAsync<Event>(id)).Should().BeNull();
+    }
+
+    private async Task<HttpClient> LoginAsEditorAsync()
+    {
+        await Factory.SeedAsync(async db =>
+        {
+            var member = await db.Users.FindAsync([UserId.From(TestSeedData.Users.MemberId)], Ct);
+            Persisted.Overwrite(member!, new { StaffRole = StaffRole.Editor });
+        });
+        return await LoginAsMemberAsync();
+    }
+
+    private async Task<Guid> SeedActivityAsync(Guid eventId)
+    {
+        var thumbnailId = await SeedThumbnailAsync();
+        var id = Guid.NewGuid();
+        await Factory.SeedAsync(db =>
+        {
+            db.Activities.Add(
+                Persisted.As<Activity>(
+                    new
+                    {
+                        Id = id,
+                        Title = "Taller",
+                        Description = "Descripción",
+                        Location = "Sala",
+                        ActivityStartsAt = new DateTimeOffset(2026, 8, 2, 10, 0, 0, TimeSpan.Zero),
+                        ActivityEndsAt = new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero),
+                        EventId = eventId,
+                        Modality = ActivityModality.Presencial,
+                        ThumbnailId = thumbnailId,
+                        CreatedAt = SeededAt,
+                        CreatedBy = TestSeedData.Users.AdminId,
+                    }
+                )
+            );
+            return Task.CompletedTask;
+        });
+        return id;
+    }
+
+    private async Task SeedParticipationAsync(Guid eventId, string participation)
+    {
+        var activityId = await SeedActivityAsync(eventId);
+        var termsDocumentId = await SeedTermsDocumentAsync();
+        await Factory.SeedAsync(db =>
+        {
+            switch (participation)
+            {
+                case "signup":
+                    db.Assignments.Add(
+                        Persisted.As<Assignment>(
+                            new
+                            {
+                                UserId = TestSeedData.Users.MemberChildId,
+                                ActivityId = activityId,
+                                Role = ActivityRole.Participant,
+                                Status = AssignmentStatus.Requested,
+                            }
+                        )
+                    );
+                    break;
+                case "terms decision":
+                    db.EventTermsAcceptances.Add(
+                        Persisted.As<EventTermsAcceptance>(
+                            new
+                            {
+                                EventId = eventId,
+                                UserId = TestSeedData.Users.MemberChildId,
+                                DecidedById = TestSeedData.Users.MemberId,
+                                TermsDocumentId = termsDocumentId,
+                                Accepted = true,
+                                DecidedAt = SeededAt,
+                            }
+                        )
+                    );
+                    break;
+                default:
+                    db.EventRatings.Add(
+                        Persisted.As<EventRating>(
+                            new
+                            {
+                                EventId = eventId,
+                                UserId = TestSeedData.Users.AdminId,
+                                Score = 5,
+                            }
+                        )
+                    );
+                    break;
+            }
+
+            return Task.CompletedTask;
+        });
     }
 
     [Fact]

@@ -68,13 +68,6 @@ public sealed class EmailQueueOptions
     public static readonly TimeSpan DailyWindow = TimeSpan.FromHours(24);
 
     /// <summary>
-    /// Stores the extra time added to a lease on top of the worst case of the claimed batch, which
-    /// covers the work the run does around the sends themselves: claiming the rows, reading the
-    /// stored content, recording each result and the clock difference between two instances.
-    /// </summary>
-    public static readonly TimeSpan LeaseMargin = TimeSpan.FromSeconds(30);
-
-    /// <summary>
     /// Stores the delay applied after the first, second and third failure of a message and, from
     /// the fourth on, after every further one, until it expires.
     /// </summary>
@@ -115,8 +108,8 @@ public sealed class EmailQueueOptions
 
     /// <summary>
     /// Gets or sets how long stopping the host waits for the send in flight; the rest of the
-    /// claimed batch is handed back untried at once. A send still running by then stays leased and
-    /// is claimed again once its lease expires.
+    /// claimed batch is handed back untried at once. A message whose send is still running by then
+    /// stays due and the next start claims it again.
     /// </summary>
     public TimeSpan ShutdownDrain { get; set; } = TimeSpan.FromSeconds(20);
 
@@ -131,17 +124,6 @@ public sealed class EmailQueueOptions
     /// Gets or sets how long the worker waits for new work before looking for due messages again.
     /// </summary>
     public TimeSpan PollInterval { get; set; } = TimeSpan.FromSeconds(5);
-
-    /// <summary>
-    /// Gets how long a claimed message stays reserved for the worker that took it: the messages of
-    /// a batch are sent one after another, so the last one is done within <see cref="BatchSize"/>
-    /// sends, each of which may spend a full <see cref="SendTimeout"/>. The lease covers that worst
-    /// case plus <see cref="LeaseMargin"/>, so no row becomes claimable again while the worker that
-    /// claimed it may still be delivering it.
-    /// </summary>
-    public TimeSpan Lease =>
-        (Math.Max(BatchSize, 1) * (SendTimeout > TimeSpan.Zero ? SendTimeout : TimeSpan.Zero))
-        + LeaseMargin;
 
     /// <summary>
     /// Gets the stored delivery priority of an email kind. The claim orders by this column first.

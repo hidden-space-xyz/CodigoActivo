@@ -93,10 +93,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
                     TestSeedData.Users.MemberChildId,
                     KnownIds.AssignmentStatusTypes.Confirmed
                 ),
-                NewAssignment(
-                    TestSeedData.Users.BlockedId,
-                    KnownIds.AssignmentStatusTypes.Requested
-                ),
+                NewAssignment(TestSeedData.Users.OtherId, KnownIds.AssignmentStatusTypes.Requested),
                 NewAssignment(
                     TestSeedData.Users.PendingId,
                     KnownIds.AssignmentStatusTypes.Confirmed
@@ -150,7 +147,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
             .BeEquivalentTo(
                 TestSeedData.AdminEmail,
                 TestSeedData.MemberEmail,
-                TestSeedData.BlockedEmail
+                TestSeedData.OtherEmail
             );
         Factory.EmailSender.Sent.Should().OnlyContain(m => m.Subject == "Asamblea general");
     }
@@ -184,7 +181,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     public async Task SendToUsersSomeRecipientsRejectedStillReportsThemAsQueuedAndKeepsThemStored()
     {
         var client = await LoginAsAdminAsync();
-        Factory.EmailSender.FailFor(TestSeedData.MemberEmail, TestSeedData.BlockedEmail);
+        Factory.EmailSender.FailFor(TestSeedData.MemberEmail, TestSeedData.OtherEmail);
 
         using var response = await client.SendEmailFormAsync(UsersUrl);
 
@@ -202,7 +199,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         pending
             .Should()
             .BeEquivalentTo(
-                [TestSeedData.MemberEmail, TestSeedData.BlockedEmail],
+                [TestSeedData.MemberEmail, TestSeedData.OtherEmail],
                 "a rejected recipient stays queued for the scheduled retry"
             );
     }
@@ -236,16 +233,20 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         using var response = await client.SendEmailFormAsync(
-            $"{UsersUrl}?userStatusTypeId={KnownIds.UserStatusTypes.Blocked}"
+            $"{UsersUrl}?userStatusTypeId={KnownIds.UserStatusTypes.Active}"
         );
 
         var result = await ReadResultAsync(response);
-        result.Queued.Should().Be(1);
+        result.Queued.Should().Be(3);
+        result.Skipped.Should().Be(0, "the minor and the pending account do not match the filter");
         Factory
-            .EmailSender.Sent.Should()
-            .ContainSingle()
-            .Which.ToAddress.Should()
-            .Be(TestSeedData.BlockedEmail);
+            .EmailSender.Sent.Select(m => m.ToAddress)
+            .Should()
+            .BeEquivalentTo(
+                TestSeedData.AdminEmail,
+                TestSeedData.MemberEmail,
+                TestSeedData.OtherEmail
+            );
     }
 
     [Theory]
@@ -595,7 +596,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         var client = await LoginAsAdminAsync();
 
         using var response = await client.SendEmailFormAsync(
-            $"{UsersUrl}/{TestSeedData.Users.BlockedId}",
+            $"{UsersUrl}/{TestSeedData.Users.OtherId}",
             purpose: "News"
         );
 
@@ -685,7 +686,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         Factory
             .EmailSender.Sent.Select(m => m.ToAddress)
             .Should()
-            .BeEquivalentTo(TestSeedData.MemberEmail, TestSeedData.BlockedEmail);
+            .BeEquivalentTo(TestSeedData.MemberEmail, TestSeedData.OtherEmail);
     }
 
     [Fact]
@@ -704,7 +705,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
             .EmailSender.Sent.Should()
             .ContainSingle()
             .Which.ToAddress.Should()
-            .Be(TestSeedData.BlockedEmail);
+            .Be(TestSeedData.OtherEmail);
     }
 
     [Fact]

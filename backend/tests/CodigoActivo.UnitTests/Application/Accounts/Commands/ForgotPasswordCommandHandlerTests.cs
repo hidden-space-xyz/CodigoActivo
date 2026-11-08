@@ -101,16 +101,10 @@ public sealed class ForgotPasswordCommandHandlerTests
         await AssertNeverLockedAsync();
     }
 
-    public static TheoryData<Guid> IneligibleResetStatuses()
+    [Fact]
+    public async Task HandleAsyncDependentReturnsSuccessWithoutSending()
     {
-        return [KnownIds.UserStatusTypes.Blocked, KnownIds.UserStatusTypes.Dependent];
-    }
-
-    [Theory]
-    [MemberData(nameof(IneligibleResetStatuses))]
-    public async Task HandleAsyncIneligibleStatusReturnsSuccessWithoutSending(Guid statusId)
-    {
-        users.FindReturns(NewUser(statusId: statusId));
+        users.FindReturns(NewUser(statusId: KnownIds.UserStatusTypes.Dependent));
 
         var result = await sut.HandleAsync(
             new ForgotPasswordCommand("ana@test.com"),

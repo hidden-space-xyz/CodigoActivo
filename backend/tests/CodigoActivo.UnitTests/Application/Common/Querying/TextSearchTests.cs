@@ -14,6 +14,15 @@ public sealed class TextSearchTests
     [InlineData("ÁÉÍÓÚ", "aeiou")]
     [InlineData("Fundación Ávila", "fundacion avila")]
     [InlineData("\tMíguez\n", "miguez")]
+    [InlineData("àèìòù", "aeiou")]
+    [InlineData("ÀÈÌÒÙ", "aeiou")]
+    [InlineData("âêîôû", "aeiou")]
+    [InlineData("ÂÊÎÔÛ", "aeiou")]
+    [InlineData("äëïöü", "aeiou")]
+    [InlineData("ÄËÏÖÜ", "aeiou")]
+    [InlineData("Çç", "cc")]
+    [InlineData("Pingüino Lluís Françoise Noël", "pinguino lluis francoise noel")]
+    [InlineData("Ñandú España", "ñandu españa")]
     public void NormalizeMixedCaseWithAccentsAndWhitespaceTrimsLowercasesAndFoldsVowels(
         string input,
         string expected
@@ -24,6 +33,11 @@ public sealed class TextSearchTests
 
     [Theory]
     [InlineData("Fundación Ávila", "avila", true)]
+    [InlineData("Pingüino", "pinguino", true)]
+    [InlineData("Pinguino", "pingüino", true)]
+    [InlineData("FRANÇOISE", "francoise", true)]
+    [InlineData("Noël à Paris", "NOEL A", true)]
+    [InlineData("Peña", "pena", false)]
     [InlineData("BETA", "beta", true)]
     [InlineData("https://beta.org", "eta", true)]
     [InlineData("Hello World", "world", true)]

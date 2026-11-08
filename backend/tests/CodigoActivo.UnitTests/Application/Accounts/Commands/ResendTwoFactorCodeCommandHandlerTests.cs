@@ -104,20 +104,8 @@ public sealed class ResendTwoFactorCodeCommandHandlerTests
         var user = Prepare(NewUser());
         Persisted.Overwrite(
             user,
-            new { PasswordLockout = new { LockedAt = clock.UtcNow.AddMinutes(-1) } }
+            new { PasswordLockout = new { LockedUntil = clock.UtcNow.AddMinutes(14) } }
         );
-
-        var result = await ResendAsync(user.Id.Value);
-
-        result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
-        emailSender.Sent.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task HandleAsyncBlockedAccountReturnsChallengeExpiredWithoutEmailing()
-    {
-        var user = Prepare(NewUser());
-        Persisted.Overwrite(user, new { Status = UserStatus.Blocked });
 
         var result = await ResendAsync(user.Id.Value);
 

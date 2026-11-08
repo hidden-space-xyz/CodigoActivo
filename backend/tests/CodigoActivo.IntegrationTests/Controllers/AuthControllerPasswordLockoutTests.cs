@@ -6,6 +6,8 @@ using CodigoActivo.API.Errors;
 using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts.Contracts;
+using CodigoActivo.Application.Accounts.SecondFactor;
+using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
@@ -22,6 +24,7 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
     private const string WrongPassword = "Definitely-Not-The-Password";
     private const string NewPassword = "NuevaPass123!";
     private const int Threshold = 5;
+    private static readonly TimeSpan LockoutDuration = TimeSpan.FromMinutes(15);
 
     private static Task<HttpResponseMessage> AttemptAsync(HttpClient client, string password)
     {
@@ -66,30 +69,20 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         return await client.SendAsync(request, Ct);
     }
 
-    [Fact]
-    public async Task LoginParallelWrongPasswordsCountEveryAttemptOnceAndAlertOnlyOnce()
+    private async Task SendParallelAttemptsAsync(int attempts)
     {
-        const int Attempts = Threshold + 3;
         var clients = new List<HttpClient>();
-        var prepared = new List<Task<HttpResponseMessage>>();
-        for (var attempt = 0; attempt < Attempts; attempt++)
+        var tokens = new List<string>();
+        for (var attempt = 0; attempt < attempts; attempt++)
         {
             var client = CreateClient();
             clients.Add(client);
-        }
-
-        var tokens = new List<string>();
-        foreach (var client in clients)
-        {
             tokens.Add(await client.FetchCsrfTokenAsync(Ct));
         }
 
-        for (var attempt = 0; attempt < Attempts; attempt++)
-        {
-            prepared.Add(SendPreparedAttemptAsync(clients[attempt], tokens[attempt]));
-        }
-
-        var responses = await Task.WhenAll(prepared);
+        var responses = await Task.WhenAll(
+            clients.Select((client, attempt) => SendPreparedAttemptAsync(client, tokens[attempt]))
+        );
         foreach (var response in responses)
         {
             await response.ShouldBeUnauthorizedAsync(ErrorCode.InvalidCredentials);
@@ -100,12 +93,36 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         {
             client.Dispose();
         }
+    }
+
+    private bool MemberLocked(User stored)
+    {
+        return stored.PasswordLockout.IsLocked(Factory.Clock.UtcNow);
+    }
+
+    private Task<int> MemberSessionsAsync()
+    {
+        return Factory.QueryAsync(db =>
+            db.UserSessions.CountAsync(
+                row => row.UserId == UserId.From(TestSeedData.Users.MemberId),
+                Ct
+            )
+        );
+    }
+
+    [Fact]
+    public async Task LoginParallelWrongPasswordsCountEveryAttemptOnceAndAlertOnlyOnce()
+    {
+        await SendParallelAttemptsAsync(Threshold);
+
+        var locked = await FindAsync<User>(TestSeedData.Users.MemberId);
+        MemberLocked(locked!).Should().BeTrue("no attempt may be lost");
+        locked!.PasswordLockout.FailedAttempts.Should().Be(0);
+
+        await SendParallelAttemptsAsync(3);
 
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.PasswordLockout.IsLocked.Should().BeTrue();
-        stored
-            .PasswordLockout.FailedAttempts.Should()
-            .BeGreaterThanOrEqualTo(Threshold, "no attempt may be lost");
+        stored!.PasswordLockout.Should().Be(locked.PasswordLockout, "a lock counts nothing more");
         Factory
             .EmailSender.Sent.Should()
             .ContainSingle(message => message.Kind == EmailKind.SecurityAlert);
@@ -122,12 +139,12 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
             await response.ShouldBeUnauthorizedAsync(ErrorCode.InvalidCredentials);
 
             var progress = await FindAsync<User>(TestSeedData.Users.MemberId);
-            progress!.PasswordLockout.FailedAttempts.Should().Be(attempt);
-            progress.PasswordLockout.IsLocked.Should().Be(attempt >= Threshold);
+            progress!.PasswordLockout.FailedAttempts.Should().Be(attempt < Threshold ? attempt : 0);
+            MemberLocked(progress).Should().Be(attempt >= Threshold);
         }
 
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.PasswordLockout.LockedAt.Should().Be(Factory.Clock.UtcNow);
+        stored!.PasswordLockout.LockedUntil.Should().Be(Factory.Clock.UtcNow + LockoutDuration);
     }
 
     [Fact]
@@ -148,32 +165,46 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
     }
 
     [Fact]
-    public async Task LoginLockingTheAccountRevokesItsOpenSessionsAndWarnsItsOwner()
+    public async Task LoginLockExpiresAfterItsDurationAndTheCountStartsAgain()
+    {
+        var client = CreateClient();
+        await LockMemberAsync(client);
+
+        Factory.Clock.UtcNow += LockoutDuration - TimeSpan.FromSeconds(1);
+        using var stillLocked = await AttemptAsync(client, TestSeedData.Password);
+        await stillLocked.ShouldBeUnauthorizedAsync(ErrorCode.InvalidCredentials);
+
+        Factory.Clock.UtcNow += TimeSpan.FromSeconds(1);
+        using var wrong = await AttemptAsync(client, WrongPassword);
+        await wrong.ShouldBeUnauthorizedAsync(ErrorCode.InvalidCredentials);
+
+        var counted = await FindAsync<User>(TestSeedData.Users.MemberId);
+        counted!.PasswordLockout.FailedAttempts.Should().Be(1);
+        MemberLocked(counted).Should().BeFalse();
+
+        using var accepted = await AttemptAsync(client, TestSeedData.Password);
+        accepted.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task LoginLockingTheAccountKeepsItsOpenSessionsAndWarnsItsOwner()
     {
         var signedIn = await LoginAsMemberAsync();
-        using var before = await signedIn.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
-        before.StatusCode.Should().Be(HttpStatusCode.OK);
+        var sessions = await MemberSessionsAsync();
 
         await LockMemberAsync(CreateClient());
 
         using var after = await signedIn.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
-        await after.ShouldBeUnauthorizedAsync(ErrorCode.AuthenticationRequired);
-        (
-            await Factory.QueryAsync(db =>
-                db.UserSessions.CountAsync(
-                    row => row.UserId == UserId.From(TestSeedData.Users.MemberId),
-                    Ct
-                )
-            )
-        )
-            .Should()
-            .Be(0);
+        after.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await MemberSessionsAsync()).Should().Be(sessions).And.BePositive();
 
         var alert = Factory
             .EmailSender.Sent.Should()
             .ContainSingle(message => message.Kind == EmailKind.SecurityAlert)
             .Subject;
         alert.ToAddress.Should().Be(TestSeedData.MemberEmail);
+        alert.Subject.Should().Be(AppStrings.EmailsSecurityAlertPasswordLockedSubject);
+        alert.TextBody.Should().Contain(AppStrings.EmailsSecurityAlertPasswordLocked);
         alert.TextBody.Should().NotContain(TestSeedData.Password).And.NotContain(WrongPassword);
     }
 
@@ -203,16 +234,7 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.LoginChallenge.Id.Should().BeNull("locking closes the open challenge");
         stored.LastLoginAt.Should().BeNull();
-        (
-            await Factory.QueryAsync(db =>
-                db.UserSessions.CountAsync(
-                    row => row.UserId == UserId.From(TestSeedData.Users.MemberId),
-                    Ct
-                )
-            )
-        )
-            .Should()
-            .Be(0);
+        (await MemberSessionsAsync()).Should().Be(0);
 
         using var me = await pending.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
         await me.ShouldBeUnauthorizedAsync(ErrorCode.AuthenticationRequired);
@@ -233,7 +255,7 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
 
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
         stored!.PasswordLockout.FailedAttempts.Should().Be(0);
-        stored.PasswordLockout.IsLocked.Should().BeFalse();
+        MemberLocked(stored).Should().BeFalse();
     }
 
     [Fact]
@@ -244,30 +266,30 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         {
             using var wrong = await client.PostJsonAsync(
                 LoginUrl,
-                new LoginRequest(TestSeedData.BlockedEmail, WrongPassword),
+                new LoginRequest(TestSeedData.PendingEmail, WrongPassword),
                 Ct
             );
             await wrong.ShouldBeUnauthorizedAsync(ErrorCode.InvalidCredentials);
         }
 
-        (await FindAsync<User>(TestSeedData.Users.BlockedId))!
+        (await FindAsync<User>(TestSeedData.Users.PendingId))!
             .PasswordLockout.FailedAttempts.Should()
             .Be(Threshold - 1);
 
         using var refused = await client.PostJsonAsync(
             LoginUrl,
-            new LoginRequest(TestSeedData.BlockedEmail, TestSeedData.Password),
+            new LoginRequest(TestSeedData.PendingEmail, TestSeedData.Password),
             Ct
         );
-        await refused.ShouldBeForbiddenAsync(ErrorCode.UserAccountBlocked);
+        await refused.ShouldBeForbiddenAsync(ErrorCode.UserAccountPendingVerification);
 
-        var stored = await FindAsync<User>(TestSeedData.Users.BlockedId);
+        var stored = await FindAsync<User>(TestSeedData.Users.PendingId);
         stored!.PasswordLockout.FailedAttempts.Should().Be(0);
-        stored.PasswordLockout.IsLocked.Should().BeFalse();
+        MemberLocked(stored).Should().BeFalse();
     }
 
     [Fact]
-    public async Task ResetPasswordIsTheOnlyWayBackInForALockedAccount()
+    public async Task ResetPasswordLiftsTheLockAtOnce()
     {
         var client = CreateClient();
         await LockMemberAsync(client);
@@ -281,8 +303,8 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         reset.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-        stored!.PasswordLockout.IsLocked.Should().BeFalse();
-        stored.PasswordLockout.FailedAttempts.Should().Be(0);
+        MemberLocked(stored!).Should().BeFalse();
+        stored!.PasswordLockout.FailedAttempts.Should().Be(0);
 
         using var signedIn = await AttemptAsync(client, NewPassword);
         signedIn.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -301,9 +323,7 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         );
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        (await FindAsync<User>(TestSeedData.Users.MemberId))!
-            .PasswordLockout.IsLocked.Should()
-            .BeTrue();
+        MemberLocked((await FindAsync<User>(TestSeedData.Users.MemberId))!).Should().BeTrue();
         using var login = await AttemptAsync(CreateClient(), TestSeedData.Password);
         await login.ShouldBeUnauthorizedAsync(ErrorCode.InvalidCredentials);
     }
@@ -323,12 +343,19 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
             await response.ShouldBeBadRequestAsync(ErrorCode.UserCurrentPasswordIncorrect);
 
             var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-            stored!.PasswordLockout.FailedAttempts.Should().Be(attempt);
-            stored.PasswordLockout.IsLocked.Should().Be(attempt >= Threshold);
+            stored!.PasswordLockout.FailedAttempts.Should().Be(attempt < Threshold ? attempt : 0);
+            MemberLocked(stored).Should().Be(attempt >= Threshold);
         }
 
-        using var revoked = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
-        await revoked.ShouldBeUnauthorizedAsync(ErrorCode.AuthenticationRequired);
+        using var kept = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
+        kept.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var correctDuringLock = await client.PatchJsonAsync(
+            $"/api/users/{TestSeedData.Users.MemberId}/password",
+            new ChangePasswordRequest(TestSeedData.Password, NewPassword),
+            Ct
+        );
+        await correctDuringLock.ShouldBeBadRequestAsync(ErrorCode.UserCurrentPasswordIncorrect);
 
         using var login = await AttemptAsync(CreateClient(), TestSeedData.Password);
         await login.ShouldBeUnauthorizedAsync(ErrorCode.InvalidCredentials);
@@ -342,19 +369,19 @@ public sealed class AuthControllerPasswordLockoutTests(CodigoActivoWebAppFactory
         for (var attempt = 1; attempt <= Threshold; attempt++)
         {
             using var response = await client.PostJsonAsync(
-                "/api/me/deletion/code",
-                new AccountDeletionCodeRequest(WrongPassword),
+                "/api/me/confirmation-code",
+                new ConfirmationCodeRequest(WrongPassword, ConfirmationCodePurpose.AccountDeletion),
                 Ct
             );
             await response.ShouldBeBadRequestAsync(ErrorCode.UserCurrentPasswordIncorrect);
 
             var stored = await FindAsync<User>(TestSeedData.Users.MemberId);
-            stored!.PasswordLockout.FailedAttempts.Should().Be(attempt);
-            stored.PasswordLockout.IsLocked.Should().Be(attempt >= Threshold);
+            stored!.PasswordLockout.FailedAttempts.Should().Be(attempt < Threshold ? attempt : 0);
+            MemberLocked(stored).Should().Be(attempt >= Threshold);
         }
 
-        using var revoked = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
-        await revoked.ShouldBeUnauthorizedAsync(ErrorCode.AuthenticationRequired);
+        using var kept = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
+        kept.StatusCode.Should().Be(HttpStatusCode.OK);
 
         var alert = Factory.EmailSender.Sent.Should().ContainSingle().Subject;
         alert.Kind.Should().Be(EmailKind.SecurityAlert);

@@ -10,6 +10,22 @@ namespace CodigoActivo.Application.Activities.Erasure;
 public interface IParticipationErasureStore
 {
     /// <summary>
+    /// Tells whether the removal takes away anyone's participation: for an event, a signup to one
+    /// of its activities, a terms decision or a rating; for an activity, a signup. Cancelling a
+    /// signup or deleting a rating always does.
+    /// </summary>
+    /// <param name="deletion">What is removed.</param>
+    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
+    /// <returns>
+    /// A task whose result is <see langword="true"/> when the removal takes some participation
+    /// away.
+    /// </returns>
+    public Task<bool> TakesParticipationAsync(
+        ParticipationDeletion deletion,
+        CancellationToken ct = default
+    );
+
+    /// <summary>
     /// Tracks every row the removal takes away besides the removed aggregate (for an event, its
     /// activities with their signups, its terms decisions with their history and its ratings; for
     /// an activity, its signups, including one added after it was loaded), so their deletion goes

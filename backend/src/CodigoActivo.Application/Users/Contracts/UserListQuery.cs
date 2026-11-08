@@ -24,7 +24,7 @@ public enum UserScope
 /// <summary>
 /// Carries the filters, sort and page of a user list; the manual email commands and audience
 /// queries reuse its filters and ignore the sort and page. Unset filters match everyone, and text
-/// filters match a fragment, ignoring case and acute accents.
+/// filters match a fragment, ignoring case and accents.
 /// </summary>
 public sealed class UserListQuery : PageQuery
 {

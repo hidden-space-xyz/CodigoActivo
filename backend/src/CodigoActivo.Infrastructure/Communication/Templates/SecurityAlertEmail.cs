@@ -8,8 +8,8 @@ namespace CodigoActivo.Infrastructure.Communication.Templates;
 /// <summary>
 /// Builds the email content that tells an account owner of a security change to their account:
 /// password, second factor, staff role, data protection designation, email or phone, or a lock
-/// after wrong passwords. The message carries no code, no secret and no link that performs an
-/// action.
+/// after wrong passwords or wrong second-factor codes. The message carries no code, no secret and
+/// no link that performs an action.
 /// </summary>
 public static class SecurityAlertEmail
 {
@@ -17,7 +17,7 @@ public static class SecurityAlertEmail
 
     /// <summary>
     /// Creates the alert: what changed, when, the masked new address when given, and the advice
-    /// that fits the change. A lock has a subject and heading of its own.
+    /// that fits the change. Each lock has a subject and heading of its own.
     /// </summary>
     /// <param name="toAddress">
     /// Address of the account owner; the previous one when the email or phone changed.
@@ -59,12 +59,9 @@ public static class SecurityAlertEmail
         blocks.Add(EmailBlocks.Prose(Warning(change)));
         blocks.Add(EmailBlocks.Signoff());
 
-        var locked = change is AccountSecurityChange.CredentialLocked;
         var content = EmailLayout.Render(
             new EmailDocument(
-                locked
-                    ? AppStrings.EmailsSecurityAlertPasswordLockedHeading
-                    : AppStrings.EmailsSecurityAlertHeading,
+                Heading(change),
                 AppStrings.EmailsSecurityAlertIntroText,
                 toName,
                 siteUrl,
@@ -73,14 +70,31 @@ public static class SecurityAlertEmail
             blocks
         );
 
-        return content.ToMessage(
-            EmailKind.SecurityAlert,
-            toAddress,
-            toName,
-            locked
-                ? AppStrings.EmailsSecurityAlertPasswordLockedSubject
-                : AppStrings.EmailsSecurityAlertSubject
-        );
+        return content.ToMessage(EmailKind.SecurityAlert, toAddress, toName, Subject(change));
+    }
+
+    private static string Heading(AccountSecurityChange change)
+    {
+        return change switch
+        {
+            AccountSecurityChange.CredentialLocked =>
+                AppStrings.EmailsSecurityAlertPasswordLockedHeading,
+            AccountSecurityChange.TwoFactorLocked =>
+                AppStrings.EmailsSecurityAlertTwoFactorLockedHeading,
+            _ => AppStrings.EmailsSecurityAlertHeading,
+        };
+    }
+
+    private static string Subject(AccountSecurityChange change)
+    {
+        return change switch
+        {
+            AccountSecurityChange.CredentialLocked =>
+                AppStrings.EmailsSecurityAlertPasswordLockedSubject,
+            AccountSecurityChange.TwoFactorLocked =>
+                AppStrings.EmailsSecurityAlertTwoFactorLockedSubject,
+            _ => AppStrings.EmailsSecurityAlertSubject,
+        };
     }
 
     private static string Timestamp(DateTimeOffset occurredAt, TimeZoneInfo timeZone)
@@ -116,6 +130,7 @@ public static class SecurityAlertEmail
             AccountSecurityChange.AddressAndPhoneChanged =>
                 AppStrings.EmailsSecurityAlertEmailAndPhoneChanged,
             AccountSecurityChange.CredentialLocked => AppStrings.EmailsSecurityAlertPasswordLocked,
+            AccountSecurityChange.TwoFactorLocked => AppStrings.EmailsSecurityAlertTwoFactorLocked,
             _ => throw new ArgumentOutOfRangeException(nameof(change), change, null),
         };
     }
@@ -135,6 +150,8 @@ public static class SecurityAlertEmail
                 AppStrings.EmailsSecurityAlertUnexpectedWarning,
             AccountSecurityChange.CredentialLocked =>
                 AppStrings.EmailsSecurityAlertPasswordLockedWarning,
+            AccountSecurityChange.TwoFactorLocked =>
+                AppStrings.EmailsSecurityAlertTwoFactorLockedWarning,
             _ => AppStrings.EmailsSecurityAlertWarning,
         };
     }

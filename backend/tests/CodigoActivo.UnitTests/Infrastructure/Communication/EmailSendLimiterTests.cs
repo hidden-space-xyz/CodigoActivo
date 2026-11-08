@@ -222,6 +222,61 @@ public sealed class EmailSendLimiterTests
     }
 
     [Fact]
+    public void TryConsumeRegistrationMailFloodingAnAddressLeavesItsResetLinksDeliverable()
+    {
+        var limiter = Limiter(Options(), new TestClock());
+
+        for (var i = 0; i < 3; i++)
+        {
+            limiter
+                .TryConsume(EmailKind.AccountVerification, Recipient)
+                .Scope.Should()
+                .Be(EmailLimitScope.None);
+        }
+
+        limiter
+            .TryConsume(EmailKind.AccountVerification, Recipient)
+            .Scope.Should()
+            .Be(EmailLimitScope.Recipient);
+        Consume(limiter, Recipient)
+            .Should()
+            .Be(EmailLimitScope.None, "reset links have their own budget for each address");
+    }
+
+    [Fact]
+    public void TryConsumeResetLinksStayBoundedByTheirOwnRecipientBudget()
+    {
+        var limiter = Limiter(Options(), new TestClock());
+
+        for (var i = 0; i < 3; i++)
+        {
+            Consume(limiter, Recipient).Should().Be(EmailLimitScope.None);
+        }
+
+        Consume(limiter, "MEMBER+tag@example.test").Should().Be(EmailLimitScope.Recipient);
+        limiter
+            .TryConsume(EmailKind.AccountVerification, Recipient)
+            .Scope.Should()
+            .Be(EmailLimitScope.None, "other codes keep the budget of their own");
+    }
+
+    [Fact]
+    public void TryConsumeResetLinksSpendTheAnonymousBudget()
+    {
+        var limiter = Limiter(Options(), new TestClock());
+
+        for (var i = 0; i < 6; i++)
+        {
+            limiter
+                .TryConsume(EmailKind.AccountVerification, Address("spray", i))
+                .Scope.Should()
+                .Be(EmailLimitScope.None);
+        }
+
+        Consume(limiter, Recipient).Should().Be(EmailLimitScope.Global);
+    }
+
+    [Fact]
     public void TryConsumeRecipientDeniedLeavesTheAnonymousBudgetUntouched()
     {
         var limiter = Limiter(Options(), new TestClock());

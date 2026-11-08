@@ -14,6 +14,7 @@ using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using ContractGender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
 
@@ -177,7 +178,7 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
             .EmailSender.Sent.Where(m => m.Kind is EmailKind.Manual)
             .Select(m => m.ToAddress)
             .Should()
-            .BeEquivalentTo(TestSeedData.AdminEmail, TestSeedData.BlockedEmail);
+            .BeEquivalentTo(TestSeedData.AdminEmail, TestSeedData.OtherEmail);
 
         var waiting = await Factory.QueryAsync(db =>
             db.EmailOutboxMessages.AsNoTracking().SingleAsync(Ct)
@@ -267,5 +268,47 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
         denied.StatusCode.Should().Be(HttpStatusCode.NoContent);
         unknown.StatusCode.Should().Be(denied.StatusCode);
         Factory.EmailSender.Sent.Should().HaveCount(RecipientBurst);
+    }
+
+    [Fact]
+    public async Task ForgotPasswordAfterRegistrationsExhaustedTheAddressStillSendsTheResetLink()
+    {
+        var host = ArmedGuard();
+        var client = host.CreateClient();
+        var registration = new RegisterRequest(
+            "Nadia",
+            "Nueva",
+            TestSeedData.MemberEmail,
+            "+34600000099",
+            "Str0ngPass!23",
+            "87654321X",
+            ContractGender.Female,
+            true,
+            false,
+            null,
+            null
+        );
+
+        for (var i = 0; i <= RecipientBurst; i++)
+        {
+            using var registered = await client.PostJsonAsync(
+                "/api/auth/register",
+                registration,
+                Ct
+            );
+            registered.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        }
+
+        Factory.EmailSender.Sent.Should().HaveCount(RecipientBurst);
+
+        using var forgot = await client.PostJsonAsync(
+            "/api/auth/forgot-password",
+            new ForgotPasswordRequest(TestSeedData.MemberEmail),
+            Ct
+        );
+
+        forgot.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Factory.EmailSender.Sent.Should().HaveCount(RecipientBurst + 1);
+        Factory.EmailSender.Sent[^1].Kind.Should().Be(EmailKind.AccessRecovery);
     }
 }

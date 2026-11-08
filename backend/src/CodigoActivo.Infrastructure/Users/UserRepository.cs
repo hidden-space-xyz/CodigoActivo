@@ -119,7 +119,7 @@ public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork
         FormattableString sql = $"""
             SELECT
                 password_failed_attempts AS attempts,
-                password_locked_at AS locked_at,
+                password_locked_until AS locked_until,
                 login_challenge_id AS challenge_id,
                 login_challenge_started_at AS challenge_started_at
             FROM users
@@ -137,7 +137,7 @@ public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork
         var entry = Context.Entry(user);
         MarkPersisted(
             entry.ComplexProperty(u => u.PasswordLockout),
-            new PasswordLockout(persisted.Attempts, persisted.LockedAt)
+            new PasswordLockout(persisted.Attempts, persisted.LockedUntil)
         );
         MarkPersisted(
             entry.ComplexProperty(u => u.LoginChallenge),
@@ -215,7 +215,7 @@ public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork
             UPDATE users
             SET
                 password_failed_attempts = {lockout.FailedAttempts},
-                password_locked_at = {lockout.LockedAt},
+                password_locked_until = {lockout.LockedUntil},
                 login_challenge_id = {challengeId},
                 login_challenge_started_at = {challenge.StartedAt}
             WHERE id = {user.Id.Value} AND xmin::text::bigint = {loadedVersion}
@@ -253,7 +253,7 @@ public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork
     {
         public int Attempts { get; init; }
 
-        public DateTimeOffset? LockedAt { get; init; }
+        public DateTimeOffset? LockedUntil { get; init; }
 
         public Guid? ChallengeId { get; init; }
 

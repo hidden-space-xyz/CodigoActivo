@@ -170,7 +170,7 @@ public sealed class LoginCommandHandlerTests
         emailSender.Sent.Should().BeEmpty();
         user.PasswordLockout.FailedAttempts.Should()
             .Be(1, "the guard counts the failure on its own");
-        user.PasswordLockout.LockedAt.Should().BeNull();
+        user.PasswordLockout.LockedUntil.Should().BeNull();
         auditSubject
             .Entity.Should()
             .Be(
@@ -210,32 +210,16 @@ public sealed class LoginCommandHandlerTests
         });
     }
 
-    [Theory]
-    [MemberData(nameof(BlockedStatuses))]
-    public async Task HandleAsyncNonActiveStatusReturnsForbidden(
-        Guid statusId,
-        ApplicationErrorCode expected
-    )
+    [Fact]
+    public async Task HandleAsyncPendingVerificationReturnsForbidden()
     {
-        Returns(NewUser(statusId: statusId));
+        Returns(NewUser(statusId: KnownIds.UserStatusTypes.Pending));
 
         var result = await LoginAsync();
 
-        result.ShouldFail(ErrorKind.Forbidden, expected);
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.UserAccountPendingVerification);
         emailSender.Sent.Should().BeEmpty();
         await AssertNotSavedAsync();
-    }
-
-    public static TheoryData<Guid, ApplicationErrorCode> BlockedStatuses()
-    {
-        return new()
-        {
-            { KnownIds.UserStatusTypes.Blocked, ApplicationErrorCode.UserAccountBlocked },
-            {
-                KnownIds.UserStatusTypes.Pending,
-                ApplicationErrorCode.UserAccountPendingVerification
-            },
-        };
     }
 
     [Fact]
@@ -310,7 +294,7 @@ public sealed class LoginCommandHandlerTests
         var user = Returns(NewUser(passwordHash: "fake:password123"));
         Persisted.Overwrite(
             user,
-            new { PasswordLockout = new { LockedAt = clock.UtcNow.AddMinutes(-5) } }
+            new { PasswordLockout = new { LockedUntil = clock.UtcNow.AddMinutes(10) } }
         );
         var before = hasher.VerifyCalls;
 
@@ -328,7 +312,7 @@ public sealed class LoginCommandHandlerTests
         var user = Returns(NewUser(passwordHash: "fake:password123"));
         Persisted.Overwrite(
             user,
-            new { PasswordLockout = new { LockedAt = clock.UtcNow.AddMinutes(-5) } }
+            new { PasswordLockout = new { LockedUntil = clock.UtcNow.AddMinutes(10) } }
         );
 
         var correct = await LoginAsync();
@@ -344,6 +328,21 @@ public sealed class LoginCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncLockExpiredOpensAChallengeForTheCorrectPassword()
+    {
+        var user = Returns(NewUser(passwordHash: "fake:password123"));
+        Persisted.Overwrite(
+            user,
+            new { PasswordLockout = new { LockedUntil = clock.UtcNow.AddMinutes(-1) } }
+        );
+
+        var result = await LoginAsync();
+
+        result.IsSuccess.Should().BeTrue();
+        user.LoginChallenge.Id.Should().Be(result.Value.ChallengeId);
+    }
+
+    [Fact]
     public async Task HandleAsyncFifthWrongPasswordLocksTheAccountAndEmailsItsOwnerOnceCommitted()
     {
         var user = users.FindReturns(NewUser(passwordHash: "fake:password123"));
@@ -353,8 +352,8 @@ public sealed class LoginCommandHandlerTests
             await LoginAsync(password: "not-the-password");
         }
 
-        user.PasswordLockout.IsLocked.Should().BeTrue();
-        user.PasswordLockout.LockedAt.Should().Be(clock.UtcNow);
+        user.PasswordLockout.IsLocked(clock.UtcNow).Should().BeTrue();
+        user.PasswordLockout.LockedUntil.Should().Be(clock.UtcNow.AddMinutes(15));
         emailSender.Sent.Should().BeEmpty("the owner is warned once the lock is committed");
 
         await events.PublishAsync(user);
@@ -423,7 +422,7 @@ public sealed class LoginCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         user.PasswordLockout.FailedAttempts.Should().Be(0);
-        user.PasswordLockout.IsLocked.Should().BeFalse();
+        user.PasswordLockout.IsLocked(clock.UtcNow).Should().BeFalse();
     }
 
     [Fact]

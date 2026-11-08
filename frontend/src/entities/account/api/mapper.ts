@@ -80,6 +80,7 @@ export function toUpdateProfileRequest(input: UpdateProfileInput): UpdateUserReq
     gender: input.gender,
     parentId: null,
     currentPassword: input.currentPassword,
+    code: input.code,
   }
 }
 

@@ -80,6 +80,7 @@ export const ErrorCode = {
   UserSelfDeleteRequiresVerification: 'UserSelfDeleteRequiresVerification',
   UserSelfStaffRoleChangeForbidden: 'UserSelfStaffRoleChangeForbidden',
   UserSelfTypeChangeForbidden: 'UserSelfTypeChangeForbidden',
+  UserSelfTwoFactorResetRequiresVerification: 'UserSelfTwoFactorResetRequiresVerification',
   UserDeleteInitialAdminForbidden: 'UserDeleteInitialAdminForbidden',
   UserCannotRemoveInitialAdmin: 'UserCannotRemoveInitialAdmin',
   UserDependentCannotHoldStaffRole: 'UserDependentCannotHoldStaffRole',
@@ -106,7 +107,6 @@ export const ErrorCode = {
   UserPhoneInvalid: 'UserPhoneInvalid',
   DisposableEmailNotAllowed: 'DisposableEmailNotAllowed',
   InvalidCredentials: 'InvalidCredentials',
-  UserAccountBlocked: 'UserAccountBlocked',
   UserAccountPendingVerification: 'UserAccountPendingVerification',
   CurrentUserNotFound: 'CurrentUserNotFound',
   OtpInvalidOrExpired: 'OtpInvalidOrExpired',
@@ -144,4 +144,5 @@ export const ErrorCode = {
   BlockedDataOfficerOnly: 'BlockedDataOfficerOnly',
   BlockedDataHoldNotFound: 'BlockedDataHoldNotFound',
   BlockedDataHoldLifted: 'BlockedDataHoldLifted',
+  ParticipationDeletionRequiresAdministrator: 'ParticipationDeletionRequiresAdministrator',
 } as const;

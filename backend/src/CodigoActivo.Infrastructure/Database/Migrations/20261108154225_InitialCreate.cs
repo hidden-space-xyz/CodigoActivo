@@ -370,7 +370,6 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     attempt_count = table.Column<int>(type: "integer", nullable: false),
                     next_attempt_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    locked_until = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     last_error = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true)
                 },
                 constraints: table =>
@@ -466,7 +465,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     login_code_hash = table.Column<string>(type: "text", nullable: true),
                     login_code_last_sent_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     password_failed_attempts = table.Column<int>(type: "integer", nullable: false),
-                    password_locked_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    password_locked_until = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     password_reset_expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     password_reset_code_hash = table.Column<string>(type: "text", nullable: true),
                     password_reset_last_sent_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),

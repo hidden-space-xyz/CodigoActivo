@@ -36,6 +36,7 @@ const {
   selfRoles,
   rolesFor,
   isAuthenticated,
+  assignHousehold,
 } = eventActivities
 const {
   busyId,
@@ -212,7 +213,8 @@ const clusters = computed(() => toTimeline(items.value))
           data-testid="household-dialog-submit"
           :label="$t('pages.eventDetail.household.enroll')"
           type="primary"
-          :disabled="householdSelectable.length === 0"
+          :loading="assignHousehold.isPending.value"
+          :disabled="householdSelectable.length === 0 || assignHousehold.isPending.value"
           @click="confirmHousehold"
         />
       </template>

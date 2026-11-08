@@ -96,9 +96,8 @@ export interface SendEmailDialogOptions<T> {
  * State for `SendEmailDialog` on a list page. `open(row)` targets one recipient and `open(null)`
  * the whole filtered audience. Opening also loads that audience: `recipients` counts the addresses
  * a notice reaches and `withoutConsent` those a news email leaves out; both stay `null` while
- * loading, after a failure or once a newer `open` superseded the request. After sending, toasts
- * report the queued and skipped counts, or the error, and the dialog closes only if at least one
- * email was accepted for delivery.
+ * loading and after a failure. After sending, toasts report the queued and skipped counts, or the
+ * error, and the dialog closes only if at least one email was accepted for delivery.
  */
 export function useSendEmailDialog<T>(options: SendEmailDialogOptions<T>) {
   const { sendToUser } = useSendEmail()
@@ -109,11 +108,8 @@ export function useSendEmailDialog<T>(options: SendEmailDialogOptions<T>) {
   const audience = shallowRef<EmailAudience | null>(null)
   const recipients = computed(() => audience.value?.recipients ?? null)
   const withoutConsent = computed(() => audience.value?.withoutConsent ?? null)
-  let audienceRequest = 0
 
   function loadAudience(next: T | null): void {
-    audienceRequest += 1
-    const request = audienceRequest
     audience.value = null
     const loading =
       next === null
@@ -121,7 +117,7 @@ export function useSendEmailDialog<T>(options: SendEmailDialogOptions<T>) {
         : getUsersEmailAudienceRequest({ id: options.idOf(next) })
     void loading.then(
       (loaded) => {
-        if (request === audienceRequest) audience.value = loaded
+        audience.value = loaded
       },
       () => undefined,
     )

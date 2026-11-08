@@ -8,7 +8,7 @@ import { i18n } from '@/shared/i18n'
 
 /**
  * Ends the local session as soon as a query or mutation reports that the API no longer accepts it,
- * for example after the password changed or the account was blocked from elsewhere. The user is
+ * for example after the password changed or the account was deleted from elsewhere. The user is
  * told once; on a page that needs a session they go to login with a `redirect` back, while public
  * pages simply show their guest view. Guests are left alone.
  */

@@ -48,6 +48,8 @@ async function save(): Promise<void> {
 <template>
   <el-dialog
     v-model="visible"
+    :close-on-click-modal="false"
+    :close-on-press-escape="false"
     data-testid="news-form-dialog"
     :title="newsItem ? $t('pages.admin.news.form.editHeader') : $t('pages.admin.news.newLabel')"
     width="min(920px, 94vw)"

@@ -62,7 +62,6 @@ public sealed class LoginCommandHandler(
     /// A task whose result names the challenge just opened;
     /// <see cref="ApplicationErrorCode.InvalidCredentials"/> for an unknown identifier, a wrong
     /// password or an account without a password or locked by wrong passwords;
-    /// <see cref="ApplicationErrorCode.UserAccountBlocked"/>,
     /// <see cref="ApplicationErrorCode.UserAccountPendingVerification"/> or
     /// <see cref="DomainErrorCode.TwoFactorLocked"/> after a correct password; or the failure of
     /// emailing the login code.
@@ -105,14 +104,10 @@ public sealed class LoginCommandHandler(
         CancellationToken ct
     )
     {
-        if (!PasswordAttemptGuard.StillVerified(user, verifiedHash))
+        var now = clock.UtcNow;
+        if (!PasswordAttemptGuard.StillVerified(user, verifiedHash, now))
         {
             return InvalidCredentials();
-        }
-
-        if (user.IsBlocked)
-        {
-            return Error.Forbidden(ApplicationErrorCode.UserAccountBlocked);
         }
 
         if (user.IsPendingVerification)
@@ -120,7 +115,6 @@ public sealed class LoginCommandHandler(
             return Error.Forbidden(ApplicationErrorCode.UserAccountPendingVerification);
         }
 
-        var now = clock.UtcNow;
         if (user.TwoFactorLockout.IsLocked(now))
         {
             return Error.Forbidden(DomainErrorCode.TwoFactorLocked);

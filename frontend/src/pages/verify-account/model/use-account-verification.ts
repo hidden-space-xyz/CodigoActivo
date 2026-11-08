@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { useMutation } from '@tanstack/vue-query'
 
 import { accountMutations } from '@/entities/account'
+import { hasErrorCode } from '@/shared/api'
 import { getErrorMessage, useCrudFeedback } from '@/shared/lib/feedback'
 import { isGuid } from '@/shared/lib/navigation'
 
@@ -13,7 +14,9 @@ export type LinkVerificationState = 'verifying' | 'success' | 'error'
  * Verification page flow: `verify` checks the link's user id and code (an incomplete link, or one
  * whose user id is not a GUID, fails without calling the API), and `resend` asks for a new link
  * for the trimmed address in `resendForm`, ignoring presses while a request is in flight and
- * reporting with a toast that never tells whether the address has a pending account.
+ * reporting with a toast that never tells whether the address has a pending account. A link the
+ * API refuses as spent or expired, or whose account no longer exists, sets `staleLink`: its
+ * account may be active already, or erased for not being verified in time.
  */
 export function useAccountVerification() {
   const { t } = useI18n()
@@ -21,6 +24,7 @@ export function useAccountVerification() {
 
   const state = ref<LinkVerificationState>('verifying')
   const errorMessage = ref<string | null>(null)
+  const staleLink = ref(false)
   const resendForm = reactive({ email: '' })
 
   const mutation = useMutation({
@@ -30,7 +34,11 @@ export function useAccountVerification() {
     },
     onError: (error) => {
       state.value = 'error'
-      errorMessage.value = getErrorMessage(error)
+      staleLink.value =
+        hasErrorCode(error, 'OtpInvalidOrExpired') || hasErrorCode(error, 'UserNotFound')
+      errorMessage.value = staleLink.value
+        ? t('pages.verifyAccount.staleLink')
+        : getErrorMessage(error)
     },
   })
 
@@ -48,6 +56,7 @@ export function useAccountVerification() {
   })
 
   function verify(id: string | null, code: string | null): void {
+    staleLink.value = false
     if (!isGuid(id) || !code) {
       state.value = 'error'
       errorMessage.value = t('pages.verifyAccount.incompleteLink')
@@ -65,6 +74,7 @@ export function useAccountVerification() {
   return {
     state,
     errorMessage,
+    staleLink,
     verify,
     resendForm,
     resend,

@@ -555,6 +555,48 @@ public sealed class UserProfileRulesTests
     }
 
     [Fact]
+    public void ConfirmEmailChangeDropsTheCodesEmailedToThePreviousAddress()
+    {
+        var account = AdultChangingEmail();
+        account.IssuePasswordResetCode("reset-hash", Now, TimeSpan.FromMinutes(15));
+        account
+            .IssueLoginCode("login-hash", Now, TimeSpan.FromMinutes(10))
+            .IsSuccess.Should()
+            .BeTrue();
+
+        account.ConfirmEmailChange(Now.AddMinutes(1));
+
+        account.PasswordResetCode.Hash.Should().BeNull();
+        account.PasswordResetCode.UsableHash(Now.AddMinutes(1)).Should().BeNull();
+        account.LoginCode.Hash.Should().BeNull();
+        account.LoginCode.UsableHash(Now.AddMinutes(1)).Should().BeNull();
+    }
+
+    [Fact]
+    public void ResetPasswordDropsTheEmailChangeWaitingForConfirmation()
+    {
+        var account = AdultChangingEmail();
+
+        account.ResetPassword("new-hash", Now.AddMinutes(1));
+
+        account.Email!.Value.Should().Be("ana@test.com");
+        account.EmailChange.NewEmail.Should().BeNull();
+        account.EmailChange.UsableCodeHash(Now.AddMinutes(1)).Should().BeNull();
+    }
+
+    [Fact]
+    public void ChangePasswordDropsTheEmailChangeWaitingForConfirmation()
+    {
+        var account = AdultChangingEmail();
+
+        account.ChangePassword("new-hash", Now.AddMinutes(1));
+
+        account.Email!.Value.Should().Be("ana@test.com");
+        account.EmailChange.NewEmail.Should().BeNull();
+        account.EmailChange.UsableCodeHash(Now.AddMinutes(1)).Should().BeNull();
+    }
+
+    [Fact]
     public void ConfirmEmailChangeWithoutAChangeWaitingThrows()
     {
         var account = StoredAdult();
