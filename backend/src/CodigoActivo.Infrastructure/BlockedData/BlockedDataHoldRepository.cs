@@ -15,17 +15,9 @@ public sealed class BlockedDataHoldRepository(CodigoActivoDbContext context)
         IBlockedDataHoldRepository
 {
     /// <inheritdoc />
-    public async Task<BlockedDataHold?> GetLockedAsync(
-        BlockedDataHoldId id,
-        CancellationToken ct = default
-    )
+    public Task<BlockedDataHold?> GetByIdAsync(BlockedDataHoldId id, CancellationToken ct = default)
     {
-        FormattableString sql = $"""
-            SELECT id AS "Value" FROM blocked_data_holds WHERE id = {id.Value} FOR UPDATE
-            """;
-        return (await Context.Database.SqlQuery<Guid>(sql).ToListAsync(ct)).Count is 0
-            ? null
-            : await Set.SingleAsync(h => h.Id == id, ct);
+        return Set.SingleOrDefaultAsync(h => h.Id == id, ct);
     }
 
     /// <inheritdoc />

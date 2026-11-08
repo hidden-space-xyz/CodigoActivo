@@ -53,7 +53,7 @@ public sealed class AccountEraser(
         return uow.ExecuteInTransactionAsync(
             async attempt =>
             {
-                if (!await erasureStore.LockHouseholdAsync(account.Id, attempt))
+                if (!await erasureStore.LockAccountAsync(account.Id, attempt))
                 {
                     return false;
                 }

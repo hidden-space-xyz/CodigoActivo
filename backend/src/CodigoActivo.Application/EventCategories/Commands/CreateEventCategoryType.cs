@@ -20,7 +20,7 @@ public sealed record CreateEventCategoryTypeCommand(
 ) : ICommand<Result<EventCategoryTypeId>>, IRoutineCommand;
 
 /// <summary>
-/// Executes the command to create an event category type.
+/// Executes the command to create an event category type. Names are unique ignoring letter case.
 /// </summary>
 /// <param name="categoryTypes">Repository used to persist and retrieve category types.</param>
 public sealed class CreateEventCategoryTypeCommandHandler(

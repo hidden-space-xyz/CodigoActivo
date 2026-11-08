@@ -38,28 +38,14 @@ public interface IEventRepository : IRepository<Event>
     );
 
     /// <summary>
-    /// Locks every event tagged with a category until the running transaction ends, in identifier
-    /// order, and then loads them with their categories and terms documents, so the category can be
-    /// taken off each event through the event itself while no other change to those events runs.
-    /// The events must not be loaded in the unit of work before.
+    /// Loads every event tagged with a category, with its categories and terms documents, so the
+    /// category can be taken off each event through the event itself.
     /// </summary>
     /// <param name="categoryTypeId">Identifier of the category.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the events tagged with the category.</returns>
-    public Task<IReadOnlyList<Event>> LockTaggedWithAsync(
+    public Task<IReadOnlyList<Event>> ListTaggedWithAsync(
         EventCategoryTypeId categoryTypeId,
         CancellationToken ct = default
     );
-
-    /// <summary>
-    /// Locks an event until the running transaction ends and then loads it with its categories and
-    /// terms documents, so concurrent changes to the event run one after another and each one sees
-    /// what the previous one stored. The event must not be loaded in the unit of work before.
-    /// </summary>
-    /// <param name="id">Identifier of the event.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>
-    /// A task whose result is the event, or <see langword="null"/> when it does not exist.
-    /// </returns>
-    public Task<Event?> GetLockedAsync(EventId id, CancellationToken ct = default);
 }

@@ -1,6 +1,5 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Events.Contracts;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Events;
 using CodigoActivo.Application.Events.Commands;
@@ -31,7 +30,6 @@ public sealed class UpdateEventCommandHandlerTests
         Substitute.For<IEventCategoryTypeRepository>();
     private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>().RunsTransactions();
     private readonly UpdateEventCommandHandler sut;
 
     public UpdateEventCommandHandlerTests()
@@ -43,14 +41,13 @@ public sealed class UpdateEventCommandHandlerTests
             termsDocuments,
             new EventCategoryChecker(categoryTypes),
             currentUser,
-            clock,
-            uow
+            clock
         );
     }
 
     private void PrepareUpdate(Event ev)
     {
-        events.GetLockedAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
+        events.GetByIdAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
         files.ThumbnailExists(true);
         categoryTypes.HasCategoryCount(1);
     }
@@ -150,7 +147,7 @@ public sealed class UpdateEventCommandHandlerTests
         result.Error!.Code.Should().Be(DomainErrorCode.EventScheduleInvalidRange);
         await events
             .DidNotReceiveWithAnyArgs()
-            .GetLockedAsync(EventId.From(Guid.Empty), TestContext.Current.CancellationToken);
+            .GetByIdAsync(EventId.From(Guid.Empty), TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -158,7 +155,7 @@ public sealed class UpdateEventCommandHandlerTests
     {
         var ev = NewEvent();
         categoryTypes.HasCategoryCount(1);
-        events.GetLockedAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
+        events.GetByIdAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
         var plusTwo = TimeSpan.FromHours(2);
         clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone("Test", plusTwo, "Test", "Test");
         var request = UpdateReq(
@@ -209,7 +206,7 @@ public sealed class UpdateEventCommandHandlerTests
     {
         var ev = NewEvent();
         categoryTypes.HasCategoryCount(1);
-        events.GetLockedAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
+        events.GetByIdAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
         clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone(
             "Test/PlusTwo",
             TimeSpan.FromHours(2),
@@ -240,7 +237,7 @@ public sealed class UpdateEventCommandHandlerTests
     {
         var ev = NewEvent();
         categoryTypes.HasCategoryCount(1);
-        events.GetLockedAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
+        events.GetByIdAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
         activities
             .AnyOutsideRangeAsync(
                 ev.Id,
@@ -297,16 +294,6 @@ public sealed class UpdateEventCommandHandlerTests
             .ContainSingle()
             .Which.EventCategoryTypeId.Value.Should()
             .Be(newCategoryId);
-        Received.InOrder(() =>
-        {
-            _ = events.GetLockedAsync(ev.Id, Arg.Any<CancellationToken>());
-            _ = uow.SaveChangesAsync(Arg.Any<CancellationToken>());
-        });
-        await uow.Received(1)
-            .ExecuteInTransactionAsync(
-                Arg.Any<Func<CancellationToken, Task<Result>>>(),
-                Arg.Any<CancellationToken>()
-            );
     }
 
     [Fact]

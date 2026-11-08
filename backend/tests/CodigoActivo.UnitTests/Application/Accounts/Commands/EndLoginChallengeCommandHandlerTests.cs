@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Domain.Users;
@@ -19,10 +18,7 @@ public sealed class EndLoginChallengeCommandHandlerTests
 
     public EndLoginChallengeCommandHandlerTests()
     {
-        sut = new EndLoginChallengeCommandHandler(
-            users,
-            AccountLocks.Create(users, Substitute.For<IUnitOfWork>())
-        );
+        sut = new EndLoginChallengeCommandHandler(users);
     }
 
     [Fact]
@@ -54,24 +50,6 @@ public sealed class EndLoginChallengeCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         user.LoginChallenge.Id.Should().Be(openChallenge);
-    }
-
-    [Fact]
-    public async Task HandleAsyncChallengeRotatedBeforeTheLockKeepsTheNewOne()
-    {
-        var presented = LoginChallengeId.New();
-        var rotated = LoginChallengeId.New();
-        var user = users.FindReturns(NewUser());
-        user.StartLoginChallenge(presented, OpenedAt);
-        users.ReloadsAs(user, new { LoginChallenge = LoginChallenge.Start(rotated, OpenedAt) });
-
-        var result = await sut.HandleAsync(
-            new EndLoginChallengeCommand(new LoginChallengeKey(user.Id, presented)),
-            TestContext.Current.CancellationToken
-        );
-
-        result.IsSuccess.Should().BeTrue();
-        user.LoginChallenge.Id.Should().Be(rotated);
     }
 
     [Fact]

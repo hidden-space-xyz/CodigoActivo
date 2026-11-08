@@ -61,7 +61,6 @@ public sealed class DeleteActivityCommandHandlerTests
         result.IsSuccess.Should().BeTrue();
         activities.Received(1).Remove(activity);
         var deletion = ParticipationDeletion.OfActivity(activity);
-        await store.Received(1).LockAsync(deletion, Arg.Any<CancellationToken>());
         await store.Received(1).LoadAsync(deletion, Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

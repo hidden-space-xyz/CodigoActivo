@@ -110,28 +110,21 @@ internal sealed class DeploymentModeLock
 
     private void CreateLockFile(string configuredValue)
     {
-        try
-        {
-            using var stream = new FileStream(
-                filePath,
-                FileMode.CreateNew,
-                FileAccess.Write,
-                FileShare.Read,
-                bufferSize: 4096,
-                FileOptions.WriteThrough
-            );
-            var contents = Encoding.UTF8.GetBytes(configuredValue + "\n");
-            stream.Write(contents);
-            stream.Flush(flushToDisk: true);
+        using var stream = new FileStream(
+            filePath,
+            FileMode.CreateNew,
+            FileAccess.Write,
+            FileShare.Read,
+            bufferSize: 4096,
+            FileOptions.WriteThrough
+        );
+        var contents = Encoding.UTF8.GetBytes(configuredValue + "\n");
+        stream.Write(contents);
+        stream.Flush(flushToDisk: true);
 
-            if (OperatingSystem.IsLinux())
-            {
-                File.SetUnixFileMode(filePath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
-            }
-        }
-        catch (IOException) when (File.Exists(filePath))
+        if (OperatingSystem.IsLinux())
         {
-            return;
+            File.SetUnixFileMode(filePath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
         }
     }
 

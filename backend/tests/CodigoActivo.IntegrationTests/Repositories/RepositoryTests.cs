@@ -26,7 +26,6 @@ using CodigoActivo.Infrastructure.TermsDocuments;
 using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
 using Xunit;
 using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
 
@@ -608,7 +607,7 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
     }
 
     [Fact]
-    public async Task LockAsyncPublishedPolicyLoadsItAndUnpublishedOneIsNull()
+    public async Task GetByKindAsyncPublishedPolicyLoadsItAndUnpublishedOneIsNull()
     {
         await using (var seed = postgres.CreateContext())
         {
@@ -621,11 +620,10 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
         }
 
         await using var ctx = postgres.CreateContext();
-        await using var transaction = await ctx.Database.BeginTransactionAsync(Ct);
         var repo = new LegalPolicyRepository(ctx);
 
-        var cookies = await repo.LockAsync(LegalPolicyKind.Cookies, Ct);
-        var privacy = await repo.LockAsync(LegalPolicyKind.Privacy, Ct);
+        var cookies = await repo.GetByKindAsync(LegalPolicyKind.Cookies, Ct);
+        var privacy = await repo.GetByKindAsync(LegalPolicyKind.Privacy, Ct);
 
         cookies!.Kind.Should().Be(LegalPolicyKind.Cookies);
         cookies.PublishedAt.Should().Be(Fixed);
@@ -742,6 +740,43 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
         (await repo.NameExistsAsync("Talleres", talleres.Id, Ct)).Should().BeFalse();
         (await repo.NameExistsAsync("Charlas", talleres.Id, Ct)).Should().BeTrue();
         (await repo.NameExistsAsync("Otra", ct: Ct)).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("talleres", true)]
+    [InlineData("TALLERES", true)]
+    [InlineData("Tálleres", false)]
+    [InlineData("Taller%", false)]
+    public async Task NameExistsAsyncEventCategoryTypeIgnoresOnlyLetterCase(string name, bool taken)
+    {
+        await using var ctx = postgres.CreateContext();
+        ctx.EventCategoryTypes.Add(EventCategoryType.Create("Talleres", "#123456"));
+        await ctx.SaveChangesAsync(Ct);
+        var repo = new EventCategoryTypeRepository(ctx);
+
+        (await repo.NameExistsAsync(name, ct: Ct)).Should().Be(taken);
+    }
+
+    [Theory]
+    [InlineData("normas", true)]
+    [InlineData("NORMAS", true)]
+    [InlineData("Nórmas", false)]
+    [InlineData("Norma_", false)]
+    public async Task NameExistsAsyncTermsDocumentIgnoresOnlyLetterCase(string name, bool taken)
+    {
+        await using var ctx = postgres.CreateContext();
+        var normas = TermsDocument.Create(
+            "Normas",
+            RichText.From("{}"),
+            requiresSignature: false,
+            TermsDocumentKind.Conditions
+        );
+        ctx.TermsDocuments.Add(normas);
+        await ctx.SaveChangesAsync(Ct);
+        var repo = new TermsDocumentRepository(ctx);
+
+        (await repo.NameExistsAsync(name, ct: Ct)).Should().Be(taken);
+        (await repo.NameExistsAsync(name, normas.Id, Ct)).Should().BeFalse();
     }
 
     [Fact]
@@ -943,71 +978,6 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
     }
 
     [Fact]
-    public async Task LockAsyncTermsDocumentTakesTheRewriteAnotherSessionSaved()
-    {
-        await using var ctx = postgres.CreateContext();
-        var document = TermsDocument.Create(
-            "Documento original",
-            RichText.From("{}"),
-            false,
-            TermsDocumentKind.Conditions
-        );
-        ctx.TermsDocuments.Add(document);
-        await ctx.SaveChangesAsync(Ct);
-        await using (var other = postgres.CreateContext())
-        {
-            var copy = await new TermsDocumentRepository(other).GetByIdAsync(document.Id, Ct);
-            copy!.Rewrite(
-                "Documento reescrito",
-                RichText.From("{}"),
-                false,
-                TermsDocumentKind.Conditions
-            );
-            await other.SaveChangesAsync(Ct);
-        }
-
-        var repo = new TermsDocumentRepository(ctx);
-        await using var transaction = await ctx.Database.BeginTransactionAsync(Ct);
-
-        (await repo.LockAsync(document, Ct)).Should().BeTrue();
-        document.Rewrite(
-            "Documento final",
-            RichText.From("{}"),
-            false,
-            TermsDocumentKind.Conditions
-        );
-        await ctx.SaveChangesAsync(Ct);
-        await transaction.CommitAsync(Ct);
-
-        document.Version.Should().Be(3);
-        (
-            await ctx
-                .TermsDocumentVersions.Where(version => version.TermsDocumentId == document.Id)
-                .OrderBy(version => version.Number)
-                .Select(version => version.Name)
-                .ToListAsync(Ct)
-        )
-            .Should()
-            .Equal("Documento original", "Documento reescrito");
-    }
-
-    [Fact]
-    public async Task LockAsyncTermsDocumentNotStoredReturnsFalse()
-    {
-        await using var ctx = postgres.CreateContext();
-        var document = TermsDocument.Create(
-            "Documento sin guardar",
-            RichText.From("{}"),
-            false,
-            TermsDocumentKind.Conditions
-        );
-        var repo = new TermsDocumentRepository(ctx);
-        await using var transaction = await ctx.Database.BeginTransactionAsync(Ct);
-
-        (await repo.LockAsync(document, Ct)).Should().BeFalse();
-    }
-
-    [Fact]
     public async Task SaveChangesAsyncTermsAcceptanceWithSignatureStoresTheImage()
     {
         await using var ctx = postgres.CreateContext();
@@ -1043,26 +1013,7 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
     }
 
     [Fact]
-    public async Task GetLockedAsyncHeldEventBlocksOtherWritersButNotReferencesToIt()
-    {
-        var ev = NewEvent();
-        await using (var seed = postgres.CreateContext())
-        {
-            seed.Events.Add(ev);
-            await seed.SaveChangesAsync(Ct);
-        }
-
-        await using var ctx = postgres.CreateContext();
-        await using var transaction = await ctx.Database.BeginTransactionAsync(Ct);
-        var locked = await new EventRepository(ctx).GetLockedAsync(ev.Id, Ct);
-
-        locked!.Id.Should().Be(ev.Id);
-        (await IsLockedAsync(Probe.EventWriter, ev.Id.Value)).Should().BeTrue();
-        (await IsLockedAsync(Probe.EventReference, ev.Id.Value)).Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task LockTaggedWithAsyncLocksAndLoadsOnlyTheTaggedEvents()
+    public async Task ListTaggedWithAsyncLoadsOnlyTheTaggedEventsWithTheirCategories()
     {
         var talleres = EventCategoryType.Create("Talleres", "#112233");
         var charlas = EventCategoryType.Create("Charlas", "#445566");
@@ -1086,73 +1037,9 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
         }
 
         await using var ctx = postgres.CreateContext();
-        await using var transaction = await ctx.Database.BeginTransactionAsync(Ct);
-        var locked = await new EventRepository(ctx).LockTaggedWithAsync(talleres.Id, Ct);
+        var listed = await new EventRepository(ctx).ListTaggedWithAsync(talleres.Id, Ct);
 
-        locked.Should().ContainSingle().Which.Categories.Should().HaveCount(2);
-        locked[0].Id.Should().Be(tagged.Id);
-        (await IsLockedAsync(Probe.EventWriter, tagged.Id.Value)).Should().BeTrue();
-        (await IsLockedAsync(Probe.EventWriter, untagged.Id.Value)).Should().BeFalse();
-    }
-
-    [Fact]
-    public async Task CategoryTypeLockAsyncHeldCategoryBlocksTaggingWithIt()
-    {
-        var talleres = EventCategoryType.Create("Talleres", "#112233");
-        await using (var seed = postgres.CreateContext())
-        {
-            seed.Add(talleres);
-            await seed.SaveChangesAsync(Ct);
-        }
-
-        await using var ctx = postgres.CreateContext();
-        await using var transaction = await ctx.Database.BeginTransactionAsync(Ct);
-        var repo = new EventCategoryTypeRepository(ctx);
-        var loaded = await repo.GetByIdAsync(talleres.Id, Ct);
-
-        (await repo.LockAsync(loaded!, Ct)).Should().BeTrue();
-        (await IsLockedAsync(Probe.CategoryReference, talleres.Id.Value)).Should().BeTrue();
-    }
-
-    private enum Probe
-    {
-        EventWriter,
-        EventReference,
-        CategoryReference,
-    }
-
-    private async Task<bool> IsLockedAsync(Probe kind, Guid id)
-    {
-        await using var connection = new NpgsqlConnection(postgres.ConnectionString);
-        await connection.OpenAsync(Ct);
-        await using var transaction = await connection.BeginTransactionAsync(Ct);
-        await using var probe = kind switch
-        {
-            Probe.EventWriter => new NpgsqlCommand(
-                "SELECT 1 FROM events WHERE id = @id FOR NO KEY UPDATE NOWAIT",
-                connection,
-                transaction
-            ),
-            Probe.EventReference => new NpgsqlCommand(
-                "SELECT 1 FROM events WHERE id = @id FOR KEY SHARE NOWAIT",
-                connection,
-                transaction
-            ),
-            _ => new NpgsqlCommand(
-                "SELECT 1 FROM event_category_types WHERE id = @id FOR KEY SHARE NOWAIT",
-                connection,
-                transaction
-            ),
-        };
-        probe.Parameters.AddWithValue("id", id);
-        try
-        {
-            await probe.ExecuteNonQueryAsync(Ct);
-            return false;
-        }
-        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.LockNotAvailable)
-        {
-            return true;
-        }
+        listed.Should().ContainSingle().Which.Categories.Should().HaveCount(2);
+        listed[0].Id.Should().Be(tagged.Id);
     }
 }

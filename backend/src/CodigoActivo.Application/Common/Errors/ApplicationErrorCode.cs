@@ -133,11 +133,6 @@ public enum ApplicationErrorCode
     LegalPolicyVersionNotFound,
 
     /// <summary>
-    /// Another administrator published the first version of the same policy at the same time.
-    /// </summary>
-    LegalPolicyPublishedConcurrently,
-
-    /// <summary>
     /// No resource has the requested identifier.
     /// </summary>
     ResourceNotFound,

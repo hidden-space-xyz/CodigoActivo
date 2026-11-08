@@ -13,6 +13,7 @@ using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Database.Catalogs;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using CodigoActivo.Infrastructure.Database.Conversions;
 using CodigoActivo.Infrastructure.DataHistory;
 using Microsoft.EntityFrameworkCore;
@@ -247,6 +248,7 @@ public class CodigoActivoDbContext(
     {
         base.OnModelCreating(modelBuilder);
         modelBuilder.HasPostgresExtension("pg_trgm");
+        modelBuilder.HasCaseInsensitiveCollation();
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(CodigoActivoDbContext).Assembly);
     }
 }

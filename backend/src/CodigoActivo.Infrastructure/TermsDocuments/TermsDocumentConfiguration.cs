@@ -22,6 +22,6 @@ public sealed class TermsDocumentConfiguration : IEntityTypeConfiguration<TermsD
         builder.Property(x => x.Description).IsRequired();
         builder.Property(x => x.RequiresSignature).IsRequired();
         builder.Property(x => x.Kind).HasConversion<string>().HasMaxLength(16).IsRequired();
-        builder.HasIndex(x => x.Name).IsUnique();
+        builder.HasIndex(x => x.Name).IsUnique().UseCollation(CaseInsensitiveNames.Collation);
     }
 }

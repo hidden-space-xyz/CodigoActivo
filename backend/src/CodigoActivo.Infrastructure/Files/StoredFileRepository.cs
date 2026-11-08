@@ -41,61 +41,14 @@ public class StoredFileRepository(CodigoActivoDbContext context)
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<StoredFileId>> LockExistingAsync(
+    public async Task<IReadOnlyList<StoredFileId>> ListExistingAsync(
         IReadOnlyCollection<StoredFileId> ids,
         CancellationToken ct = default
     )
     {
-        return LockAsync(
-            ids,
-            values =>
-                $"""
-                    SELECT id AS "Value" FROM files WHERE id = ANY({values}) ORDER BY id FOR KEY SHARE
-                    """,
-            ct
-        );
-    }
-
-    /// <inheritdoc />
-    public Task<IReadOnlyList<StoredFileId>> LockForDeletionAsync(
-        IReadOnlyCollection<StoredFileId> ids,
-        CancellationToken ct = default
-    )
-    {
-        return LockAsync(
-            ids,
-            values =>
-                $"""
-                    SELECT id AS "Value" FROM files WHERE id = ANY({values}) ORDER BY id FOR UPDATE
-                    """,
-            ct
-        );
-    }
-
-    private async Task<IReadOnlyList<StoredFileId>> LockAsync(
-        IReadOnlyCollection<StoredFileId> ids,
-        Func<IReadOnlyList<Guid>, FormattableString> sql,
-        CancellationToken ct
-    )
-    {
-        var values = OrderedValues(ids);
-        if (values.Length is 0)
-        {
-            return [];
-        }
-
-        return
-        [
-            .. (await Context.Database.SqlQuery<Guid>(sql(values)).ToListAsync(ct)).Select(
-                StoredFileId.From
-            ),
-        ];
-    }
-
-    private static Guid[] OrderedValues(IReadOnlyCollection<StoredFileId> ids)
-    {
-        ArgumentNullException.ThrowIfNull(ids);
-        return [.. ids.Select(id => id.Value).Distinct().Order()];
+        return await Set.Where(file => ids.Contains(file.Id))
+            .Select(file => file.Id)
+            .ToListAsync(ct);
     }
 
     /// <inheritdoc />

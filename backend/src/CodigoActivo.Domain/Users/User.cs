@@ -1072,17 +1072,6 @@ public class User : AggregateRoot<UserId>
     }
 
     /// <summary>
-    /// Tells whether nobody verified the account within <see cref="UnverifiedRetentionDays"/> of
-    /// its registration.
-    /// </summary>
-    /// <param name="now">Current time.</param>
-    /// <returns><see langword="true"/> when the account is still unverified and expired.</returns>
-    public bool HasVerificationExpired(DateTimeOffset now)
-    {
-        return IsPendingVerification && CreatedAt <= UnverifiedPurgeCutoff(now);
-    }
-
-    /// <summary>
     /// Tells up to which birth date the guardian of a dependent must be told on
     /// <paramref name="today"/> that it will be erased the day it comes of age.
     /// </summary>
@@ -1119,19 +1108,6 @@ public class User : AggregateRoot<UserId>
     public void RecordComingOfAgeNotice(DateTimeOffset now)
     {
         ComingOfAgeNoticeSentAt = now;
-    }
-
-    /// <summary>
-    /// Tells whether this dependent is of age on <paramref name="today"/>. Its guardian no longer
-    /// represents it then, so it is erased.
-    /// </summary>
-    /// <param name="today">Local day on which the age is evaluated.</param>
-    /// <returns>
-    /// <see langword="true"/> when the account is a dependent who has come of age.
-    /// </returns>
-    public bool HasComeOfAge(DateOnly today)
-    {
-        return IsDependent && BirthDate is { } birthDate && !birthDate.IsMinor(today);
     }
 
     /// <summary>

@@ -1,6 +1,5 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Activities.Contracts;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Activities.Commands;
 using CodigoActivo.Application.Activities.Contracts;
@@ -22,7 +21,6 @@ public sealed class CreateActivityCommandHandlerTests
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
     private readonly CreateActivityCommandHandler sut;
@@ -33,8 +31,7 @@ public sealed class CreateActivityCommandHandlerTests
             activities,
             new ActivityValidator(events, files, clock),
             currentUser,
-            clock,
-            uow.RunsTransactionsOf<Result<ActivityId>>()
+            clock
         );
     }
 
@@ -187,11 +184,10 @@ public sealed class CreateActivityCommandHandlerTests
         created.CreatedAt.Should().Be(clock.UtcNow);
         await files
             .Received(1)
-            .LockExistingAsync(
+            .ListExistingAsync(
                 Arg.Is<IReadOnlyCollection<StoredFileId>>(ids => ids.Contains(created.ThumbnailId)),
                 Arg.Any<CancellationToken>()
             );
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

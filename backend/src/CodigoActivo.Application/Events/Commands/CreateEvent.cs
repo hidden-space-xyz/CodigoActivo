@@ -1,6 +1,5 @@
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
@@ -30,17 +29,13 @@ public sealed record CreateEventCommand(EventDraft Event)
 /// <param name="categoryChecker">Checker of the chosen categories.</param>
 /// <param name="currentUser">Person the use case runs for, recorded as the creator.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="uow">
-/// Unit of work that saves the event in the transaction that locks its files.
-/// </param>
 public sealed class CreateEventCommandHandler(
     IEventRepository events,
     IStoredFileRepository files,
     ITermsDocumentRepository termsDocuments,
     EventCategoryChecker categoryChecker,
     ICurrentUser currentUser,
-    IClock clock,
-    IUnitOfWork uow
+    IClock clock
 ) : ICommandHandler<CreateEventCommand, Result<EventId>>
 {
     /// <summary>
@@ -82,21 +77,6 @@ public sealed class CreateEventCommandHandler(
             return terms.Error!;
         }
 
-        return await uow.ExecuteInTransactionAsync(
-            attempt =>
-                CreateLockedAsync(draft, schedule.Value, categories.Value, terms.Value, attempt),
-            ct
-        );
-    }
-
-    private async Task<Result<EventId>> CreateLockedAsync(
-        EventDraft draft,
-        EventSchedule schedule,
-        EventCategorySelection categories,
-        EventTermsLinks terms,
-        CancellationToken ct
-    )
-    {
         var description = RichText.From(draft.Description);
         var available = await ContentFiles.EnsureAvailableAsync(
             files,
@@ -112,15 +92,14 @@ public sealed class CreateEventCommandHandler(
 
         var ev = Event.Create(
             draft.ToContent(description),
-            schedule,
-            categories,
-            terms,
+            schedule.Value,
+            categories.Value,
+            terms.Value,
             currentUser.RequiredId(),
             clock.UtcNow
         );
 
         await events.AddAsync(ev, ct);
-        await uow.SaveChangesAsync(ct);
         return ev.Id;
     }
 }

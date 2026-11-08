@@ -1,8 +1,8 @@
 namespace CodigoActivo.Infrastructure.Database.Repositories;
 
 /// <summary>
-/// Builds SQL LIKE patterns that match a value literally, so names containing wildcards compare as
-/// typed.
+/// Builds SQL LIKE patterns that match a value literally, so searched text containing wildcards
+/// matches as typed.
 /// </summary>
 internal static class LikePattern
 {

@@ -1,6 +1,5 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Application.Users.Commands;
@@ -16,7 +15,6 @@ namespace CodigoActivo.UnitTests.Application.Users.Commands;
 public sealed class SendComingOfAgeNoticesCommandHandlerTests
 {
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestClock clock = new();
     private readonly RecordingEmailSender emailSender = new();
     private readonly FakeAccountEmailComposer composer = new();
@@ -34,11 +32,9 @@ public sealed class SendComingOfAgeNoticesCommandHandlerTests
                 new PasswordResetOptions(),
                 new TwoFactorOptions()
             ),
-            uow.RunsTransactions(),
             clock,
             NullLogger<SendComingOfAgeNoticesCommandHandler>.Instance
         );
-        users.LocksEveryAccount();
         users.GetByIdAsync(guardian.Id, Arg.Any<CancellationToken>()).Returns(guardian);
     }
 
@@ -97,7 +93,6 @@ public sealed class SendComingOfAgeNoticesCommandHandlerTests
             .Which.Kind.Should()
             .Be(EmailKind.ComingOfAgeNotice);
         dependent.ComingOfAgeNoticeSentAt.Should().Be(clock.UtcNow);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -111,9 +106,6 @@ public sealed class SendComingOfAgeNoticesCommandHandlerTests
 
         result.Value.Should().Be(0);
         emailSender.Sent.Should().BeEmpty();
-        await users
-            .DidNotReceiveWithAnyArgs()
-            .LockAsync(default!, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -127,8 +119,6 @@ public sealed class SendComingOfAgeNoticesCommandHandlerTests
 
         result.Value.Should().Be(0);
         dependent.ComingOfAgeNoticeSentAt.Should().BeNull();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -156,18 +146,5 @@ public sealed class SendComingOfAgeNoticesCommandHandlerTests
         result.Value.Should().Be(0);
         emailSender.Sent.Should().BeEmpty();
         dependent.ComingOfAgeNoticeSentAt.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task HandleAsyncSkipsADependentWhoseBirthDateWasCorrectedSinceItWasListed()
-    {
-        var dependent = Dependent(clock.Today.AddDays(10).AddYears(-18));
-        Lists(dependent);
-        users.ReloadsAs(dependent, new { BirthDate = clock.Today.AddYears(-16) });
-
-        var result = await HandleAsync();
-
-        result.Value.Should().Be(0);
-        emailSender.Sent.Should().BeEmpty();
     }
 }

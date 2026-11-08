@@ -9,12 +9,12 @@ namespace CodigoActivo.Domain.BlockedData;
 public interface IBlockedDataHoldRepository : IRepository<BlockedDataHold>
 {
     /// <summary>
-    /// Locks a hold until the open transaction ends and then loads it, so it is lifted only once.
+    /// Loads a hold.
     /// </summary>
     /// <param name="id">Identifier of the hold.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is the hold, or <see langword="null"/> when missing.</returns>
-    public Task<BlockedDataHold?> GetLockedAsync(
+    public Task<BlockedDataHold?> GetByIdAsync(
         BlockedDataHoldId id,
         CancellationToken ct = default
     );

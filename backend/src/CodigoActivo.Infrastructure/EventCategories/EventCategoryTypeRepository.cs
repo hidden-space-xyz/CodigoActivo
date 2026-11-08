@@ -1,6 +1,6 @@
 using CodigoActivo.Domain.EventCategories;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using CodigoActivo.Infrastructure.Database.Context;
-using CodigoActivo.Infrastructure.Database.Repositories;
 using CodigoActivo.Infrastructure.Database.Repositories.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,20 +24,6 @@ public class EventCategoryTypeRepository(CodigoActivoDbContext context)
     }
 
     /// <inheritdoc />
-    public async Task<bool> LockAsync(
-        EventCategoryType categoryType,
-        CancellationToken ct = default
-    )
-    {
-        ArgumentNullException.ThrowIfNull(categoryType);
-
-        FormattableString sql = $"""
-            SELECT id AS "Value" FROM event_category_types WHERE id = {categoryType.Id.Value} FOR UPDATE
-            """;
-        return (await Context.Database.SqlQuery<Guid>(sql).ToListAsync(ct)).Count is not 0;
-    }
-
-    /// <inheritdoc />
     public Task<bool> NameExistsAsync(
         string name,
         EventCategoryTypeId? exceptId = null,
@@ -46,11 +32,8 @@ public class EventCategoryTypeRepository(CodigoActivoDbContext context)
     {
         return Set.AnyAsync(
             categoryType =>
-                EF.Functions.ILike(
-                    categoryType.Name,
-                    LikePattern.Literal(name),
-                    LikePattern.EscapeCharacter
-                ) && (exceptId == null || categoryType.Id != exceptId.Value),
+                EF.Functions.Collate(categoryType.Name, CaseInsensitiveNames.Collation) == name
+                && (exceptId == null || categoryType.Id != exceptId.Value),
             ct
         );
     }

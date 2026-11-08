@@ -1,6 +1,5 @@
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
@@ -24,11 +23,9 @@ public sealed record UpdateEventCommand(EventId EventId, EventDraft Event)
         IRoutineCommand;
 
 /// <summary>
-/// Executes the command to update the event. The event stays locked from the moment it is loaded
-/// until its new state is stored, so a concurrent change of its categories, such as the deletion of
-/// one of them, sees the stored categories and cannot leave the event without any. The new days
-/// must still hold every activity of the event. A thumbnail or description image it no longer
-/// references is removed after the commit when nothing else uses it.
+/// Executes the command to update the event. The new days must still hold every activity of the
+/// event. A thumbnail or description image it no longer references is removed after the commit
+/// when nothing else uses it.
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
@@ -37,7 +34,6 @@ public sealed record UpdateEventCommand(EventId EventId, EventDraft Event)
 /// <param name="categoryChecker">Checker of the chosen categories.</param>
 /// <param name="currentUser">Person the use case runs for, recorded as the editor.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="uow">Unit of work that stores the event while it is locked.</param>
 public sealed class UpdateEventCommandHandler(
     IEventRepository events,
     IActivityRepository activities,
@@ -45,8 +41,7 @@ public sealed class UpdateEventCommandHandler(
     ITermsDocumentRepository termsDocuments,
     EventCategoryChecker categoryChecker,
     ICurrentUser currentUser,
-    IClock clock,
-    IUnitOfWork uow
+    IClock clock
 ) : ICommandHandler<UpdateEventCommand, Result>
 {
     /// <summary>
@@ -83,27 +78,13 @@ public sealed class UpdateEventCommandHandler(
             return categories.Error!;
         }
 
-        return await uow.ExecuteInTransactionAsync(
-            attempt => UpdateLockedAsync(command, schedule.Value, categories.Value, attempt),
-            ct
-        );
-    }
-
-    private async Task<Result> UpdateLockedAsync(
-        UpdateEventCommand command,
-        EventSchedule schedule,
-        EventCategorySelection categories,
-        CancellationToken ct
-    )
-    {
-        var draft = command.Event;
-        var ev = await events.GetLockedAsync(command.EventId, ct);
+        var ev = await events.GetByIdAsync(command.EventId, ct);
         if (ev is null)
         {
             return Error.NotFound(ApplicationErrorCode.EventNotFound);
         }
 
-        var (lowerInclusive, upperExclusive) = schedule.Calendar.InstantsIn(clock.TimeZone);
+        var (lowerInclusive, upperExclusive) = schedule.Value.Calendar.InstantsIn(clock.TimeZone);
         if (
             await activities.AnyOutsideRangeAsync(
                 command.EventId,
@@ -137,13 +118,12 @@ public sealed class UpdateEventCommandHandler(
 
         ev.Update(
             draft.ToContent(description),
-            schedule,
-            categories,
+            schedule.Value,
+            categories.Value,
             terms.Value,
             currentUser.RequiredId(),
             clock.UtcNow
         );
-        await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
 }

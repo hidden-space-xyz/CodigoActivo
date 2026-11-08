@@ -1,7 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.News;
-using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Files;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -113,48 +112,5 @@ public sealed class UnusedFilePurgeWorkerTests(CodigoActivoWebAppFactory factory
         System.IO.File.Exists(ownerless).Should().BeFalse();
         System.IO.File.Exists(leftover).Should().BeFalse();
         System.IO.File.Exists(recentOwnerless).Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task PurgeAsyncWaitsForASaveThatLockedTheFileAndThenKeepsIt()
-    {
-        var embedded = File(StoredFile.UnusedRetentionDays + 1);
-        var thumbnail = File(StoredFile.UnusedRetentionDays + 1);
-        await Factory.SeedAsync(db =>
-        {
-            db.Files.AddRange(embedded, thumbnail);
-            return Task.CompletedTask;
-        });
-        await using var scope = Factory.Services.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
-        await using var transaction = await db.Database.BeginTransactionAsync(Ct);
-        var files = scope.ServiceProvider.GetRequiredService<IStoredFileRepository>();
-        (await files.LockExistingAsync([embedded.Id, thumbnail.Id], Ct)).Should().HaveCount(2);
-
-        var purge = Build().PurgeAsync(Ct);
-        var finished = await Task.WhenAny(purge, Task.Delay(TimeSpan.FromSeconds(1), Ct));
-        db.News.Add(
-            Persisted.As<NewsItem>(
-                new
-                {
-                    Id = Guid.NewGuid(),
-                    Title = "Noticia",
-                    Subtitle = "sub",
-                    Description = $$"""{"img":"/api/files/{{embedded.Id}}/content"}""",
-                    ThumbnailId = thumbnail.Id,
-                    CreatedAt = Factory.Clock.UtcNow,
-                    CreatedBy = TestSeedData.Users.AdminId,
-                }
-            )
-        );
-        await db.SaveChangesAsync(Ct);
-        await transaction.CommitAsync(Ct);
-
-        finished.Should().NotBeSameAs(purge, "the purge waits for the save that locked the files");
-        (await purge).Should().Be(0);
-        var remaining = await Factory.QueryAsync(innerDb =>
-            innerDb.Files.Select(file => file.Id).ToListAsync(Ct)
-        );
-        remaining.Should().BeEquivalentTo([embedded.Id, thumbnail.Id]);
     }
 }

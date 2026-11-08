@@ -21,20 +21,6 @@ public interface IBlockedDataConsultationRepository : IRepository<BlockedDataCon
     );
 
     /// <summary>
-    /// Locks a consultation until the open transaction ends and then loads it with what it
-    /// recorded, so two searches in it never record the same account twice.
-    /// </summary>
-    /// <param name="id">Identifier of the consultation.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>
-    /// A task whose result is the consultation, or <see langword="null"/> when missing.
-    /// </returns>
-    public Task<BlockedDataConsultation?> GetLockedAsync(
-        BlockedDataConsultationId id,
-        CancellationToken ct = default
-    );
-
-    /// <summary>
     /// Physically removes the consultations opened up to a moment. It runs immediately, without
     /// waiting for the unit of work.
     /// </summary>

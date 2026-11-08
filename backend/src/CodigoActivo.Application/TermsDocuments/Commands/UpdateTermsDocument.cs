@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
@@ -29,23 +28,20 @@ public sealed record UpdateTermsDocumentCommand(
 ) : ICommand<Result>, IRoutineCommand;
 
 /// <summary>
-/// Executes the command to update the terms document. The document is locked and reloaded first,
-/// so concurrent rewrites run one after another, and its kind stays as it is while an event links
+/// Executes the command to update the terms document. Its kind stays as it is while an event links
 /// it or anyone decided on it, since every rule about those decisions reads the current kind. A
 /// rewrite that changes anything starts a new version and keeps the one it replaces, so decisions
-/// already taken keep naming the text they were taken on.
+/// already taken keep naming the text they were taken on. Names are unique ignoring letter case.
 /// </summary>
 /// <param name="termsDocuments">Repository used to persist and retrieve terms documents.</param>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="termsAcceptances">
 /// Repository used to persist and retrieve terms acceptances.
 /// </param>
-/// <param name="uow">Unit of work that runs the rewrite in one transaction.</param>
 public sealed class UpdateTermsDocumentCommandHandler(
     ITermsDocumentRepository termsDocuments,
     IEventRepository events,
-    IEventTermsAcceptanceRepository termsAcceptances,
-    IUnitOfWork uow
+    IEventTermsAcceptanceRepository termsAcceptances
 ) : ICommandHandler<UpdateTermsDocumentCommand, Result>
 {
     /// <summary>
@@ -79,24 +75,6 @@ public sealed class UpdateTermsDocumentCommandHandler(
             return Error.Conflict(ApplicationErrorCode.TermsDocumentNameAlreadyExists);
         }
 
-        return await uow.ExecuteInTransactionAsync(
-            attempt => RewriteLockedAsync(termsDocument, name, command, attempt),
-            ct
-        );
-    }
-
-    private async Task<Result> RewriteLockedAsync(
-        TermsDocument termsDocument,
-        string name,
-        UpdateTermsDocumentCommand command,
-        CancellationToken ct
-    )
-    {
-        if (!await termsDocuments.LockAsync(termsDocument, ct))
-        {
-            return Error.NotFound(ApplicationErrorCode.TermsDocumentNotFound);
-        }
-
         if (
             termsDocument.Kind != command.Kind
             && (
@@ -114,7 +92,6 @@ public sealed class UpdateTermsDocumentCommandHandler(
             command.RequiresSignature,
             command.Kind
         );
-        await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
 }

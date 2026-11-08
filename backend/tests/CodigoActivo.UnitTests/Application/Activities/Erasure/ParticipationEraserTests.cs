@@ -23,29 +23,27 @@ public sealed class ParticipationEraserTests
     }
 
     [Fact]
-    public async Task EraseAsyncLocksThenLoadsThenCommitsInOneTransaction()
+    public async Task EraseAsyncLoadsThenCommits()
     {
         await sut.EraseAsync(deletion, TestContext.Current.CancellationToken);
 
         Received.InOrder(() =>
         {
-            uow.ExecuteInTransactionAsync(
-                Arg.Any<Func<CancellationToken, Task<bool>>>(),
-                Arg.Any<CancellationToken>()
-            );
-            store.LockAsync(deletion, Arg.Any<CancellationToken>());
             store.LoadAsync(deletion, Arg.Any<CancellationToken>());
             uow.SaveChangesAsync(Arg.Any<CancellationToken>());
         });
     }
 
     [Fact]
-    public async Task EraseAsyncMissingDeletionThrowsBeforeTheTransaction()
+    public async Task EraseAsyncMissingDeletionThrowsBeforeLoading()
     {
         var withoutDeletion = () => sut.EraseAsync(null!, TestContext.Current.CancellationToken);
 
         await withoutDeletion.Should().ThrowAsync<ArgumentNullException>();
+        await store
+            .DidNotReceiveWithAnyArgs()
+            .LoadAsync(default!, TestContext.Current.CancellationToken);
         await uow.DidNotReceiveWithAnyArgs()
-            .ExecuteInTransactionAsync<bool>(default!, TestContext.Current.CancellationToken);
+            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 }

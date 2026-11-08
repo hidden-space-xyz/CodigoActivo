@@ -20,6 +20,6 @@ public sealed class EventCategoryTypeConfiguration : IEntityTypeConfiguration<Ev
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Name).IsRequired();
         builder.Property(x => x.Color).IsRequired().HasMaxLength(9);
-        builder.HasIndex(x => x.Name).IsUnique();
+        builder.HasIndex(x => x.Name).IsUnique().UseCollation(CaseInsensitiveNames.Collation);
     }
 }

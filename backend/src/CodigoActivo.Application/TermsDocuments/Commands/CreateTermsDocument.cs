@@ -25,7 +25,7 @@ public sealed record CreateTermsDocumentCommand(
 ) : ICommand<Result<TermsDocumentId>>, IRoutineCommand;
 
 /// <summary>
-/// Executes the command to create a terms document.
+/// Executes the command to create a terms document. Names are unique ignoring letter case.
 /// </summary>
 /// <param name="termsDocuments">Repository used to persist and retrieve terms documents.</param>
 public sealed class CreateTermsDocumentCommandHandler(ITermsDocumentRepository termsDocuments)

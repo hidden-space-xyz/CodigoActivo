@@ -3,7 +3,8 @@ namespace CodigoActivo.Application.Abstractions.Persistence;
 /// <summary>
 /// Represents a commit that the database rejected because a row it updates or deletes was written
 /// or removed by a concurrent transaction after the use case read it, so its decisions rest on
-/// values that no longer hold. The refused commit stores nothing; the request can be sent again.
+/// values that no longer hold, or because it aborted the transaction to resolve a deadlock with a
+/// concurrent one. The refused commit stores nothing; the request can be sent again.
 /// </summary>
 public sealed class ConcurrentUpdateException : Exception
 {

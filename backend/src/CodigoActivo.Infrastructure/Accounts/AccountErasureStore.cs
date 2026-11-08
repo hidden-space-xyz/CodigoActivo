@@ -14,45 +14,19 @@ using Microsoft.EntityFrameworkCore;
 namespace CodigoActivo.Infrastructure.Accounts;
 
 /// <summary>
-/// Runs the storage steps of an account erasure on the household: row locks, tracking what the
-/// erasure deletes and the handover of authored content.
+/// Runs the storage steps of an account erasure on the household: the lock of the account,
+/// tracking what the erasure deletes and the handover of authored content.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
 public sealed class AccountErasureStore(CodigoActivoDbContext context) : IAccountErasureStore
 {
     /// <inheritdoc />
-    public async Task<bool> LockHouseholdAsync(UserId accountId, CancellationToken ct = default)
+    public async Task<bool> LockAccountAsync(UserId accountId, CancellationToken ct = default)
     {
         FormattableString account = $"""
             SELECT id AS "Value" FROM users WHERE id = {accountId.Value} FOR UPDATE
             """;
-        if ((await context.Database.SqlQuery<Guid>(account).ToListAsync(ct)).Count is 0)
-        {
-            return false;
-        }
-
-        await context.Database.ExecuteSqlAsync(
-            $"""
-            SELECT id FROM users WHERE parent_id = {accountId.Value} FOR UPDATE;
-            SELECT a.user_id
-            FROM assignments AS a
-            JOIN users AS u ON u.id = a.user_id
-            WHERE u.id = {accountId.Value} OR u.parent_id = {accountId.Value}
-            FOR UPDATE OF a;
-            SELECT t.user_id
-            FROM event_terms_acceptances AS t
-            JOIN users AS u ON u.id = t.user_id OR u.id = t.decided_by_id
-            WHERE u.id = {accountId.Value} OR u.parent_id = {accountId.Value}
-            FOR UPDATE OF t;
-            SELECT r.id
-            FROM event_ratings AS r
-            JOIN users AS u ON u.id = r.user_id
-            WHERE u.id = {accountId.Value} OR u.parent_id = {accountId.Value}
-            FOR UPDATE OF r
-            """,
-            ct
-        );
-        return true;
+        return (await context.Database.SqlQuery<Guid>(account).ToListAsync(ct)).Count > 0;
     }
 
     /// <inheritdoc />

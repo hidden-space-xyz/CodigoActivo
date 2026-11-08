@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
@@ -49,7 +48,6 @@ public sealed record SaveEventRatingCommand(
 /// <param name="ratings">Repository used to persist and retrieve ratings.</param>
 /// <param name="activities">Repository used to persist and retrieve activities.</param>
 /// <param name="users">Repository used to retrieve the dependents of the rater.</param>
-/// <param name="uow">Unit of work used to commit a new rating.</param>
 /// <param name="currentUser">Person the use case runs for.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class SaveEventRatingCommandHandler(
@@ -57,7 +55,6 @@ public sealed class SaveEventRatingCommandHandler(
     IEventRatingRepository ratings,
     IActivityRepository activities,
     IUserRepository users,
-    IUnitOfWork uow,
     ICurrentUser currentUser,
     IClock clock
 ) : ICommandHandler<SaveEventRatingCommand, Result>
@@ -74,9 +71,6 @@ public sealed class SaveEventRatingCommandHandler(
     /// the household had a confirmed place, or the domain error of an out-of-range score, a too
     /// long answer or an empty rating.
     /// </returns>
-    /// <exception cref="ConcurrentUpdateException">
-    /// A concurrent request of the same account stored its first rating of the event meanwhile.
-    /// </exception>
     public async Task<Result> HandleAsync(
         SaveEventRatingCommand command,
         CancellationToken ct = default
@@ -127,15 +121,6 @@ public sealed class SaveEventRatingCommandHandler(
         }
 
         await ratings.AddAsync(rating.Value, ct);
-        try
-        {
-            await uow.SaveChangesAsync(ct);
-        }
-        catch (UniqueConstraintViolationException ex) when (ex.EntityType == typeof(EventRating))
-        {
-            throw new ConcurrentUpdateException(typeof(EventRating), ex);
-        }
-
         return Result.Success();
     }
 }

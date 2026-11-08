@@ -1,6 +1,5 @@
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
@@ -19,17 +18,13 @@ public sealed record DeleteEventCategoryTypeCommand(EventCategoryTypeId Category
 /// <summary>
 /// Executes the command to delete the event category type. Each event tagged with it loses the
 /// category through <see cref="Event.RemoveCategory"/>, which refuses to leave an event without
-/// any. The category and the events tagged with it stay locked meanwhile, so neither tagging
-/// another event with it nor changing the categories of those events, which locks them too, can
-/// slip in between.
+/// any.
 /// </summary>
 /// <param name="categoryTypes">Repository used to persist and retrieve category types.</param>
 /// <param name="events">Repository used to persist and retrieve events.</param>
-/// <param name="uow">Unit of work that runs the deletion in one transaction.</param>
 public sealed class DeleteEventCategoryTypeCommandHandler(
     IEventCategoryTypeRepository categoryTypes,
-    IEventRepository events,
-    IUnitOfWork uow
+    IEventRepository events
 ) : ICommandHandler<DeleteEventCategoryTypeCommand, Result>
 {
     /// <summary>
@@ -56,23 +51,7 @@ public sealed class DeleteEventCategoryTypeCommandHandler(
             return Error.NotFound(ApplicationErrorCode.EventCategoryTypeNotFound);
         }
 
-        return await uow.ExecuteInTransactionAsync(
-            attempt => DeleteLockedAsync(categoryType, attempt),
-            ct
-        );
-    }
-
-    private async Task<Result> DeleteLockedAsync(
-        EventCategoryType categoryType,
-        CancellationToken ct
-    )
-    {
-        if (!await categoryTypes.LockAsync(categoryType, ct))
-        {
-            return Error.NotFound(ApplicationErrorCode.EventCategoryTypeNotFound);
-        }
-
-        var taggedEvents = await events.LockTaggedWithAsync(categoryType.Id, ct);
+        var taggedEvents = await events.ListTaggedWithAsync(categoryType.Id, ct);
         foreach (
             var removed in taggedEvents.Select(tagged => tagged.RemoveCategory(categoryType.Id))
         )
@@ -85,7 +64,6 @@ public sealed class DeleteEventCategoryTypeCommandHandler(
 
         categoryType.Delete();
         categoryTypes.Remove(categoryType);
-        await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
 }

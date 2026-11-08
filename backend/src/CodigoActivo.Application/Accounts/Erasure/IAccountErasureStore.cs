@@ -10,20 +10,22 @@ namespace CodigoActivo.Application.Accounts.Erasure;
 public interface IAccountErasureStore
 {
     /// <summary>
-    /// Locks the account, its dependents and the rows that belong to them, so nothing changes them
-    /// until the erasure commits.
+    /// Locks the row of the account until the erasure commits, so a concurrent erasure of the same
+    /// account waits for it and then finds the account gone.
     /// </summary>
     /// <param name="accountId">Identifier of the account.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
     /// A task whose result is <see langword="false"/> when the account no longer exists.
     /// </returns>
-    public Task<bool> LockHouseholdAsync(UserId accountId, CancellationToken ct = default);
+    public Task<bool> LockAccountAsync(UserId accountId, CancellationToken ct = default);
 
     /// <summary>
     /// Tracks every row the erasure deletes (the dependents, the signups, the terms decisions with
     /// their history, the ratings and the news consent changes of the household), so their
-    /// deletion goes through the unit of work and leaves its data history.
+    /// deletion goes through the unit of work and leaves its data history. The database refuses to
+    /// delete an account that still has a row added after this load, so the erasure then fails
+    /// instead of deleting that row without its history.
     /// </summary>
     /// <param name="accountId">Identifier of the account.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -59,8 +61,8 @@ public interface IAccountErasureStore
     public Task DiscardPendingEmailAsync(UserId accountId, CancellationToken ct = default);
 
     /// <summary>
-    /// Loads, once they are locked, the terms decisions the erasure deletes whose withdrawal the
-    /// association's legal contact has not been told about yet.
+    /// Loads the terms decisions the erasure deletes whose withdrawal the association's legal
+    /// contact has not been told about yet.
     /// </summary>
     /// <param name="accountId">Identifier of the account.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -71,7 +73,7 @@ public interface IAccountErasureStore
     );
 
     /// <summary>
-    /// Loads, once they are locked, the accepted terms decisions the erasure deletes.
+    /// Loads the accepted terms decisions the erasure deletes.
     /// </summary>
     /// <param name="accountId">Identifier of the account.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

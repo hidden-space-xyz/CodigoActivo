@@ -256,12 +256,6 @@ public enum ErrorCode
     LegalPolicyVersionNotFound,
 
     /// <summary>
-    /// Another administrator published the first version of the same policy at the same time; the
-    /// change can be sent again.
-    /// </summary>
-    LegalPolicyPublishedConcurrently,
-
-    /// <summary>
     /// No resource has the requested identifier.
     /// </summary>
     ResourceNotFound,
@@ -666,8 +660,9 @@ public enum ErrorCode
     RequestValidationFailed,
 
     /// <summary>
-    /// Another request changed or removed the data the operation read before it could store its
-    /// change, so the change of this request was refused and the request can be sent again.
+    /// Another request changed or removed the data the operation read, or stored the same unique
+    /// value, before it could store its change, so the change of this request was refused and the
+    /// request can be sent again.
     /// </summary>
     ConcurrentUpdate,
 

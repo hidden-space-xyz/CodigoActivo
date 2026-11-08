@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.News.Commands;
 using CodigoActivo.Domain.Common;
@@ -15,7 +14,6 @@ namespace CodigoActivo.UnitTests.Application.News.Commands;
 public sealed class UpdateNewsItemCommandHandlerTests
 {
     private readonly INewsItemRepository news = Substitute.For<INewsItemRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
@@ -23,13 +21,7 @@ public sealed class UpdateNewsItemCommandHandlerTests
 
     public UpdateNewsItemCommandHandlerTests()
     {
-        sut = new UpdateNewsItemCommandHandler(
-            news,
-            files,
-            currentUser,
-            clock,
-            uow.RunsTransactions()
-        );
+        sut = new UpdateNewsItemCommandHandler(news, files, currentUser, clock);
     }
 
     private static UpdateNewsItemCommand Command(
@@ -68,7 +60,7 @@ public sealed class UpdateNewsItemCommandHandlerTests
         result.Error.Code.Should().Be(ApplicationErrorCode.NewsItemNotFound);
         await files
             .DidNotReceiveWithAnyArgs()
-            .LockExistingAsync(
+            .ListExistingAsync(
                 Arg.Any<IReadOnlyCollection<StoredFileId>>(),
                 TestContext.Current.CancellationToken
             );

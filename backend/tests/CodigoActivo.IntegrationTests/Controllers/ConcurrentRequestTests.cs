@@ -55,33 +55,6 @@ public sealed class ConcurrentRequestTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task RegisterWhileTheUnverifiedHolderIsWrittenReplacesItAsUsual()
-    {
-        var codes = new InterleavingCodeHasher();
-        await using var host = HostWith<IOneTimeCodeHasher>(codes);
-        codes.RunOnceWhileHashing(() =>
-            WritePending(
-                host.Services,
-                pending => pending.IssueOtp("fake:resent", Now(), TimeSpan.FromMinutes(15))
-            )
-        );
-        using var client = host.CreateClient();
-
-        using var response = await client.PostJsonAsync("/api/auth/register", NewAdult(), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await FindAsync<User>(TestSeedData.Users.PendingId)).Should().BeNull();
-        var replacement = await Factory.QueryAsync(db =>
-            db.Users.SingleAsync(
-                u => u.Email == EmailAddress.FromStored(TestSeedData.PendingEmail),
-                Ct
-            )
-        );
-        replacement.FirstName.Should().Be("Nadia");
-        EmailsTo(TestSeedData.PendingEmail, EmailKind.AccountVerification).Should().Be(1);
-    }
-
-    [Fact]
     public async Task RegisterWhileTheUnverifiedHolderVerifiesKeepsItAndAnswersAsUsual()
     {
         var codes = new InterleavingCodeHasher();

@@ -5,7 +5,7 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// <summary>
 /// Wakes the delivery worker of this process as soon as email is stored, so a login code leaves
 /// without waiting for the next poll. Missing the signal only costs latency: the worker looks for
-/// due messages on every poll anyway, and other instances rely on their own polling.
+/// due messages on every poll anyway.
 /// </summary>
 [SuppressMessage(
     "Design",

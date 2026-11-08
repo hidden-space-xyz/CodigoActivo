@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
@@ -38,15 +37,11 @@ public sealed record UpdateNewsItemCommand(
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="currentUser">Person the use case runs for, recorded as the editor.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="uow">
-/// Unit of work that saves the item in the transaction that locks its files.
-/// </param>
 public sealed class UpdateNewsItemCommandHandler(
     INewsItemRepository news,
     IStoredFileRepository files,
     ICurrentUser currentUser,
-    IClock clock,
-    IUnitOfWork uow
+    IClock clock
 ) : ICommandHandler<UpdateNewsItemCommand, Result>
 {
     /// <summary>
@@ -72,18 +67,6 @@ public sealed class UpdateNewsItemCommandHandler(
             return Error.NotFound(ApplicationErrorCode.NewsItemNotFound);
         }
 
-        return await uow.ExecuteInTransactionAsync(
-            attempt => UpdateLockedAsync(newsItem, command, attempt),
-            ct
-        );
-    }
-
-    private async Task<Result> UpdateLockedAsync(
-        NewsItem newsItem,
-        UpdateNewsItemCommand command,
-        CancellationToken ct
-    )
-    {
         var description = RichText.From(command.Description);
         var available = await ContentFiles.EnsureAvailableAsync(
             files,
@@ -102,7 +85,6 @@ public sealed class UpdateNewsItemCommandHandler(
             currentUser.RequiredId(),
             clock.UtcNow
         );
-        await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
 }

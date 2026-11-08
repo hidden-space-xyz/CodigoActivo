@@ -58,7 +58,6 @@ export const ErrorCode = {
   LegalPolicyContentRequired: 'LegalPolicyContentRequired',
   LegalPolicyNotFound: 'LegalPolicyNotFound',
   LegalPolicyVersionNotFound: 'LegalPolicyVersionNotFound',
-  LegalPolicyPublishedConcurrently: 'LegalPolicyPublishedConcurrently',
   ResourceNotFound: 'ResourceNotFound',
   ResourceThumbnailNotFound: 'ResourceThumbnailNotFound',
   ResourceDescriptionRequired: 'ResourceDescriptionRequired',

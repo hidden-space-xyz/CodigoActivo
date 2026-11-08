@@ -116,9 +116,9 @@ public interface IUserRepository : IRepository<User>
 
     /// <summary>
     /// Locks the stored account until the running transaction ends and reloads it, so concurrent
-    /// changes that depend on its stored state, such as second-factor checks or adding a dependent,
-    /// run one after another and each one sees what the previous one stored. Changes staged on the
-    /// account before the call are discarded.
+    /// changes that depend on its stored state, such as second-factor checks, run one after another
+    /// and each one sees what the previous one stored. Changes staged on the account before the
+    /// call are discarded.
     /// </summary>
     /// <param name="user">Account loaded in the unit of work.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

@@ -10,7 +10,7 @@ public static class ParticipationErasers
         return new ParticipationEraser(
             store,
             ConsentWithdrawalNotifiers.WithoutLegalContact(),
-            uow.RunsTransactions()
+            uow
         );
     }
 }

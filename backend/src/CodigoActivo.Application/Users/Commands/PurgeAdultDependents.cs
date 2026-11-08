@@ -1,6 +1,5 @@
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Domain.Common;
@@ -15,17 +14,15 @@ public sealed record PurgeAdultDependentsCommand : ICommand<Result<int>>, ISched
 
 /// <summary>
 /// Executes the command that erases every dependent who has come of age, keeping their data
-/// history, since their guardian no longer represents them. Each dependent is locked and checked
-/// again in its own transaction, so one whose birth date was corrected meanwhile is kept.
+/// history, since their guardian no longer represents them. Each dependent is erased in a
+/// transaction of its own.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="eraser">Eraser that deletes an account and keeps its data history.</param>
-/// <param name="uow">Unit of work that runs each erasure in its own transaction.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class PurgeAdultDependentsCommandHandler(
     IUserRepository users,
     AccountEraser eraser,
-    IUnitOfWork uow,
     IClock clock
 ) : ICommandHandler<PurgeAdultDependentsCommand, Result<int>>
 {
@@ -45,24 +42,6 @@ public sealed class PurgeAdultDependentsCommandHandler(
 
         return await adults
             .ToAsyncEnumerable()
-            .CountAsync(
-                async (dependent, token) =>
-                    await uow.ExecuteInTransactionAsync(
-                        attempt => EraseIfStillOfAgeAsync(dependent, today, attempt),
-                        token
-                    ),
-                ct
-            );
-    }
-
-    private async Task<bool> EraseIfStillOfAgeAsync(
-        User dependent,
-        DateOnly today,
-        CancellationToken ct
-    )
-    {
-        return await users.LockAsync(dependent, ct)
-            && dependent.HasComeOfAge(today)
-            && await eraser.EraseAsync(dependent, ct);
+            .CountAsync(async (dependent, token) => await eraser.EraseAsync(dependent, token), ct);
     }
 }

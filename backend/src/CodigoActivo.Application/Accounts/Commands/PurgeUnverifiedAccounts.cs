@@ -1,6 +1,5 @@
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Domain.Common;
@@ -15,17 +14,15 @@ public sealed record PurgeUnverifiedAccountsCommand : ICommand<Result<int>>, ISc
 
 /// <summary>
 /// Executes the command that erases, with their dependents, the accounts still
-/// unverified <see cref="User.UnverifiedRetentionDays"/> after their registration. Each account is
-/// locked and checked again in its own transaction, so one verified meanwhile is kept.
+/// unverified <see cref="User.UnverifiedRetentionDays"/> after their registration, each one in its
+/// own transaction.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="eraser">Eraser that deletes an account and keeps its data history.</param>
-/// <param name="uow">Unit of work that runs each erasure in its own transaction.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class PurgeUnverifiedAccountsCommandHandler(
     IUserRepository users,
     AccountEraser eraser,
-    IUnitOfWork uow,
     IClock clock
 ) : ICommandHandler<PurgeUnverifiedAccountsCommand, Result<int>>
 {
@@ -40,32 +37,13 @@ public sealed class PurgeUnverifiedAccountsCommandHandler(
         CancellationToken ct = default
     )
     {
-        var now = clock.UtcNow;
         var expired = await users.ListUnverifiedRegisteredUpToAsync(
-            User.UnverifiedPurgeCutoff(now),
+            User.UnverifiedPurgeCutoff(clock.UtcNow),
             ct
         );
 
         return await expired
             .ToAsyncEnumerable()
-            .CountAsync(
-                async (account, token) =>
-                    await uow.ExecuteInTransactionAsync(
-                        attempt => EraseIfStillExpiredAsync(account, now, attempt),
-                        token
-                    ),
-                ct
-            );
-    }
-
-    private async Task<bool> EraseIfStillExpiredAsync(
-        User account,
-        DateTimeOffset now,
-        CancellationToken ct
-    )
-    {
-        return await users.LockAsync(account, ct)
-            && account.HasVerificationExpired(now)
-            && await eraser.EraseAsync(account, ct);
+            .CountAsync(async (account, token) => await eraser.EraseAsync(account, token), ct);
     }
 }

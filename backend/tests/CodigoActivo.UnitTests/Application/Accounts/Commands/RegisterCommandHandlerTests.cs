@@ -52,11 +52,7 @@ public sealed class RegisterCommandHandlerTests
             ),
             NullLogger<RegisterCommandHandler>.Instance,
             new DisposableEmailChecker(disposableDomains),
-            new EmailClaims(
-                users.LocksEveryAccount(),
-                AccountErasers.Create(users, erasureStore, uow),
-                uow
-            ),
+            new EmailClaims(AccountErasers.Create(users, erasureStore, uow), uow),
             auditSubject
         );
     }

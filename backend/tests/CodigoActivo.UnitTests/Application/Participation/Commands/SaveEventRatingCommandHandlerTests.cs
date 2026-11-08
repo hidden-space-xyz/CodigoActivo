@@ -1,6 +1,5 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Participation.Contracts;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Participation.Commands;
 using CodigoActivo.Application.Participation.Contracts;
@@ -31,7 +30,6 @@ public sealed class SaveEventRatingCommandHandlerTests
     private readonly IEventRatingRepository ratings = Substitute.For<IEventRatingRepository>();
     private readonly IActivityRepository activities = Substitute.For<IActivityRepository>();
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestCurrentUser currentUser = new(
         global::CodigoActivo.Domain.Users.UserId.From(UserId)
     );
@@ -45,7 +43,6 @@ public sealed class SaveEventRatingCommandHandlerTests
             ratings,
             activities,
             users,
-            uow,
             currentUser,
             clock
         );
@@ -196,7 +193,7 @@ public sealed class SaveEventRatingCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncFirstSubmissionAddsTheRatingOfTheAccountAndCommits()
+    public async Task HandleAsyncFirstSubmissionAddsTheRatingOfTheAccount()
     {
         SeedFinishedEvent();
         SeedConfirmedAssignment(UserId);
@@ -220,7 +217,6 @@ public sealed class SaveEventRatingCommandHandlerTests
                 ),
                 Arg.Any<CancellationToken>()
             );
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -243,7 +239,6 @@ public sealed class SaveEventRatingCommandHandlerTests
         stored.LeastLiked.Should().BeNull();
         stored.Suggestions.Should().BeNull();
         await ratings.DidNotReceiveWithAnyArgs().AddAsync(default!, Arg.Any<CancellationToken>());
-        await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -262,30 +257,6 @@ public sealed class SaveEventRatingCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventRatingEmpty);
         stored.Score.Should().Be(3);
-    }
-
-    [Fact]
-    public async Task HandleAsyncConcurrentFirstRatingThrowsConcurrentUpdate()
-    {
-        SeedFinishedEvent();
-        SeedConfirmedAssignment(UserId);
-        uow.SaveChangesAsync(Arg.Any<CancellationToken>())
-            .Returns<int>(_ =>
-                throw new UniqueConstraintViolationException(
-                    typeof(EventRating),
-                    new InvalidOperationException()
-                )
-            );
-
-        var act = () =>
-            sut.HandleAsync(
-                ValidRequest.ToCommand(global::CodigoActivo.Domain.Events.EventId.From(EventId)),
-                TestContext.Current.CancellationToken
-            );
-
-        (await act.Should().ThrowAsync<ConcurrentUpdateException>())
-            .Which.EntityType.Should()
-            .Be<EventRating>();
     }
 
     [Fact]

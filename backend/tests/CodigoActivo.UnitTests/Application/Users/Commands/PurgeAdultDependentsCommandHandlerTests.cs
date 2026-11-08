@@ -23,7 +23,6 @@ public sealed class PurgeAdultDependentsCommandHandlerTests
         sut = new PurgeAdultDependentsCommandHandler(
             users,
             AccountErasers.Create(users, erasureStore, uow),
-            uow.RunsTransactions(),
             clock
         );
     }
@@ -60,7 +59,6 @@ public sealed class PurgeAdultDependentsCommandHandlerTests
         var turnsEighteenToday = Dependent(clock.Today.AddYears(-18));
         var older = Dependent(clock.Today.AddYears(-19));
         Lists(turnsEighteenToday, older);
-        users.LocksEveryAccount();
 
         var result = await HandleAsync();
 
@@ -76,24 +74,11 @@ public sealed class PurgeAdultDependentsCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncKeepsADependentWhoseBirthDateWasCorrectedSinceItWasListed()
+    public async Task HandleAsyncSkipsADependentErasedMeanwhile()
     {
         var dependent = Dependent(clock.Today.AddYears(-18));
         Lists(dependent);
-        users.ReloadsAs(dependent, new { BirthDate = clock.Today.AddYears(-17) });
-
-        var result = await HandleAsync();
-
-        result.Value.Should().Be(0);
-        users.DidNotReceiveWithAnyArgs().Remove(default!);
-    }
-
-    [Fact]
-    public async Task HandleAsyncSkipsADependentGoneOnceLocked()
-    {
-        var dependent = Dependent(clock.Today.AddYears(-18));
-        Lists(dependent);
-        users.LockAsync(dependent, Arg.Any<CancellationToken>()).Returns(false);
+        erasureStore.LockAccountAsync(dependent.Id, Arg.Any<CancellationToken>()).Returns(false);
 
         var result = await HandleAsync();
 

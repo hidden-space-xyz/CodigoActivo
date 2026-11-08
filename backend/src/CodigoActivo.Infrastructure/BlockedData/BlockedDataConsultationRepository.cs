@@ -25,20 +25,6 @@ public sealed class BlockedDataConsultationRepository(CodigoActivoDbContext cont
     }
 
     /// <inheritdoc />
-    public async Task<BlockedDataConsultation?> GetLockedAsync(
-        BlockedDataConsultationId id,
-        CancellationToken ct = default
-    )
-    {
-        FormattableString sql = $"""
-            SELECT id AS "Value" FROM blocked_data_consultations WHERE id = {id.Value} FOR UPDATE
-            """;
-        return (await Context.Database.SqlQuery<Guid>(sql).ToListAsync(ct)).Count is 0
-            ? null
-            : await GetByIdAsync(id, ct);
-    }
-
-    /// <inheritdoc />
     public Task<int> PurgeOpenedUpToAsync(DateTimeOffset openedUpTo, CancellationToken ct = default)
     {
         return Set.Where(c => c.OpenedAt <= openedUpTo).ExecuteDeleteAsync(ct);

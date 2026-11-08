@@ -22,10 +22,10 @@ public sealed class AccountEraserTests
     }
 
     [Fact]
-    public async Task EraseAsyncHouseholdAlreadyGoneReturnsFalseAndStagesNothing()
+    public async Task EraseAsyncAccountAlreadyGoneReturnsFalseAndStagesNothing()
     {
         var account = NewUser();
-        erasureStore.LockHouseholdAsync(account.Id, Arg.Any<CancellationToken>()).Returns(false);
+        erasureStore.LockAccountAsync(account.Id, Arg.Any<CancellationToken>()).Returns(false);
 
         var erased = await sut.EraseAsync(account, TestContext.Current.CancellationToken);
 
@@ -43,7 +43,7 @@ public sealed class AccountEraserTests
     }
 
     [Fact]
-    public async Task EraseAsyncLockedHouseholdLoadsHandsOverRemovesAndSavesInOrder()
+    public async Task EraseAsyncLockedAccountLoadsHandsOverRemovesAndSavesInOrder()
     {
         var account = NewUser();
 
@@ -56,7 +56,7 @@ public sealed class AccountEraserTests
                 Arg.Any<Func<CancellationToken, Task<bool>>>(),
                 Arg.Any<CancellationToken>()
             );
-            _ = erasureStore.LockHouseholdAsync(account.Id, Arg.Any<CancellationToken>());
+            _ = erasureStore.LockAccountAsync(account.Id, Arg.Any<CancellationToken>());
             _ = erasureStore.LoadHouseholdAsync(account.Id, Arg.Any<CancellationToken>());
             _ = erasureStore.HandOverAuthoredContentAsync(
                 account.Id,

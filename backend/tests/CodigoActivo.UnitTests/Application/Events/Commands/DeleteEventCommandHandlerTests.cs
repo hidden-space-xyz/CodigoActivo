@@ -97,7 +97,6 @@ public sealed class DeleteEventCommandHandlerTests
         await sut.HandleAsync(new DeleteEventCommand(ev.Id), TestContext.Current.CancellationToken);
 
         var deletion = ParticipationDeletion.OfEvent(ev.Id);
-        await store.Received(1).LockAsync(deletion, Arg.Any<CancellationToken>());
         await store.Received(1).LoadAsync(deletion, Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }

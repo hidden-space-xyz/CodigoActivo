@@ -1,6 +1,5 @@
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
@@ -27,13 +26,11 @@ public sealed record UpdateActivityCommand(ActivityId ActivityId, ActivityDraft 
 /// <param name="validator">Validator of the event, schedule, thumbnail and role capacities.</param>
 /// <param name="currentUser">Person the use case runs for, recorded as the editor.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="uow">Unit of work whose transaction validates and saves the activity.</param>
 public sealed class UpdateActivityCommandHandler(
     IActivityRepository activities,
     ActivityValidator validator,
     ICurrentUser currentUser,
-    IClock clock,
-    IUnitOfWork uow
+    IClock clock
 ) : ICommandHandler<UpdateActivityCommand, Result>
 {
     /// <summary>
@@ -61,18 +58,6 @@ public sealed class UpdateActivityCommandHandler(
             return Error.NotFound(ApplicationErrorCode.ActivityNotFound);
         }
 
-        return await uow.ExecuteInTransactionAsync(
-            attempt => UpdateLockedAsync(activity, draft, attempt),
-            ct
-        );
-    }
-
-    private async Task<Result> UpdateLockedAsync(
-        Activity activity,
-        ActivityDraft draft,
-        CancellationToken ct
-    )
-    {
         var validated = await validator.ValidateActivityAsync(activity.EventId, draft, ct);
         if (validated.IsFailure)
         {
@@ -86,7 +71,6 @@ public sealed class UpdateActivityCommandHandler(
             currentUser.RequiredId(),
             clock.UtcNow
         );
-        await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
 }

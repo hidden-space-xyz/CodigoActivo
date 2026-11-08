@@ -10,10 +10,11 @@ namespace CodigoActivo.API.Middlewares;
 
 /// <summary>
 /// Logs unexpected failures and returns a safe problem response. A commit refused because another
-/// transaction changed the same data first is an expected outcome, answered without a log entry as
-/// a conflict the client can send again, <see cref="ErrorCode.ConcurrentUpdate"/>. The entry of an
-/// unexpected failure names the endpoint by its route pattern, never by the requested path, which
-/// carries the identifiers of the users it is about.
+/// transaction changed the same data first or stored the same unique value first is an expected
+/// outcome, answered without a log entry as a conflict the client can send again,
+/// <see cref="ErrorCode.ConcurrentUpdate"/>. The entry of an unexpected failure names the endpoint
+/// by its route pattern, never by the requested path, which carries the identifiers of the users
+/// it is about.
 /// </summary>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger)
@@ -22,8 +23,9 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
     private const string UnmatchedRoute = "(no endpoint)";
 
     /// <summary>
-    /// Answers an exception the request did not handle: a concurrent update as a 409 conflict, and
-    /// anything else, after logging it, as a 500 error that tells nothing about its cause.
+    /// Answers an exception the request did not handle: a concurrent update or a unique constraint
+    /// violation as a 409 conflict, and anything else, after logging it, as a 500 error that tells
+    /// nothing about its cause.
     /// </summary>
     /// <param name="httpContext">HTTP context of the failed request.</param>
     /// <param name="exception">Exception that ended the request.</param>
@@ -51,7 +53,7 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
         Exception exception
     )
     {
-        if (exception is ConcurrentUpdateException)
+        if (exception is ConcurrentUpdateException or UniqueConstraintViolationException)
         {
             return ApiErrorResponseExtensions.Create(
                 ApiError.Conflict(ErrorCode.ConcurrentUpdate),

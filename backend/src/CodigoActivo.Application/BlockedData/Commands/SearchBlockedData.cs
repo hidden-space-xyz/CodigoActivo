@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.BlockedData.Contracts;
@@ -42,16 +41,13 @@ public sealed record SearchBlockedDataCommand(
 /// Executes the command that looks accounts up among the existing ones and, decrypting only the
 /// past states of accounts, among the erased ones, adds the minors of those found and records
 /// them in the consultation, never the text typed. Each account comes with only what tells it
-/// apart and how many history entries concern it, counted without decrypting them. The
-/// consultation stays locked while the search records what it found, so two searches never
-/// record the same account twice.
+/// apart and how many history entries concern it, counted without decrypting them.
 /// </summary>
 /// <param name="officer">Policy that tells who may consult the blocked data.</param>
 /// <param name="consultations">Repository of the consultations.</param>
 /// <param name="readStore">Read side of the existing accounts.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="history">Reader of the data history.</param>
-/// <param name="uow">Unit of work that locks the consultation and commits what it found.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class SearchBlockedDataCommandHandler(
     PrivacyOfficer officer,
@@ -59,7 +55,6 @@ public sealed class SearchBlockedDataCommandHandler(
     IReadStore readStore,
     IQueryExecutor executor,
     IDataHistoryReader history,
-    IUnitOfWork uow,
     IClock clock
 ) : ICommandHandler<SearchBlockedDataCommand, Result<BlockedDataSearch>>
 {
@@ -89,22 +84,10 @@ public sealed class SearchBlockedDataCommandHandler(
             return signedIn.Error!;
         }
 
-        return await uow.ExecuteInTransactionAsync(
-            attempt => SearchLockedAsync(command, signedIn.Value, attempt),
-            ct
-        );
-    }
-
-    private async Task<Result<BlockedDataSearch>> SearchLockedAsync(
-        SearchBlockedDataCommand command,
-        User signedIn,
-        CancellationToken ct
-    )
-    {
         var now = clock.UtcNow;
         var consultation = ConsultationAccess.Check(
-            await consultations.GetLockedAsync(command.ConsultationId, ct),
-            signedIn,
+            await consultations.GetByIdAsync(command.ConsultationId, ct),
+            signedIn.Value,
             now
         );
         if (consultation.IsFailure)
@@ -140,7 +123,6 @@ public sealed class SearchBlockedDataCommandHandler(
         var counts = await history.CountAboutAsync(candidates, ct);
 
         consultation.Value.RecordFindings(candidates.Select(UserId.From), now);
-        await uow.SaveChangesAsync(ct);
         return new BlockedDataSearch([
             .. candidates
                 .Select(id => Candidate(id, live, past, counts))

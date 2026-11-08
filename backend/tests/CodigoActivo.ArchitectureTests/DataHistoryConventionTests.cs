@@ -6,18 +6,12 @@ using CodigoActivo.Application.BlockedData.Queries;
 using CodigoActivo.Composition.BlockedData;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Accounts;
-using CodigoActivo.Infrastructure.Activities;
-using CodigoActivo.Infrastructure.BlockedData;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Database.Configurations;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.DataHistory;
-using CodigoActivo.Infrastructure.EventCategories;
-using CodigoActivo.Infrastructure.Events;
 using CodigoActivo.Infrastructure.Files;
-using CodigoActivo.Infrastructure.Legal;
 using CodigoActivo.Infrastructure.Reports;
-using CodigoActivo.Infrastructure.TermsDocuments;
 using CodigoActivo.Infrastructure.Users;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
@@ -39,17 +33,9 @@ public sealed class DataHistoryConventionTests
     private static readonly Type[] ReviewedRawSqlUsers =
     [
         typeof(AccountErasureStore),
-        typeof(BlockedDataConsultationRepository),
-        typeof(BlockedDataHoldRepository),
         typeof(DashboardCountsReader),
-        typeof(EmailDeliveryLock),
         typeof(EmailOutboxStore),
-        typeof(EventCategoryTypeRepository),
-        typeof(EventRepository),
-        typeof(LegalPolicyRepository),
-        typeof(ParticipationErasureStore),
         typeof(StoredFileRepository),
-        typeof(TermsDocumentRepository),
         typeof(UserRepository),
     ];
 

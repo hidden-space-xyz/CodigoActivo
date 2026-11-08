@@ -216,8 +216,8 @@ still waiting. Administrator bulk email is refused with `EmailSendFailed` when i
 such messages waiting, or with `EmailAttachmentsTooLarge` when it is larger than the `SIZE` the SMTP server
 announced; its response (`{ queued, skipped }`) reports what was accepted, not what was delivered.
 
-One API instance delivers at a time: the worker holds a PostgreSQL session lock and another instance takes over
-when it is released. It polls every 5 seconds, is woken at once by same-process enqueues, and claims up to 10
+The API runs as one instance, whose worker delivers the outbox. It polls every 5 seconds, is woken at once by
+enqueues, and claims up to 10
 due messages with `FOR UPDATE SKIP LOCKED` and a lease, in priority order: login and other identified codes,
 then verification, email-in-use and password-reset mail, then notices, then administrator-written mail. A run
 sends them one after another over one SMTP connection, each within 60 seconds, never faster than

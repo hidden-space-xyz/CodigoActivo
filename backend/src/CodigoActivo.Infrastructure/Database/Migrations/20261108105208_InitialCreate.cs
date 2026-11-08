@@ -14,6 +14,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AlterDatabase()
+                .Annotation("Npgsql:CollationDefinition:case_insensitive", "und-u-ks-level2,und-u-ks-level2,icu,False")
                 .Annotation("Npgsql:PostgresExtension:pg_trgm", ",,");
 
             migrationBuilder.CreateTable(
@@ -1185,7 +1186,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "ix_event_category_types_name",
                 table: "event_category_types",
                 column: "name",
-                unique: true);
+                unique: true)
+                .Annotation("Relational:Collation", new[] { "case_insensitive" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_event_ratings_event_id_user_id",
@@ -1369,7 +1371,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "ix_terms_documents_name",
                 table: "terms_documents",
                 column: "name",
-                unique: true);
+                unique: true)
+                .Annotation("Relational:Collation", new[] { "case_insensitive" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_user_sessions_user_id",

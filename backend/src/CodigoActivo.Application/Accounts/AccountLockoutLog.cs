@@ -10,9 +10,8 @@ namespace CodigoActivo.Application.Accounts;
 
 /// <summary>
 /// Records that wrong passwords locked an account or wrong codes locked its second factor once the
-/// lock is committed, so a lock that rolls back is never recorded and a retried one is recorded
-/// once: in the security log, without the account, and in the audit log, which names it with the
-/// caller that caused the lock.
+/// lock is committed, so a lock that rolls back is never recorded: in the security log, without
+/// the account, and in the audit log, which names it with the caller that caused the lock.
 /// </summary>
 /// <param name="passwordLockout">
 /// Password lockout configuration, whose limit the record names.

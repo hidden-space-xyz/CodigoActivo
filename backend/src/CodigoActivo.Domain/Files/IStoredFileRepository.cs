@@ -40,26 +40,12 @@ public interface IStoredFileRepository : IRepository<StoredFile>
     );
 
     /// <summary>
-    /// Returns which of the given files exist and, inside a transaction, keeps them from being
-    /// deleted until it ends (<c>FOR KEY SHARE</c>), so content that is about to reference them can
-    /// be saved first.
+    /// Returns which of the given files exist.
     /// </summary>
     /// <param name="ids">Identifiers of the files.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result contains the identifiers that exist.</returns>
-    public Task<IReadOnlyList<StoredFileId>> LockExistingAsync(
-        IReadOnlyCollection<StoredFileId> ids,
-        CancellationToken ct = default
-    );
-
-    /// <summary>
-    /// Locks the given files for deletion (<c>FOR UPDATE</c>) until the transaction ends, waiting
-    /// for any save that is about to reference them, and returns which of them exist.
-    /// </summary>
-    /// <param name="ids">Identifiers of the files.</param>
-    /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A task whose result contains the identifiers that exist.</returns>
-    public Task<IReadOnlyList<StoredFileId>> LockForDeletionAsync(
+    public Task<IReadOnlyList<StoredFileId>> ListExistingAsync(
         IReadOnlyCollection<StoredFileId> ids,
         CancellationToken ct = default
     );

@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Partners.Commands;
 using CodigoActivo.Domain.Files;
@@ -15,20 +14,13 @@ public sealed class UpdatePartnerCommandHandlerTests
 {
     private readonly IPartnerRepository partners = Substitute.For<IPartnerRepository>();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
     private readonly UpdatePartnerCommandHandler sut;
 
     public UpdatePartnerCommandHandlerTests()
     {
-        sut = new UpdatePartnerCommandHandler(
-            partners,
-            files,
-            currentUser,
-            clock,
-            uow.RunsTransactions()
-        );
+        sut = new UpdatePartnerCommandHandler(partners, files, currentUser, clock);
     }
 
     private static UpdatePartnerCommand Command(

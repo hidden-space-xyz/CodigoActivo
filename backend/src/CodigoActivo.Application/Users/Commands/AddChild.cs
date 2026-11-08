@@ -1,6 +1,5 @@
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Common.Errors;
@@ -21,22 +20,17 @@ public sealed record AddChildCommand(UserId ParentId, MinorDraft Child)
 
 /// <summary>
 /// Executes the command to add a minor to a household. Only the guardian may add one to their own
-/// household; an administrator cannot add minors to anyone else's. The guardian stays locked while
-/// its dependents are counted, so a household never exceeds <see cref="Household.MaxDependents"/>.
+/// household; an administrator cannot add minors to anyone else's.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="actingUser">
 /// Policy that decides whose personal data the signed-in user manages.
 /// </param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="uow">
-/// Unit of work that adds the minor in a transaction holding the guardian locked.
-/// </param>
 public sealed class AddChildCommandHandler(
     IUserRepository users,
     ActingUserPolicy actingUser,
-    IClock clock,
-    IUnitOfWork uow
+    IClock clock
 ) : ICommandHandler<AddChildCommand, Result<UserId>>
 {
     /// <summary>
@@ -82,35 +76,13 @@ public sealed class AddChildCommandHandler(
             return child.Error!;
         }
 
-        var added = await uow.ExecuteInTransactionAsync(
-            attempt => AddLockedAsync(parent, child.Value, attempt),
-            ct
-        );
-        if (added.IsFailure)
+        var room = Household.EnsureMayAddDependent(await users.CountDependentsAsync(parent.Id, ct));
+        if (room.IsFailure)
         {
-            return added.Error!;
+            return room.Error!;
         }
 
+        await users.AddAsync(child.Value, ct);
         return child.Value.Id;
-    }
-
-    private async Task<Result> AddLockedAsync(User parent, User child, CancellationToken ct)
-    {
-        if (!await users.LockAsync(parent, ct))
-        {
-            return Error.NotFound(ApplicationErrorCode.ParentUserNotFound);
-        }
-
-        var allowed = Household.EnsureMayAddDependent(
-            await users.CountDependentsAsync(parent.Id, ct)
-        );
-        if (allowed.IsFailure)
-        {
-            return allowed;
-        }
-
-        await users.AddAsync(child, ct);
-        await uow.SaveChangesAsync(ct);
-        return Result.Success();
     }
 }

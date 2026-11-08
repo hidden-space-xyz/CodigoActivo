@@ -1,15 +1,12 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Legal.Contracts;
 using CodigoActivo.Application.Abstractions.Auditing;
-using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Messaging;
 using CodigoActivo.Application.Legal.Commands;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Legal;
 using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
-using NSubstitute.ExceptionExtensions;
 using Xunit;
 using LegalPolicyKindContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.LegalPolicyKind;
 
@@ -22,14 +19,13 @@ public sealed class PublishLegalPolicyCommandHandlerTests
 
     private readonly ILegalPolicyRepository legalPolicies =
         Substitute.For<ILegalPolicyRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>().RunsTransactions();
     private readonly TestClock clock = new(Friday);
     private readonly AuditSubject auditSubject = new();
     private readonly PublishLegalPolicyCommandHandler sut;
 
     public PublishLegalPolicyCommandHandlerTests()
     {
-        sut = new PublishLegalPolicyCommandHandler(legalPolicies, uow, clock, auditSubject);
+        sut = new PublishLegalPolicyCommandHandler(legalPolicies, clock, auditSubject);
     }
 
     private static string Text(string text)
@@ -48,7 +44,7 @@ public sealed class PublishLegalPolicyCommandHandlerTests
     private void Stored(LegalPolicy? policy)
     {
         legalPolicies
-            .LockAsync(Arg.Any<LegalPolicyKind>(), Arg.Any<CancellationToken>())
+            .GetByKindAsync(Arg.Any<LegalPolicyKind>(), Arg.Any<CancellationToken>())
             .Returns(policy);
     }
 
@@ -75,8 +71,7 @@ public sealed class PublishLegalPolicyCommandHandlerTests
             .Be(new AuditEntity(AuditEntityType.LegalPolicy, added.Id.Value));
         await legalPolicies
             .Received(1)
-            .LockAsync(LegalPolicyKind.Cookies, Arg.Any<CancellationToken>());
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+            .GetByKindAsync(LegalPolicyKind.Cookies, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -100,7 +95,6 @@ public sealed class PublishLegalPolicyCommandHandlerTests
         await legalPolicies
             .DidNotReceive()
             .AddAsync(Arg.Any<LegalPolicy>(), Arg.Any<CancellationToken>());
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -114,7 +108,6 @@ public sealed class PublishLegalPolicyCommandHandlerTests
         await legalPolicies
             .DidNotReceive()
             .AddAsync(Arg.Any<LegalPolicy>(), Arg.Any<CancellationToken>());
-        await uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -129,43 +122,5 @@ public sealed class PublishLegalPolicyCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Validation, DomainErrorCode.LegalPolicyContentRequired);
         policy.Version.Should().Be(LegalPolicy.FirstVersion);
-        await uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task HandleAsyncConcurrentFirstPublicationReturnsConflict()
-    {
-        Stored(null);
-        uow.SaveChangesAsync(Arg.Any<CancellationToken>())
-            .ThrowsAsync(
-                new UniqueConstraintViolationException(
-                    typeof(LegalPolicy),
-                    new InvalidOperationException("duplicate kind")
-                )
-            );
-
-        var result = await PublishAsync(LegalPolicyKindContract.Cookies, Text("Cookies"));
-
-        result.ShouldFail(
-            ErrorKind.Conflict,
-            ApplicationErrorCode.LegalPolicyPublishedConcurrently
-        );
-    }
-
-    [Fact]
-    public async Task HandleAsyncOtherUniqueViolationIsNotAnswered()
-    {
-        Stored(null);
-        uow.SaveChangesAsync(Arg.Any<CancellationToken>())
-            .ThrowsAsync(
-                new UniqueConstraintViolationException(
-                    typeof(LegalPolicyVersion),
-                    new InvalidOperationException("duplicate version")
-                )
-            );
-
-        var publish = () => PublishAsync(LegalPolicyKindContract.Cookies, Text("Cookies"));
-
-        await publish.Should().ThrowAsync<UniqueConstraintViolationException>();
     }
 }

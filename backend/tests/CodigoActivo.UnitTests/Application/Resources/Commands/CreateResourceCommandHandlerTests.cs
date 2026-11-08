@@ -1,6 +1,5 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Resources.Contracts;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Resources.Commands;
@@ -19,7 +18,6 @@ namespace CodigoActivo.UnitTests.Application.Resources.Commands;
 public sealed class CreateResourceCommandHandlerTests
 {
     private readonly IResourceRepository resources = Substitute.For<IResourceRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly FakeReadStore readStore = new();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly TestCurrentUser currentUser = new();
@@ -28,13 +26,7 @@ public sealed class CreateResourceCommandHandlerTests
 
     public CreateResourceCommandHandlerTests()
     {
-        sut = new CreateResourceCommandHandler(
-            resources,
-            files,
-            currentUser,
-            clock,
-            uow.RunsTransactionsOf<Result<ResourceId>>()
-        );
+        sut = new CreateResourceCommandHandler(resources, files, currentUser, clock);
     }
 
     private async Task<List<Resource>> CaptureAddedResourcesAsync()

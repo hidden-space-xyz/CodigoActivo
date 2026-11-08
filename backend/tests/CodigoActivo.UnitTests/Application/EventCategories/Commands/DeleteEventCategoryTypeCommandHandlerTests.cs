@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.EventCategories.Commands;
 using CodigoActivo.Domain.Common;
@@ -17,26 +16,24 @@ public sealed class DeleteEventCategoryTypeCommandHandlerTests
     private readonly IEventCategoryTypeRepository categoryTypes =
         Substitute.For<IEventCategoryTypeRepository>();
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>().RunsTransactions();
     private readonly DeleteEventCategoryTypeCommandHandler sut;
 
     public DeleteEventCategoryTypeCommandHandlerTests()
     {
-        sut = new DeleteEventCategoryTypeCommandHandler(categoryTypes, events, uow);
+        sut = new DeleteEventCategoryTypeCommandHandler(categoryTypes, events);
     }
 
-    private EventCategoryType FindsLockable()
+    private EventCategoryType FindsCategory()
     {
         var categoryType = EventCategoryType.Create("Talleres", "#112233");
         categoryType.PullDomainEvents();
         categoryTypes.Finds(categoryType);
-        categoryTypes.LockAsync(categoryType, Arg.Any<CancellationToken>()).Returns(true);
         return categoryType;
     }
 
     private void Tags(EventCategoryType categoryType, params Event[] tagged)
     {
-        events.LockTaggedWithAsync(categoryType.Id, Arg.Any<CancellationToken>()).Returns(tagged);
+        events.ListTaggedWithAsync(categoryType.Id, Arg.Any<CancellationToken>()).Returns(tagged);
     }
 
     private Task<Result> DeleteAsync(EventCategoryTypeId id)
@@ -58,21 +55,9 @@ public sealed class DeleteEventCategoryTypeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncDeletedMeanwhileReturnsNotFound()
-    {
-        var categoryType = FindsLockable();
-        categoryTypes.LockAsync(categoryType, Arg.Any<CancellationToken>()).Returns(false);
-
-        var result = await DeleteAsync(categoryType.Id);
-
-        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventCategoryTypeNotFound);
-        categoryTypes.DidNotReceiveWithAnyArgs().Remove(default!);
-    }
-
-    [Fact]
     public async Task HandleAsyncOnlyCategoryOfSomeEventReturnsConflict()
     {
-        var categoryType = FindsLockable();
+        var categoryType = FindsCategory();
         var other = EventCategoryTypeId.New();
         var shared = NewEvent(categoryTypeIds: [categoryType.Id, other]);
         Tags(categoryType, shared, NewEvent(categoryTypeIds: [categoryType.Id]));
@@ -81,14 +66,12 @@ public sealed class DeleteEventCategoryTypeCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.EventCategoryTypeOnlyCategoryOfEvent);
         categoryTypes.DidNotReceiveWithAnyArgs().Remove(default!);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task HandleAsyncTaggedEventsLoseItWhileLockedAndItIsRemoved()
+    public async Task HandleAsyncTaggedEventsLoseItAndItIsRemoved()
     {
-        var categoryType = FindsLockable();
+        var categoryType = FindsCategory();
         var other = EventCategoryTypeId.New();
         var tagged = NewEvent(categoryTypeIds: [categoryType.Id, other]);
         Tags(categoryType, tagged);
@@ -101,12 +84,6 @@ public sealed class DeleteEventCategoryTypeCommandHandlerTests
             .PullDomainEvents()
             .Should()
             .Equal(new EventCategoryTypeDeleted(categoryType.Id));
-        Received.InOrder(() =>
-        {
-            _ = categoryTypes.LockAsync(categoryType, Arg.Any<CancellationToken>());
-            _ = events.LockTaggedWithAsync(categoryType.Id, Arg.Any<CancellationToken>());
-            categoryTypes.Remove(categoryType);
-            _ = uow.SaveChangesAsync(Arg.Any<CancellationToken>());
-        });
+        categoryTypes.Received(1).Remove(categoryType);
     }
 }

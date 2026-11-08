@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
@@ -47,15 +46,11 @@ public sealed record UpdateResourceCommand(
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="currentUser">Person the use case runs for, recorded as the editor.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="uow">
-/// Unit of work that saves the resource in the transaction that locks its files.
-/// </param>
 public sealed class UpdateResourceCommandHandler(
     IResourceRepository resources,
     IStoredFileRepository files,
     ICurrentUser currentUser,
-    IClock clock,
-    IUnitOfWork uow
+    IClock clock
 ) : ICommandHandler<UpdateResourceCommand, Result>
 {
     /// <summary>
@@ -89,20 +84,6 @@ public sealed class UpdateResourceCommandHandler(
             return content.Error!;
         }
 
-        return await uow.ExecuteInTransactionAsync(
-            attempt => UpdateLockedAsync(resource, command, description, content.Value, attempt),
-            ct
-        );
-    }
-
-    private async Task<Result> UpdateLockedAsync(
-        Resource resource,
-        UpdateResourceCommand command,
-        RichText? description,
-        ResourceContent content,
-        CancellationToken ct
-    )
-    {
         var available = await ContentFiles.EnsureAvailableAsync(
             files,
             command.ThumbnailId,
@@ -117,11 +98,10 @@ public sealed class UpdateResourceCommandHandler(
 
         resource.Update(
             new ResourceDetails(command.Title, command.Subtitle, command.ThumbnailId),
-            content,
+            content.Value,
             currentUser.RequiredId(),
             clock.UtcNow
         );
-        await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
 }

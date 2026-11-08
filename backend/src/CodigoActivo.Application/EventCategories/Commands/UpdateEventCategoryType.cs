@@ -22,7 +22,7 @@ public sealed record UpdateEventCategoryTypeCommand(
 ) : ICommand<Result>, IRoutineCommand;
 
 /// <summary>
-/// Executes the command to update the event category type.
+/// Executes the command to update the event category type. Names are unique ignoring letter case.
 /// </summary>
 /// <param name="categoryTypes">Repository used to persist and retrieve category types.</param>
 public sealed class UpdateEventCategoryTypeCommandHandler(

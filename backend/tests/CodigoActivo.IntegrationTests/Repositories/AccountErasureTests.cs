@@ -1,12 +1,9 @@
-using System.Data.Common;
 using System.Text.Json;
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Application.Common.Catalogs;
-using CodigoActivo.Application.TermsDecisions;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
@@ -17,17 +14,13 @@ using CodigoActivo.Domain.Resources;
 using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Repositories;
 using CodigoActivo.Infrastructure.DataHistory;
-using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
-using Npgsql;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Repositories;
@@ -388,35 +381,6 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         var tracked = alsoTracked.Select(UserId.From).ToList();
         await db.Users.Where(u => tracked.Contains(u.Id)).LoadAsync(Ct);
         var eraser = scope.ServiceProvider.GetRequiredService<AccountEraser>();
-        return await eraser.EraseAsync(user, Ct);
-    }
-
-    private async Task<bool> EraseThroughAsync(IInterceptor interceptor, Guid userId)
-    {
-        await ForgetSeededHistoryAsync();
-        var connectionString = await Factory.QueryAsync(db =>
-            Task.FromResult(db.Database.GetConnectionString()!)
-        );
-        await using var scope = Factory.Services.CreateAsyncScope();
-        await using var db = new CodigoActivoDbContext(
-            new DbContextOptionsBuilder<CodigoActivoDbContext>()
-                .UseNpgsql(connectionString)
-                .UseSnakeCaseNamingConvention()
-                .AddInterceptors(
-                    interceptor,
-                    scope.ServiceProvider.GetRequiredService<DataHistoryRecorder>()
-                )
-                .Options
-        );
-        var user = await db.Users.SingleAsync(u => u.Id == UserId.From(userId), Ct);
-        var uow = TestUnitOfWork.For(db);
-        var eraser = new AccountEraser(
-            new UserRepository(db, uow),
-            new AccountErasureStore(db),
-            scope.ServiceProvider.GetRequiredService<ConsentWithdrawalNotifier>(),
-            uow,
-            scope.ServiceProvider.GetRequiredService<IClock>()
-        );
         return await eraser.EraseAsync(user, Ct);
     }
 
@@ -1030,198 +994,5 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         await save.Should()
             .ThrowAsync<DbUpdateException>("the signups it did not load would leave no history");
         (await FindAsync<User>(TestSeedData.Users.BlockedId)).Should().NotBeNull();
-    }
-
-    [Fact]
-    public async Task EraseAsyncLocksEveryHouseholdRowItLoadsBeforeReadingIt()
-    {
-        await SeedHouseholdAsync();
-        var probe = new LockProbe(
-            await Factory.QueryAsync(db => Task.FromResult(db.Database.GetConnectionString()!)),
-            [
-                (LockedRows.User, TestSeedData.Users.MemberId),
-                (LockedRows.User, TestSeedData.Users.MemberChildId),
-                (LockedRows.Assignments, TestSeedData.Users.MemberChildId),
-                (LockedRows.Decisions, TestSeedData.Users.MemberId),
-                (LockedRows.User, TestSeedData.Users.BlockedId),
-                (LockedRows.Assignments, TestSeedData.Users.BlockedId),
-            ]
-        );
-
-        var erased = await EraseThroughAsync(probe, TestSeedData.Users.MemberId);
-
-        erased.Should().BeTrue();
-        probe.Probed.Should().BeTrue();
-        probe
-            .Blocked.Should()
-            .Equal(
-                TestSeedData.Users.MemberId,
-                TestSeedData.Users.MemberChildId,
-                TestSeedData.Users.MemberChildId,
-                TestSeedData.Users.MemberId
-            );
-    }
-
-    [Fact]
-    public async Task EraseAsyncAbortedByDeadlocksIsRetriedAndRecordsEachRowOnce()
-    {
-        await SeedHouseholdAsync();
-        var deadlocks = new DeadlockInterceptor("FOR UPDATE", deadlocks: 2);
-
-        var erased = await EraseThroughAsync(deadlocks, TestSeedData.Users.MemberId);
-
-        erased.Should().BeTrue();
-        deadlocks.Thrown.Should().Be(2);
-        (await DeletedAsync<User>()).Should().HaveCount(2);
-        (await FindAsync<User>(TestSeedData.Users.MemberId)).Should().BeNull();
-    }
-
-    [Fact]
-    public async Task EraseAsyncAbortedByADeadlockWhileSavingIsRetriedAndRecordsEachRowOnce()
-    {
-        await SeedHouseholdAsync();
-        var deadlocks = new DeadlockInterceptor("DELETE FROM", deadlocks: 1);
-
-        var erased = await EraseThroughAsync(deadlocks, TestSeedData.Users.MemberId);
-
-        erased.Should().BeTrue();
-        deadlocks.Thrown.Should().Be(1);
-        (await DeletedAsync<User>()).Should().HaveCount(2);
-        (await DeletedAsync<Assignment>()).Should().HaveCount(3);
-        (await FindAsync<User>(TestSeedData.Users.MemberChildId)).Should().BeNull();
-    }
-
-    [Fact]
-    public async Task EraseAsyncDeadlockedOnEveryAttemptGivesUpAndKeepsEverything()
-    {
-        await SeedHouseholdAsync();
-        var deadlocks = new DeadlockInterceptor("FOR UPDATE", deadlocks: int.MaxValue);
-
-        var erase = () => EraseThroughAsync(deadlocks, TestSeedData.Users.MemberId);
-
-        (await erase.Should().ThrowAsync<InvalidOperationException>())
-            .Which.GetBaseException()
-            .Should()
-            .BeOfType<PostgresException>()
-            .Which.SqlState.Should()
-            .Be(PostgresErrorCodes.DeadlockDetected);
-        deadlocks.Thrown.Should().Be(3);
-        (await HistoryAsync()).Should().BeEmpty();
-        (await FindAsync<User>(TestSeedData.Users.MemberId)).Should().NotBeNull();
-    }
-
-    private sealed class DeadlockInterceptor(string trigger, int deadlocks) : DbCommandInterceptor
-    {
-        public int Thrown { get; private set; }
-
-        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
-            DbCommand command,
-            CommandEventData eventData,
-            InterceptionResult<DbDataReader> result,
-            CancellationToken cancellationToken = default
-        )
-        {
-            if (
-                Thrown < deadlocks
-                && command.CommandText.Contains(trigger, StringComparison.Ordinal)
-            )
-            {
-                Thrown++;
-                throw new PostgresException(
-                    "deadlock detected",
-                    "ERROR",
-                    "ERROR",
-                    PostgresErrorCodes.DeadlockDetected
-                );
-            }
-
-            return ValueTask.FromResult(result);
-        }
-    }
-
-    private enum LockedRows
-    {
-        User,
-        Assignments,
-        Decisions,
-    }
-
-    private sealed class LockProbe(
-        string connectionString,
-        IReadOnlyList<(LockedRows Rows, Guid Id)> probes
-    ) : DbCommandInterceptor
-    {
-        private bool locking;
-
-        public bool Probed { get; private set; }
-
-        public List<Guid> Blocked { get; } = [];
-
-        public override async ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
-            DbCommand command,
-            CommandEventData eventData,
-            InterceptionResult<DbDataReader> result,
-            CancellationToken cancellationToken = default
-        )
-        {
-            if (command.CommandText.Contains("FOR UPDATE", StringComparison.Ordinal))
-            {
-                locking = true;
-            }
-            else if (locking && !Probed)
-            {
-                Probed = true;
-                await ProbeAsync(cancellationToken);
-            }
-
-            return result;
-        }
-
-        private async Task ProbeAsync(CancellationToken ct)
-        {
-            await using var connection = new NpgsqlConnection(connectionString);
-            await connection.OpenAsync(ct);
-            foreach (var (rows, id) in probes)
-            {
-                await using var transaction = await connection.BeginTransactionAsync(ct);
-                await using var probe = LockCommand(rows, connection, transaction);
-                probe.Parameters.AddWithValue("id", id);
-                try
-                {
-                    await probe.ExecuteNonQueryAsync(ct);
-                }
-                catch (PostgresException ex)
-                    when (ex.SqlState == PostgresErrorCodes.LockNotAvailable)
-                {
-                    Blocked.Add(id);
-                }
-            }
-        }
-
-        private static NpgsqlCommand LockCommand(
-            LockedRows rows,
-            NpgsqlConnection connection,
-            NpgsqlTransaction transaction
-        )
-        {
-            return rows switch
-            {
-                LockedRows.User => new NpgsqlCommand(
-                    "SELECT 1 FROM users WHERE id = @id FOR UPDATE NOWAIT",
-                    connection,
-                    transaction
-                ),
-                LockedRows.Assignments => new NpgsqlCommand(
-                    "SELECT 1 FROM assignments WHERE user_id = @id FOR UPDATE NOWAIT",
-                    connection,
-                    transaction
-                ),
-                _ => new NpgsqlCommand(
-                    "SELECT 1 FROM event_terms_acceptances WHERE user_id = @id FOR UPDATE NOWAIT",
-                    connection,
-                    transaction
-                ),
-            };
-        }
     }
 }

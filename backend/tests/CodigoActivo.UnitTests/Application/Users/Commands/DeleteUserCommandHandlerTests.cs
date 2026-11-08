@@ -156,7 +156,7 @@ public sealed class DeleteUserCommandHandlerTests
     {
         var user = NewUser(isAdmin: false);
         users.FindReturns(user);
-        erasureStore.LockHouseholdAsync(user.Id, Arg.Any<CancellationToken>()).Returns(false);
+        erasureStore.LockAccountAsync(user.Id, Arg.Any<CancellationToken>()).Returns(false);
 
         var result = await DeleteAsync(user.Id.Value, KnownIds.Users.InitialAdministrator);
 

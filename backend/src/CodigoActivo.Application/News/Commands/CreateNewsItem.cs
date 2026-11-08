@@ -1,7 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
@@ -35,15 +34,11 @@ public sealed record CreateNewsItemCommand(
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="currentUser">Person the use case runs for, recorded as the creator.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
-/// <param name="uow">
-/// Unit of work that saves the item in the transaction that locks its files.
-/// </param>
 public sealed class CreateNewsItemCommandHandler(
     INewsItemRepository news,
     IStoredFileRepository files,
     ICurrentUser currentUser,
-    IClock clock,
-    IUnitOfWork uow
+    IClock clock
 ) : ICommandHandler<CreateNewsItemCommand, Result<NewsItemId>>
 {
     /// <summary>
@@ -63,17 +58,6 @@ public sealed class CreateNewsItemCommandHandler(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        return await uow.ExecuteInTransactionAsync(
-            attempt => CreateLockedAsync(command, attempt),
-            ct
-        );
-    }
-
-    private async Task<Result<NewsItemId>> CreateLockedAsync(
-        CreateNewsItemCommand command,
-        CancellationToken ct
-    )
-    {
         var description = RichText.From(command.Description);
         var available = await ContentFiles.EnsureAvailableAsync(
             files,
@@ -93,7 +77,6 @@ public sealed class CreateNewsItemCommandHandler(
             clock.UtcNow
         );
         await news.AddAsync(newsItem, ct);
-        await uow.SaveChangesAsync(ct);
         return newsItem.Id;
     }
 }

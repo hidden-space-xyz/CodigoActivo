@@ -297,7 +297,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
     public async Task HandleAsyncAccountErasedConcurrentlyReturnsNotFound()
     {
         var user = Signed();
-        erasureStore.LockHouseholdAsync(user.Id, Arg.Any<CancellationToken>()).Returns(false);
+        erasureStore.LockAccountAsync(user.Id, Arg.Any<CancellationToken>()).Returns(false);
 
         var result = await DeleteAsync(user.Id.Value);
 

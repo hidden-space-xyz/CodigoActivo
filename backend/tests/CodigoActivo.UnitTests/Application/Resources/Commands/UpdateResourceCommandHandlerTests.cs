@@ -1,6 +1,5 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Resources.Contracts;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Files;
@@ -20,7 +19,6 @@ namespace CodigoActivo.UnitTests.Application.Resources.Commands;
 public sealed class UpdateResourceCommandHandlerTests
 {
     private readonly IResourceRepository resources = Substitute.For<IResourceRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly FakeReadStore readStore = new();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly TestCurrentUser currentUser = new();
@@ -29,13 +27,7 @@ public sealed class UpdateResourceCommandHandlerTests
 
     public UpdateResourceCommandHandlerTests()
     {
-        sut = new UpdateResourceCommandHandler(
-            resources,
-            files,
-            currentUser,
-            clock,
-            uow.RunsTransactions()
-        );
+        sut = new UpdateResourceCommandHandler(resources, files, currentUser, clock);
     }
 
     [Fact]
@@ -60,7 +52,7 @@ public sealed class UpdateResourceCommandHandlerTests
         result.Error.Code.Should().Be(ApplicationErrorCode.ResourceNotFound);
         await files
             .DidNotReceiveWithAnyArgs()
-            .LockExistingAsync(
+            .ListExistingAsync(
                 Arg.Any<IReadOnlyCollection<StoredFileId>>(),
                 TestContext.Current.CancellationToken
             );

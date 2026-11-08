@@ -12,8 +12,7 @@ namespace CodigoActivo.Application.Activities;
 /// <summary>
 /// Validates activity input before it is processed: the rules of the schedule and the role
 /// capacities belong to the domain, and this collaborator adds the checks that need other
-/// aggregates (the event and the thumbnail). It runs inside the transaction that saves the
-/// activity, which keeps the thumbnail from being purged until the activity is saved.
+/// aggregates (the event and the thumbnail).
 /// </summary>
 /// <param name="events">Repository used to persist and retrieve events.</param>
 /// <param name="files">Repository used to persist and retrieve files.</param>

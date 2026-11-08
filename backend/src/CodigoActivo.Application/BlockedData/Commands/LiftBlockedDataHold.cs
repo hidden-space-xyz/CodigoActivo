@@ -1,10 +1,8 @@
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.BlockedData;
 using CodigoActivo.Domain.Common;
-using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.BlockedData.Commands;
 
@@ -22,18 +20,16 @@ public sealed record LiftBlockedDataHoldCommand(
 /// Executes the command that lifts a hold on the blocked data, so the retention of the history it
 /// kept applies again. Lifting lets the purge destroy what the claim needed, so it takes an open
 /// consultation, confirmed with the password and the second factor and announced to the legal
-/// contact, like reading the history. The hold stays locked meanwhile, so it is lifted only once.
+/// contact, like reading the history.
 /// </summary>
 /// <param name="officer">Policy that tells who may consult the blocked data.</param>
 /// <param name="consultations">Repository of the consultations.</param>
 /// <param name="holds">Repository of the holds.</param>
-/// <param name="uow">Unit of work that locks the hold and commits its lifting.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 public sealed class LiftBlockedDataHoldCommandHandler(
     PrivacyOfficer officer,
     IBlockedDataConsultationRepository consultations,
     IBlockedDataHoldRepository holds,
-    IUnitOfWork uow,
     IClock clock
 ) : ICommandHandler<LiftBlockedDataHoldCommand, Result>
 {
@@ -63,22 +59,10 @@ public sealed class LiftBlockedDataHoldCommandHandler(
             return signedIn.Error!;
         }
 
-        return await uow.ExecuteInTransactionAsync(
-            attempt => LiftLockedAsync(command, signedIn.Value, attempt),
-            ct
-        );
-    }
-
-    private async Task<Result> LiftLockedAsync(
-        LiftBlockedDataHoldCommand command,
-        User signedIn,
-        CancellationToken ct
-    )
-    {
         var now = clock.UtcNow;
         var consultation = ConsultationAccess.Check(
             await consultations.GetByIdAsync(command.ConsultationId, ct),
-            signedIn,
+            signedIn.Value,
             now
         );
         if (consultation.IsFailure)
@@ -86,19 +70,12 @@ public sealed class LiftBlockedDataHoldCommandHandler(
             return consultation.Error!;
         }
 
-        var hold = await holds.GetLockedAsync(command.HoldId, ct);
+        var hold = await holds.GetByIdAsync(command.HoldId, ct);
         if (hold is null)
         {
             return Error.NotFound(DomainErrorCode.BlockedDataHoldNotFound);
         }
 
-        var lifted = hold.Lift(signedIn.Id, now);
-        if (lifted.IsFailure)
-        {
-            return lifted;
-        }
-
-        await uow.SaveChangesAsync(ct);
-        return Result.Success();
+        return hold.Lift(signedIn.Value.Id, now);
     }
 }

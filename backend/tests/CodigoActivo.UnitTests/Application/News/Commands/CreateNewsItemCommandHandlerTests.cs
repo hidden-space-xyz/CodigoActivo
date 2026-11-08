@@ -1,5 +1,4 @@
 using AwesomeAssertions;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.News.Commands;
 using CodigoActivo.Domain.Common;
@@ -14,7 +13,6 @@ namespace CodigoActivo.UnitTests.Application.News.Commands;
 public sealed class CreateNewsItemCommandHandlerTests
 {
     private readonly INewsItemRepository news = Substitute.For<INewsItemRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new();
@@ -22,13 +20,7 @@ public sealed class CreateNewsItemCommandHandlerTests
 
     public CreateNewsItemCommandHandlerTests()
     {
-        sut = new CreateNewsItemCommandHandler(
-            news,
-            files,
-            currentUser,
-            clock,
-            uow.RunsTransactionsOf<Result<NewsItemId>>()
-        );
+        sut = new CreateNewsItemCommandHandler(news, files, currentUser, clock);
     }
 
     [Fact]
@@ -68,8 +60,6 @@ public sealed class CreateNewsItemCommandHandlerTests
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.RichTextFileNotFound);
         await news.DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<NewsItem>(), TestContext.Current.CancellationToken);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

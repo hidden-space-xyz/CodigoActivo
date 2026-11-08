@@ -1,6 +1,5 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Caching;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Common.Errors;
@@ -19,17 +18,11 @@ public sealed class AddChildCommandHandlerTests
     private readonly IUserRepository users = Substitute.For<IUserRepository>();
     private readonly TestCurrentUser currentUser = new();
     private readonly TestClock clock = new(today: Today);
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly AddChildCommandHandler sut;
 
     public AddChildCommandHandlerTests()
     {
-        sut = new AddChildCommandHandler(
-            users,
-            ActingUsers.Policy(currentUser),
-            clock,
-            uow.RunsTransactions()
-        );
+        sut = new AddChildCommandHandler(users, ActingUsers.Policy(currentUser), clock);
     }
 
     private Task<Result<UserId>> AddAsync(Guid parentId)
@@ -44,10 +37,11 @@ public sealed class AddChildCommandHandlerTests
         );
     }
 
-    private Task<int> AssertNotSavedAsync()
+    private Task AssertNotAddedAsync()
     {
-        return uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        return users
+            .DidNotReceiveWithAnyArgs()
+            .AddAsync(default!, TestContext.Current.CancellationToken);
     }
 
     private async Task<List<User>> CaptureAddedUsersAsync()
@@ -73,10 +67,7 @@ public sealed class AddChildCommandHandlerTests
         );
 
         result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.ActingForAnotherUserForbidden);
-        await users
-            .DidNotReceiveWithAnyArgs()
-            .AddAsync(default!, TestContext.Current.CancellationToken);
-        await AssertNotSavedAsync();
+        await AssertNotAddedAsync();
     }
 
     [Fact]
@@ -93,7 +84,7 @@ public sealed class AddChildCommandHandlerTests
         );
 
         result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.ParentUserNotFound);
-        await AssertNotSavedAsync();
+        await AssertNotAddedAsync();
     }
 
     [Fact]
@@ -113,10 +104,7 @@ public sealed class AddChildCommandHandlerTests
             ErrorKind.Validation,
             DomainErrorCode.UserGuardianshipDeclarationRequired
         );
-        await users
-            .DidNotReceiveWithAnyArgs()
-            .AddAsync(default!, TestContext.Current.CancellationToken);
-        await AssertNotSavedAsync();
+        await AssertNotAddedAsync();
     }
 
     [Fact]
@@ -133,7 +121,7 @@ public sealed class AddChildCommandHandlerTests
         );
 
         result.ShouldFail(ErrorKind.Validation, DomainErrorCode.UserChildBirthDateNotMinor);
-        await AssertNotSavedAsync();
+        await AssertNotAddedAsync();
     }
 
     [Fact]
@@ -148,48 +136,7 @@ public sealed class AddChildCommandHandlerTests
         var result = await AddAsync(parent.Id.Value);
 
         result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.UserChildLimitReached);
-        await users
-            .DidNotReceiveWithAnyArgs()
-            .AddAsync(default!, TestContext.Current.CancellationToken);
-        await AssertNotSavedAsync();
-    }
-
-    [Fact]
-    public async Task HandleAsyncCountsTheDependentsWithTheGuardianRowLocked()
-    {
-        var parent = NewUser();
-        users.FindReturns(parent);
-        users
-            .CountDependentsAsync(parent.Id, Arg.Any<CancellationToken>())
-            .Returns(Household.MaxDependents - 1);
-
-        var result = await AddAsync(parent.Id.Value);
-
-        result.IsSuccess.Should().BeTrue();
-        Received.InOrder(() =>
-        {
-            _ = uow.ExecuteInTransactionAsync(
-                Arg.Any<Func<CancellationToken, Task<Result>>>(),
-                Arg.Any<CancellationToken>()
-            );
-            _ = users.LockAsync(parent, Arg.Any<CancellationToken>());
-            _ = users.CountDependentsAsync(parent.Id, Arg.Any<CancellationToken>());
-            _ = users.AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
-            _ = uow.SaveChangesAsync(Arg.Any<CancellationToken>());
-        });
-    }
-
-    [Fact]
-    public async Task HandleAsyncGuardianGoneOnceLockedReturnsNotFound()
-    {
-        var parent = NewUser();
-        users.FindReturns(parent);
-        users.LockAsync(parent, Arg.Any<CancellationToken>()).Returns(false);
-
-        var result = await AddAsync(parent.Id.Value);
-
-        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.ParentUserNotFound);
-        await AssertNotSavedAsync();
+        await AssertNotAddedAsync();
     }
 
     [Fact]
@@ -221,6 +168,5 @@ public sealed class AddChildCommandHandlerTests
                 Arg.Is<User>(u => IsAddedChild(u, parentId, clock.UtcNow)),
                 Arg.Any<CancellationToken>()
             );
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

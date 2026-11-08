@@ -77,7 +77,7 @@ authentication are not supported.
   only on the domain, and then hashes the password before looking the address up, so every other outcome costs
   the same Argon2 work. An account still unverified 24 hours after registering is erased with its
   dependents, keeping their data history, by `PurgeUnverifiedAccounts`, which `UnverifiedAccountPurgeWorker` runs 30 seconds
-  after startup and then hourly; each account is locked and checked again before its erasure.
+  after startup and then hourly.
 - Only someone who knows an account's password learns its state: after a correct password, the password step
   answers a blocked account with `UserAccountBlocked`, an unverified one with `UserAccountPendingVerification`
   and a locked second factor with `TwoFactorLocked`.
@@ -125,15 +125,15 @@ authentication are not supported.
   (`UserChildBirthDateNotMinor`), and never stores a DNI/NIE, news consent or password. Dependents are
   created by a registration (its
   `minors` list, at most 20, `RequestValidationFailed` beyond) or through `POST /api/users/{id}/children`
-  (at most 20 per guardian, counted with the guardian's row locked, `UserChildLimitReached` beyond). They must be
+  (at most 20 per guardian, `UserChildLimitReached` beyond). They must be
   minors at creation and leave their guardian when the guardian deletes them or when they come of age, since
   the guardian no longer represents them then: `PurgeAdultDependents` erases a dependent, keeping its data
   history, on the day they turn 18 in `APP_TIMEZONE` (1 March for a 29 February birth in a common year), and
   `SendComingOfAgeNotices` emails the guardian 30 days before, recording it in
   `users.coming_of_age_notice_sent_at`. A changed birth date clears that record, so the corrected day gets its
   own notice; a notice the email limits refuse is retried on the next run, and a guardian whose email nobody
-  verified gets none. `AdultDependentPurgeWorker` runs both 30 seconds after startup and then hourly, and each
-  dependent is locked and checked again first. A household signup list holds at most 21 people.
+  verified gets none. `AdultDependentPurgeWorker` runs both 30 seconds after startup and then hourly. A
+  household signup list holds at most 21 people.
 - `PATCH /api/users/{id}/password` changes only the caller's own password and asks for the current one;
   guardians and administrators get `AccessDenied` (403) for any other account, so nobody else can spend that
   account's password attempts.
@@ -205,8 +205,8 @@ own dependents; any other administrator gets `AccessDenied`. Every deletion cred
 initial administrator instead of the household as author, last editor or uploader of events, activities, news,
 partners, resources and files, and as the account that recorded a terms decision about someone else, in the same
 transaction; the [data history](#data-history) keeps the original credit. Each erasure of an account or of a
-participation locks and loads everything it removes in one transaction, so a concurrent signup, status change
-or cancellation cannot slip in between, and nothing deletes the initial administrator:
+participation loads everything it removes and deletes it in one transaction, and nothing deletes the initial
+administrator:
 [ARCHITECTURE.md](ARCHITECTURE.md#domain-and-persistence) describes `AccountEraser`, `ParticipationEraser` and
 `InitialAdministratorGuard`. The SPA only tells users that they and their dependents lose access and cannot
 recover the account.
@@ -265,7 +265,7 @@ administrator reaches the list of consultations, and only that person opens them
   characters) in the body, never in the URL; finds existing accounts and, decrypting only past states of
   accounts, erased ones; adds their dependents; and returns each with only its id, name and guardian, whether it
   exists or when it was erased and how many entries of each kind concern it, counted without decrypting. The
-  consultation, locked meanwhile, records the accounts found, never the text.
+  consultation records the accounts found, never the text.
 - `POST .../{id}/extracts` decrypts the entries about an account the consultation found and its dependents,
   narrowed to days and kinds of data, adds the current personal data of an existing account and records the
   extract (account, filters, moment and number of entries, enough to find the same entries again). An entry that
@@ -499,9 +499,8 @@ code cite only these laws.
 - A terms document is versioned (`terms_documents.version`), so the text each decision was taken on can always be
   shown (article 7.1 GDPR): every rewrite that changes its name, text, kind or signature keeps the replaced version
   in `terms_document_versions` and numbers the new one, even when nobody decided yet, so a decision recorded while
-  the document changes still names a version whose text is kept. Rewrites lock the document and run one after
-  another, so each keeps as a version the text the previous one stored, and its kind cannot change while an event
-  links it or anyone decided on it (`TermsDocumentKindInUse`), since what a decision requires and whether it can be
+  the document changes still names a version whose text is kept. Its kind cannot change while an event links it
+  or anyone decided on it (`TermsDocumentKindInUse`), since what a decision requires and whether it can be
   withdrawn follow the current kind. Each decision and each change of its history
   stores the version it was taken on (`terms_document_version`; a withdrawal keeps the one withdrawn), and nobody is
   asked again after a rewrite. Every decision sent names the version shown (`TermsDecisionRequest.Version`, which
@@ -553,12 +552,11 @@ such as the path of a file under `/app/files`; it is written as is.
   both the database and the console: `Default` is `Warning`, which also drops the framework's start and stop
   messages; `Microsoft.EntityFrameworkCore` is `None`: every EF Core failure is rethrown and recorded where it
   is caught, so its own entries only repeated it, quoted the SQL of a failing command (which can carry literal
-  values) and reported expected unique-key races and retried deadlocks as errors. An environment can override
+  values) and reported expected unique-key races and deadlocks as errors. An environment can override
   any category with `Logging__LogLevel__<Category>`. There is no per-request logging middleware: unhandled
   exceptions are recorded only by `GlobalExceptionHandler`, with the HTTP method and the route template, never
-  the requested path. Expected outcomes are not logged: a refused concurrent update (409 `ConcurrentUpdate`), a
-  signup that lost a unique-key race (409), a deadlock that a retry resolved, or a rejected CSRF token, which
-  the client refreshes and sends again. A use case is logged as slow only above 5 seconds; repeated email
+  the requested path. Expected outcomes are not logged: a concurrent update, unique-key race or deadlock
+  refused with 409, or a rejected CSRF token, which the client refreshes and sends again. A use case is logged as slow only above 5 seconds; repeated email
   delivery failures are throttled as [DEPLOYMENT.md](DEPLOYMENT.md#email-delivery) describes.
   `NormalUseLoggingTests` drives anonymous, member and administrator flows and fails if any entry passes the
   policy. EF Core sensitive-data logging stays disabled; `SmtpEmailSender` strips the recipient and server
@@ -699,11 +697,10 @@ mount of the volume: only editors and administrators upload or delete them, and 
 with. An upload is kept while content references it
 (`StoredFileRepository.GetInUseAsync`); one that nothing references 7 days after it was uploaded, such as an
 image picked for a form that was never saved, is deleted with its content by `PurgeUnusedFiles`, which
-`UnusedFilePurgeWorker` runs 30 seconds after startup and then hourly. The purge locks the files it deletes
-(`FOR UPDATE`) before reading their references, and saving an event, activity, news item, resource or partner
-locks its thumbnail and the images its rich text embeds (`FOR KEY SHARE`, `ContentFiles`) in the transaction
-that stores it, so a save either commits first and keeps them or is refused
-(`*ThumbnailNotFound`, `RichTextFileNotFound`) instead of storing a reference to a deleted file. The same run
+`UnusedFilePurgeWorker` runs 30 seconds after startup and then hourly. Saving an event, activity, news item,
+resource or partner checks that its thumbnail and the images its rich text embeds still exist (`ContentFiles`,
+`*ThumbnailNotFound`, `RichTextFileNotFound`), and the foreign key of the thumbnail keeps a purge from deleting
+it once it is referenced. The same run
 then removes every entry of the volume that no file row owns an hour after it was written: a write cut short,
 an upload whose row was never committed or content whose deletion failed. A
 failed run logs `UnusedFilePurgeFailed`, and content that cannot be removed from the volume logs
@@ -761,8 +758,7 @@ loop of actions or a stolen administrator account delays a mailbox's mail instea
 first, and the daily limit of the provider keeps its last 10 % for second-factor codes. Normalization
 lowercases addresses, strips sub-address tags and folds dots only for Gmail/Googlemail. Quota is spent on
 attempt, before the message reaches the outbox; SMTP failure does not refund it. The budgets can be neither
-disabled nor configured (`EmailGuardOptions`); they are in-memory and reset on restart, and only the instance
-that holds the delivery lock paces delivery.
+disabled nor configured (`EmailGuardOptions`); they are in-memory and reset on restart.
 
 | Limit                                                                    | Value  |
 | ------------------------------------------------------------------------ | ------ |

@@ -31,19 +31,18 @@ public interface IUnitOfWork
     /// Runs work inside a database transaction and commits it when the work returns, whatever
     /// result it returns, so a refusal keeps what the work saved, such as a counted wrong code;
     /// changes the work staged without saving them stay staged. When the work throws, the
-    /// transaction rolls back and the unit of work returns to the state it had before the attempt:
-    /// the entities tracked since are dropped, the others get back the values and state they had,
-    /// and the domain events raised during the attempt are discarded while those raised before are
-    /// kept. When the database aborted the transaction because of a deadlock, the work then runs
-    /// again from that state, up to three attempts in all; a
-    /// <see cref="ConcurrentUpdateException"/> is not retried, because that state still holds the
-    /// values read before the concurrent write. Inside a transaction already open the work just
-    /// runs.
+    /// transaction rolls back, the domain events of what the work saved are discarded and the
+    /// exception propagates. What the work saved still counts as stored for the unit of work,
+    /// so a use case that carries on after the failure calls <see cref="DiscardChanges"/> first.
+    /// Inside a transaction already open the work just runs.
     /// </summary>
     /// <typeparam name="T">Type of the result of the work.</typeparam>
     /// <param name="work">Work to run; it receives the cancellation token.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A task whose result is the result of the work.</returns>
+    /// <exception cref="ConcurrentUpdateException">
+    /// The database aborted the transaction to resolve a deadlock with a concurrent one.
+    /// </exception>
     public Task<T> ExecuteInTransactionAsync<T>(
         Func<CancellationToken, Task<T>> work,
         CancellationToken ct = default

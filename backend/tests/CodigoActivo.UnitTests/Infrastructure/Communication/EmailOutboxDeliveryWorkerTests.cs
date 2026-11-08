@@ -9,7 +9,7 @@ using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Communication;
 
-public sealed class EmailOutboxDeliveryWorkerTests : IAsyncDisposable
+public sealed class EmailOutboxDeliveryWorkerTests
 {
     private static readonly TimeSpan Patience = TimeSpan.FromSeconds(30);
 
@@ -17,16 +17,10 @@ public sealed class EmailOutboxDeliveryWorkerTests : IAsyncDisposable
     private readonly EmailOutboxSignal signal = new();
     private readonly RecordingEmailSender transport = new();
     private readonly EmailGuardOptions guard = new();
-    private readonly FakeDeliveryLock deliveryLock = new();
     private readonly TestClock clock = new()
     {
         UtcNow = new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero),
     };
-
-    public ValueTask DisposeAsync()
-    {
-        return deliveryLock.DisposeAsync();
-    }
 
     private static EmailBatch Batch(string address = "ana@example.test")
     {
@@ -61,7 +55,6 @@ public sealed class EmailOutboxDeliveryWorkerTests : IAsyncDisposable
 
         return new EmailOutboxDeliveryWorker(
             deliverer,
-            deliveryLock,
             signal,
             options,
             guard,
@@ -244,24 +237,6 @@ public sealed class EmailOutboxDeliveryWorkerTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task ExecuteAsyncAnotherInstanceHoldsTheLockDeliversNothing()
-    {
-        var store = new FakeEmailOutboxStore(protector) { EnqueuedAt = clock.UtcNow };
-        await store.TryEnqueueAsync(Batch(), TestContext.Current.CancellationToken);
-        var options = new EmailQueueOptions { PollInterval = TimeSpan.FromMilliseconds(5) };
-        deliveryLock.Held = false;
-        var processor = Create(store, options);
-
-        await processor.StartAsync(TestContext.Current.CancellationToken);
-        await deliveryLock.Asked.Task.WaitAsync(Patience, TestContext.Current.CancellationToken);
-        await processor.StopAsync(TestContext.Current.CancellationToken);
-
-        transport.Sent.Should().BeEmpty("only the instance that holds the lock delivers");
-        store.Messages.Should().ContainSingle();
-        deliveryLock.Disposed.Should().BeTrue("stopping releases the lock");
-    }
-
-    [Fact]
     public async Task StopAsyncWithoutWorkInFlightReturnsWithoutWarning()
     {
         var store = new FakeEmailOutboxStore(protector) { EnqueuedAt = clock.UtcNow };
@@ -292,28 +267,6 @@ public sealed class EmailOutboxDeliveryWorkerTests : IAsyncDisposable
             Reached.TrySetResult();
             await Task.Delay(Timeout.Infinite, ct);
             return [];
-        }
-    }
-
-    private sealed class FakeDeliveryLock : IEmailDeliveryLock
-    {
-        public bool Held { get; set; } = true;
-
-        public bool Disposed { get; private set; }
-
-        public TaskCompletionSource Asked { get; } =
-            new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        public Task<bool> HoldAsync(CancellationToken ct)
-        {
-            Asked.TrySetResult();
-            return Task.FromResult(Held);
-        }
-
-        public ValueTask DisposeAsync()
-        {
-            Disposed = true;
-            return ValueTask.CompletedTask;
         }
     }
 

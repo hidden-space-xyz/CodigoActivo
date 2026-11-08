@@ -8,20 +8,15 @@ namespace CodigoActivo.Application.Accounts.EmailAddresses;
 /// Commits an account that takes an email: a new registration, or an account whose holder confirmed
 /// the address as their new email. An account nobody verified that held the address is erased in
 /// the same transaction, keeping its data history; one that <see cref="User.OwnsEmail"/> is never
-/// erased, so callers turn such claims away first. The holder is locked and reloaded before it is
-/// erased, so a holder verified or moved to another address meanwhile is seen as it is now: one
-/// that verified the address keeps it and the claim is refused, and one that no longer holds it is
-/// left alone.
+/// erased, so callers turn such claims away first.
 /// </summary>
-/// <param name="users">Repository that locks and reloads the holder.</param>
 /// <param name="eraser">Eraser of the account that loses the email.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
-public sealed class EmailClaims(IUserRepository users, AccountEraser eraser, IUnitOfWork uow)
+public sealed class EmailClaims(AccountEraser eraser, IUnitOfWork uow)
 {
     /// <summary>
-    /// Commits every staged change, <paramref name="claimant"/> taking the email among them.
+    /// Commits every staged change, the account that takes the email among them.
     /// </summary>
-    /// <param name="claimant">Account that takes the email, staged in the unit of work.</param>
     /// <param name="unverifiedHolder">Account nobody verified that holds the email, if any.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
@@ -29,13 +24,8 @@ public sealed class EmailClaims(IUserRepository users, AccountEraser eraser, IUn
     /// and nothing was committed.
     /// </returns>
     /// <exception cref="ArgumentException">The holder owns the email.</exception>
-    public async Task<bool> TryCommitAsync(
-        User claimant,
-        User? unverifiedHolder,
-        CancellationToken ct
-    )
+    public async Task<bool> TryCommitAsync(User? unverifiedHolder, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(claimant);
         if (unverifiedHolder is { OwnsEmail: true })
         {
             throw new ArgumentException(
@@ -44,47 +34,19 @@ public sealed class EmailClaims(IUserRepository users, AccountEraser eraser, IUn
             );
         }
 
-        bool claimed;
         try
         {
-            claimed = await uow.ExecuteInTransactionAsync(
-                attempt => ClaimAsync(claimant, unverifiedHolder, attempt),
-                ct
-            );
+            if (unverifiedHolder is null || !await eraser.EraseAsync(unverifiedHolder, ct))
+            {
+                await uow.SaveChangesAsync(ct);
+            }
+
+            return true;
         }
         catch (UniqueConstraintViolationException ex) when (ex.EntityType == typeof(User))
         {
-            claimed = false;
-        }
-
-        if (!claimed)
-        {
             uow.DiscardChanges();
+            return false;
         }
-
-        return claimed;
-    }
-
-    private async Task<bool> ClaimAsync(User claimant, User? holder, CancellationToken ct)
-    {
-        if (
-            holder is not null
-            && await users.LockAsync(holder, ct)
-            && holder.Email == claimant.Email
-        )
-        {
-            if (holder.OwnsEmail)
-            {
-                return false;
-            }
-
-            if (await eraser.EraseAsync(holder, ct))
-            {
-                return true;
-            }
-        }
-
-        await uow.SaveChangesAsync(ct);
-        return true;
     }
 }

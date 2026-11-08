@@ -1,7 +1,6 @@
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Common.Diagnostics;
@@ -19,19 +18,16 @@ public sealed record SendComingOfAgeNoticesCommand : ICommand<Result<int>>, ISch
 /// <summary>
 /// Executes the command that tells guardians, <see cref="User.ComingOfAgeNoticeDays"/> days ahead,
 /// that a dependent will be erased the day it comes of age, so they can download its data first.
-/// Each dependent is locked and checked again in its own transaction, and the notice is recorded
-/// only once the email is queued, so a notice that could not be queued is tried again on the next
-/// run. A guardian whose email nobody verified gets none.
+/// The notice is recorded only once the email is queued, so a notice that could not be queued is
+/// tried again on the next run. A guardian whose email nobody verified gets none.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="accountEmails">Sender of the notice.</param>
-/// <param name="uow">Unit of work that records each notice in its own transaction.</param>
 /// <param name="clock">Clock used to obtain consistent application timestamps.</param>
 /// <param name="logger">Logger used to record operational diagnostics.</param>
 public sealed class SendComingOfAgeNoticesCommandHandler(
     IUserRepository users,
     AccountEmails accountEmails,
-    IUnitOfWork uow,
     IClock clock,
     ILogger<SendComingOfAgeNoticesCommandHandler> logger
 ) : ICommandHandler<SendComingOfAgeNoticesCommand, Result<int>>
@@ -56,27 +52,12 @@ public sealed class SendComingOfAgeNoticesCommandHandler(
         return await dependents
             .Where(candidate => candidate.IsComingOfAgeNoticeDue(today))
             .ToAsyncEnumerable()
-            .CountAsync(
-                async (dependent, token) =>
-                    await uow.ExecuteInTransactionAsync(
-                        attempt => NotifyIfStillDueAsync(dependent, today, attempt),
-                        token
-                    ),
-                ct
-            );
+            .CountAsync(async (dependent, token) => await NotifyAsync(dependent, token), ct);
     }
 
-    private async Task<bool> NotifyIfStillDueAsync(
-        User dependent,
-        DateOnly today,
-        CancellationToken ct
-    )
+    private async Task<bool> NotifyAsync(User dependent, CancellationToken ct)
     {
-        if (
-            !await users.LockAsync(dependent, ct)
-            || !dependent.IsComingOfAgeNoticeDue(today)
-            || dependent.ParentId is not { } guardianId
-        )
+        if (dependent.ParentId is not { } guardianId)
         {
             return false;
         }
@@ -91,7 +72,6 @@ public sealed class SendComingOfAgeNoticesCommandHandler(
         }
 
         dependent.RecordComingOfAgeNotice(clock.UtcNow);
-        await uow.SaveChangesAsync(ct);
         return true;
     }
 

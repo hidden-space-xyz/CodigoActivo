@@ -14,7 +14,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CodigoActivo.Infrastructure.Database.Migrations
 {
     [DbContext(typeof(CodigoActivoDbContext))]
-    [Migration("20261107070923_InitialCreate")]
+    [Migration("20261108105208_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -22,6 +22,7 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasAnnotation("Npgsql:CollationDefinition:case_insensitive", "und-u-ks-level2,und-u-ks-level2,icu,False")
                 .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -392,6 +393,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasIndex("Name")
                         .IsUnique()
                         .HasDatabaseName("ix_event_category_types_name");
+
+                    NpgsqlIndexBuilderExtensions.UseCollation(b.HasIndex("Name"), new[] { "case_insensitive" });
 
                     b.ToTable("event_category_types", (string)null);
 
@@ -1046,6 +1049,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasIndex("Name")
                         .IsUnique()
                         .HasDatabaseName("ix_terms_documents_name");
+
+                    NpgsqlIndexBuilderExtensions.UseCollation(b.HasIndex("Name"), new[] { "case_insensitive" });
 
                     b.ToTable("terms_documents", (string)null);
 

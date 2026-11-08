@@ -23,7 +23,6 @@ public sealed class PurgeUnverifiedAccountsCommandHandlerTests
         sut = new PurgeUnverifiedAccountsCommandHandler(
             users,
             AccountErasers.Create(users, erasureStore, uow),
-            uow.RunsTransactions(),
             clock
         );
     }
@@ -59,7 +58,6 @@ public sealed class PurgeUnverifiedAccountsCommandHandlerTests
         var first = Unverified(daysAgo: 45);
         var second = Unverified(daysAgo: 1);
         Lists(first, second);
-        users.LocksEveryAccount();
 
         var result = await HandleAsync();
 
@@ -76,24 +74,11 @@ public sealed class PurgeUnverifiedAccountsCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncKeepsAnAccountVerifiedSinceItWasListed()
+    public async Task HandleAsyncDoesNotCountAnAccountAlreadyGone()
     {
         var account = Unverified(daysAgo: 40);
         Lists(account);
-        users.ReloadsAs(account, new { Status = UserStatus.Active });
-
-        var result = await HandleAsync();
-
-        result.Value.Should().Be(0);
-        users.DidNotReceiveWithAnyArgs().Remove(default!);
-    }
-
-    [Fact]
-    public async Task HandleAsyncSkipsAnAccountGoneOnceLocked()
-    {
-        var account = Unverified(daysAgo: 40);
-        Lists(account);
-        users.LockAsync(account, Arg.Any<CancellationToken>()).Returns(false);
+        erasureStore.LockAccountAsync(account.Id, Arg.Any<CancellationToken>()).Returns(false);
 
         var result = await HandleAsync();
 

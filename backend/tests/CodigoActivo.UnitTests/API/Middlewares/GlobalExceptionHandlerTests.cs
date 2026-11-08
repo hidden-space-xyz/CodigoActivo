@@ -153,6 +153,37 @@ public sealed class GlobalExceptionHandlerTests
     }
 
     [Fact]
+    public async Task TryHandleAsyncUniqueConstraintViolationWritesConcurrentUpdateConflictBody()
+    {
+        var context = NewContext("abc-409");
+
+        await Sut.TryHandleAsync(
+            context,
+            new UniqueConstraintViolationException(typeof(User), new InvalidOperationException()),
+            TestContext.Current.CancellationToken
+        );
+
+        context.Response.StatusCode.Should().Be(StatusCodes.Status409Conflict);
+        var body = await ReadBodyAsync(context);
+        body.Code.Should().Be(ErrorCode.ConcurrentUpdate);
+        body.Status.Should().Be(StatusCodes.Status409Conflict);
+        body.TraceId.Should().Be("abc-409");
+    }
+
+    [Fact]
+    public async Task TryHandleAsyncUniqueConstraintViolationLogsNothing()
+    {
+        var logger = await HandleAsync(
+            context => context.SetEndpoint(UserEndpoint()),
+            new UniqueConstraintViolationException()
+        );
+
+        logger
+            .LevelEntries.Should()
+            .BeEmpty("a value stored first by a concurrent request is an expected outcome");
+    }
+
+    [Fact]
     public async Task TryHandleAsyncMatchedEndpointLogsTheMethodAndTheRouteTemplate()
     {
         var logger = await HandleAsync(context => context.SetEndpoint(UserEndpoint()));

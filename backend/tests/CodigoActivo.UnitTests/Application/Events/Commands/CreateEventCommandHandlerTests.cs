@@ -1,6 +1,5 @@
 using AwesomeAssertions;
 using CodigoActivo.API.Events.Contracts;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Events;
 using CodigoActivo.Application.Events.Commands;
@@ -21,7 +20,6 @@ namespace CodigoActivo.UnitTests.Application.Events.Commands;
 public sealed class CreateEventCommandHandlerTests
 {
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly IStoredFileRepository files = Substitute.For<IStoredFileRepository>();
     private readonly ITermsDocumentRepository termsDocuments =
         Substitute.For<ITermsDocumentRepository>();
@@ -39,8 +37,7 @@ public sealed class CreateEventCommandHandlerTests
             termsDocuments,
             new EventCategoryChecker(categoryTypes),
             currentUser,
-            clock,
-            uow.RunsTransactionsOf<Result<EventId>>()
+            clock
         );
     }
 

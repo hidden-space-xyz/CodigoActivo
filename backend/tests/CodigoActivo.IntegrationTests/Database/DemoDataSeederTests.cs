@@ -65,7 +65,7 @@ public sealed class DemoDataSeederTests(CodigoActivoWebAppFactory factory)
         var pending = await PendingAccountsAsync();
         pending.Should().ContainSingle().Which.Status.Should().Be(UserStatus.Pending);
         pending[0].CreatedAt.Should().BeBefore(Factory.Clock.UtcNow);
-        pending[0].HasVerificationExpired(Factory.Clock.UtcNow).Should().BeFalse();
+        pending[0].CreatedAt.Should().BeAfter(User.UnverifiedPurgeCutoff(Factory.Clock.UtcNow));
     }
 
     [Fact]

@@ -81,22 +81,6 @@ public sealed class ComingOfAgeTests
         Dependent(birthDate: null).IsComingOfAgeNoticeDue(Today).Should().BeFalse();
     }
 
-    [Theory]
-    [InlineData(2008, 7, 4, true)]
-    [InlineData(1990, 1, 1, true)]
-    [InlineData(2008, 7, 5, false)]
-    public void HasComeOfAgeFromTheEighteenthBirthday(int year, int month, int day, bool expected)
-    {
-        Dependent(new DateOnly(year, month, day)).HasComeOfAge(Today).Should().Be(expected);
-    }
-
-    [Fact]
-    public void HasComeOfAgeNeverForAnIndependentAccountOrADependentWithoutBirthDate()
-    {
-        Adult().HasComeOfAge(Today).Should().BeFalse();
-        Dependent(birthDate: null).HasComeOfAge(Today).Should().BeFalse();
-    }
-
     [Fact]
     public void ApplyProfileChangeAnotherBirthDateMakesTheNoticeDueAgain()
     {

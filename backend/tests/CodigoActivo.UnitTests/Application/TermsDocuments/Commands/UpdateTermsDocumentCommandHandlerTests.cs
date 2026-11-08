@@ -1,6 +1,5 @@
 using AwesomeAssertions;
 using CodigoActivo.API.TermsDocuments.Contracts;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Application.TermsDocuments.Commands;
@@ -26,15 +25,11 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
     private readonly IEventRepository events = Substitute.For<IEventRepository>();
     private readonly IEventTermsAcceptanceRepository termsAcceptances =
         Substitute.For<IEventTermsAcceptanceRepository>();
-    private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>().RunsTransactions();
     private readonly UpdateTermsDocumentCommandHandler sut;
 
     public UpdateTermsDocumentCommandHandlerTests()
     {
-        termsDocuments
-            .LockAsync(Arg.Any<TermsDocument>(), Arg.Any<CancellationToken>())
-            .Returns(true);
-        sut = new UpdateTermsDocumentCommandHandler(termsDocuments, events, termsAcceptances, uow);
+        sut = new UpdateTermsDocumentCommandHandler(termsDocuments, events, termsAcceptances);
     }
 
     private Task<Result> ChangeKindAsync(TermsDocument termsDocument, TermsDocumentKind kind)
@@ -83,29 +78,6 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncDocumentDeletedMeanwhileReturnsNotFound()
-    {
-        var termsDocument = NewTermsDocument("Normas antiguas");
-        termsDocuments.TermsDocumentFound(termsDocument);
-        termsDocuments.TermsDocumentExists(false);
-        termsDocuments.LockAsync(termsDocument, Arg.Any<CancellationToken>()).Returns(false);
-
-        var result = await sut.HandleAsync(
-            new UpdateTermsDocumentRequest(
-                "Normas nuevas",
-                "{}",
-                TermsDocumentKind.Conditions
-            ).ToCommand(termsDocument.Id),
-            TestContext.Current.CancellationToken
-        );
-
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.TermsDocumentNotFound);
-        termsDocument.Name.Should().Be("Normas antiguas");
-        await uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
     public async Task HandleAsyncKindChangeOnLinkedDocumentReturnsConflict()
     {
         var termsDocument = NewTermsDocument();
@@ -120,7 +92,6 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
         termsDocument
             .Kind.Should()
             .Be(CodigoActivo.Domain.TermsDocuments.TermsDocumentKind.Conditions);
-        await uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -142,7 +113,7 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsyncLinkedDocumentKeepingItsKindRewritesItAfterLockingIt()
+    public async Task HandleAsyncLinkedDocumentKeepingItsKindRewritesIt()
     {
         var termsDocument = NewTermsDocument("Normas antiguas");
         termsDocuments.TermsDocumentFound(termsDocument);
@@ -161,11 +132,6 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         termsDocument.Name.Should().Be("Normas nuevas");
-        Received.InOrder(() =>
-        {
-            termsDocuments.LockAsync(termsDocument, Arg.Any<CancellationToken>());
-            uow.SaveChangesAsync(Arg.Any<CancellationToken>());
-        });
     }
 
     [Fact]

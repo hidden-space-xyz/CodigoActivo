@@ -1,6 +1,6 @@
 using CodigoActivo.Domain.TermsDocuments;
+using CodigoActivo.Infrastructure.Database.Configurations;
 using CodigoActivo.Infrastructure.Database.Context;
-using CodigoActivo.Infrastructure.Database.Repositories;
 using CodigoActivo.Infrastructure.Database.Repositories.Abstractions;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,23 +22,6 @@ public class TermsDocumentRepository(CodigoActivoDbContext context)
     }
 
     /// <inheritdoc />
-    public async Task<bool> LockAsync(TermsDocument termsDocument, CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(termsDocument);
-
-        FormattableString sql = $"""
-            SELECT id AS "Value" FROM terms_documents WHERE id = {termsDocument.Id.Value} FOR UPDATE
-            """;
-        if ((await Context.Database.SqlQuery<Guid>(sql).ToListAsync(ct)).Count is 0)
-        {
-            return false;
-        }
-
-        await Context.Entry(termsDocument).ReloadAsync(ct);
-        return true;
-    }
-
-    /// <inheritdoc />
     public Task<bool> NameExistsAsync(
         string name,
         TermsDocumentId? exceptId = null,
@@ -47,11 +30,8 @@ public class TermsDocumentRepository(CodigoActivoDbContext context)
     {
         return Set.AnyAsync(
             document =>
-                EF.Functions.ILike(
-                    document.Name,
-                    LikePattern.Literal(name),
-                    LikePattern.EscapeCharacter
-                ) && (exceptId == null || document.Id != exceptId.Value),
+                EF.Functions.Collate(document.Name, CaseInsensitiveNames.Collation) == name
+                && (exceptId == null || document.Id != exceptId.Value),
             ct
         );
     }

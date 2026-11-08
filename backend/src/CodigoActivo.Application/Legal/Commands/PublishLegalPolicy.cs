@@ -1,9 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Legal;
@@ -24,16 +22,13 @@ public sealed record PublishLegalPolicyCommand(
 /// <summary>
 /// Executes the command to publish a new version of a legal policy: the first publication creates
 /// the policy and later ones revise it, keeping the version they replace; the same content as the
-/// version in force publishes nothing new. The policy is locked first, so concurrent publications
-/// run one after another and none is lost.
+/// version in force publishes nothing new.
 /// </summary>
 /// <param name="legalPolicies">Repository used to persist and retrieve legal policies.</param>
-/// <param name="uow">Unit of work that runs the publication in one transaction.</param>
 /// <param name="clock">Clock used to date the new version.</param>
 /// <param name="auditSubject">Names the published policy in the audit log.</param>
 public sealed class PublishLegalPolicyCommandHandler(
     ILegalPolicyRepository legalPolicies,
-    IUnitOfWork uow,
     IClock clock,
     IAuditSubject auditSubject
 ) : ICommandHandler<PublishLegalPolicyCommand, Result>
@@ -44,10 +39,8 @@ public sealed class PublishLegalPolicyCommandHandler(
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
-    /// A task whose result reports success;
-    /// <see cref="DomainErrorCode.LegalPolicyContentRequired"/> when the content is empty, or
-    /// <see cref="ApplicationErrorCode.LegalPolicyPublishedConcurrently"/> when another first
-    /// publication of the same policy was saved meanwhile.
+    /// A task whose result reports success, or
+    /// <see cref="DomainErrorCode.LegalPolicyContentRequired"/> when the content is empty.
     /// </returns>
     public async Task<Result> HandleAsync(
         PublishLegalPolicyCommand command,
@@ -57,29 +50,10 @@ public sealed class PublishLegalPolicyCommandHandler(
         ArgumentNullException.ThrowIfNull(command);
 
         var content = RichText.From(command.Content);
-        try
-        {
-            return await uow.ExecuteInTransactionAsync(
-                attempt => PublishLockedAsync(command.Kind, content, attempt),
-                ct
-            );
-        }
-        catch (UniqueConstraintViolationException ex) when (ex.EntityType == typeof(LegalPolicy))
-        {
-            return Error.Conflict(ApplicationErrorCode.LegalPolicyPublishedConcurrently);
-        }
-    }
-
-    private async Task<Result> PublishLockedAsync(
-        LegalPolicyKind kind,
-        RichText content,
-        CancellationToken ct
-    )
-    {
-        var policy = await legalPolicies.LockAsync(kind, ct);
+        var policy = await legalPolicies.GetByKindAsync(command.Kind, ct);
         if (policy is null)
         {
-            var published = LegalPolicy.Publish(kind, content, clock.UtcNow);
+            var published = LegalPolicy.Publish(command.Kind, content, clock.UtcNow);
             if (published.IsFailure)
             {
                 return published.Error!;
@@ -98,7 +72,6 @@ public sealed class PublishLegalPolicyCommandHandler(
         }
 
         auditSubject.Name(policy.Id);
-        await uow.SaveChangesAsync(ct);
         return Result.Success();
     }
 }

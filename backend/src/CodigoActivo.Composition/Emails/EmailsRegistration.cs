@@ -42,7 +42,6 @@ internal static class EmailsRegistration
         services.AddSingleton<IPendingEmails>(sp => sp.GetRequiredService<IEmailOutboxStore>());
         services.AddSingleton<EmailDeliveryPacer>();
         services.AddSingleton<EmailOutboxDeliverer>();
-        services.AddSingleton<IEmailDeliveryLock, EmailDeliveryLock>();
         services.AddHostedService<EmailOutboxDeliveryWorker>();
         services.AddSingleton<IEmailSender, ThrottledEmailSender>();
         services.AddSingleton<IUnsubscribeTokens, DataProtectionUnsubscribeTokens>();

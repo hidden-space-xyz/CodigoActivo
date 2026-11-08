@@ -15,7 +15,7 @@ public static class AccountErasers
     )
     {
         erasureStore
-            .LockHouseholdAsync(Arg.Any<UserId>(), Arg.Any<CancellationToken>())
+            .LockAccountAsync(Arg.Any<UserId>(), Arg.Any<CancellationToken>())
             .Returns(true);
         return new AccountEraser(
             users,

@@ -6,8 +6,8 @@ namespace CodigoActivo.Infrastructure.Communication;
 /// Paces the outbox delivery in memory: a token bucket holds the messages the SMTP provider accepts
 /// per minute, and every recipient of a notice or administrator-written mail has the hourly and
 /// daily budgets of <see cref="EmailGuardOptions"/>, so actions repeated in a loop wait instead of
-/// flooding a mailbox or spending the budget of the provider. Only one instance delivers at a time,
-/// so the pace is the pace of the whole application.
+/// flooding a mailbox or spending the budget of the provider. The application runs one API
+/// instance, so the pace is the pace of the whole application.
 /// </summary>
 /// <param name="smtp">Messages the SMTP provider accepts per minute.</param>
 /// <param name="guard">Per-recipient budgets and the bounds of their tracking.</param>

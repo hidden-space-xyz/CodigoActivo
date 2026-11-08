@@ -19,18 +19,7 @@ public sealed class OrphanFileCleanerTests
 
     public OrphanFileCleanerTests()
     {
-        sut = new OrphanFileCleaner(
-            files,
-            uow.RunsTransactionsOf<IReadOnlyList<StoredFile>>(),
-            storage,
-            NullLogger<OrphanFileCleaner>.Instance
-        );
-        files
-            .LockForDeletionAsync(
-                Arg.Any<IReadOnlyCollection<StoredFileId>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(call => call.Arg<IReadOnlyCollection<StoredFileId>>().ToList());
+        sut = new OrphanFileCleaner(files, uow, storage, NullLogger<OrphanFileCleaner>.Instance);
     }
 
     private static StoredFile NewFile(string extension = "png")
@@ -141,7 +130,7 @@ public sealed class OrphanFileCleanerTests
     {
         files
             .When(f =>
-                f.LockForDeletionAsync(
+                f.GetInUseAsync(
                     Arg.Any<IReadOnlyCollection<StoredFileId>>(),
                     Arg.Any<CancellationToken>()
                 )
@@ -197,7 +186,7 @@ public sealed class OrphanFileCleanerTests
     }
 
     [Fact]
-    public async Task TryDeleteOrphanedAsyncSaveRefusedSwallowsExceptionAndKeepsContent()
+    public async Task TryDeleteOrphanedAsyncSaveRefusedDiscardsChangesAndKeepsContent()
     {
         var orphan = NewFile();
         InUseFilesAre();
@@ -212,31 +201,7 @@ public sealed class OrphanFileCleanerTests
 
         deleted.Should().BeFalse();
         files.Received(1).Remove(orphan);
-        storage.DidNotReceiveWithAnyArgs().Delete(string.Empty);
-    }
-
-    [Fact]
-    public async Task TryDeleteOrphanedAsyncTransactionNotRunTouchesNothingOutsideIt()
-    {
-        var orphan = NewFile();
-        InUseFilesAre();
-        StoredFilesAre(orphan);
-        uow.ExecuteInTransactionAsync(
-                Arg.Any<Func<CancellationToken, Task<IReadOnlyList<StoredFile>>>>(),
-                Arg.Any<CancellationToken>()
-            )
-            .Returns(Task.FromResult<IReadOnlyList<StoredFile>>([]));
-
-        await sut.TryDeleteOrphanedAsync([orphan.Id], TestContext.Current.CancellationToken);
-
-        await files
-            .DidNotReceiveWithAnyArgs()
-            .GetInUseAsync([], TestContext.Current.CancellationToken);
-        await files
-            .DidNotReceiveWithAnyArgs()
-            .ListByIdsAsync([], TestContext.Current.CancellationToken);
-        files.DidNotReceiveWithAnyArgs().Remove(orphan);
-        await AssertNotSavedAsync();
+        uow.Received(1).DiscardChanges();
         storage.DidNotReceiveWithAnyArgs().Delete(string.Empty);
     }
 

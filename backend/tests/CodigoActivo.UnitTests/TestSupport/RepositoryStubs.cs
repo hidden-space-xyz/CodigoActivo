@@ -77,7 +77,7 @@ public static class RepositoryStubs
     public static void ThumbnailExists(this IStoredFileRepository files, bool exists)
     {
         files
-            .LockExistingAsync(
+            .ListExistingAsync(
                 Arg.Any<IReadOnlyCollection<StoredFileId>>(),
                 Arg.Any<CancellationToken>()
             )
@@ -90,7 +90,7 @@ public static class RepositoryStubs
     )
     {
         files
-            .LockExistingAsync(
+            .ListExistingAsync(
                 Arg.Any<IReadOnlyCollection<StoredFileId>>(),
                 Arg.Any<CancellationToken>()
             )

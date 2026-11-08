@@ -44,7 +44,7 @@ public sealed class DeleteEventRatingCommandHandlerTests
         );
 
         result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventRatingNotFound);
-        await store.DidNotReceiveWithAnyArgs().LockAsync(default!, Arg.Any<CancellationToken>());
+        await store.DidNotReceiveWithAnyArgs().LoadAsync(default!, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public sealed class DeleteEventRatingCommandHandlerTests
         deletion.Origin.Should().Be(ParticipationDeletionOrigin.RatingDeleted);
         deletion.PersonId.Should().Be(AuthorId);
         deletion.ActivityId.Should().BeNull();
-        await store.Received(1).LockAsync(deletion, Arg.Any<CancellationToken>());
+        await store.Received(1).LoadAsync(deletion, Arg.Any<CancellationToken>());
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 }

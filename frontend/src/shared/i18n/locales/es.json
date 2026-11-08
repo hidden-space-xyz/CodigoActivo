@@ -258,7 +258,6 @@
     "LegalPolicyContentRequired": "Escribe el texto de la política.",
     "LegalPolicyNotFound": "Esta política todavía no se ha publicado.",
     "LegalPolicyVersionNotFound": "No se encontró esa versión de la política.",
-    "LegalPolicyPublishedConcurrently": "Otra persona acaba de publicar esta política. Recarga la página e inténtalo de nuevo.",
     "ResourceNotFound": "No se encontró el recurso.",
     "ResourceThumbnailNotFound": "No se encontró la imagen del recurso.",
     "ResourceDescriptionRequired": "Los recursos internos deben tener una descripción.",

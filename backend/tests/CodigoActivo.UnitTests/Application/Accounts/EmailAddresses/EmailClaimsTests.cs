@@ -20,11 +20,7 @@ public sealed class EmailClaimsTests
 
     public EmailClaimsTests()
     {
-        sut = new EmailClaims(
-            users.LocksEveryAccount(),
-            AccountErasers.Create(users, erasureStore, uow),
-            uow
-        );
+        sut = new EmailClaims(AccountErasers.Create(users, erasureStore, uow), uow);
     }
 
     [Fact]
@@ -32,8 +28,7 @@ public sealed class EmailClaimsTests
     {
         var holder = NewUser(statusId: KnownIds.UserStatusTypes.Active);
 
-        var act = () =>
-            sut.TryCommitAsync(NewUser(), holder, TestContext.Current.CancellationToken);
+        var act = () => sut.TryCommitAsync(holder, TestContext.Current.CancellationToken);
 
         await act.Should().ThrowAsync<ArgumentException>();
         users.DidNotReceiveWithAnyArgs().Remove(default!);
@@ -42,54 +37,31 @@ public sealed class EmailClaimsTests
     }
 
     [Fact]
-    public async Task TryCommitAsyncHolderVerifiedMeanwhileRefusesTheClaimAndDiscardsIt()
+    public async Task TryCommitAsyncEmailTakenByAnotherAccountFirstRefusesTheClaimAndDiscardsIt()
     {
         var holder = NewUser(statusId: KnownIds.UserStatusTypes.Pending);
-        users.ReloadsAs(holder, new { Status = UserStatus.Active });
+        uow.SaveChangesAsync(Arg.Any<CancellationToken>())
+            .Returns<Task<int>>(_ =>
+                throw new UniqueConstraintViolationException(
+                    typeof(User),
+                    new InvalidOperationException("duplicate")
+                )
+            );
 
-        var committed = await sut.TryCommitAsync(
-            NewUser(),
-            holder,
-            TestContext.Current.CancellationToken
-        );
+        var committed = await sut.TryCommitAsync(holder, TestContext.Current.CancellationToken);
 
         committed.Should().BeFalse();
-        users.DidNotReceiveWithAnyArgs().Remove(default!);
         uow.Received(1).DiscardChanges();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]
-    public async Task TryCommitAsyncHolderMovedToAnotherAddressMeanwhileCommitsOnlyTheClaimant()
-    {
-        var holder = NewUser(statusId: KnownIds.UserStatusTypes.Pending);
-        users.ReloadsAs(holder, new { Email = EmailAddress.FromStored("otra@test.com") });
-
-        var committed = await sut.TryCommitAsync(
-            NewUser(),
-            holder,
-            TestContext.Current.CancellationToken
-        );
-
-        committed.Should().BeTrue();
-        users.DidNotReceiveWithAnyArgs().Remove(default!);
-        await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task TryCommitAsyncHolderStillUnverifiedIsErasedWithTheClaim()
+    public async Task TryCommitAsyncUnverifiedHolderIsErasedWithTheClaim()
     {
         var holder = NewUser(statusId: KnownIds.UserStatusTypes.Pending);
 
-        var committed = await sut.TryCommitAsync(
-            NewUser(),
-            holder,
-            TestContext.Current.CancellationToken
-        );
+        var committed = await sut.TryCommitAsync(holder, TestContext.Current.CancellationToken);
 
         committed.Should().BeTrue();
-        await users.Received(1).LockAsync(holder, Arg.Any<CancellationToken>());
         users.Received(1).Remove(holder);
         await uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -98,13 +70,9 @@ public sealed class EmailClaimsTests
     public async Task TryCommitAsyncHolderErasedMeanwhileStillCommitsTheClaimant()
     {
         var holder = NewUser(statusId: KnownIds.UserStatusTypes.Pending);
-        erasureStore.LockHouseholdAsync(holder.Id, Arg.Any<CancellationToken>()).Returns(false);
+        erasureStore.LockAccountAsync(holder.Id, Arg.Any<CancellationToken>()).Returns(false);
 
-        var committed = await sut.TryCommitAsync(
-            NewUser(),
-            holder,
-            TestContext.Current.CancellationToken
-        );
+        var committed = await sut.TryCommitAsync(holder, TestContext.Current.CancellationToken);
 
         committed.Should().BeTrue();
         users.DidNotReceiveWithAnyArgs().Remove(default!);

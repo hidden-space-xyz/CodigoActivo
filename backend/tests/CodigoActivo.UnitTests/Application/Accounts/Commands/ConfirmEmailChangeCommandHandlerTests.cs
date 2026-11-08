@@ -49,11 +49,7 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
             users,
             clock,
             new OtpValidator(new FakeOneTimeCodeHasher()),
-            new EmailClaims(
-                users.LocksEveryAccount(),
-                AccountErasers.Create(users, erasureStore, uow),
-                uow
-            )
+            new EmailClaims(AccountErasers.Create(users, erasureStore, uow), uow)
         );
     }
 

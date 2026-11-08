@@ -13,8 +13,8 @@ namespace CodigoActivo.Application.Files.Commands;
 public sealed record DeleteFileCommand(StoredFileId FileId) : ICommand<Result>, IRoutineCommand;
 
 /// <summary>
-/// Executes the command to delete the file through <see cref="IOrphanFileCleaner"/>, which locks it
-/// and checks its references again in the transaction that deletes it.
+/// Executes the command to delete the file through <see cref="IOrphanFileCleaner"/>, which deletes
+/// it only when no content references it.
 /// </summary>
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="orphanCleaner">Service used to remove files that are no longer referenced.</param>

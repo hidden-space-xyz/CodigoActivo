@@ -15,7 +15,8 @@ public interface IOrphanFileCleaner
     /// Deletes the files among the candidates that nothing references any more, as a best effort:
     /// a failure only leaves unreferenced data behind for the scheduled purge, so a failure to
     /// delete the rows is neither raised nor logged, and stored content that cannot be deleted
-    /// only logs a warning.
+    /// only logs a warning. A failure discards the changes staged since the last commit, so a
+    /// refused deletion is not left for a later commit of the same scope.
     /// </summary>
     /// <param name="fileIds">Identifiers of the candidate files.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -45,13 +46,9 @@ public interface IOrphanFileCleaner
 }
 
 /// <summary>
-/// Removes orphan file data that is no longer referenced. The candidates are locked for deletion
-/// (<see cref="IStoredFileRepository.LockForDeletionAsync"/>) before their references are read, so
-/// a save that locked them to reference them is waited for, and the rows are deleted in that
-/// transaction, so a refused delete leaves nothing staged for a later commit of the same request.
-/// The stored content is only deleted once the rows are gone; when that fails the content stays on
-/// the volume, a warning is logged and <see cref="Commands.PurgeUnusedFilesCommand"/> removes it
-/// later.
+/// Removes orphan file data that is no longer referenced. The stored content is only deleted once
+/// the rows are gone; when that fails the content stays on the volume, a warning is logged and
+/// <see cref="Commands.PurgeUnusedFilesCommand"/> removes it later.
 /// </summary>
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="uow">Unit of work used to commit the changes.</param>
@@ -77,6 +74,7 @@ public sealed class OrphanFileCleaner(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            uow.DiscardChanges();
             return false;
         }
     }
@@ -95,30 +93,11 @@ public sealed class OrphanFileCleaner(
             return 0;
         }
 
-        var removed = await uow.ExecuteInTransactionAsync(
-            attempt => RemoveOrphansAsync(candidates, attempt),
-            ct
-        );
-
-        foreach (var file in removed)
-        {
-            DeleteStoredContent(file.Id, file.Extension);
-        }
-
-        return removed.Count;
-    }
-
-    private async Task<IReadOnlyList<StoredFile>> RemoveOrphansAsync(
-        List<StoredFileId> candidates,
-        CancellationToken ct
-    )
-    {
-        var existing = await files.LockForDeletionAsync(candidates, ct);
-        var inUse = await files.GetInUseAsync(existing, ct);
-        var orphanIds = existing.Except(inUse).ToList();
+        var inUse = await files.GetInUseAsync(candidates, ct);
+        var orphanIds = candidates.Except(inUse).ToList();
         if (orphanIds.Count is 0)
         {
-            return [];
+            return 0;
         }
 
         var orphans = await files.ListByIdsAsync(orphanIds, ct);
@@ -129,7 +108,12 @@ public sealed class OrphanFileCleaner(
         }
 
         await uow.SaveChangesAsync(ct);
-        return orphans;
+        foreach (var file in orphans)
+        {
+            DeleteStoredContent(file.Id, file.Extension);
+        }
+
+        return orphans.Count;
     }
 
     private void DeleteStoredContent(StoredFileId fileId, string extension)
