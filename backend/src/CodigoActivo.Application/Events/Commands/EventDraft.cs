@@ -47,15 +47,17 @@ public sealed record EventDraft(
     /// <summary>
     /// Gets the schedule the event is created or replaced with.
     /// </summary>
+    /// <param name="zone">Time zone the days of the event are counted in.</param>
     /// <returns>The schedule, or the rule its dates break.</returns>
-    public Result<EventSchedule> ToSchedule()
+    public Result<EventSchedule> ToSchedule(TimeZoneInfo zone)
     {
         return EventSchedule.Create(
             EventStartsAt,
             EventEndsAt,
             EarlySignupStartsAt,
             SignupStartsAt,
-            SignupEndsAt
+            SignupEndsAt,
+            zone
         );
     }
 

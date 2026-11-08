@@ -154,6 +154,28 @@ public sealed class UpdateEventCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncSignupClosingAfterLastLocalDayReturnsSignupEndsAfterEvent()
+    {
+        var ev = NewEvent();
+        categoryTypes.HasCategoryCount(1);
+        events.GetLockedAsync(ev.Id, Arg.Any<CancellationToken>()).Returns(ev);
+        var plusTwo = TimeSpan.FromHours(2);
+        clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone("Test", plusTwo, "Test", "Test");
+        var request = UpdateReq(
+            signupEnd: new DateTimeOffset(2026, 8, 4, 0, 30, 0, plusTwo),
+            categoryTypeIds: [Guid.NewGuid()]
+        );
+
+        var result = await sut.HandleAsync(
+            request.ToCommand(ev.Id),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
+        result.Error.Code.Should().Be(DomainErrorCode.EventSignupEndsAfterEvent);
+    }
+
+    [Fact]
     public async Task HandleAsyncNoCategoriesSuppliedReturnsCategoriesRequired()
     {
         var request = UpdateReq(categoryTypeIds: null);

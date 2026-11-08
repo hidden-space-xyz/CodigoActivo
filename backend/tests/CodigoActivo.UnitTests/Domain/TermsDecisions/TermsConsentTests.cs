@@ -60,7 +60,8 @@ public sealed class TermsConsentTests
                         new DateOnly(2026, 8, 3),
                         null,
                         new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
-                        new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero)
+                        new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
+                        TimeZoneInfo.Utc
                     )
                     .Value,
                 EventCategorySelection.Create([EventCategoryTypeId.From(Guid.NewGuid())]).Value,

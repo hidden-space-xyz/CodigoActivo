@@ -969,6 +969,31 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         await response.ShouldBeBadRequestAsync(ErrorCode.EventSignupEndsAfterEvent);
     }
 
+    [Fact]
+    public async Task CreateSignupClosingAfterTheLastDayInAppTimezoneReturnsBadRequest()
+    {
+        var plusTwo = TimeSpan.FromHours(2);
+        Factory.Clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone(
+            "UTC+02",
+            plusTwo,
+            "UTC+02",
+            "UTC+02"
+        );
+        var thumbnailId = await SeedThumbnailAsync();
+        var categoryId = await SeedCategoryTypeAsync("Taller");
+        var client = await LoginAsAdminAsync();
+        var request = BuildCreate(
+            thumbnailId,
+            [categoryId],
+            end: new DateOnly(2026, 8, 10),
+            signupEnd: new DateTimeOffset(2026, 8, 11, 0, 30, 0, plusTwo)
+        );
+
+        var response = await client.PostJsonAsync("/api/events", request, Ct);
+
+        await response.ShouldBeBadRequestAsync(ErrorCode.EventSignupEndsAfterEvent);
+    }
+
     [Theory]
     [InlineData("javascript:alert(1)")]
     [InlineData("https://user:secret@evil.example")]

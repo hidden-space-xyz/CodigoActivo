@@ -32,7 +32,8 @@ public sealed class SignupEligibilityTests
                     new DateOnly(2026, 7, 31),
                     earlyStart,
                     SignupStart,
-                    signupEnd
+                    signupEnd,
+                    TimeZoneInfo.Utc
                 )
                 .Value,
             EventCategorySelection.Create([EventCategoryTypeId.New()]).Value,

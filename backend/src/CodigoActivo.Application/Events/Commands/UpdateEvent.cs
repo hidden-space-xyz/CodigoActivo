@@ -71,7 +71,7 @@ public sealed class UpdateEventCommandHandler(
         ArgumentNullException.ThrowIfNull(command);
         var draft = command.Event;
 
-        var schedule = draft.ToSchedule();
+        var schedule = draft.ToSchedule(clock.TimeZone);
         if (schedule.IsFailure)
         {
             return schedule.Error!;

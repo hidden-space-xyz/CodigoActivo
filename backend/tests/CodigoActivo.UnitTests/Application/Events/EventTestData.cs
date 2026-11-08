@@ -41,7 +41,8 @@ internal static class EventTestData
                     ends ?? new DateOnly(2026, 8, 2),
                     null,
                     signupStart ?? new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
-                    signupEnd ?? new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero)
+                    signupEnd ?? new DateTimeOffset(2026, 7, 20, 0, 0, 0, TimeSpan.Zero),
+                    TimeZoneInfo.Utc
                 )
                 .Value,
             EventCategorySelection.Create(categoryTypeIds ?? [EventCategoryTypeId.New()]).Value,

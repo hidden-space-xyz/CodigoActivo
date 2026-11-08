@@ -217,6 +217,27 @@ public sealed class CreateEventCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncSignupClosingAfterLastLocalDayReturnsSignupEndsAfterEvent()
+    {
+        var plusTwo = TimeSpan.FromHours(2);
+        clock.TimeZone = TimeZoneInfo.CreateCustomTimeZone("Test", plusTwo, "Test", "Test");
+        files.ThumbnailExists(true);
+        categoryTypes.HasCategoryCount(1);
+        var request = CreateReq(
+            signupEnd: new DateTimeOffset(2026, 8, 4, 0, 30, 0, plusTwo),
+            categoryTypeIds: [Guid.NewGuid()]
+        );
+
+        var result = await sut.HandleAsync(
+            request.ToCommand(),
+            TestContext.Current.CancellationToken
+        );
+
+        result.Error!.Kind.Should().Be(ErrorKind.Validation);
+        result.Error.Code.Should().Be(DomainErrorCode.EventSignupEndsAfterEvent);
+    }
+
+    [Fact]
     public async Task HandleAsyncEarlySignupBeforeSignupStartStagesEarlySignupInUtc()
     {
         files.ThumbnailExists(true);

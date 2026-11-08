@@ -5,7 +5,7 @@ namespace CodigoActivo.Domain.Events;
 /// <summary>
 /// Days an event runs and the window in which people sign up to its activities. The signup
 /// closes after it opens, an early signup opens before the regular one, and the signup opens and
-/// closes no later than the last day of the event.
+/// closes no later than the last day of the event, counted in the local time zone.
 /// </summary>
 public sealed record EventSchedule
 {
@@ -33,6 +33,7 @@ public sealed record EventSchedule
     /// <param name="earlySignupStartsAt">When the early signup opens, if there is one.</param>
     /// <param name="signupStartsAt">When the signup opens.</param>
     /// <param name="signupEndsAt">When the signup closes.</param>
+    /// <param name="zone">Time zone the days of the event are counted in.</param>
     /// <returns>
     /// The schedule in UTC, or <see cref="DomainErrorCode.EventScheduleRequired"/> when a date
     /// other than the early signup is missing,
@@ -48,9 +49,12 @@ public sealed record EventSchedule
         DateOnly? eventEndsAt,
         DateTimeOffset? earlySignupStartsAt,
         DateTimeOffset? signupStartsAt,
-        DateTimeOffset? signupEndsAt
+        DateTimeOffset? signupEndsAt,
+        TimeZoneInfo zone
     )
     {
+        ArgumentNullException.ThrowIfNull(zone);
+
         if (
             eventStartsAt is not { } eventStart
             || eventEndsAt is not { } eventEnd
@@ -74,12 +78,13 @@ public sealed record EventSchedule
             return Error.Validation(DomainErrorCode.EventEarlySignupNotBeforeSignup);
         }
 
-        if (calendar.EndsBefore(DateOnly.FromDateTime(signupStart.UtcDateTime)))
+        var afterLastDay = LocalDayRange.UpperExclusiveUtc(calendar.End, zone);
+        if (signupStart >= afterLastDay)
         {
             return Error.Validation(DomainErrorCode.EventScheduleInvalidRange);
         }
 
-        if (calendar.EndsBefore(DateOnly.FromDateTime(signupEnd.UtcDateTime)))
+        if (signupEnd >= afterLastDay)
         {
             return Error.Validation(DomainErrorCode.EventSignupEndsAfterEvent);
         }

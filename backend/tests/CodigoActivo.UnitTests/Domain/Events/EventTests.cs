@@ -19,6 +19,13 @@ public sealed class EventTests
     private static readonly DateTimeOffset EarlyStart = new(2026, 6, 20, 0, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset SignupStart = new(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset SignupEnd = new(2026, 7, 20, 0, 0, 0, TimeSpan.Zero);
+    private static readonly TimeSpan PlusTwoOffset = TimeSpan.FromHours(2);
+    private static readonly TimeZoneInfo PlusTwo = TimeZoneInfo.CreateCustomTimeZone(
+        "Test",
+        PlusTwoOffset,
+        "Test",
+        "Test"
+    );
 
     public static TheoryData<
         DateOnly?,
@@ -48,7 +55,14 @@ public sealed class EventTests
     private static EventSchedule Schedule(DateTimeOffset? earlySignupStart = null)
     {
         return EventSchedule
-            .Create(EventStart, EventEnd, earlySignupStart, SignupStart, SignupEnd)
+            .Create(
+                EventStart,
+                EventEnd,
+                earlySignupStart,
+                SignupStart,
+                SignupEnd,
+                TimeZoneInfo.Utc
+            )
             .Value;
     }
 
@@ -102,7 +116,14 @@ public sealed class EventTests
         DateTimeOffset? signupEnd
     )
     {
-        var schedule = EventSchedule.Create(eventStart, eventEnd, null, signupStart, signupEnd);
+        var schedule = EventSchedule.Create(
+            eventStart,
+            eventEnd,
+            null,
+            signupStart,
+            signupEnd,
+            TimeZoneInfo.Utc
+        );
 
         schedule.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventScheduleRequired);
     }
@@ -115,7 +136,8 @@ public sealed class EventTests
             EventStart.AddDays(-1),
             null,
             SignupStart,
-            SignupEnd
+            SignupEnd,
+            TimeZoneInfo.Utc
         );
 
         schedule.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventScheduleInvalidRange);
@@ -131,7 +153,8 @@ public sealed class EventTests
             EventEnd,
             null,
             SignupStart,
-            SignupStart.AddHours(closesHoursAfter)
+            SignupStart.AddHours(closesHoursAfter),
+            TimeZoneInfo.Utc
         );
 
         schedule.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventScheduleInvalidRange);
@@ -149,7 +172,8 @@ public sealed class EventTests
             EventEnd,
             SignupStart.AddHours(opensHoursAfterSignup),
             SignupStart,
-            SignupEnd
+            SignupEnd,
+            TimeZoneInfo.Utc
         );
 
         schedule.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventEarlySignupNotBeforeSignup);
@@ -165,7 +189,8 @@ public sealed class EventTests
             EventEnd,
             null,
             opensAt,
-            opensAt.AddDays(1)
+            opensAt.AddDays(1),
+            TimeZoneInfo.Utc
         );
 
         schedule.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventScheduleInvalidRange);
@@ -179,7 +204,8 @@ public sealed class EventTests
             EventEnd,
             null,
             SignupStart,
-            new DateTimeOffset(2026, 8, 4, 0, 0, 0, TimeSpan.Zero)
+            new DateTimeOffset(2026, 8, 4, 0, 0, 0, TimeSpan.Zero),
+            TimeZoneInfo.Utc
         );
 
         schedule.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventSignupEndsAfterEvent);
@@ -190,7 +216,14 @@ public sealed class EventTests
     {
         var closesAt = new DateTimeOffset(2026, 8, 3, 23, 0, 0, TimeSpan.Zero);
 
-        var schedule = EventSchedule.Create(EventStart, EventEnd, null, SignupStart, closesAt);
+        var schedule = EventSchedule.Create(
+            EventStart,
+            EventEnd,
+            null,
+            SignupStart,
+            closesAt,
+            TimeZoneInfo.Utc
+        );
 
         schedule.IsSuccess.Should().BeTrue();
         schedule.Value.SignupWindow.EndsAt.Should().Be(closesAt);
@@ -206,11 +239,68 @@ public sealed class EventTests
             EventEnd,
             null,
             opensAt,
-            opensAt.AddHours(2)
+            opensAt.AddHours(2),
+            TimeZoneInfo.Utc
         );
 
         schedule.IsSuccess.Should().BeTrue();
         schedule.Value.SignupWindow.StartsAt.Should().Be(opensAt);
+    }
+
+    [Fact]
+    public void ScheduleCreateSignupClosingAfterLastLocalDayReturnsSignupEndsAfterEvent()
+    {
+        var closesAt = new DateTimeOffset(2026, 8, 4, 0, 30, 0, PlusTwoOffset);
+
+        var schedule = EventSchedule.Create(
+            EventStart,
+            EventEnd,
+            null,
+            SignupStart,
+            closesAt,
+            PlusTwo
+        );
+
+        schedule.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventSignupEndsAfterEvent);
+    }
+
+    [Fact]
+    public void ScheduleCreateSignupOpeningAfterLastLocalDayReturnsInvalidRange()
+    {
+        var opensAt = new DateTimeOffset(2026, 8, 4, 0, 30, 0, PlusTwoOffset);
+
+        var schedule = EventSchedule.Create(
+            EventStart,
+            EventEnd,
+            null,
+            opensAt,
+            opensAt.AddMinutes(30),
+            PlusTwo
+        );
+
+        schedule.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventScheduleInvalidRange);
+    }
+
+    [Fact]
+    public void ScheduleCreateSignupClosingOnLastLocalDayAfterUtcMidnightSucceeds()
+    {
+        var minusFive = TimeSpan.FromHours(-5);
+        var zone = TimeZoneInfo.CreateCustomTimeZone("Test", minusFive, "Test", "Test");
+        var closesAt = new DateTimeOffset(2026, 8, 3, 22, 0, 0, minusFive);
+
+        var schedule = EventSchedule.Create(
+            EventStart,
+            EventEnd,
+            null,
+            SignupStart,
+            closesAt,
+            zone
+        );
+
+        schedule.IsSuccess.Should().BeTrue();
+        schedule
+            .Value.SignupWindow.EndsAt.Should()
+            .BeExactly(new DateTimeOffset(2026, 8, 4, 3, 0, 0, TimeSpan.Zero));
     }
 
     [Fact]
@@ -224,7 +314,8 @@ public sealed class EventTests
                 EventEnd,
                 new DateTimeOffset(2026, 6, 20, 12, 0, 0, offset),
                 new DateTimeOffset(2026, 7, 1, 9, 0, 0, offset),
-                new DateTimeOffset(2026, 7, 20, 23, 30, 0, offset)
+                new DateTimeOffset(2026, 7, 20, 23, 30, 0, offset),
+                TimeZoneInfo.Utc
             )
             .Value;
 
@@ -467,7 +558,8 @@ public sealed class EventTests
                 new DateOnly(2026, 9, 2),
                 null,
                 new DateTimeOffset(2026, 8, 1, 0, 0, 0, TimeSpan.Zero),
-                new DateTimeOffset(2026, 8, 20, 0, 0, 0, TimeSpan.Zero)
+                new DateTimeOffset(2026, 8, 20, 0, 0, 0, TimeSpan.Zero),
+                TimeZoneInfo.Utc
             )
             .Value;
 

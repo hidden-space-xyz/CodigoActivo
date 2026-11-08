@@ -495,7 +495,14 @@ public sealed class DemoDataSeeder(
                     NewFile(files, now)
                 ),
                 EventSchedule
-                    .Create(start, end, earlySignupOpensAt, signupOpensAt, signupClosesAt)
+                    .Create(
+                        start,
+                        end,
+                        earlySignupOpensAt,
+                        signupOpensAt,
+                        signupClosesAt,
+                        clock.TimeZone
+                    )
                     .Value,
                 EventCategorySelection
                     .Create(ResolveCategoryIds(seed.Categories, categoryIdByName))

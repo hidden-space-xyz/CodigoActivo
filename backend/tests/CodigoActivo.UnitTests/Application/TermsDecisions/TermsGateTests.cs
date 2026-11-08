@@ -56,7 +56,8 @@ public sealed class TermsGateTests
                     new DateOnly(2026, 7, 31),
                     null,
                     OpenStart,
-                    OpenEnd
+                    OpenEnd,
+                    TimeZoneInfo.Utc
                 )
                 .Value,
             EventCategorySelection.Create([EventCategoryTypeId.From(Guid.NewGuid())]).Value,
