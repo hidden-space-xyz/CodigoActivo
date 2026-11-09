@@ -1,6 +1,5 @@
 using System.Linq.Expressions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
-using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Reports.Contracts;
 
 namespace CodigoActivo.Application.Reports;

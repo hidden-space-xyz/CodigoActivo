@@ -7,6 +7,7 @@ using CodigoActivo.Application.TermsDocuments.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.UnitTests.Application.Events;
+using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
 using TermsDocumentKind = CodigoActivo.Application.Abstractions.Querying.ReadModel.TermsDocumentKind;
@@ -38,8 +39,7 @@ public sealed class CreateTermsDocumentCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ApplicationErrorCode.TermsDocumentNameAlreadyExists);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TermsDocumentNameAlreadyExists);
         await termsDocuments
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<TermsDocument>(), TestContext.Current.CancellationToken);

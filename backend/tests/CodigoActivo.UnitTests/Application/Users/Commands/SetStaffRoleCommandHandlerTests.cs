@@ -74,8 +74,7 @@ public sealed class SetStaffRoleCommandHandlerTests
 
     private Task<int> AssertNotSavedAsync()
     {
-        return uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        return uow.DidNotSaveAsync();
     }
 
     private ComposedAccountEmail RoleAlert(User user, AccountSecurityChange change)

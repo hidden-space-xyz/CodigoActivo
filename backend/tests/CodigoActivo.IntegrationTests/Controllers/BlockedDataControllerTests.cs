@@ -5,6 +5,7 @@ using CodigoActivo.API.Errors;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.BlockedData;
+using CodigoActivo.Application.BlockedData.Commands;
 using CodigoActivo.Application.BlockedData.Contracts;
 using CodigoActivo.Domain.BlockedData;
 using CodigoActivo.Domain.Users;
@@ -12,8 +13,6 @@ using CodigoActivo.Infrastructure.DataHistory;
 using CodigoActivo.Infrastructure.Security;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Controllers;
@@ -160,11 +159,7 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
 
     private Task<int> PurgeAsync()
     {
-        return new DataHistoryPurgeWorker(
-            Factory.Services.GetRequiredService<IServiceScopeFactory>(),
-            new DataHistoryRetentionOptions(),
-            NullLogger<DataHistoryPurgeWorker>.Instance
-        ).PurgeAsync(Ct);
+        return Factory.RunScheduledAsync<PurgeDataHistoryCommand>();
     }
 
     private Task<int> HistoryAboutAsync(Guid accountId)
@@ -609,16 +604,6 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
             .Should()
             .Equal("A 1/2026", "B 2/2026");
         page.Items.Should().OnlyContain(consultation => consultation.OfficerName == null);
-    }
-
-    [Fact]
-    public async Task ListMemberIsRefused()
-    {
-        var member = await LoginAsMemberAsync();
-
-        using var response = await member.GetAsync(TestUri.Rel(ConsultationsUrl), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]

@@ -7,12 +7,12 @@ using CodigoActivo.API.Participation.Contracts;
 using CodigoActivo.API.Users.Contracts;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Accounts.Passwords;
+using CodigoActivo.Application.BlockedData.Commands;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.DataHistory;
 using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Diagnostics;
@@ -194,13 +194,7 @@ public sealed class AuditTrailTests(CodigoActivoWebAppFactory factory)
     [Fact]
     public async Task ScheduledPurgeIsRecordedAsTheSystemOnlyWhenItRemovedSomething()
     {
-        var purger = new DataHistoryPurgeWorker(
-            Factory.Services.GetRequiredService<IServiceScopeFactory>(),
-            new DataHistoryRetentionOptions(),
-            NullLogger<DataHistoryPurgeWorker>.Instance
-        );
-
-        await purger.PurgeAsync(Ct);
+        await Factory.RunScheduledAsync<PurgeDataHistoryCommand>();
         Factory.Audit.Records.Should().BeEmpty();
 
         await Factory.SeedAsync(db =>
@@ -216,7 +210,7 @@ public sealed class AuditTrailTests(CodigoActivoWebAppFactory factory)
             );
             return Task.CompletedTask;
         });
-        await purger.PurgeAsync(Ct);
+        await Factory.RunScheduledAsync<PurgeDataHistoryCommand>();
 
         var record = Factory.Audit.Records.Should().ContainSingle().Subject;
         record.Action.Should().Be(AuditAction.PurgeDataHistory);

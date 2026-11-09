@@ -1,11 +1,8 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using CodigoActivo.Application.Abstractions.Email;
-using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Common.Diagnostics;
-using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using Microsoft.Extensions.Logging;
 

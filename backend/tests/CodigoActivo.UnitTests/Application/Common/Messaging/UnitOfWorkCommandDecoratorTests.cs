@@ -4,6 +4,7 @@ using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Messaging;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
 
@@ -51,8 +52,7 @@ public sealed class UnitOfWorkCommandDecoratorTests
         var result = await HandleAsync(answer);
 
         result.Should().BeSameAs(answer);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     private sealed record TestCommand<TResult> : ICommand<TResult>

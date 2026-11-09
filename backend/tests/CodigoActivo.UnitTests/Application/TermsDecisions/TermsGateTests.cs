@@ -319,8 +319,7 @@ public sealed class TermsGateTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.EventTermsAcceptanceRequired);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EventTermsAcceptanceRequired);
         stored.Accepted.Should().BeFalse();
         stored.DecidedAt.Should().Be(originalDecidedAt);
         await termsAcceptances
@@ -345,8 +344,7 @@ public sealed class TermsGateTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.EventTermsAcceptanceRequired);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EventTermsAcceptanceRequired);
         await termsAcceptances
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
@@ -366,8 +364,7 @@ public sealed class TermsGateTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.EventTermsAcceptanceRequired);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EventTermsAcceptanceRequired);
         await termsAcceptances
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);

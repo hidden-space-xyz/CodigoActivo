@@ -1,4 +1,3 @@
-using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Domain.Activities;
 
 namespace CodigoActivo.Application.Activities.Signups;

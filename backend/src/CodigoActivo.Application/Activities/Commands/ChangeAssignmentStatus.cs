@@ -1,8 +1,4 @@
-using CodigoActivo.Application.Abstractions.Auditing;
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Domain.Activities;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities.Commands;

@@ -4,30 +4,6 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/vue-query';
-import type {
-  DataTag,
-  MutationFunction,
-  QueryClient,
-  QueryFunction,
-  QueryKey,
-  UseMutationOptions,
-  UseMutationReturnType,
-  UseQueryOptions,
-  UseQueryReturnType
-} from '@tanstack/vue-query';
-
-import {
-  toValue,
-  unref
-} from 'vue';
-import type {
-  MaybeRefOrGetter
-} from 'vue';
-
 import type {
   AssignedActivityResponse,
   ConfirmationCodeRequest,
@@ -40,11 +16,6 @@ import type {
 } from '../../models';
 
 import { httpClient } from '../../../http-client';
-
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
 
 export type getApiMeEventHistoryResponse200 = {
   data: EventHistoryResponse[]
@@ -78,54 +49,7 @@ export const getApiMeEventHistory = async ( options?: Parameters<typeof httpClie
 );}
 
 
-
-
-
-export const getGetApiMeEventHistoryMutationKey = () => ['getApiMeEventHistory'] as const;
-
-export const getGetApiMeEventHistoryMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeEventHistory>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiMeEventHistory>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiMeEventHistoryMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiMeEventHistory>>, void> = () => {
-
-
-          return  getApiMeEventHistory(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiMeEventHistoryMutationResult = NonNullable<Awaited<ReturnType<typeof getApiMeEventHistory>>>
-
-    export type GetApiMeEventHistoryMutationError = unknown
-
-
-    export const useGetApiMeEventHistory = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeEventHistory>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiMeEventHistory>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiMeEventHistoryMutationOptions(options), queryClient);
-    }
-    export type getApiMeCertificatesResponse200 = {
+export type getApiMeCertificatesResponse200 = {
   data: EventCertificateResponse[]
   status: 200
 }
@@ -157,54 +81,7 @@ export const getApiMeCertificates = async ( options?: Parameters<typeof httpClie
 );}
 
 
-
-
-
-export const getGetApiMeCertificatesMutationKey = () => ['getApiMeCertificates'] as const;
-
-export const getGetApiMeCertificatesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeCertificates>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiMeCertificates>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiMeCertificatesMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiMeCertificates>>, void> = () => {
-
-
-          return  getApiMeCertificates(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiMeCertificatesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiMeCertificates>>>
-
-    export type GetApiMeCertificatesMutationError = unknown
-
-
-    export const useGetApiMeCertificates = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeCertificates>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiMeCertificates>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiMeCertificatesMutationOptions(options), queryClient);
-    }
-    export type getApiMeConsentsResponse200 = {
+export type getApiMeConsentsResponse200 = {
   data: MyConsentResponse[]
   status: 200
 }
@@ -236,54 +113,7 @@ export const getApiMeConsents = async ( options?: Parameters<typeof httpClient>[
 );}
 
 
-
-
-
-export const getGetApiMeConsentsMutationKey = () => ['getApiMeConsents'] as const;
-
-export const getGetApiMeConsentsMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeConsents>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiMeConsents>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiMeConsentsMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiMeConsents>>, void> = () => {
-
-
-          return  getApiMeConsents(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiMeConsentsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiMeConsents>>>
-
-    export type GetApiMeConsentsMutationError = unknown
-
-
-    export const useGetApiMeConsents = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeConsents>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiMeConsents>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiMeConsentsMutationOptions(options), queryClient);
-    }
-    export type getApiMeAssignedActivitiesResponse200 = {
+export type getApiMeAssignedActivitiesResponse200 = {
   data: AssignedActivityResponse[]
   status: 200
 }
@@ -322,54 +152,7 @@ export const getApiMeAssignedActivities = async (params?: GetApiMeAssignedActivi
 );}
 
 
-
-
-
-export const getGetApiMeAssignedActivitiesMutationKey = () => ['getApiMeAssignedActivities'] as const;
-
-export const getGetApiMeAssignedActivitiesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, TError,GetApiMeAssignedActivitiesMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, TError,GetApiMeAssignedActivitiesMutationVariables, TContext> => {
-
-const mutationKey = getGetApiMeAssignedActivitiesMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, GetApiMeAssignedActivitiesMutationVariables> = (props) => {
-          const {params} = props ?? {};
-
-          return  getApiMeAssignedActivities(params,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiMeAssignedActivitiesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiMeAssignedActivities>>>
-
-    export type GetApiMeAssignedActivitiesMutationError = unknown
-    export type GetApiMeAssignedActivitiesMutationVariables = {params?: GetApiMeAssignedActivitiesParams}
-
-    export const useGetApiMeAssignedActivities = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMeAssignedActivities>>, TError,GetApiMeAssignedActivitiesMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiMeAssignedActivities>>,
-        TError,
-        GetApiMeAssignedActivitiesMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiMeAssignedActivitiesMutationOptions(options), queryClient);
-    }
-    export type postApiMeDeletionResponse200 = {
+export type postApiMeDeletionResponse200 = {
   data: void
   status: 200
 }
@@ -415,58 +198,6 @@ return httpClient<postApiMeDeletionResponse>(getPostApiMeDeletionUrl(),
 );}
 
 
-
-
-
-export const getPostApiMeDeletionQueryKey = (deleteAccountRequest?: MaybeRefOrGetter<DeleteAccountRequest>,) => {
-    return [
-    'POST', 'api','me','deletion', deleteAccountRequest
-    ] as const;
-    }
-
-
-export const getPostApiMeDeletionQueryOptions = <TData = Awaited<ReturnType<typeof postApiMeDeletion>>, TError = unknown>(deleteAccountRequest?: MaybeRefOrGetter<DeleteAccountRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiMeDeletion>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiMeDeletionQueryKey(deleteAccountRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiMeDeletion>>> = ({ signal }) => postApiMeDeletion(toValue(deleteAccountRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiMeDeletion>>, TError, TData>
-}
-
-export type PostApiMeDeletionQueryResult = NonNullable<Awaited<ReturnType<typeof postApiMeDeletion>>>
-export type PostApiMeDeletionQueryError = unknown
-
-
-
-export function usePostApiMeDeletion<TData = Awaited<ReturnType<typeof postApiMeDeletion>>, TError = unknown>(
- deleteAccountRequest?: MaybeRefOrGetter<DeleteAccountRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiMeDeletion>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiMeDeletionQueryOptions(deleteAccountRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type getApiMePersonalDataResponse200 = {
   data: PersonalDataResponse
   status: 200
@@ -499,54 +230,7 @@ export const getApiMePersonalData = async ( options?: Parameters<typeof httpClie
 );}
 
 
-
-
-
-export const getGetApiMePersonalDataMutationKey = () => ['getApiMePersonalData'] as const;
-
-export const getGetApiMePersonalDataMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMePersonalData>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiMePersonalData>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiMePersonalDataMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiMePersonalData>>, void> = () => {
-
-
-          return  getApiMePersonalData(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiMePersonalDataMutationResult = NonNullable<Awaited<ReturnType<typeof getApiMePersonalData>>>
-
-    export type GetApiMePersonalDataMutationError = unknown
-
-
-    export const useGetApiMePersonalData = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiMePersonalData>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiMePersonalData>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiMePersonalDataMutationOptions(options), queryClient);
-    }
-    export type postApiMeConfirmationCodeResponse200 = {
+export type postApiMeConfirmationCodeResponse200 = {
   data: void
   status: 200
 }
@@ -590,57 +274,5 @@ return httpClient<postApiMeConfirmationCodeResponse>(getPostApiMeConfirmationCod
     body: JSON.stringify(confirmationCodeRequest)
   }
 );}
-
-
-
-
-
-export const getPostApiMeConfirmationCodeQueryKey = (confirmationCodeRequest?: MaybeRefOrGetter<ConfirmationCodeRequest>,) => {
-    return [
-    'POST', 'api','me','confirmation-code', confirmationCodeRequest
-    ] as const;
-    }
-
-
-export const getPostApiMeConfirmationCodeQueryOptions = <TData = Awaited<ReturnType<typeof postApiMeConfirmationCode>>, TError = unknown>(confirmationCodeRequest?: MaybeRefOrGetter<ConfirmationCodeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiMeConfirmationCode>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiMeConfirmationCodeQueryKey(confirmationCodeRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiMeConfirmationCode>>> = ({ signal }) => postApiMeConfirmationCode(toValue(confirmationCodeRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiMeConfirmationCode>>, TError, TData>
-}
-
-export type PostApiMeConfirmationCodeQueryResult = NonNullable<Awaited<ReturnType<typeof postApiMeConfirmationCode>>>
-export type PostApiMeConfirmationCodeQueryError = unknown
-
-
-
-export function usePostApiMeConfirmationCode<TData = Awaited<ReturnType<typeof postApiMeConfirmationCode>>, TError = unknown>(
- confirmationCodeRequest?: MaybeRefOrGetter<ConfirmationCodeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiMeConfirmationCode>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiMeConfirmationCodeQueryOptions(confirmationCodeRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 

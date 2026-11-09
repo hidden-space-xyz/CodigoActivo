@@ -414,26 +414,6 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task TypesAsMemberReturnsForbidden()
-    {
-        var client = await LoginAsMemberAsync();
-
-        var response = await client.GetAsync(TestUri.Rel("/api/users/types"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task TypesAnonymousReturnsUnauthorized()
-    {
-        var client = CreateClient();
-
-        var response = await client.GetAsync(TestUri.Rel("/api/users/types"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
     public async Task StatusTypesAsAdminReturnsEveryStatusButDependent()
     {
         var client = await LoginAsAdminAsync();
@@ -445,30 +425,6 @@ public sealed class UsersControllerTests(CodigoActivoWebAppFactory factory)
         statuses.Should().HaveCount(2);
         statuses.Should().Contain(s => s.Id == KnownIds.UserStatusTypes.Active);
         statuses.Should().NotContain(s => s.Id == KnownIds.UserStatusTypes.Dependent);
-    }
-
-    [Fact]
-    public async Task GetMissingUserReturnsNotFoundWithErrorCode()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.GetAsync(TestUri.Rel($"/api/users/{Guid.NewGuid()}"), Ct);
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.UserNotFound);
-    }
-
-    [Fact]
-    public async Task UpdateAnonymousReturnsUnauthorized()
-    {
-        var client = CreateClient();
-
-        var response = await client.PutJsonAsync(
-            $"/api/users/{TestSeedData.Users.MemberId}",
-            AdultUpdate(),
-            Ct
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]

@@ -134,8 +134,7 @@ public sealed class PasswordAttemptGuardTests
         );
 
         accepted.Should().BeTrue();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -179,8 +178,7 @@ public sealed class PasswordAttemptGuardTests
             _ = users.LockPasswordStateAsync(user, Arg.Any<CancellationToken>());
             _ = users.SavePasswordStateAsync(user, Arg.Any<CancellationToken>());
         });
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
         user.PullDomainEvents().Should().BeEmpty();
     }
 
@@ -228,8 +226,7 @@ public sealed class PasswordAttemptGuardTests
         await AssertPasswordStateSavedAsync(1);
         saved.Should().Equal(new PasswordLocked(user.Id));
         user.PullDomainEvents().Should().BeEmpty();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -293,8 +290,7 @@ public sealed class PasswordAttemptGuardTests
         withCorrect.Should().Be(withWrong).And.BeFalse();
         user.PasswordLockout.FailedAttempts.Should().Be(0);
         await AssertPasswordStateSavedAsync(0);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -346,8 +342,7 @@ public sealed class PasswordAttemptGuardTests
 
         accepted.Should().BeFalse();
         await AssertPasswordStateSavedAsync(0);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Theory]
@@ -369,8 +364,7 @@ public sealed class PasswordAttemptGuardTests
         user.PasswordLockout.FailedAttempts.Should().Be(0);
         user.PasswordLockout.IsLocked(clock.UtcNow).Should().BeFalse();
         await AssertPasswordStateSavedAsync(0);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -407,8 +401,7 @@ public sealed class PasswordAttemptGuardTests
 
         accepted.Should().BeFalse();
         await AssertPasswordStateSavedAsync(0);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Theory]
@@ -429,8 +422,7 @@ public sealed class PasswordAttemptGuardTests
         accepted.Should().BeFalse();
         user.PasswordLockout.FailedAttempts.Should().Be(0);
         await AssertPasswordStateSavedAsync(0);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -444,8 +436,7 @@ public sealed class PasswordAttemptGuardTests
 
         accepted.Should().BeFalse();
         await AssertPasswordStateSavedAsync(0);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]

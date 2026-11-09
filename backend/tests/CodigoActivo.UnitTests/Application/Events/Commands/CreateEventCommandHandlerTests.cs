@@ -69,8 +69,7 @@ public sealed class CreateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.TermsDocumentNotFound);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TermsDocumentNotFound);
     }
 
     [Fact]
@@ -93,8 +92,7 @@ public sealed class CreateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.EventTermsDocumentDuplicated);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventTermsDocumentDuplicated);
     }
 
     [Fact]
@@ -191,8 +189,7 @@ public sealed class CreateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.EventScheduleInvalidRange);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventScheduleInvalidRange);
     }
 
     [Fact]
@@ -230,8 +227,7 @@ public sealed class CreateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.EventSignupEndsAfterEvent);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventSignupEndsAfterEvent);
     }
 
     [Fact]
@@ -272,8 +268,7 @@ public sealed class CreateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.EventThumbnailNotFound);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EventThumbnailNotFound);
         await events
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<Event>(), TestContext.Current.CancellationToken);
@@ -291,8 +286,7 @@ public sealed class CreateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.EventCategoryTypeNotFound);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EventCategoryTypeNotFound);
     }
 
     [Fact]

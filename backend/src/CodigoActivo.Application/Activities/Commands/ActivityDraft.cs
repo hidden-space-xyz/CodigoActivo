@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.TermsDecisions;

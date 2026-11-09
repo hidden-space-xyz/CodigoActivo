@@ -1,6 +1,5 @@
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Accounts.SecondFactor;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Accounts.Notifications;

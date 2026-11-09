@@ -1,4 +1,3 @@
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Abstractions.Storage;
 using CodigoActivo.Application.Common.Diagnostics;
 using CodigoActivo.Domain.Files;

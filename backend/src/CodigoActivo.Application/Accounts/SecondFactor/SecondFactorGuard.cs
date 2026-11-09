@@ -1,6 +1,3 @@
-using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Accounts.SecondFactor;

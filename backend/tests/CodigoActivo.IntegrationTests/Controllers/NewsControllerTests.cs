@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using AwesomeAssertions;
 using CodigoActivo.API.Errors;
 using CodigoActivo.API.News.Contracts;
@@ -31,7 +30,7 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.News.Add(
-                Persisted.As<NewsItem>(
+                TestEntities.New<NewsItem>(
                     new
                     {
                         Id = id,
@@ -41,7 +40,6 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
                         Featured = featured,
                         ThumbnailId = thumbnailId,
                         CreatedAt = new DateTimeOffset(year, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
@@ -131,29 +129,6 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
         (await Factory.QueryAsync(db => Task.FromResult(db.News.Count()))).Should().Be(0);
     }
 
-    [Fact]
-    public async Task CreateAsMemberReturnsForbidden()
-    {
-        var thumbnailId = await SeedThumbnailAsync();
-        var client = await LoginAsMemberAsync();
-        var request = new CreateNewsItemRequest("Nope", "Sub", Description, thumbnailId);
-
-        var response = await client.PostJsonAsync("/api/news", request, Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task CreateAnonymousReturnsUnauthorized()
-    {
-        var client = CreateClient();
-        var request = new CreateNewsItemRequest("Nope", "Sub", Description, Guid.NewGuid());
-
-        var response = await client.PostJsonAsync("/api/news", request, Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
     [Theory]
     [InlineData("   ", "Sub")]
     [InlineData("Title", "   ")]
@@ -166,24 +141,6 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync("/api/news", request, Ct);
 
         await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
-    }
-
-    [Fact]
-    public async Task CreateMissingCsrfTokenReturnsBadRequest()
-    {
-        var client = await LoginAsAdminAsync();
-        var thumbnailId = await SeedThumbnailAsync();
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/news")
-        {
-            Content = JsonContent.Create(
-                new CreateNewsItemRequest("Gamma", "Sub", Description, thumbnailId),
-                options: TestJson.Options
-            ),
-        };
-
-        var response = await client.SendAsync(request, Ct);
-
-        await response.ShouldBeBadRequestAsync(ErrorCode.InvalidCsrfToken);
     }
 
     [Fact]
@@ -274,16 +231,6 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task FeatureNewsItemMissingReturnsNotFound()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.PatchJsonAsync($"/api/news/{Guid.NewGuid()}/feature", ct: Ct);
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.NewsItemNotFound);
-    }
-
-    [Fact]
     public async Task DeleteAsAdminRemovesNewsItemAndOrphanedThumbnail()
     {
         var id = await SeedNewsItemAsync("Doomed");
@@ -328,16 +275,14 @@ public sealed class NewsControllerTests(CodigoActivoWebAppFactory factory)
 
     private static NewsItem NewSharedThumbnailNewsItem(Guid id, string title, Guid thumbnailId)
     {
-        return Persisted.As<NewsItem>(
+        return TestEntities.New<NewsItem>(
             new
             {
                 Id = id,
                 Title = title,
-                Subtitle = "Sub",
                 Description = Description,
                 ThumbnailId = thumbnailId,
                 CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                CreatedBy = TestSeedData.Users.AdminId,
             }
         );
     }

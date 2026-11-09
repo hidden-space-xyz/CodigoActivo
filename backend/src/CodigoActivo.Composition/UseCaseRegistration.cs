@@ -56,6 +56,7 @@ public static class UseCaseRegistration
         services.AddScoped<IAuditSubject, AuditSubject>();
         services.AddScoped<AuditWriter>();
         services.AddScoped<ICommandScope, CommandScope>();
+        services.AddHostedService<ScheduledJobsWorker>();
 
         services.Decorate(typeof(ICommandHandler<,>), typeof(UnitOfWorkCommandDecorator<,>));
         services.Decorate(typeof(ICommandHandler<,>), typeof(ValidationCommandDecorator<,>));

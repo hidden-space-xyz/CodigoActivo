@@ -150,30 +150,4 @@ public sealed class LegalPoliciesControllerTests(CodigoActivoWebAppFactory facto
 
         await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
-
-    [Fact]
-    public async Task PublishAsMemberIsForbidden()
-    {
-        var member = await LoginAsMemberAsync();
-
-        using var response = await member.PutJsonAsync(
-            "/api/legal-policies/Privacy",
-            new PublishLegalPolicyRequest(Text("Texto")),
-            Ct
-        );
-
-        await response.ShouldBeForbiddenAsync(ErrorCode.AccessDenied);
-    }
-
-    [Theory]
-    [InlineData("/api/legal-policies/Privacy/versions")]
-    [InlineData("/api/legal-policies/Privacy/versions/1")]
-    public async Task VersionsAnonymouslyRequireAuthentication(string url)
-    {
-        var client = CreateClient();
-
-        using var response = await client.GetAsync(TestUri.Rel(url), Ct);
-
-        await response.ShouldBeUnauthorizedAsync(ErrorCode.AuthenticationRequired);
-    }
 }

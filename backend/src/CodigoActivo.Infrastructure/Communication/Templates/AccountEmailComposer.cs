@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Notifications;
 using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Application.Common;
+using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Infrastructure.Communication.Templates;
@@ -34,13 +35,17 @@ public sealed class AccountEmailComposer(ApplicationOptions application, IClock 
     )
     {
         ArgumentNullException.ThrowIfNull(recipient);
-        return VerificationEmail.Create(
-            recipient.Address,
-            recipient.Name,
-            BuildAccountUrl(VerificationPath, userId, code),
+        return ExpiringEmail.Create(
+            ExpiringEmail.Verification,
+            EmailKind.AccountVerification,
+            recipient,
+            EmailBlocks.Action(
+                AppStrings.EmailsVerificationButtonLabel,
+                BuildAccountUrl(VerificationPath, userId, code)
+            ),
             SiteUrl,
             lifetime,
-            newsConsent
+            newsConsent ? [EmailBlocks.Prose(AppStrings.EmailsVerificationNewsConsent)] : []
         );
     }
 
@@ -53,10 +58,14 @@ public sealed class AccountEmailComposer(ApplicationOptions application, IClock 
     )
     {
         ArgumentNullException.ThrowIfNull(recipient);
-        return EmailChangeEmail.Create(
-            recipient.Address,
-            recipient.Name,
-            BuildAccountUrl(EmailChangePath, userId, code),
+        return ExpiringEmail.Create(
+            ExpiringEmail.EmailChange,
+            EmailKind.AccountVerification,
+            recipient,
+            EmailBlocks.Action(
+                AppStrings.EmailsEmailChangeButtonLabel,
+                BuildAccountUrl(EmailChangePath, userId, code)
+            ),
             SiteUrl,
             lifetime
         );
@@ -83,10 +92,14 @@ public sealed class AccountEmailComposer(ApplicationOptions application, IClock 
     )
     {
         ArgumentNullException.ThrowIfNull(recipient);
-        return PasswordResetEmail.Create(
-            recipient.Address,
-            recipient.Name,
-            BuildAccountUrl(PasswordResetPath, userId, code),
+        return ExpiringEmail.Create(
+            ExpiringEmail.PasswordReset,
+            EmailKind.AccessRecovery,
+            recipient,
+            EmailBlocks.Action(
+                AppStrings.EmailsPasswordResetButtonLabel,
+                BuildAccountUrl(PasswordResetPath, userId, code)
+            ),
             SiteUrl,
             lifetime
         );
@@ -96,7 +109,14 @@ public sealed class AccountEmailComposer(ApplicationOptions application, IClock 
     public EmailMessage LoginCode(EmailRecipient recipient, string code, TimeSpan lifetime)
     {
         ArgumentNullException.ThrowIfNull(recipient);
-        return LoginCodeEmail.Create(recipient.Address, recipient.Name, code, SiteUrl, lifetime);
+        return ExpiringEmail.Create(
+            ExpiringEmail.LoginCode,
+            EmailKind.TwoFactorCode,
+            recipient,
+            EmailBlocks.Code(code),
+            SiteUrl,
+            lifetime
+        );
     }
 
     /// <inheritdoc />
@@ -108,11 +128,11 @@ public sealed class AccountEmailComposer(ApplicationOptions application, IClock 
     )
     {
         ArgumentNullException.ThrowIfNull(recipient);
-        return ConfirmationCodeEmail.Create(
-            recipient.Address,
-            recipient.Name,
-            purpose,
-            code,
+        return ExpiringEmail.Create(
+            ExpiringEmail.ConfirmationCode(purpose),
+            EmailKind.TwoFactorCode,
+            recipient,
+            EmailBlocks.Code(code),
             SiteUrl,
             lifetime
         );
@@ -126,10 +146,11 @@ public sealed class AccountEmailComposer(ApplicationOptions application, IClock 
     )
     {
         ArgumentNullException.ThrowIfNull(recipient);
-        return BlockedDataConsultationCodeEmail.Create(
-            recipient.Address,
-            recipient.Name,
-            code,
+        return ExpiringEmail.Create(
+            ExpiringEmail.BlockedDataConsultationCode,
+            EmailKind.TwoFactorCode,
+            recipient,
+            EmailBlocks.Code(code),
             SiteUrl,
             lifetime
         );

@@ -1,4 +1,3 @@
-using AwesomeAssertions;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.News.Queries;
 using CodigoActivo.Domain.Common;
@@ -26,8 +25,6 @@ public sealed class GetNewsItemByIdQueryHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.NewsItemNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.NewsItemNotFound);
     }
 }

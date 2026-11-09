@@ -173,8 +173,8 @@ neither Infrastructure nor EF Core) and further conventions over the compiled as
   only lock, read or write tables without history. The scheduled commands (`PurgeDataHistory`,
   `PurgeUnverifiedAccounts`, `PurgeAdultDependents`, `PurgeUnusedFiles`, `RemoveExpiredSessions`,
   `DiscardExpiredAccountChanges` and `SendComingOfAgeNotices`) apply the retentions [SECURITY.md](SECURITY.md)
-  states, erasing accounts through `AccountEraser` and uploads through `IOrphanFileCleaner`; hosted services in
-  Infrastructure only run them on a schedule. What the history holds, how long it is kept and who reads it is in
+  states, erasing accounts through `AccountEraser` and uploads through `IOrphanFileCleaner`; `ScheduledJobsWorker` only runs
+  them on the schedule each feature registers (`ScheduledJob`). What the history holds, how long it is kept and who reads it is in
   [SECURITY.md](SECURITY.md#data-history).
 - Technical ports (`IClock`, `IPasswordHasher`, `IOneTimeCodeHasher`, `ITotpService`, `ISecretProtector`,
   `IFileStorage`, `IAuditTrail`, `IRequestOrigin`, the email, persistence and read ports) live in
@@ -380,7 +380,7 @@ same topic and address, and how long a code is worth with `ValidFor`. A backgrou
 session per run (`SmtpEmailSender`), paced by `EmailDeliveryPacer` and with retries, pauses and expiry by the
 fault `EmailDeliveryException` names. The notices to the legal contact are scheduled commands
 (`SendConsentWithdrawalNotices`,
-`SendBlockedDataConsultationNotices`, run by `LegalNoticeWorker`) that ask `IPendingEmails` whether their last
+`SendBlockedDataConsultationNotices`, run every minute by `ScheduledJobsWorker`) that ask `IPendingEmails` whether their last
 summary is still waiting. The send commands (`SendEmailToUsers`,
 `SendEmailToEventAttendees`) and the audience-preview queries in `Application/Emails/Queries` share recipient
 selection through `ManualEmailAudience`, so a preview always matches what the corresponding send would reach;

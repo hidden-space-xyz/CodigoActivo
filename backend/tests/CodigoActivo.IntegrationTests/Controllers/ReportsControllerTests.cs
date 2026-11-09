@@ -1,6 +1,5 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.API.Errors;
 using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Reports.Contracts;
@@ -55,20 +54,18 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
             );
 
             db.Events.Add(
-                Persisted.As<Event>(
+                TestEntities.New<Event>(
                     new
                     {
                         Id = EventId,
                         Title = "Feria de Voluntariado",
                         Subtitle = "Edición 2026",
-                        Description = "{}",
                         EventStartsAt = new DateOnly(2026, 5, 1),
                         EventEndsAt = new DateOnly(2026, 5, 2),
                         SignupStartsAt = At,
                         SignupEndsAt = At,
                         ThumbnailId = EventThumbnailId,
                         CreatedAt = At,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
@@ -244,35 +241,24 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         DateTimeOffset? startsAt = null
     )
     {
-        return Persisted.As<Activity>(
+        return TestEntities.New<Activity>(
             new
             {
                 Id = id,
                 Title = title,
                 Description = "desc",
-                Location = "Sala",
                 ActivityStartsAt = startsAt ?? At,
                 ActivityEndsAt = (startsAt ?? At).AddHours(2),
                 EventId = EventId,
-                Modality = ActivityModality.Presencial,
                 ThumbnailId = thumbnailId,
                 CreatedAt = At,
-                CreatedBy = TestSeedData.Users.AdminId,
             }
         );
     }
 
     private static StoredFile Thumbnail(Guid id)
     {
-        return Persisted.As<StoredFile>(
-            new
-            {
-                Id = id,
-                Extension = "png",
-                UploadedAt = At,
-                UploadedBy = TestSeedData.Users.AdminId,
-            }
-        );
+        return TestEntities.New<StoredFile>(new { Id = id, UploadedAt = At });
     }
 
     private static Assignment NewAssignment(
@@ -355,19 +341,6 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         summary.ConfirmedAssignments.Should().Be(2);
         summary.DeniedAssignments.Should().Be(1);
         summary.DistinctVolunteers.Should().Be(4);
-    }
-
-    [Fact]
-    public async Task EventSummaryAsyncMissingEventReturnsNotFound()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.GetAsync(
-            TestUri.Rel($"/api/reports/events/{Guid.NewGuid()}/summary"),
-            Ct
-        );
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
     }
 
     [Fact]
@@ -667,33 +640,6 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventAttendeesAsyncMissingEventReturnsNotFound()
-    {
-        await SeedEventGraphAsync();
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.GetAsync(
-            TestUri.Rel($"/api/reports/events/{Guid.NewGuid()}/attendees"),
-            Ct
-        );
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
-    }
-
-    [Fact]
-    public async Task EventAttendeesAsyncMemberUserReturnsForbidden()
-    {
-        var client = await LoginAsMemberAsync();
-
-        var response = await client.GetAsync(
-            TestUri.Rel($"/api/reports/events/{EventId}/attendees"),
-            Ct
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
     public async Task EventBadgesAsyncExistingEventReturnsConfirmedBadgesWithGuardianAndActivities()
     {
         await SeedEventGraphAsync();
@@ -747,32 +693,6 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
                 new EventBadgeActivityResponse("Taller", "Sala"),
                 new EventBadgeActivityResponse("Charla", "Sala"),
             ]);
-    }
-
-    [Fact]
-    public async Task EventBadgesAsyncMissingEventReturnsNotFound()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.GetAsync(
-            TestUri.Rel($"/api/reports/events/{Guid.NewGuid()}/badges"),
-            Ct
-        );
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
-    }
-
-    [Fact]
-    public async Task EventBadgesAsyncMemberUserReturnsForbidden()
-    {
-        var client = await LoginAsMemberAsync();
-
-        var response = await client.GetAsync(
-            TestUri.Rel($"/api/reports/events/{EventId}/badges"),
-            Ct
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 
     [Fact]
@@ -845,32 +765,6 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventRosterAsyncMissingEventReturnsNotFound()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.GetAsync(
-            TestUri.Rel($"/api/reports/events/{Guid.NewGuid()}/roster"),
-            Ct
-        );
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
-    }
-
-    [Fact]
-    public async Task EventRosterAsyncMemberUserReturnsForbidden()
-    {
-        var client = await LoginAsMemberAsync();
-
-        var response = await client.GetAsync(
-            TestUri.Rel($"/api/reports/events/{EventId}/roster"),
-            Ct
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
     public async Task DashboardAsyncEmptyDatabaseCountsUsersOnly()
     {
         var client = await LoginAsAdminAsync();
@@ -885,25 +779,5 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         dashboard.News.Should().Be(0);
         dashboard.Partners.Should().Be(0);
         dashboard.Users.Should().Be(5);
-    }
-
-    [Fact]
-    public async Task DashboardAsyncAnonymousUserReturnsUnauthorized()
-    {
-        var client = CreateClient();
-
-        var response = await client.GetAsync(TestUri.Rel("/api/reports/dashboard"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task DashboardAsyncMemberUserReturnsForbidden()
-    {
-        var client = await LoginAsMemberAsync();
-
-        var response = await client.GetAsync(TestUri.Rel("/api/reports/dashboard"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 }

@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Storage;
 using CodigoActivo.Application.Files;
+using CodigoActivo.Application.Files.Commands;
 using CodigoActivo.Application.Reports;
 using CodigoActivo.Composition.Configuration;
 using CodigoActivo.Domain.Files;
@@ -9,6 +10,7 @@ using CodigoActivo.Domain.Resources;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Repositories;
 using CodigoActivo.Infrastructure.Files;
+using CodigoActivo.Infrastructure.Messaging;
 using CodigoActivo.Infrastructure.News;
 using CodigoActivo.Infrastructure.Partners;
 using CodigoActivo.Infrastructure.Reports;
@@ -42,8 +44,7 @@ internal static class ContentRegistration
         services.AddScoped<FileUploadValidator>();
         services.AddSingleton<IImageProcessor, VipsImageProcessor>();
         services.AddScoped<IOrphanFileCleaner, OrphanFileCleaner>();
-        services.AddFixedOptions<UnusedFilePurgeOptions>();
-        services.AddHostedService<UnusedFilePurgeWorker>();
+        services.AddSingleton(ScheduledJob.Of<PurgeUnusedFilesCommand>(TimeSpan.FromHours(1)));
         return services;
     }
 }

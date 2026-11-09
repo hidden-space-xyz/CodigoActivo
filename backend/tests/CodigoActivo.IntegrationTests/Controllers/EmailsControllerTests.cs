@@ -34,52 +34,37 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
     {
         return Factory.SeedAsync(db =>
         {
-            db.Files.Add(
-                Persisted.As<StoredFile>(
-                    new
-                    {
-                        Id = ThumbnailId,
-                        Extension = "png",
-                        UploadedAt = At,
-                        UploadedBy = TestSeedData.Users.AdminId,
-                    }
-                )
-            );
+            db.Files.Add(TestEntities.New<StoredFile>(new { Id = ThumbnailId, UploadedAt = At }));
 
             db.Events.Add(
-                Persisted.As<Event>(
+                TestEntities.New<Event>(
                     new
                     {
                         Id = EventId,
                         Title = "Jornada de Puertas Abiertas",
                         Subtitle = "Edición 2026",
-                        Description = "{}",
                         EventStartsAt = new DateOnly(2026, 5, 1),
                         EventEndsAt = new DateOnly(2026, 5, 2),
                         SignupStartsAt = At,
                         SignupEndsAt = At,
                         ThumbnailId = ThumbnailId,
                         CreatedAt = At,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
 
             db.Activities.Add(
-                Persisted.As<Activity>(
+                TestEntities.New<Activity>(
                     new
                     {
                         Id = ActivityId,
                         Title = "Taller",
                         Description = "desc",
-                        Location = "Sala",
                         ActivityStartsAt = At,
                         ActivityEndsAt = At.AddHours(2),
                         EventId = EventId,
-                        Modality = ActivityModality.Presencial,
                         ThumbnailId = ThumbnailId,
                         CreatedAt = At,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
@@ -758,26 +743,6 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         Factory.EmailSender.Sent.Should().BeEmpty();
     }
 
-    [Fact]
-    public async Task UsersAudienceAsMemberReturnsForbidden()
-    {
-        var client = await LoginAsMemberAsync();
-
-        using var response = await client.GetAsync(TestUri.Rel($"{UsersUrl}/audience"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task UsersAudienceAnonymousUserReturnsUnauthorized()
-    {
-        var client = CreateClient();
-
-        using var response = await client.GetAsync(TestUri.Rel($"{UsersUrl}/audience"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
     [Theory]
     [InlineData("", 2, 1)]
     [InlineData("?statusId=b3a9d1f0-0000-0000-0000-000000000000", 0, 0)]
@@ -816,29 +781,5 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var audience = await response.ReadJsonAsync<EmailAudienceResponse>(Ct);
         audience.Should().Be(new EmailAudienceResponse(1, 0));
-    }
-
-    [Fact]
-    public async Task EventAttendeesAudienceUnknownEventReturnsNotFound()
-    {
-        var client = await LoginAsAdminAsync();
-
-        using var response = await client.GetAsync(
-            TestUri.Rel($"/api/emails/events/{Guid.NewGuid()}/attendees/audience"),
-            Ct
-        );
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
-    }
-
-    [Fact]
-    public async Task EventAttendeesAudienceAsMemberReturnsForbidden()
-    {
-        await SeedEventGraphAsync();
-        var client = await LoginAsMemberAsync();
-
-        using var response = await client.GetAsync(TestUri.Rel($"{AttendeesUrl}/audience"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 }

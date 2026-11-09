@@ -1,8 +1,10 @@
 using System.Net;
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Application.Common;
 using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.UnitTests.TestSupport;
 using Xunit;
@@ -12,6 +14,13 @@ namespace CodigoActivo.UnitTests.Infrastructure.Communication.Templates;
 public sealed class EmailLayoutContractTests
 {
     private const string Site = "https://app.test";
+
+    private static readonly EmailRecipient Ada = new("ada@test.com", "Ada");
+
+    private static readonly AccountEmailComposer Accounts = new(
+        new ApplicationOptions { BaseUrl = Site },
+        new TestClock()
+    );
 
     private static readonly ActivityEmailDetails Details = new(
         "Taller de robótica",
@@ -100,36 +109,27 @@ public sealed class EmailLayoutContractTests
     {
         return name switch
         {
-            "verification" => VerificationEmail.Create(
-                "ada@test.com",
-                "Ada",
-                $"{Site}/verify-account",
-                Site,
+            "verification" => Accounts.AccountVerification(
+                Ada,
+                UserId.New(),
+                "482913",
                 TimeSpan.FromMinutes(15),
                 newsConsent: true
             ),
-            "emailChange" => EmailChangeEmail.Create(
-                "ada@test.com",
-                string.Empty,
-                $"{Site}/confirm-email",
-                Site,
+            "emailChange" => Accounts.EmailChangeConfirmation(
+                new EmailRecipient("ada@test.com", string.Empty),
+                UserId.New(),
+                "482913",
                 TimeSpan.FromMinutes(15)
             ),
             "emailInUse" => EmailInUseEmail.Create("ada@test.com", "Ada", $"{Site}/login", Site),
-            "passwordReset" => PasswordResetEmail.Create(
-                "ada@test.com",
-                "Ada",
-                $"{Site}/reset-password",
-                Site,
+            "passwordReset" => Accounts.PasswordReset(
+                Ada,
+                UserId.New(),
+                "482913",
                 TimeSpan.FromMinutes(30)
             ),
-            "loginCode" => LoginCodeEmail.Create(
-                "ada@test.com",
-                "Ada",
-                "482913",
-                Site,
-                TimeSpan.FromMinutes(10)
-            ),
+            "loginCode" => Accounts.LoginCode(Ada, "482913", TimeSpan.FromMinutes(10)),
             "decisionConfirmed" => ActivitySignupDecisionEmail.Confirmed(
                 "ada@test.com",
                 "Ada",

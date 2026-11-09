@@ -1,11 +1,4 @@
-using CodigoActivo.Application.Abstractions.Auditing;
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Security;
-using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Files;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.TermsDocuments;

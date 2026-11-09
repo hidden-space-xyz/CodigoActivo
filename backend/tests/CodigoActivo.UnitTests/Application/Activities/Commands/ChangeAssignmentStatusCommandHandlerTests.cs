@@ -114,8 +114,7 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
             new ChangeAssignmentStatusRequest(KnownIds.AssignmentStatusTypes.Confirmed)
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityAssignmentNotFound);
+        result.ShouldFail(ErrorKind.NotFound, DomainErrorCode.ActivityAssignmentNotFound);
     }
 
     [Fact]

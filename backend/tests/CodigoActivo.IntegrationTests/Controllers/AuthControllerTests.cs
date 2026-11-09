@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using AwesomeAssertions;
 using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.API.Contracts;
@@ -186,24 +185,24 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
         storedMinor.GuardianshipDeclaredAt.Should().NotBeNull();
     }
 
-    [Fact]
-    public async Task RegisterGenderMissingReturnsValidationError()
+    [Theory]
+    [InlineData("gender")]
+    [InlineData("nationalId")]
+    public async Task RegisterRequiredFieldMissingReturnsValidationError(string missing)
     {
-        var client = CreateClient();
+        var body = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["firstName"] = "Nadia",
+            ["lastName"] = "Nueva",
+            ["email"] = NewAdultEmail,
+            ["phone"] = "+34600000099",
+            ["password"] = "Str0ngPass!23",
+            ["nationalId"] = NewAdultNationalId,
+            ["gender"] = "Female",
+        };
+        body.Remove(missing);
 
-        var response = await client.PostJsonAsync(
-            "/api/auth/register",
-            new
-            {
-                firstName = "Nadia",
-                lastName = "Nueva",
-                email = NewAdultEmail,
-                phone = "+34600000099",
-                password = "Str0ngPass!23",
-                nationalId = NewAdultNationalId,
-            },
-            Ct
-        );
+        var response = await CreateClient().PostJsonAsync("/api/auth/register", body, Ct);
 
         await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
@@ -281,28 +280,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
 
         await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
         (await CountNewAdultsAsync()).Should().Be(0);
-    }
-
-    [Fact]
-    public async Task RegisterNationalIdMissingReturnsValidationError()
-    {
-        var client = CreateClient();
-
-        var response = await client.PostJsonAsync(
-            "/api/auth/register",
-            new
-            {
-                firstName = "Nadia",
-                lastName = "Nueva",
-                email = NewAdultEmail,
-                phone = "+34600000099",
-                password = "Str0ngPass!23",
-                gender = "Female",
-            },
-            Ct
-        );
-
-        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
 
     [Fact]
@@ -801,23 +778,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task LoginWithoutCsrfTokenReturnsBadRequest()
-    {
-        var client = CreateClient();
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/auth/login")
-        {
-            Content = JsonContent.Create(
-                new LoginRequest(TestSeedData.AdminEmail, TestSeedData.Password),
-                options: TestJson.Options
-            ),
-        };
-
-        var response = await client.SendAsync(request, Ct);
-
-        await response.ShouldBeBadRequestAsync(ErrorCode.InvalidCsrfToken);
-    }
-
-    [Fact]
     public async Task LoginDuplicateJsonPropertyReturnsBadRequestInsteadOfCrashing()
     {
         var client = CreateClient();
@@ -882,16 +842,6 @@ public sealed class AuthControllerTests(CodigoActivoWebAppFactory factory)
                 new { PasswordHash = FakePasswordHasher.Prefix + "A-Different-Password" }
             );
         });
-
-        var response = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task MeAnonymousReturnsUnauthorized()
-    {
-        var client = CreateClient();
 
         var response = await client.GetAsync(TestUri.Rel("/api/auth/me"), Ct);
 

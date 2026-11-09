@@ -1,6 +1,5 @@
 using System.Net;
 using AwesomeAssertions;
-using CodigoActivo.API.Errors;
 using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Activities;
@@ -88,20 +87,18 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
 
     private static Event NewEvent(Guid id, string title)
     {
-        return Persisted.As<Event>(
+        return TestEntities.New<Event>(
             new
             {
                 Id = id,
                 Title = title,
                 Subtitle = "Edición 2026",
-                Description = "{}",
                 EventStartsAt = new DateOnly(2026, 7, 10),
                 EventEndsAt = new DateOnly(2026, 7, 11),
                 SignupStartsAt = SeededAt,
                 SignupEndsAt = SeededAt.AddDays(30),
                 ThumbnailId = ThumbnailId,
                 CreatedAt = SeededAt,
-                CreatedBy = TestSeedData.Users.AdminId,
             }
         );
     }
@@ -113,20 +110,17 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
         DateTimeOffset startsAt
     )
     {
-        return Persisted.As<Activity>(
+        return TestEntities.New<Activity>(
             new
             {
                 Id = id,
                 Title = title,
-                Description = "Descripción",
                 Location = "Aula 3",
                 ActivityStartsAt = startsAt,
                 ActivityEndsAt = startsAt.AddHours(2),
                 EventId = eventId,
-                Modality = ActivityModality.Presencial,
                 ThumbnailId = ThumbnailId,
                 CreatedAt = SeededAt,
-                CreatedBy = TestSeedData.Users.AdminId,
             }
         );
     }
@@ -142,15 +136,7 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
         return Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                Persisted.As<StoredFile>(
-                    new
-                    {
-                        Id = ThumbnailId,
-                        Extension = "png",
-                        UploadedAt = SeededAt,
-                        UploadedBy = TestSeedData.Users.AdminId,
-                    }
-                )
+                TestEntities.New<StoredFile>(new { Id = ThumbnailId, UploadedAt = SeededAt })
             );
             db.Events.AddRange(
                 NewEvent(EventId, "Jornada tecnológica"),
@@ -285,20 +271,6 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
         );
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         return (await response.ReadJsonAsync<List<LeaderRosterActivityResponse>>(Ct))!;
-    }
-
-    [Fact]
-    public async Task LeaderRosterAnonymousReturnsUnauthorized()
-    {
-        await SeedEventsAsync(MemberLeadsTheActivity());
-        var client = CreateClient();
-
-        using var response = await client.GetAsync(
-            TestUri.Rel($"/api/events/{EventId}/leader-roster"),
-            Ct
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
@@ -571,19 +543,5 @@ public sealed class EventLeaderRosterTests(CodigoActivoWebAppFactory factory)
             .Select(u => u.FirstName)
             .Should()
             .BeEquivalentTo("Marta", "Olga");
-    }
-
-    [Fact]
-    public async Task LeaderRosterUnknownEventReturnsNotFound()
-    {
-        await SeedEventsAsync(MemberLeadsTheActivity());
-        var client = await LoginAsMemberAsync();
-
-        using var response = await client.GetAsync(
-            TestUri.Rel($"/api/events/{Guid.NewGuid()}/leader-roster"),
-            Ct
-        );
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
     }
 }

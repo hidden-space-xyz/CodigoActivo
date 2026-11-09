@@ -1,5 +1,4 @@
 using CodigoActivo.Application.Abstractions.Email;
-using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Diagnostics;
 using CodigoActivo.Domain.Activities;

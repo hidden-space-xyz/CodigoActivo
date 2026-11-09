@@ -49,37 +49,31 @@ public sealed class EmailGuardTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Events.Add(
-                Persisted.As<Event>(
+                TestEntities.New<Event>(
                     new
                     {
                         Id = eventId,
-                        Title = "Evento",
-                        Subtitle = "Sub",
                         EventStartsAt = new DateOnly(2026, 7, 1),
                         EventEndsAt = new DateOnly(2026, 7, 31),
                         SignupStartsAt = SignupStart,
                         SignupEndsAt = SignupEnd,
                         ThumbnailId = thumb,
                         CreatedAt = CreatedAt,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
             db.Activities.Add(
-                Persisted.As<Activity>(
+                TestEntities.New<Activity>(
                     new
                     {
                         Id = activityId,
                         Title = "Actividad",
                         Description = "Descripcion",
-                        Location = "Sala",
-                        Modality = ActivityModality.Presencial,
                         ActivityStartsAt = new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
                         ActivityEndsAt = new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
                         EventId = eventId,
                         ThumbnailId = thumb,
                         CreatedAt = CreatedAt,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );

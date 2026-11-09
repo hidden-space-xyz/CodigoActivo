@@ -9,6 +9,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile
+      Include="..\CodigoActivo.UnitTests\TestSupport\FakePasswordHasher.cs;..\CodigoActivo.UnitTests\TestSupport\FakeSecretProtector.cs;..\CodigoActivo.UnitTests\TestSupport\KnownIds.cs;..\CodigoActivo.UnitTests\TestSupport\Persisted.cs;..\CodigoActivo.UnitTests\TestSupport\TestClock.cs"
+      LinkBase="Infrastructure"
+    />
+    <Using Include="CodigoActivo.UnitTests.TestSupport" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\CodigoActivo.API\CodigoActivo.API.csproj" />
     <ProjectReference Include="..\..\src\CodigoActivo.Infrastructure\CodigoActivo.Infrastructure.csproj" />
   </ItemGroup>

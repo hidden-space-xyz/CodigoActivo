@@ -1,8 +1,5 @@
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.BlockedData.Contracts;
-using CodigoActivo.Application.Common.Querying;
 
 namespace CodigoActivo.Application.BlockedData.Queries;
 

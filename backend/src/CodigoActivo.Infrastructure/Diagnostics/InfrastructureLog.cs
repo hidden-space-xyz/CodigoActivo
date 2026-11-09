@@ -215,44 +215,20 @@ public static partial class InfrastructureLog
     public static partial void EmailRecipientTrackingSaturated(this ILogger logger, int limit);
 
     /// <summary>
-    /// Records that the periodic removal of expired session rows failed.
+    /// Records that a run of a scheduled job failed; what it had to do waits for the next run.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="exception">Failure that ended the run.</param>
+    /// <param name="useCase">Name of the job.</param>
     [LoggerMessage(
         Level = LogLevel.Error,
-        Message = "The expired session cleanup run failed; the next run will retry"
+        Message = "The scheduled {UseCase} run failed; the next run will retry"
     )]
-    public static partial void ExpiredSessionCleanupFailed(
+    public static partial void ScheduledJobFailed(
         this ILogger logger,
-        Exception exception
+        Exception exception,
+        string useCase
     );
-
-    /// <summary>
-    /// Records that the periodic removal of the expired email changes and authenticator
-    /// enrollments failed.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="exception">Failure that ended the run.</param>
-    [LoggerMessage(
-        Level = LogLevel.Error,
-        Message = "The expired account change cleanup run failed; the next run will retry"
-    )]
-    public static partial void ExpiredAccountChangeCleanupFailed(
-        this ILogger logger,
-        Exception exception
-    );
-
-    /// <summary>
-    /// Records that the periodic purge of the data history failed.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="exception">Failure that ended the run.</param>
-    [LoggerMessage(
-        Level = LogLevel.Error,
-        Message = "The data history purge run failed; the next run will retry"
-    )]
-    public static partial void DataHistoryPurgeFailed(this ILogger logger, Exception exception);
 
     /// <summary>
     /// Records that an entry of the data history could not be read: it could not be decrypted,
@@ -266,55 +242,6 @@ public static partial class InfrastructureLog
         Message = "A data history entry could not be decrypted; it was altered or its key was lost"
     )]
     public static partial void DataHistoryEntryUnreadable(this ILogger logger, Exception exception);
-
-    /// <summary>
-    /// Records that the periodic erasure of the accounts nobody verified in time failed.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="exception">Failure that ended the run.</param>
-    [LoggerMessage(
-        Level = LogLevel.Error,
-        Message = "The unverified account purge run failed; the next run will retry"
-    )]
-    public static partial void UnverifiedAccountPurgeFailed(
-        this ILogger logger,
-        Exception exception
-    );
-
-    /// <summary>
-    /// Records that the periodic erasure of the dependents who came of age, or the notices that
-    /// announce it, failed.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="exception">Failure that ended the run.</param>
-    [LoggerMessage(
-        Level = LogLevel.Error,
-        Message = "The adult dependent purge run failed; the next run will retry"
-    )]
-    public static partial void AdultDependentPurgeFailed(this ILogger logger, Exception exception);
-
-    /// <summary>
-    /// Records that the periodic notices to the association's legal contact failed; what they tell
-    /// keeps waiting for the next run.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="exception">Failure that ended the run.</param>
-    [LoggerMessage(
-        Level = LogLevel.Error,
-        Message = "The legal contact notice run failed; the next run will retry"
-    )]
-    public static partial void LegalNoticeRunFailed(this ILogger logger, Exception exception);
-
-    /// <summary>
-    /// Records that the periodic deletion of the uploads no content used in time failed.
-    /// </summary>
-    /// <param name="logger">Logger used to record operational diagnostics.</param>
-    /// <param name="exception">Failure that ended the run.</param>
-    [LoggerMessage(
-        Level = LogLevel.Error,
-        Message = "The unused upload purge run failed; the next run will retry"
-    )]
-    public static partial void UnusedFilePurgeFailed(this ILogger logger, Exception exception);
 
     /// <summary>
     /// Records that the partitions of the log tables could not be prepared or purged, which leaves

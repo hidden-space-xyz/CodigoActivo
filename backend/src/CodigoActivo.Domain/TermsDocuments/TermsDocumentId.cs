@@ -1,5 +1,3 @@
-using CodigoActivo.Domain.Common;
-
 namespace CodigoActivo.Domain.TermsDocuments;
 
 /// <summary>

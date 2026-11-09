@@ -78,8 +78,7 @@ public sealed class CreateActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.EventNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventNotFound);
     }
 
     [Fact]
@@ -103,8 +102,7 @@ public sealed class CreateActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityScheduleRequired);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityScheduleRequired);
     }
 
     [Fact]
@@ -121,8 +119,7 @@ public sealed class CreateActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityScheduleOutsideEventRange);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityScheduleOutsideEventRange);
     }
 
     [Fact]
@@ -139,8 +136,7 @@ public sealed class CreateActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityScheduleOutsideEventRange);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityScheduleOutsideEventRange);
     }
 
     [Fact]
@@ -154,8 +150,7 @@ public sealed class CreateActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityThumbnailNotFound);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.ActivityThumbnailNotFound);
     }
 
     [Fact]
@@ -208,7 +203,6 @@ public sealed class CreateActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityRoleCapacityDuplicated);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityRoleCapacityDuplicated);
     }
 }

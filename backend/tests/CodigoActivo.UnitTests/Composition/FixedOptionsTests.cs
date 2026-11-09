@@ -11,7 +11,6 @@ using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Files;
 using CodigoActivo.Infrastructure.Logs;
 using CodigoActivo.Infrastructure.Security;
-using CodigoActivo.Infrastructure.Users;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -68,7 +67,6 @@ public sealed class FixedOptionsTests : IDisposable
     public void AddCodigoActivoSettingsCannotChangeTheSecurityAndRetentionPolicy()
     {
         Fixed<SessionLifetimeOptions>();
-        Fixed<SessionCleanupOptions>();
         Fixed<AccountVerificationOptions>();
         Fixed<PasswordResetOptions>();
         Fixed<PasswordLockoutOptions>();

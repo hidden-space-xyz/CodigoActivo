@@ -4,31 +4,6 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/vue-query';
-import type {
-  DataTag,
-  MutationFunction,
-  QueryClient,
-  QueryFunction,
-  QueryKey,
-  UseMutationOptions,
-  UseMutationReturnType,
-  UseQueryOptions,
-  UseQueryReturnType
-} from '@tanstack/vue-query';
-
-import {
-  computed,
-  toValue,
-  unref
-} from 'vue';
-import type {
-  MaybeRefOrGetter
-} from 'vue';
-
 import type {
   ChangePasswordRequest,
   DesignatePrivacyOfficerRequest,
@@ -45,11 +20,6 @@ import type {
 } from '../../models';
 
 import { httpClient } from '../../../http-client';
-
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
 
 export type getApiUsersResponse200 = {
   data: UserResponsePagedResult
@@ -90,54 +60,7 @@ export const getApiUsers = async (params?: GetApiUsersParams, options?: Paramete
 );}
 
 
-
-
-
-export const getGetApiUsersMutationKey = () => ['getApiUsers'] as const;
-
-export const getGetApiUsersMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiUsers>>, TError,GetApiUsersMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiUsers>>, TError,GetApiUsersMutationVariables, TContext> => {
-
-const mutationKey = getGetApiUsersMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiUsers>>, GetApiUsersMutationVariables> = (props) => {
-          const {params} = props ?? {};
-
-          return  getApiUsers(params,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiUsersMutationResult = NonNullable<Awaited<ReturnType<typeof getApiUsers>>>
-
-    export type GetApiUsersMutationError = unknown
-    export type GetApiUsersMutationVariables = {params?: GetApiUsersParams}
-
-    export const useGetApiUsers = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiUsers>>, TError,GetApiUsersMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiUsers>>,
-        TError,
-        GetApiUsersMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiUsersMutationOptions(options), queryClient);
-    }
-    export type getApiUsersTypesResponse200 = {
+export type getApiUsersTypesResponse200 = {
   data: UserTypeResponse[]
   status: 200
 }
@@ -169,54 +92,7 @@ export const getApiUsersTypes = async ( options?: Parameters<typeof httpClient>[
 );}
 
 
-
-
-
-export const getGetApiUsersTypesMutationKey = () => ['getApiUsersTypes'] as const;
-
-export const getGetApiUsersTypesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiUsersTypes>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiUsersTypes>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiUsersTypesMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiUsersTypes>>, void> = () => {
-
-
-          return  getApiUsersTypes(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiUsersTypesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiUsersTypes>>>
-
-    export type GetApiUsersTypesMutationError = unknown
-
-
-    export const useGetApiUsersTypes = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiUsersTypes>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiUsersTypes>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiUsersTypesMutationOptions(options), queryClient);
-    }
-    export type getApiUsersStatusTypesResponse200 = {
+export type getApiUsersStatusTypesResponse200 = {
   data: UserStatusTypeResponse[]
   status: 200
 }
@@ -248,54 +124,7 @@ export const getApiUsersStatusTypes = async ( options?: Parameters<typeof httpCl
 );}
 
 
-
-
-
-export const getGetApiUsersStatusTypesMutationKey = () => ['getApiUsersStatusTypes'] as const;
-
-export const getGetApiUsersStatusTypesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiUsersStatusTypes>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiUsersStatusTypes>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiUsersStatusTypesMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiUsersStatusTypes>>, void> = () => {
-
-
-          return  getApiUsersStatusTypes(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiUsersStatusTypesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiUsersStatusTypes>>>
-
-    export type GetApiUsersStatusTypesMutationError = unknown
-
-
-    export const useGetApiUsersStatusTypes = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiUsersStatusTypes>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiUsersStatusTypes>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiUsersStatusTypesMutationOptions(options), queryClient);
-    }
-    export type getApiUsersUserIdResponse200 = {
+export type getApiUsersUserIdResponse200 = {
   data: UserResponse
   status: 200
 }
@@ -327,54 +156,7 @@ export const getApiUsersUserId = async (userId: string, options?: Parameters<typ
 );}
 
 
-
-
-
-export const getGetApiUsersUserIdMutationKey = () => ['getApiUsersUserId'] as const;
-
-export const getGetApiUsersUserIdMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiUsersUserId>>, TError,GetApiUsersUserIdMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiUsersUserId>>, TError,GetApiUsersUserIdMutationVariables, TContext> => {
-
-const mutationKey = getGetApiUsersUserIdMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiUsersUserId>>, GetApiUsersUserIdMutationVariables> = (props) => {
-          const {userId} = props ?? {};
-
-          return  getApiUsersUserId(userId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiUsersUserIdMutationResult = NonNullable<Awaited<ReturnType<typeof getApiUsersUserId>>>
-
-    export type GetApiUsersUserIdMutationError = unknown
-    export type GetApiUsersUserIdMutationVariables = {userId: string}
-
-    export const useGetApiUsersUserId = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiUsersUserId>>, TError,GetApiUsersUserIdMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiUsersUserId>>,
-        TError,
-        GetApiUsersUserIdMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiUsersUserIdMutationOptions(options), queryClient);
-    }
-    export type putApiUsersUserIdResponse200 = {
+export type putApiUsersUserIdResponse200 = {
   data: UserResponse
   status: 200
 }
@@ -421,61 +203,6 @@ return httpClient<putApiUsersUserIdResponse>(getPutApiUsersUserIdUrl(userId),
 );}
 
 
-
-
-
-export const getPutApiUsersUserIdQueryKey = (userId: MaybeRefOrGetter<string>,
-    updateUserRequest?: MaybeRefOrGetter<UpdateUserRequest>,) => {
-    return [
-    'PUT', 'api','users',userId, updateUserRequest
-    ] as const;
-    }
-
-
-export const getPutApiUsersUserIdQueryOptions = <TData = Awaited<ReturnType<typeof putApiUsersUserId>>, TError = unknown>(userId: MaybeRefOrGetter<string>,
-    updateUserRequest?: MaybeRefOrGetter<UpdateUserRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiUsersUserId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPutApiUsersUserIdQueryKey(userId,updateUserRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof putApiUsersUserId>>> = ({ signal }) => putApiUsersUserId(toValue(userId),toValue(updateUserRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof putApiUsersUserId>>, TError, TData>
-}
-
-export type PutApiUsersUserIdQueryResult = NonNullable<Awaited<ReturnType<typeof putApiUsersUserId>>>
-export type PutApiUsersUserIdQueryError = unknown
-
-
-
-export function usePutApiUsersUserId<TData = Awaited<ReturnType<typeof putApiUsersUserId>>, TError = unknown>(
- userId: MaybeRefOrGetter<string>,
-    updateUserRequest?: MaybeRefOrGetter<UpdateUserRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiUsersUserId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPutApiUsersUserIdQueryOptions(userId,updateUserRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type deleteApiUsersUserIdResponse200 = {
   data: void
   status: 200
@@ -506,58 +233,6 @@ export const deleteApiUsersUserId = async (userId: string, options?: Parameters<
 
   }
 );}
-
-
-
-
-
-export const getDeleteApiUsersUserIdQueryKey = (userId: MaybeRefOrGetter<string>,) => {
-    return [
-    'DELETE', 'api','users',userId
-    ] as const;
-    }
-
-
-export const getDeleteApiUsersUserIdQueryOptions = <TData = Awaited<ReturnType<typeof deleteApiUsersUserId>>, TError = unknown>(userId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiUsersUserId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getDeleteApiUsersUserIdQueryKey(userId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteApiUsersUserId>>> = ({ signal }) => deleteApiUsersUserId(toValue(userId), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteApiUsersUserId>>, TError, TData>
-}
-
-export type DeleteApiUsersUserIdQueryResult = NonNullable<Awaited<ReturnType<typeof deleteApiUsersUserId>>>
-export type DeleteApiUsersUserIdQueryError = unknown
-
-
-
-export function useDeleteApiUsersUserId<TData = Awaited<ReturnType<typeof deleteApiUsersUserId>>, TError = unknown>(
- userId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiUsersUserId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getDeleteApiUsersUserIdQueryOptions(userId,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 
 export type patchApiUsersUserIdStaffRoleResponse200 = {
@@ -607,61 +282,6 @@ return httpClient<patchApiUsersUserIdStaffRoleResponse>(getPatchApiUsersUserIdSt
 );}
 
 
-
-
-
-export const getPatchApiUsersUserIdStaffRoleQueryKey = (userId: MaybeRefOrGetter<string>,
-    setStaffRoleRequest?: MaybeRefOrGetter<SetStaffRoleRequest>,) => {
-    return [
-    'PATCH', 'api','users',userId,'staff-role', setStaffRoleRequest
-    ] as const;
-    }
-
-
-export const getPatchApiUsersUserIdStaffRoleQueryOptions = <TData = Awaited<ReturnType<typeof patchApiUsersUserIdStaffRole>>, TError = unknown>(userId: MaybeRefOrGetter<string>,
-    setStaffRoleRequest?: MaybeRefOrGetter<SetStaffRoleRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdStaffRole>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPatchApiUsersUserIdStaffRoleQueryKey(userId,setStaffRoleRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiUsersUserIdStaffRole>>> = ({ signal }) => patchApiUsersUserIdStaffRole(toValue(userId),toValue(setStaffRoleRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdStaffRole>>, TError, TData>
-}
-
-export type PatchApiUsersUserIdStaffRoleQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiUsersUserIdStaffRole>>>
-export type PatchApiUsersUserIdStaffRoleQueryError = unknown
-
-
-
-export function usePatchApiUsersUserIdStaffRole<TData = Awaited<ReturnType<typeof patchApiUsersUserIdStaffRole>>, TError = unknown>(
- userId: MaybeRefOrGetter<string>,
-    setStaffRoleRequest?: MaybeRefOrGetter<SetStaffRoleRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdStaffRole>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPatchApiUsersUserIdStaffRoleQueryOptions(userId,setStaffRoleRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type postApiUsersUserIdPrivacyOfficerResponse200 = {
   data: void
   status: 200
@@ -707,61 +327,6 @@ return httpClient<postApiUsersUserIdPrivacyOfficerResponse>(getPostApiUsersUserI
     body: JSON.stringify(designatePrivacyOfficerRequest)
   }
 );}
-
-
-
-
-
-export const getPostApiUsersUserIdPrivacyOfficerQueryKey = (userId: MaybeRefOrGetter<string>,
-    designatePrivacyOfficerRequest?: MaybeRefOrGetter<DesignatePrivacyOfficerRequest>,) => {
-    return [
-    'POST', 'api','users',userId,'privacy-officer', designatePrivacyOfficerRequest
-    ] as const;
-    }
-
-
-export const getPostApiUsersUserIdPrivacyOfficerQueryOptions = <TData = Awaited<ReturnType<typeof postApiUsersUserIdPrivacyOfficer>>, TError = unknown>(userId: MaybeRefOrGetter<string>,
-    designatePrivacyOfficerRequest?: MaybeRefOrGetter<DesignatePrivacyOfficerRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiUsersUserIdPrivacyOfficer>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiUsersUserIdPrivacyOfficerQueryKey(userId,designatePrivacyOfficerRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiUsersUserIdPrivacyOfficer>>> = ({ signal }) => postApiUsersUserIdPrivacyOfficer(toValue(userId),toValue(designatePrivacyOfficerRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiUsersUserIdPrivacyOfficer>>, TError, TData>
-}
-
-export type PostApiUsersUserIdPrivacyOfficerQueryResult = NonNullable<Awaited<ReturnType<typeof postApiUsersUserIdPrivacyOfficer>>>
-export type PostApiUsersUserIdPrivacyOfficerQueryError = unknown
-
-
-
-export function usePostApiUsersUserIdPrivacyOfficer<TData = Awaited<ReturnType<typeof postApiUsersUserIdPrivacyOfficer>>, TError = unknown>(
- userId: MaybeRefOrGetter<string>,
-    designatePrivacyOfficerRequest?: MaybeRefOrGetter<DesignatePrivacyOfficerRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiUsersUserIdPrivacyOfficer>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiUsersUserIdPrivacyOfficerQueryOptions(userId,designatePrivacyOfficerRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 
 export type postApiUsersUserIdTwoFactorResetResponse200 = {
@@ -811,61 +376,6 @@ return httpClient<postApiUsersUserIdTwoFactorResetResponse>(getPostApiUsersUserI
 );}
 
 
-
-
-
-export const getPostApiUsersUserIdTwoFactorResetQueryKey = (userId: MaybeRefOrGetter<string>,
-    resetTwoFactorRequest?: MaybeRefOrGetter<ResetTwoFactorRequest>,) => {
-    return [
-    'POST', 'api','users',userId,'two-factor','reset', resetTwoFactorRequest
-    ] as const;
-    }
-
-
-export const getPostApiUsersUserIdTwoFactorResetQueryOptions = <TData = Awaited<ReturnType<typeof postApiUsersUserIdTwoFactorReset>>, TError = unknown>(userId: MaybeRefOrGetter<string>,
-    resetTwoFactorRequest?: MaybeRefOrGetter<ResetTwoFactorRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiUsersUserIdTwoFactorReset>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiUsersUserIdTwoFactorResetQueryKey(userId,resetTwoFactorRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiUsersUserIdTwoFactorReset>>> = ({ signal }) => postApiUsersUserIdTwoFactorReset(toValue(userId),toValue(resetTwoFactorRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiUsersUserIdTwoFactorReset>>, TError, TData>
-}
-
-export type PostApiUsersUserIdTwoFactorResetQueryResult = NonNullable<Awaited<ReturnType<typeof postApiUsersUserIdTwoFactorReset>>>
-export type PostApiUsersUserIdTwoFactorResetQueryError = unknown
-
-
-
-export function usePostApiUsersUserIdTwoFactorReset<TData = Awaited<ReturnType<typeof postApiUsersUserIdTwoFactorReset>>, TError = unknown>(
- userId: MaybeRefOrGetter<string>,
-    resetTwoFactorRequest?: MaybeRefOrGetter<ResetTwoFactorRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiUsersUserIdTwoFactorReset>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiUsersUserIdTwoFactorResetQueryOptions(userId,resetTwoFactorRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type postApiUsersUserIdChildrenResponse201 = {
   data: UserResponse
   status: 201
@@ -911,61 +421,6 @@ return httpClient<postApiUsersUserIdChildrenResponse>(getPostApiUsersUserIdChild
     body: JSON.stringify(registerMinorRequest)
   }
 );}
-
-
-
-
-
-export const getPostApiUsersUserIdChildrenQueryKey = (userId: MaybeRefOrGetter<string>,
-    registerMinorRequest?: MaybeRefOrGetter<RegisterMinorRequest>,) => {
-    return [
-    'POST', 'api','users',userId,'children', registerMinorRequest
-    ] as const;
-    }
-
-
-export const getPostApiUsersUserIdChildrenQueryOptions = <TData = Awaited<ReturnType<typeof postApiUsersUserIdChildren>>, TError = unknown>(userId: MaybeRefOrGetter<string>,
-    registerMinorRequest?: MaybeRefOrGetter<RegisterMinorRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiUsersUserIdChildren>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiUsersUserIdChildrenQueryKey(userId,registerMinorRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiUsersUserIdChildren>>> = ({ signal }) => postApiUsersUserIdChildren(toValue(userId),toValue(registerMinorRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiUsersUserIdChildren>>, TError, TData>
-}
-
-export type PostApiUsersUserIdChildrenQueryResult = NonNullable<Awaited<ReturnType<typeof postApiUsersUserIdChildren>>>
-export type PostApiUsersUserIdChildrenQueryError = unknown
-
-
-
-export function usePostApiUsersUserIdChildren<TData = Awaited<ReturnType<typeof postApiUsersUserIdChildren>>, TError = unknown>(
- userId: MaybeRefOrGetter<string>,
-    registerMinorRequest?: MaybeRefOrGetter<RegisterMinorRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiUsersUserIdChildren>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiUsersUserIdChildrenQueryOptions(userId,registerMinorRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 
 export type patchApiUsersUserIdPasswordResponse200 = {
@@ -1015,61 +470,6 @@ return httpClient<patchApiUsersUserIdPasswordResponse>(getPatchApiUsersUserIdPas
 );}
 
 
-
-
-
-export const getPatchApiUsersUserIdPasswordQueryKey = (userId: MaybeRefOrGetter<string>,
-    changePasswordRequest?: MaybeRefOrGetter<ChangePasswordRequest>,) => {
-    return [
-    'PATCH', 'api','users',userId,'password', changePasswordRequest
-    ] as const;
-    }
-
-
-export const getPatchApiUsersUserIdPasswordQueryOptions = <TData = Awaited<ReturnType<typeof patchApiUsersUserIdPassword>>, TError = unknown>(userId: MaybeRefOrGetter<string>,
-    changePasswordRequest?: MaybeRefOrGetter<ChangePasswordRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdPassword>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPatchApiUsersUserIdPasswordQueryKey(userId,changePasswordRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiUsersUserIdPassword>>> = ({ signal }) => patchApiUsersUserIdPassword(toValue(userId),toValue(changePasswordRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdPassword>>, TError, TData>
-}
-
-export type PatchApiUsersUserIdPasswordQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiUsersUserIdPassword>>>
-export type PatchApiUsersUserIdPasswordQueryError = unknown
-
-
-
-export function usePatchApiUsersUserIdPassword<TData = Awaited<ReturnType<typeof patchApiUsersUserIdPassword>>, TError = unknown>(
- userId: MaybeRefOrGetter<string>,
-    changePasswordRequest?: MaybeRefOrGetter<ChangePasswordRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdPassword>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPatchApiUsersUserIdPasswordQueryOptions(userId,changePasswordRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type patchApiUsersUserIdChangeTypeResponse200 = {
   data: UserResponse
   status: 200
@@ -1109,60 +509,5 @@ export const patchApiUsersUserIdChangeType = async (userId: string,
 
   }
 );}
-
-
-
-
-
-export const getPatchApiUsersUserIdChangeTypeQueryKey = (userId: MaybeRefOrGetter<string>,
-    params?: MaybeRefOrGetter<PatchApiUsersUserIdChangeTypeParams>,) => {
-    return [
-    'PATCH', 'api','users',userId,'change-type', ...(params ? [params] : [])
-    ] as const;
-    }
-
-
-export const getPatchApiUsersUserIdChangeTypeQueryOptions = <TData = Awaited<ReturnType<typeof patchApiUsersUserIdChangeType>>, TError = unknown>(userId: MaybeRefOrGetter<string>,
-    params?: MaybeRefOrGetter<PatchApiUsersUserIdChangeTypeParams>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdChangeType>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPatchApiUsersUserIdChangeTypeQueryKey(userId,params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiUsersUserIdChangeType>>> = ({ signal }) => patchApiUsersUserIdChangeType(toValue(userId),toValue(params), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdChangeType>>, TError, TData>
-}
-
-export type PatchApiUsersUserIdChangeTypeQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiUsersUserIdChangeType>>>
-export type PatchApiUsersUserIdChangeTypeQueryError = unknown
-
-
-
-export function usePatchApiUsersUserIdChangeType<TData = Awaited<ReturnType<typeof patchApiUsersUserIdChangeType>>, TError = unknown>(
- userId: MaybeRefOrGetter<string>,
-    params?: MaybeRefOrGetter<PatchApiUsersUserIdChangeTypeParams>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiUsersUserIdChangeType>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPatchApiUsersUserIdChangeTypeQueryOptions(userId,params,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 

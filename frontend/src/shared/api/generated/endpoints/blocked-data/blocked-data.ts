@@ -4,31 +4,6 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/vue-query';
-import type {
-  DataTag,
-  MutationFunction,
-  QueryClient,
-  QueryFunction,
-  QueryKey,
-  UseMutationOptions,
-  UseMutationReturnType,
-  UseQueryOptions,
-  UseQueryReturnType
-} from '@tanstack/vue-query';
-
-import {
-  computed,
-  toValue,
-  unref
-} from 'vue';
-import type {
-  MaybeRefOrGetter
-} from 'vue';
-
 import type {
   BlockedDataAccessResponse,
   BlockedDataConsultationCodeRequest,
@@ -47,11 +22,6 @@ import type {
 } from '../../models';
 
 import { httpClient } from '../../../http-client';
-
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
 
 export type getApiBlockedDataAccessResponse200 = {
   data: BlockedDataAccessResponse
@@ -85,54 +55,7 @@ export const getApiBlockedDataAccess = async ( options?: Parameters<typeof httpC
 );}
 
 
-
-
-
-export const getGetApiBlockedDataAccessMutationKey = () => ['getApiBlockedDataAccess'] as const;
-
-export const getGetApiBlockedDataAccessMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiBlockedDataAccess>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiBlockedDataAccess>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiBlockedDataAccessMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiBlockedDataAccess>>, void> = () => {
-
-
-          return  getApiBlockedDataAccess(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiBlockedDataAccessMutationResult = NonNullable<Awaited<ReturnType<typeof getApiBlockedDataAccess>>>
-
-    export type GetApiBlockedDataAccessMutationError = unknown
-
-
-    export const useGetApiBlockedDataAccess = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiBlockedDataAccess>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiBlockedDataAccess>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiBlockedDataAccessMutationOptions(options), queryClient);
-    }
-    export type getApiBlockedDataConsultationsResponse200 = {
+export type getApiBlockedDataConsultationsResponse200 = {
   data: BlockedDataConsultationResponsePagedResult
   status: 200
 }
@@ -171,54 +94,7 @@ export const getApiBlockedDataConsultations = async (params?: GetApiBlockedDataC
 );}
 
 
-
-
-
-export const getGetApiBlockedDataConsultationsMutationKey = () => ['getApiBlockedDataConsultations'] as const;
-
-export const getGetApiBlockedDataConsultationsMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiBlockedDataConsultations>>, TError,GetApiBlockedDataConsultationsMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiBlockedDataConsultations>>, TError,GetApiBlockedDataConsultationsMutationVariables, TContext> => {
-
-const mutationKey = getGetApiBlockedDataConsultationsMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiBlockedDataConsultations>>, GetApiBlockedDataConsultationsMutationVariables> = (props) => {
-          const {params} = props ?? {};
-
-          return  getApiBlockedDataConsultations(params,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiBlockedDataConsultationsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiBlockedDataConsultations>>>
-
-    export type GetApiBlockedDataConsultationsMutationError = unknown
-    export type GetApiBlockedDataConsultationsMutationVariables = {params?: GetApiBlockedDataConsultationsParams}
-
-    export const useGetApiBlockedDataConsultations = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiBlockedDataConsultations>>, TError,GetApiBlockedDataConsultationsMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiBlockedDataConsultations>>,
-        TError,
-        GetApiBlockedDataConsultationsMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiBlockedDataConsultationsMutationOptions(options), queryClient);
-    }
-    export type postApiBlockedDataConsultationsResponse201 = {
+export type postApiBlockedDataConsultationsResponse201 = {
   data: BlockedDataConsultationResponse
   status: 201
 }
@@ -264,58 +140,6 @@ return httpClient<postApiBlockedDataConsultationsResponse>(getPostApiBlockedData
 );}
 
 
-
-
-
-export const getPostApiBlockedDataConsultationsQueryKey = (openBlockedDataConsultationRequest?: MaybeRefOrGetter<OpenBlockedDataConsultationRequest>,) => {
-    return [
-    'POST', 'api','blocked-data','consultations', openBlockedDataConsultationRequest
-    ] as const;
-    }
-
-
-export const getPostApiBlockedDataConsultationsQueryOptions = <TData = Awaited<ReturnType<typeof postApiBlockedDataConsultations>>, TError = unknown>(openBlockedDataConsultationRequest?: MaybeRefOrGetter<OpenBlockedDataConsultationRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultations>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiBlockedDataConsultationsQueryKey(openBlockedDataConsultationRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiBlockedDataConsultations>>> = ({ signal }) => postApiBlockedDataConsultations(toValue(openBlockedDataConsultationRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultations>>, TError, TData>
-}
-
-export type PostApiBlockedDataConsultationsQueryResult = NonNullable<Awaited<ReturnType<typeof postApiBlockedDataConsultations>>>
-export type PostApiBlockedDataConsultationsQueryError = unknown
-
-
-
-export function usePostApiBlockedDataConsultations<TData = Awaited<ReturnType<typeof postApiBlockedDataConsultations>>, TError = unknown>(
- openBlockedDataConsultationRequest?: MaybeRefOrGetter<OpenBlockedDataConsultationRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultations>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiBlockedDataConsultationsQueryOptions(openBlockedDataConsultationRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type getApiBlockedDataHoldsResponse200 = {
   data: BlockedDataHoldResponsePagedResult
   status: 200
@@ -355,54 +179,7 @@ export const getApiBlockedDataHolds = async (params?: GetApiBlockedDataHoldsPara
 );}
 
 
-
-
-
-export const getGetApiBlockedDataHoldsMutationKey = () => ['getApiBlockedDataHolds'] as const;
-
-export const getGetApiBlockedDataHoldsMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiBlockedDataHolds>>, TError,GetApiBlockedDataHoldsMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiBlockedDataHolds>>, TError,GetApiBlockedDataHoldsMutationVariables, TContext> => {
-
-const mutationKey = getGetApiBlockedDataHoldsMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiBlockedDataHolds>>, GetApiBlockedDataHoldsMutationVariables> = (props) => {
-          const {params} = props ?? {};
-
-          return  getApiBlockedDataHolds(params,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiBlockedDataHoldsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiBlockedDataHolds>>>
-
-    export type GetApiBlockedDataHoldsMutationError = unknown
-    export type GetApiBlockedDataHoldsMutationVariables = {params?: GetApiBlockedDataHoldsParams}
-
-    export const useGetApiBlockedDataHolds = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiBlockedDataHolds>>, TError,GetApiBlockedDataHoldsMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiBlockedDataHolds>>,
-        TError,
-        GetApiBlockedDataHoldsMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiBlockedDataHoldsMutationOptions(options), queryClient);
-    }
-    export type postApiBlockedDataConsultationsCodeResponse200 = {
+export type postApiBlockedDataConsultationsCodeResponse200 = {
   data: void
   status: 200
 }
@@ -446,58 +223,6 @@ return httpClient<postApiBlockedDataConsultationsCodeResponse>(getPostApiBlocked
     body: JSON.stringify(blockedDataConsultationCodeRequest)
   }
 );}
-
-
-
-
-
-export const getPostApiBlockedDataConsultationsCodeQueryKey = (blockedDataConsultationCodeRequest?: MaybeRefOrGetter<BlockedDataConsultationCodeRequest>,) => {
-    return [
-    'POST', 'api','blocked-data','consultations','code', blockedDataConsultationCodeRequest
-    ] as const;
-    }
-
-
-export const getPostApiBlockedDataConsultationsCodeQueryOptions = <TData = Awaited<ReturnType<typeof postApiBlockedDataConsultationsCode>>, TError = unknown>(blockedDataConsultationCodeRequest?: MaybeRefOrGetter<BlockedDataConsultationCodeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultationsCode>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiBlockedDataConsultationsCodeQueryKey(blockedDataConsultationCodeRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiBlockedDataConsultationsCode>>> = ({ signal }) => postApiBlockedDataConsultationsCode(toValue(blockedDataConsultationCodeRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultationsCode>>, TError, TData>
-}
-
-export type PostApiBlockedDataConsultationsCodeQueryResult = NonNullable<Awaited<ReturnType<typeof postApiBlockedDataConsultationsCode>>>
-export type PostApiBlockedDataConsultationsCodeQueryError = unknown
-
-
-
-export function usePostApiBlockedDataConsultationsCode<TData = Awaited<ReturnType<typeof postApiBlockedDataConsultationsCode>>, TError = unknown>(
- blockedDataConsultationCodeRequest?: MaybeRefOrGetter<BlockedDataConsultationCodeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultationsCode>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiBlockedDataConsultationsCodeQueryOptions(blockedDataConsultationCodeRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 
 export type postApiBlockedDataConsultationsConsultationIdSearchesResponse200 = {
@@ -547,61 +272,6 @@ return httpClient<postApiBlockedDataConsultationsConsultationIdSearchesResponse>
 );}
 
 
-
-
-
-export const getPostApiBlockedDataConsultationsConsultationIdSearchesQueryKey = (consultationId: MaybeRefOrGetter<string>,
-    searchBlockedDataRequest?: MaybeRefOrGetter<SearchBlockedDataRequest>,) => {
-    return [
-    'POST', 'api','blocked-data','consultations',consultationId,'searches', searchBlockedDataRequest
-    ] as const;
-    }
-
-
-export const getPostApiBlockedDataConsultationsConsultationIdSearchesQueryOptions = <TData = Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdSearches>>, TError = unknown>(consultationId: MaybeRefOrGetter<string>,
-    searchBlockedDataRequest?: MaybeRefOrGetter<SearchBlockedDataRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdSearches>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiBlockedDataConsultationsConsultationIdSearchesQueryKey(consultationId,searchBlockedDataRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdSearches>>> = ({ signal }) => postApiBlockedDataConsultationsConsultationIdSearches(toValue(consultationId),toValue(searchBlockedDataRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(consultationId) !== null && toValue(consultationId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdSearches>>, TError, TData>
-}
-
-export type PostApiBlockedDataConsultationsConsultationIdSearchesQueryResult = NonNullable<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdSearches>>>
-export type PostApiBlockedDataConsultationsConsultationIdSearchesQueryError = unknown
-
-
-
-export function usePostApiBlockedDataConsultationsConsultationIdSearches<TData = Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdSearches>>, TError = unknown>(
- consultationId: MaybeRefOrGetter<string>,
-    searchBlockedDataRequest?: MaybeRefOrGetter<SearchBlockedDataRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdSearches>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiBlockedDataConsultationsConsultationIdSearchesQueryOptions(consultationId,searchBlockedDataRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type postApiBlockedDataConsultationsConsultationIdExtractsResponse200 = {
   data: BlockedDataExport
   status: 200
@@ -647,61 +317,6 @@ return httpClient<postApiBlockedDataConsultationsConsultationIdExtractsResponse>
     body: JSON.stringify(exportBlockedDataRequest)
   }
 );}
-
-
-
-
-
-export const getPostApiBlockedDataConsultationsConsultationIdExtractsQueryKey = (consultationId: MaybeRefOrGetter<string>,
-    exportBlockedDataRequest?: MaybeRefOrGetter<ExportBlockedDataRequest>,) => {
-    return [
-    'POST', 'api','blocked-data','consultations',consultationId,'extracts', exportBlockedDataRequest
-    ] as const;
-    }
-
-
-export const getPostApiBlockedDataConsultationsConsultationIdExtractsQueryOptions = <TData = Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdExtracts>>, TError = unknown>(consultationId: MaybeRefOrGetter<string>,
-    exportBlockedDataRequest?: MaybeRefOrGetter<ExportBlockedDataRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdExtracts>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiBlockedDataConsultationsConsultationIdExtractsQueryKey(consultationId,exportBlockedDataRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdExtracts>>> = ({ signal }) => postApiBlockedDataConsultationsConsultationIdExtracts(toValue(consultationId),toValue(exportBlockedDataRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(consultationId) !== null && toValue(consultationId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdExtracts>>, TError, TData>
-}
-
-export type PostApiBlockedDataConsultationsConsultationIdExtractsQueryResult = NonNullable<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdExtracts>>>
-export type PostApiBlockedDataConsultationsConsultationIdExtractsQueryError = unknown
-
-
-
-export function usePostApiBlockedDataConsultationsConsultationIdExtracts<TData = Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdExtracts>>, TError = unknown>(
- consultationId: MaybeRefOrGetter<string>,
-    exportBlockedDataRequest?: MaybeRefOrGetter<ExportBlockedDataRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdExtracts>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiBlockedDataConsultationsConsultationIdExtractsQueryOptions(consultationId,exportBlockedDataRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 
 export type postApiBlockedDataConsultationsConsultationIdHoldsResponse201 = {
@@ -751,61 +366,6 @@ return httpClient<postApiBlockedDataConsultationsConsultationIdHoldsResponse>(ge
 );}
 
 
-
-
-
-export const getPostApiBlockedDataConsultationsConsultationIdHoldsQueryKey = (consultationId: MaybeRefOrGetter<string>,
-    placeBlockedDataHoldRequest?: MaybeRefOrGetter<PlaceBlockedDataHoldRequest>,) => {
-    return [
-    'POST', 'api','blocked-data','consultations',consultationId,'holds', placeBlockedDataHoldRequest
-    ] as const;
-    }
-
-
-export const getPostApiBlockedDataConsultationsConsultationIdHoldsQueryOptions = <TData = Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdHolds>>, TError = unknown>(consultationId: MaybeRefOrGetter<string>,
-    placeBlockedDataHoldRequest?: MaybeRefOrGetter<PlaceBlockedDataHoldRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdHolds>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiBlockedDataConsultationsConsultationIdHoldsQueryKey(consultationId,placeBlockedDataHoldRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdHolds>>> = ({ signal }) => postApiBlockedDataConsultationsConsultationIdHolds(toValue(consultationId),toValue(placeBlockedDataHoldRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(consultationId) !== null && toValue(consultationId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdHolds>>, TError, TData>
-}
-
-export type PostApiBlockedDataConsultationsConsultationIdHoldsQueryResult = NonNullable<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdHolds>>>
-export type PostApiBlockedDataConsultationsConsultationIdHoldsQueryError = unknown
-
-
-
-export function usePostApiBlockedDataConsultationsConsultationIdHolds<TData = Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdHolds>>, TError = unknown>(
- consultationId: MaybeRefOrGetter<string>,
-    placeBlockedDataHoldRequest?: MaybeRefOrGetter<PlaceBlockedDataHoldRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdHolds>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiBlockedDataConsultationsConsultationIdHoldsQueryOptions(consultationId,placeBlockedDataHoldRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type postApiBlockedDataConsultationsConsultationIdHoldsHoldIdLiftResponse200 = {
   data: void
   status: 200
@@ -838,60 +398,5 @@ export const postApiBlockedDataConsultationsConsultationIdHoldsHoldIdLift = asyn
 
   }
 );}
-
-
-
-
-
-export const getPostApiBlockedDataConsultationsConsultationIdHoldsHoldIdLiftQueryKey = (consultationId: MaybeRefOrGetter<string>,
-    holdId: MaybeRefOrGetter<string>,) => {
-    return [
-    'POST', 'api','blocked-data','consultations',consultationId,'holds',holdId,'lift'
-    ] as const;
-    }
-
-
-export const getPostApiBlockedDataConsultationsConsultationIdHoldsHoldIdLiftQueryOptions = <TData = Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdHoldsHoldIdLift>>, TError = unknown>(consultationId: MaybeRefOrGetter<string>,
-    holdId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdHoldsHoldIdLift>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiBlockedDataConsultationsConsultationIdHoldsHoldIdLiftQueryKey(consultationId,holdId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdHoldsHoldIdLift>>> = ({ signal }) => postApiBlockedDataConsultationsConsultationIdHoldsHoldIdLift(toValue(consultationId),toValue(holdId), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(consultationId) !== null && toValue(consultationId) !== undefined && toValue(holdId) !== null && toValue(holdId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdHoldsHoldIdLift>>, TError, TData>
-}
-
-export type PostApiBlockedDataConsultationsConsultationIdHoldsHoldIdLiftQueryResult = NonNullable<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdHoldsHoldIdLift>>>
-export type PostApiBlockedDataConsultationsConsultationIdHoldsHoldIdLiftQueryError = unknown
-
-
-
-export function usePostApiBlockedDataConsultationsConsultationIdHoldsHoldIdLift<TData = Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdHoldsHoldIdLift>>, TError = unknown>(
- consultationId: MaybeRefOrGetter<string>,
-    holdId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiBlockedDataConsultationsConsultationIdHoldsHoldIdLift>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiBlockedDataConsultationsConsultationIdHoldsHoldIdLiftQueryOptions(consultationId,holdId,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 

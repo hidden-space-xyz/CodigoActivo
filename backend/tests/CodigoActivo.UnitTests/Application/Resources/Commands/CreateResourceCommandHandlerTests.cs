@@ -58,8 +58,7 @@ public sealed class CreateResourceCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ResourceDescriptionRequired);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.ResourceDescriptionRequired);
     }
 
     [Fact]
@@ -81,9 +80,7 @@ public sealed class CreateResourceCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ResourceThumbnailNotFound);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.ResourceThumbnailNotFound);
         await resources
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<Resource>(), TestContext.Current.CancellationToken);

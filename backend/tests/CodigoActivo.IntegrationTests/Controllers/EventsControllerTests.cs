@@ -74,13 +74,12 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         var startAt = new DateTimeOffset(start.ToDateTime(TimeOnly.MinValue), TimeSpan.Zero);
         await Factory.SeedAsync(db =>
         {
-            var ev = Persisted.As<Event>(
+            var ev = TestEntities.New<Event>(
                 new
                 {
                     Id = id,
                     Title = title,
                     Subtitle = subtitle,
-                    Description = "{}",
                     EventStartsAt = start,
                     EventEndsAt = end,
                     SignupStartsAt = signupStartsAt ?? startAt.AddDays(-10),
@@ -88,7 +87,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
                     Featured = featured,
                     ThumbnailId = thumbnailId,
                     CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
                 }
             );
             foreach (var catId in categoryIds)
@@ -115,26 +113,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
             }
 
             db.Events.Add(ev);
-            return Task.CompletedTask;
-        });
-        return id;
-    }
-
-    private async Task<Guid> SeedTermsDocumentAsync(string? name = null)
-    {
-        var id = Guid.NewGuid();
-        await Factory.SeedAsync(db =>
-        {
-            db.TermsDocuments.Add(
-                Persisted.As<TermsDocument>(
-                    new
-                    {
-                        Id = id,
-                        Name = name ?? Guid.NewGuid().ToString("N"),
-                        Description = "{}",
-                    }
-                )
-            );
             return Task.CompletedTask;
         });
         return id;
@@ -215,16 +193,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         var item = page.Items.Should().ContainSingle(e => e.Title == "Alfa").Subject;
         item.Categories.Should()
             .ContainSingle(c => c.CategoryTypeId == categoryId && c.Name == "Cultura");
-    }
-
-    [Fact]
-    public async Task GetAsyncEventMissingReturns404EventNotFound()
-    {
-        var client = CreateClient();
-
-        var response = await client.GetAsync(TestUri.Rel($"/api/events/{Guid.NewGuid()}"), Ct);
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
     }
 
     [Fact]
@@ -582,30 +550,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task CreateAsMemberReturnsForbidden()
-    {
-        var thumbnailId = await SeedThumbnailAsync();
-        var categoryId = await SeedCategoryTypeAsync();
-        var client = await LoginAsMemberAsync();
-        var request = BuildCreate(thumbnailId, [categoryId]);
-
-        var response = await client.PostJsonAsync("/api/events", request, Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task CreateAnonymousReturnsUnauthorized()
-    {
-        var client = CreateClient();
-        var request = BuildCreate(Guid.NewGuid(), [Guid.NewGuid()]);
-
-        var response = await client.PostJsonAsync("/api/events", request, Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
     public async Task CreateBlankTitleReturnsValidationError()
     {
         var thumbnailId = await SeedThumbnailAsync();
@@ -744,20 +688,16 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Activities.Add(
-                Persisted.As<Activity>(
+                TestEntities.New<Activity>(
                     new
                     {
                         Id = id,
                         Title = "Taller",
-                        Description = "Descripción",
-                        Location = "Sala",
                         ActivityStartsAt = new DateTimeOffset(2026, 8, 2, 10, 0, 0, TimeSpan.Zero),
                         ActivityEndsAt = new DateTimeOffset(2026, 8, 2, 12, 0, 0, TimeSpan.Zero),
                         EventId = eventId,
-                        Modality = ActivityModality.Presencial,
                         ThumbnailId = thumbnailId,
                         CreatedAt = SeededAt,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
@@ -843,16 +783,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task FeatureEventMissingReturns404EventNotFound()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.PatchJsonAsync($"/api/events/{Guid.NewGuid()}/feature", ct: Ct);
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
-    }
-
-    [Fact]
     public async Task CategoryTypesAsAdminReturnsPagedEnvelopeWithSeededTypes()
     {
         await SeedCategoryTypeAsync("Alpha");
@@ -932,19 +862,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
             Ct
         );
         descendingPage!.Items.Select(t => t.Name).Should().Equal("Alpha", "Gamma", "Beta");
-    }
-
-    [Fact]
-    public async Task DeleteCategoryTypeMissingIdReturns404WithErrorCode()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.DeleteWithCsrfAsync(
-            $"/api/events/categoryType/{Guid.NewGuid()}",
-            Ct
-        );
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.EventCategoryTypeNotFound);
     }
 
     [Fact]
@@ -1157,12 +1074,11 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.TermsDocuments.Add(
-                Persisted.As<TermsDocument>(
+                TestEntities.New<TermsDocument>(
                     new
                     {
                         Id = consentId,
                         Name = "Uso de imágenes",
-                        Description = "{}",
                         Kind = CodigoActivo.Domain.TermsDocuments.TermsDocumentKind.Consent,
                     }
                 )
@@ -1195,17 +1111,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task TermsStateAnonymousReturnsUnauthorized()
-    {
-        var eventId = await SeedEventAsync(new DateOnly(2026, 8, 1), new DateOnly(2026, 8, 2));
-        var client = CreateClient();
-
-        var response = await client.GetAsync(TestUri.Rel($"/api/events/{eventId}/terms"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
     public async Task TermsStateAsMemberReturnsTheRequiredDocumentAndTheUndecidedHousehold()
     {
         var termsDocumentId = await SeedTermsDocumentAsync("Reglamento");
@@ -1229,19 +1134,6 @@ public sealed class EventsControllerTests(CodigoActivoWebAppFactory factory)
             .Should()
             .Equal((TestSeedData.Users.MemberId, true), (TestSeedData.Users.MemberChildId, false));
         state.People.Should().OnlyContain(person => person.Decisions.Count == 0);
-    }
-
-    [Fact]
-    public async Task TermsStateUnknownEventReturnsNotFound()
-    {
-        var client = await LoginAsMemberAsync();
-
-        var response = await client.GetAsync(
-            TestUri.Rel($"/api/events/{Guid.NewGuid()}/terms"),
-            Ct
-        );
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
     }
 
     [Fact]

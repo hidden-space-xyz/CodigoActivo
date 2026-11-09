@@ -1,6 +1,4 @@
 using CodigoActivo.Application.Abstractions.Caching;
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.Common.Caching;
 

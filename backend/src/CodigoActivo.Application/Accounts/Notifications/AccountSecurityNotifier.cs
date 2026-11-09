@@ -1,5 +1,4 @@
 using CodigoActivo.Application.Abstractions.Email;
-using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.EmailAddresses;
 using CodigoActivo.Application.Common.Diagnostics;
 using CodigoActivo.Domain.Users;

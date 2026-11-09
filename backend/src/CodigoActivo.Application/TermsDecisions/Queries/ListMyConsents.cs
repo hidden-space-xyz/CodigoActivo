@@ -1,8 +1,4 @@
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
-using CodigoActivo.Application.Abstractions.Security;
-using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.TermsDecisions.Contracts;
 
 namespace CodigoActivo.Application.TermsDecisions.Queries;

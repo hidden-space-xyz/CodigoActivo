@@ -4,42 +4,12 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/vue-query';
-import type {
-  DataTag,
-  MutationFunction,
-  QueryClient,
-  QueryFunction,
-  QueryKey,
-  UseMutationOptions,
-  UseMutationReturnType,
-  UseQueryOptions,
-  UseQueryReturnType
-} from '@tanstack/vue-query';
-
-import {
-  computed,
-  toValue,
-  unref
-} from 'vue';
-import type {
-  MaybeRefOrGetter
-} from 'vue';
-
 import type {
   FileResponse,
   PostApiFilesBody
 } from '../../models';
 
 import { httpClient } from '../../../http-client';
-
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
 
 export type getApiFilesFileIdContentResponse200 = {
   data: void
@@ -73,54 +43,7 @@ export const getApiFilesFileIdContent = async (fileId: string, options?: Paramet
 );}
 
 
-
-
-
-export const getGetApiFilesFileIdContentMutationKey = () => ['getApiFilesFileIdContent'] as const;
-
-export const getGetApiFilesFileIdContentMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiFilesFileIdContent>>, TError,GetApiFilesFileIdContentMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiFilesFileIdContent>>, TError,GetApiFilesFileIdContentMutationVariables, TContext> => {
-
-const mutationKey = getGetApiFilesFileIdContentMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiFilesFileIdContent>>, GetApiFilesFileIdContentMutationVariables> = (props) => {
-          const {fileId} = props ?? {};
-
-          return  getApiFilesFileIdContent(fileId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiFilesFileIdContentMutationResult = NonNullable<Awaited<ReturnType<typeof getApiFilesFileIdContent>>>
-
-    export type GetApiFilesFileIdContentMutationError = unknown
-    export type GetApiFilesFileIdContentMutationVariables = {fileId: string}
-
-    export const useGetApiFilesFileIdContent = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiFilesFileIdContent>>, TError,GetApiFilesFileIdContentMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiFilesFileIdContent>>,
-        TError,
-        GetApiFilesFileIdContentMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiFilesFileIdContentMutationOptions(options), queryClient);
-    }
-    export type getApiFilesFileIdThumbnailResponse200 = {
+export type getApiFilesFileIdThumbnailResponse200 = {
   data: void
   status: 200
 }
@@ -152,54 +75,7 @@ export const getApiFilesFileIdThumbnail = async (fileId: string, options?: Param
 );}
 
 
-
-
-
-export const getGetApiFilesFileIdThumbnailMutationKey = () => ['getApiFilesFileIdThumbnail'] as const;
-
-export const getGetApiFilesFileIdThumbnailMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiFilesFileIdThumbnail>>, TError,GetApiFilesFileIdThumbnailMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiFilesFileIdThumbnail>>, TError,GetApiFilesFileIdThumbnailMutationVariables, TContext> => {
-
-const mutationKey = getGetApiFilesFileIdThumbnailMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiFilesFileIdThumbnail>>, GetApiFilesFileIdThumbnailMutationVariables> = (props) => {
-          const {fileId} = props ?? {};
-
-          return  getApiFilesFileIdThumbnail(fileId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiFilesFileIdThumbnailMutationResult = NonNullable<Awaited<ReturnType<typeof getApiFilesFileIdThumbnail>>>
-
-    export type GetApiFilesFileIdThumbnailMutationError = unknown
-    export type GetApiFilesFileIdThumbnailMutationVariables = {fileId: string}
-
-    export const useGetApiFilesFileIdThumbnail = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiFilesFileIdThumbnail>>, TError,GetApiFilesFileIdThumbnailMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiFilesFileIdThumbnail>>,
-        TError,
-        GetApiFilesFileIdThumbnailMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiFilesFileIdThumbnailMutationOptions(options), queryClient);
-    }
-    export type postApiFilesResponse201 = {
+export type postApiFilesResponse201 = {
   data: FileResponse
   status: 201
 }
@@ -235,58 +111,6 @@ if(postApiFilesBody?.file !== undefined) {
 );}
 
 
-
-
-
-export const getPostApiFilesQueryKey = (postApiFilesBody?: MaybeRefOrGetter<PostApiFilesBody>,) => {
-    return [
-    'POST', 'api','files', postApiFilesBody
-    ] as const;
-    }
-
-
-export const getPostApiFilesQueryOptions = <TData = Awaited<ReturnType<typeof postApiFiles>>, TError = unknown>(postApiFilesBody?: MaybeRefOrGetter<PostApiFilesBody>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiFiles>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiFilesQueryKey(postApiFilesBody);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiFiles>>> = ({ signal }) => postApiFiles(toValue(postApiFilesBody), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiFiles>>, TError, TData>
-}
-
-export type PostApiFilesQueryResult = NonNullable<Awaited<ReturnType<typeof postApiFiles>>>
-export type PostApiFilesQueryError = unknown
-
-
-
-export function usePostApiFiles<TData = Awaited<ReturnType<typeof postApiFiles>>, TError = unknown>(
- postApiFilesBody?: MaybeRefOrGetter<PostApiFilesBody>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiFiles>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiFilesQueryOptions(postApiFilesBody,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type deleteApiFilesFileIdResponse200 = {
   data: void
   status: 200
@@ -317,57 +141,5 @@ export const deleteApiFilesFileId = async (fileId: string, options?: Parameters<
 
   }
 );}
-
-
-
-
-
-export const getDeleteApiFilesFileIdQueryKey = (fileId: MaybeRefOrGetter<string>,) => {
-    return [
-    'DELETE', 'api','files',fileId
-    ] as const;
-    }
-
-
-export const getDeleteApiFilesFileIdQueryOptions = <TData = Awaited<ReturnType<typeof deleteApiFilesFileId>>, TError = unknown>(fileId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiFilesFileId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getDeleteApiFilesFileIdQueryKey(fileId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteApiFilesFileId>>> = ({ signal }) => deleteApiFilesFileId(toValue(fileId), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(fileId) !== null && toValue(fileId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteApiFilesFileId>>, TError, TData>
-}
-
-export type DeleteApiFilesFileIdQueryResult = NonNullable<Awaited<ReturnType<typeof deleteApiFilesFileId>>>
-export type DeleteApiFilesFileIdQueryError = unknown
-
-
-
-export function useDeleteApiFilesFileId<TData = Awaited<ReturnType<typeof deleteApiFilesFileId>>, TError = unknown>(
- fileId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiFilesFileId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getDeleteApiFilesFileIdQueryOptions(fileId,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 

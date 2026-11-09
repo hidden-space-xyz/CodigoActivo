@@ -1,8 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using CodigoActivo.Application.Abstractions.Auditing;
-using CodigoActivo.Application.Common.Querying;
-using CodigoActivo.Application.Common.Validation;
-
 namespace CodigoActivo.Application.Logs.Contracts;
 
 /// <summary>

@@ -1,5 +1,6 @@
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Accounts;
+using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.EmailAddresses;
 using CodigoActivo.Application.Accounts.Erasure;
 using CodigoActivo.Application.Accounts.Notifications;
@@ -10,6 +11,7 @@ using CodigoActivo.Composition.Configuration;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.Infrastructure.Communication.Templates;
+using CodigoActivo.Infrastructure.Messaging;
 using CodigoActivo.Infrastructure.Security;
 using CodigoActivo.Infrastructure.Users;
 using Microsoft.Extensions.Configuration;
@@ -60,8 +62,10 @@ internal static class AccountsRegistration
         services.AddScoped<PersonalDataReader>();
         services.AddScoped<AuthenticatorCodeVerifier>();
         services.AddScoped<DisposableEmailChecker>();
-        services.AddHostedService<ExpiredSessionCleanupWorker>();
-        services.AddHostedService<ExpiredAccountChangeCleanupWorker>();
+        services.AddSingleton(ScheduledJob.Of<RemoveExpiredSessionsCommand>(TimeSpan.FromHours(1)));
+        services.AddSingleton(
+            ScheduledJob.Of<DiscardExpiredAccountChangesCommand>(TimeSpan.FromHours(1))
+        );
         services.AddSingleton(provider => new DisposableEmailDomainDownloader(
             new SocketsHttpHandler { AutomaticDecompression = System.Net.DecompressionMethods.All },
             provider.GetRequiredService<DisposableEmailDomainOptions>()
@@ -77,8 +81,6 @@ internal static class AccountsRegistration
         services.AddFixedOptions<PasswordLockoutOptions>();
         services.AddFixedOptions<TwoFactorOptions>();
         services.AddFixedOptions<SessionLifetimeOptions>();
-        services.AddFixedOptions<SessionCleanupOptions>();
-        services.AddFixedOptions<ExpiredAccountChangeCleanupOptions>();
         services.AddFixedOptions<DisposableEmailDomainOptions>();
         services.AddValidatedOptions<InitialAdministratorOptions>(options =>
             options.Email = settings.Text("BOOTSTRAP_ADMIN_EMAIL", string.Empty)

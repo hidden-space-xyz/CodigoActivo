@@ -4,31 +4,6 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/vue-query';
-import type {
-  DataTag,
-  MutationFunction,
-  QueryClient,
-  QueryFunction,
-  QueryKey,
-  UseMutationOptions,
-  UseMutationReturnType,
-  UseQueryOptions,
-  UseQueryReturnType
-} from '@tanstack/vue-query';
-
-import {
-  computed,
-  toValue,
-  unref
-} from 'vue';
-import type {
-  MaybeRefOrGetter
-} from 'vue';
-
 import type {
   CreatePartnerRequest,
   GetApiPartnersParams,
@@ -38,11 +13,6 @@ import type {
 } from '../../models';
 
 import { httpClient } from '../../../http-client';
-
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
 
 export type getApiPartnersResponse200 = {
   data: PartnerResponsePagedResult
@@ -83,54 +53,7 @@ export const getApiPartners = async (params?: GetApiPartnersParams, options?: Pa
 );}
 
 
-
-
-
-export const getGetApiPartnersMutationKey = () => ['getApiPartners'] as const;
-
-export const getGetApiPartnersMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiPartners>>, TError,GetApiPartnersMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiPartners>>, TError,GetApiPartnersMutationVariables, TContext> => {
-
-const mutationKey = getGetApiPartnersMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiPartners>>, GetApiPartnersMutationVariables> = (props) => {
-          const {params} = props ?? {};
-
-          return  getApiPartners(params,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiPartnersMutationResult = NonNullable<Awaited<ReturnType<typeof getApiPartners>>>
-
-    export type GetApiPartnersMutationError = unknown
-    export type GetApiPartnersMutationVariables = {params?: GetApiPartnersParams}
-
-    export const useGetApiPartners = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiPartners>>, TError,GetApiPartnersMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiPartners>>,
-        TError,
-        GetApiPartnersMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiPartnersMutationOptions(options), queryClient);
-    }
-    export type postApiPartnersResponse201 = {
+export type postApiPartnersResponse201 = {
   data: PartnerResponse
   status: 201
 }
@@ -176,58 +99,6 @@ return httpClient<postApiPartnersResponse>(getPostApiPartnersUrl(),
 );}
 
 
-
-
-
-export const getPostApiPartnersQueryKey = (createPartnerRequest?: MaybeRefOrGetter<CreatePartnerRequest>,) => {
-    return [
-    'POST', 'api','partners', createPartnerRequest
-    ] as const;
-    }
-
-
-export const getPostApiPartnersQueryOptions = <TData = Awaited<ReturnType<typeof postApiPartners>>, TError = unknown>(createPartnerRequest?: MaybeRefOrGetter<CreatePartnerRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiPartners>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiPartnersQueryKey(createPartnerRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiPartners>>> = ({ signal }) => postApiPartners(toValue(createPartnerRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiPartners>>, TError, TData>
-}
-
-export type PostApiPartnersQueryResult = NonNullable<Awaited<ReturnType<typeof postApiPartners>>>
-export type PostApiPartnersQueryError = unknown
-
-
-
-export function usePostApiPartners<TData = Awaited<ReturnType<typeof postApiPartners>>, TError = unknown>(
- createPartnerRequest?: MaybeRefOrGetter<CreatePartnerRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiPartners>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiPartnersQueryOptions(createPartnerRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type getApiPartnersPartnerIdResponse200 = {
   data: PartnerResponse
   status: 200
@@ -260,54 +131,7 @@ export const getApiPartnersPartnerId = async (partnerId: string, options?: Param
 );}
 
 
-
-
-
-export const getGetApiPartnersPartnerIdMutationKey = () => ['getApiPartnersPartnerId'] as const;
-
-export const getGetApiPartnersPartnerIdMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiPartnersPartnerId>>, TError,GetApiPartnersPartnerIdMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiPartnersPartnerId>>, TError,GetApiPartnersPartnerIdMutationVariables, TContext> => {
-
-const mutationKey = getGetApiPartnersPartnerIdMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiPartnersPartnerId>>, GetApiPartnersPartnerIdMutationVariables> = (props) => {
-          const {partnerId} = props ?? {};
-
-          return  getApiPartnersPartnerId(partnerId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiPartnersPartnerIdMutationResult = NonNullable<Awaited<ReturnType<typeof getApiPartnersPartnerId>>>
-
-    export type GetApiPartnersPartnerIdMutationError = unknown
-    export type GetApiPartnersPartnerIdMutationVariables = {partnerId: string}
-
-    export const useGetApiPartnersPartnerId = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiPartnersPartnerId>>, TError,GetApiPartnersPartnerIdMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiPartnersPartnerId>>,
-        TError,
-        GetApiPartnersPartnerIdMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiPartnersPartnerIdMutationOptions(options), queryClient);
-    }
-    export type putApiPartnersPartnerIdResponse200 = {
+export type putApiPartnersPartnerIdResponse200 = {
   data: PartnerResponse
   status: 200
 }
@@ -354,61 +178,6 @@ return httpClient<putApiPartnersPartnerIdResponse>(getPutApiPartnersPartnerIdUrl
 );}
 
 
-
-
-
-export const getPutApiPartnersPartnerIdQueryKey = (partnerId: MaybeRefOrGetter<string>,
-    updatePartnerRequest?: MaybeRefOrGetter<UpdatePartnerRequest>,) => {
-    return [
-    'PUT', 'api','partners',partnerId, updatePartnerRequest
-    ] as const;
-    }
-
-
-export const getPutApiPartnersPartnerIdQueryOptions = <TData = Awaited<ReturnType<typeof putApiPartnersPartnerId>>, TError = unknown>(partnerId: MaybeRefOrGetter<string>,
-    updatePartnerRequest?: MaybeRefOrGetter<UpdatePartnerRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiPartnersPartnerId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPutApiPartnersPartnerIdQueryKey(partnerId,updatePartnerRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof putApiPartnersPartnerId>>> = ({ signal }) => putApiPartnersPartnerId(toValue(partnerId),toValue(updatePartnerRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(partnerId) !== null && toValue(partnerId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof putApiPartnersPartnerId>>, TError, TData>
-}
-
-export type PutApiPartnersPartnerIdQueryResult = NonNullable<Awaited<ReturnType<typeof putApiPartnersPartnerId>>>
-export type PutApiPartnersPartnerIdQueryError = unknown
-
-
-
-export function usePutApiPartnersPartnerId<TData = Awaited<ReturnType<typeof putApiPartnersPartnerId>>, TError = unknown>(
- partnerId: MaybeRefOrGetter<string>,
-    updatePartnerRequest?: MaybeRefOrGetter<UpdatePartnerRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiPartnersPartnerId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPutApiPartnersPartnerIdQueryOptions(partnerId,updatePartnerRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type deleteApiPartnersPartnerIdResponse200 = {
   data: void
   status: 200
@@ -439,57 +208,5 @@ export const deleteApiPartnersPartnerId = async (partnerId: string, options?: Pa
 
   }
 );}
-
-
-
-
-
-export const getDeleteApiPartnersPartnerIdQueryKey = (partnerId: MaybeRefOrGetter<string>,) => {
-    return [
-    'DELETE', 'api','partners',partnerId
-    ] as const;
-    }
-
-
-export const getDeleteApiPartnersPartnerIdQueryOptions = <TData = Awaited<ReturnType<typeof deleteApiPartnersPartnerId>>, TError = unknown>(partnerId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiPartnersPartnerId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getDeleteApiPartnersPartnerIdQueryKey(partnerId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteApiPartnersPartnerId>>> = ({ signal }) => deleteApiPartnersPartnerId(toValue(partnerId), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(partnerId) !== null && toValue(partnerId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteApiPartnersPartnerId>>, TError, TData>
-}
-
-export type DeleteApiPartnersPartnerIdQueryResult = NonNullable<Awaited<ReturnType<typeof deleteApiPartnersPartnerId>>>
-export type DeleteApiPartnersPartnerIdQueryError = unknown
-
-
-
-export function useDeleteApiPartnersPartnerId<TData = Awaited<ReturnType<typeof deleteApiPartnersPartnerId>>, TError = unknown>(
- partnerId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiPartnersPartnerId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getDeleteApiPartnersPartnerIdQueryOptions(partnerId,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 

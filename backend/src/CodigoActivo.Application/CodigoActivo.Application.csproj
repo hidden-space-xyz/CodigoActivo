@@ -8,6 +8,20 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
   <ItemGroup>
+    <Using Include="CodigoActivo.Application.Abstractions.Auditing" />
+    <Using Include="CodigoActivo.Application.Abstractions.Messaging" />
+    <Using Include="CodigoActivo.Application.Abstractions.Persistence" />
+    <Using Include="CodigoActivo.Application.Abstractions.Querying" />
+    <Using Include="CodigoActivo.Application.Abstractions.Security" />
+    <Using Include="CodigoActivo.Application.Abstractions.Time" />
+    <Using Include="CodigoActivo.Application.Common.Errors" />
+    <Using Include="CodigoActivo.Application.Common.Querying" />
+    <Using Include="CodigoActivo.Application.Common.Security" />
+    <Using Include="CodigoActivo.Application.Common.Validation" />
+    <Using Include="CodigoActivo.Domain.Common" />
+    <Using Include="System.ComponentModel.DataAnnotations" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\CodigoActivo.Domain\CodigoActivo.Domain.csproj" />
   </ItemGroup>
 </Project>

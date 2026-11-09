@@ -1,12 +1,6 @@
-using System.ComponentModel.DataAnnotations;
-using CodigoActivo.Application.Abstractions.Auditing;
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.BlockedData.Contracts;
-using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.BlockedData;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.BlockedData.Commands;

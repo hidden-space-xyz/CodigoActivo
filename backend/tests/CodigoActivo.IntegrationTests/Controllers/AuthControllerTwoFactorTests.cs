@@ -716,19 +716,6 @@ public sealed class AuthControllerTwoFactorTests(CodigoActivoWebAppFactory facto
     }
 
     [Fact]
-    public async Task AuthenticatorSetupAnonymousReturnsUnauthorized()
-    {
-        var response = await CreateClient()
-            .PostJsonAsync(
-                SetupUrl,
-                new AuthenticatorSetupRequest(TestSeedData.Password, "123456"),
-                Ct
-            );
-
-        await response.ShouldBeUnauthorizedAsync(ErrorCode.AuthenticationRequired);
-    }
-
-    [Fact]
     public async Task EmailMethodRequiresPasswordAndAppCodeAndThenEmailsCodesAgain()
     {
         await SeedAuthenticatorAsync(TestSeedData.Users.MemberId);

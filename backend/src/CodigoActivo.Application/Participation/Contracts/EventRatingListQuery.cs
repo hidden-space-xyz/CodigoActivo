@@ -1,5 +1,3 @@
-using CodigoActivo.Application.Common.Querying;
-
 namespace CodigoActivo.Application.Participation.Contracts;
 
 /// <summary>

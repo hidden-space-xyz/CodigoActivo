@@ -47,8 +47,7 @@ public sealed class VerifyTimeOverlapsQueryHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.ActivityNotFound);
     }
 
     [Fact]
@@ -186,7 +185,6 @@ public sealed class VerifyTimeOverlapsQueryHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Forbidden);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActingForAnotherUserForbidden);
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.ActingForAnotherUserForbidden);
     }
 }

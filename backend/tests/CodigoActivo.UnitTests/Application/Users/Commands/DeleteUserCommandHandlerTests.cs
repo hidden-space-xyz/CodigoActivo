@@ -47,8 +47,7 @@ public sealed class DeleteUserCommandHandlerTests
             .DidNotReceiveWithAnyArgs()
             .LoadHouseholdAsync(default, TestContext.Current.CancellationToken);
         users.DidNotReceiveWithAnyArgs().Remove(default!);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     private async Task AssertErasedAsync(User user)

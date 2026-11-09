@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Domain.Files;
 

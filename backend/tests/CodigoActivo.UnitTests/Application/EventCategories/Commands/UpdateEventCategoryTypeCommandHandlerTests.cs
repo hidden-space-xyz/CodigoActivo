@@ -36,8 +36,7 @@ public sealed class UpdateEventCategoryTypeCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.EventCategoryTypeNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventCategoryTypeNotFound);
     }
 
     [Fact]
@@ -60,8 +59,10 @@ public sealed class UpdateEventCategoryTypeCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ApplicationErrorCode.EventCategoryTypeNameAlreadyExists);
+        result.ShouldFail(
+            ErrorKind.Conflict,
+            ApplicationErrorCode.EventCategoryTypeNameAlreadyExists
+        );
     }
 
     [Fact]

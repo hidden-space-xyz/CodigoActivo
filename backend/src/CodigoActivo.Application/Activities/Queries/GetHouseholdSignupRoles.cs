@@ -1,9 +1,5 @@
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Querying;
-using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Common.Catalogs;
-using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
 
 namespace CodigoActivo.Application.Activities.Queries;

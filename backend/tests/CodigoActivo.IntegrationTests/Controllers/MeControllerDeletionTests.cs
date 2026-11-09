@@ -49,59 +49,38 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         return Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                Persisted.As<StoredFile>(
-                    new
-                    {
-                        Id = ThumbnailId,
-                        Extension = "png",
-                        UploadedAt = SeededAt,
-                        UploadedBy = TestSeedData.Users.AdminId,
-                    }
-                )
+                TestEntities.New<StoredFile>(new { Id = ThumbnailId, UploadedAt = SeededAt })
             );
             db.TermsDocuments.Add(
-                Persisted.As<TermsDocument>(
-                    new
-                    {
-                        Id = TermsDocumentId,
-                        Name = "Condiciones 2026",
-                        Description = "{}",
-                    }
+                TestEntities.New<TermsDocument>(
+                    new { Id = TermsDocumentId, Name = "Condiciones 2026" }
                 )
             );
             db.Events.Add(
-                Persisted.As<Event>(
+                TestEntities.New<Event>(
                     new
                     {
                         Id = EventId,
-                        Title = "Evento",
-                        Subtitle = "Sub",
-                        Description = "{}",
                         EventStartsAt = new DateOnly(2026, 6, 1),
                         EventEndsAt = new DateOnly(2026, 6, 2),
                         SignupStartsAt = SeededAt,
                         SignupEndsAt = SeededAt.AddDays(10),
                         ThumbnailId = ThumbnailId,
                         CreatedAt = SeededAt,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
             db.Activities.Add(
-                Persisted.As<Activity>(
+                TestEntities.New<Activity>(
                     new
                     {
                         Id = ActivityId,
                         Title = "Taller",
-                        Description = "Descripción",
-                        Location = "Sala",
                         ActivityStartsAt = new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero),
                         ActivityEndsAt = new DateTimeOffset(2026, 6, 1, 12, 0, 0, TimeSpan.Zero),
                         EventId = EventId,
-                        Modality = ActivityModality.Presencial,
                         ThumbnailId = ThumbnailId,
                         CreatedAt = SeededAt,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
@@ -459,24 +438,14 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                Persisted.As<StoredFile>(
-                    new
-                    {
-                        Id = ThumbnailId,
-                        Extension = "png",
-                        UploadedAt = SeededAt,
-                        UploadedBy = TestSeedData.Users.AdminId,
-                    }
-                )
+                TestEntities.New<StoredFile>(new { Id = ThumbnailId, UploadedAt = SeededAt })
             );
             db.News.Add(
-                Persisted.As<NewsItem>(
+                TestEntities.New<NewsItem>(
                     new
                     {
                         Id = newsItemId,
                         Title = "Nota",
-                        Subtitle = "Sub",
-                        Description = "{}",
                         ThumbnailId = ThumbnailId,
                         CreatedAt = SeededAt,
                         CreatedBy = TestSeedData.Users.MemberId,
@@ -507,24 +476,14 @@ public sealed class MeControllerDeletionTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                Persisted.As<StoredFile>(
-                    new
-                    {
-                        Id = ThumbnailId,
-                        Extension = "png",
-                        UploadedAt = SeededAt,
-                        UploadedBy = TestSeedData.Users.AdminId,
-                    }
-                )
+                TestEntities.New<StoredFile>(new { Id = ThumbnailId, UploadedAt = SeededAt })
             );
             db.News.Add(
-                Persisted.As<NewsItem>(
+                TestEntities.New<NewsItem>(
                     new
                     {
                         Id = newsItemId,
                         Title = "Nota",
-                        Subtitle = "Sub",
-                        Description = "{}",
                         ThumbnailId = ThumbnailId,
                         CreatedAt = SeededAt,
                         CreatedBy = TestSeedData.Users.MemberId,

@@ -272,8 +272,7 @@ public sealed class SaveEventRatingCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.EventRatingEmpty);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventRatingEmpty);
         await ratings
             .DidNotReceiveWithAnyArgs()
             .AddAsync(default!, TestContext.Current.CancellationToken);

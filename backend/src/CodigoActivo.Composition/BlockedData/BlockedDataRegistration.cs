@@ -1,9 +1,11 @@
 using CodigoActivo.Application.BlockedData;
+using CodigoActivo.Application.BlockedData.Commands;
 using CodigoActivo.Composition.Configuration;
 using CodigoActivo.Domain.BlockedData;
 using CodigoActivo.Infrastructure.BlockedData;
 using CodigoActivo.Infrastructure.Communication.Templates;
 using CodigoActivo.Infrastructure.DataHistory;
+using CodigoActivo.Infrastructure.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CodigoActivo.Composition.BlockedData;
@@ -29,7 +31,7 @@ internal static class BlockedDataRegistration
         services.AddSingleton<IBlockedDataEmailComposer, BlockedDataEmailComposer>();
         services.AddFixedOptions<DataHistoryRetentionOptions>();
         services.AddScoped<IDataHistoryRetention, DataHistoryRetention>();
-        services.AddHostedService<DataHistoryPurgeWorker>();
+        services.AddSingleton(ScheduledJob.Of<PurgeDataHistoryCommand>(TimeSpan.FromHours(1)));
         return services;
     }
 }

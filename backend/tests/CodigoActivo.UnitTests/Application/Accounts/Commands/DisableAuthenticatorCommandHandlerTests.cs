@@ -71,8 +71,7 @@ public sealed class DisableAuthenticatorCommandHandlerTests
 
     private Task<int> AssertNotSavedAsync()
     {
-        return uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        return uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -108,8 +107,7 @@ public sealed class DisableAuthenticatorCommandHandlerTests
         totp.DidNotReceiveWithAnyArgs().MatchStep(default!, default!, default);
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
         user.PasswordLockout.FailedAttempts.Should().Be(1);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]

@@ -1,8 +1,4 @@
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Querying;
-using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Sessions;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Accounts.Queries;

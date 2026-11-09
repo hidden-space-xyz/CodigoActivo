@@ -1,5 +1,3 @@
-using CodigoActivo.Application.Abstractions.Auditing;
-
 namespace CodigoActivo.Application.Logs.Contracts;
 
 /// <summary>

@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Common.Validation;

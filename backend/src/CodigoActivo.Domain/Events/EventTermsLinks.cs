@@ -1,4 +1,3 @@
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.TermsDocuments;
 
 namespace CodigoActivo.Domain.Events;

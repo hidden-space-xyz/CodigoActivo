@@ -4,16 +4,6 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import {
-  useMutation
-} from '@tanstack/vue-query';
-import type {
-  MutationFunction,
-  QueryClient,
-  UseMutationOptions,
-  UseMutationReturnType
-} from '@tanstack/vue-query';
-
 import type {
   DashboardAnalyticsResponse,
   DashboardSummaryResponse,
@@ -26,11 +16,6 @@ import type {
 } from '../../models';
 
 import { httpClient } from '../../../http-client';
-
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
 
 export type getApiReportsEventsEventIdSummaryResponse200 = {
   data: EventSummaryResponse
@@ -64,54 +49,7 @@ export const getApiReportsEventsEventIdSummary = async (eventId: string, options
 );}
 
 
-
-
-
-export const getGetApiReportsEventsEventIdSummaryMutationKey = () => ['getApiReportsEventsEventIdSummary'] as const;
-
-export const getGetApiReportsEventsEventIdSummaryMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsEventsEventIdSummary>>, TError,GetApiReportsEventsEventIdSummaryMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiReportsEventsEventIdSummary>>, TError,GetApiReportsEventsEventIdSummaryMutationVariables, TContext> => {
-
-const mutationKey = getGetApiReportsEventsEventIdSummaryMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiReportsEventsEventIdSummary>>, GetApiReportsEventsEventIdSummaryMutationVariables> = (props) => {
-          const {eventId} = props ?? {};
-
-          return  getApiReportsEventsEventIdSummary(eventId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiReportsEventsEventIdSummaryMutationResult = NonNullable<Awaited<ReturnType<typeof getApiReportsEventsEventIdSummary>>>
-
-    export type GetApiReportsEventsEventIdSummaryMutationError = unknown
-    export type GetApiReportsEventsEventIdSummaryMutationVariables = {eventId: string}
-
-    export const useGetApiReportsEventsEventIdSummary = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsEventsEventIdSummary>>, TError,GetApiReportsEventsEventIdSummaryMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiReportsEventsEventIdSummary>>,
-        TError,
-        GetApiReportsEventsEventIdSummaryMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiReportsEventsEventIdSummaryMutationOptions(options), queryClient);
-    }
-    export type getApiReportsEventsEventIdAttendeesResponse200 = {
+export type getApiReportsEventsEventIdAttendeesResponse200 = {
   data: EventAttendeeResponsePagedResult
   status: 200
 }
@@ -152,54 +90,7 @@ export const getApiReportsEventsEventIdAttendees = async (eventId: string,
 );}
 
 
-
-
-
-export const getGetApiReportsEventsEventIdAttendeesMutationKey = () => ['getApiReportsEventsEventIdAttendees'] as const;
-
-export const getGetApiReportsEventsEventIdAttendeesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsEventsEventIdAttendees>>, TError,GetApiReportsEventsEventIdAttendeesMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiReportsEventsEventIdAttendees>>, TError,GetApiReportsEventsEventIdAttendeesMutationVariables, TContext> => {
-
-const mutationKey = getGetApiReportsEventsEventIdAttendeesMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiReportsEventsEventIdAttendees>>, GetApiReportsEventsEventIdAttendeesMutationVariables> = (props) => {
-          const {eventId,params} = props ?? {};
-
-          return  getApiReportsEventsEventIdAttendees(eventId,params,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiReportsEventsEventIdAttendeesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiReportsEventsEventIdAttendees>>>
-
-    export type GetApiReportsEventsEventIdAttendeesMutationError = unknown
-    export type GetApiReportsEventsEventIdAttendeesMutationVariables = {eventId: string;params?: GetApiReportsEventsEventIdAttendeesParams}
-
-    export const useGetApiReportsEventsEventIdAttendees = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsEventsEventIdAttendees>>, TError,GetApiReportsEventsEventIdAttendeesMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiReportsEventsEventIdAttendees>>,
-        TError,
-        GetApiReportsEventsEventIdAttendeesMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiReportsEventsEventIdAttendeesMutationOptions(options), queryClient);
-    }
-    export type getApiReportsEventsEventIdBadgesResponse200 = {
+export type getApiReportsEventsEventIdBadgesResponse200 = {
   data: EventBadgesResponse
   status: 200
 }
@@ -231,54 +122,7 @@ export const getApiReportsEventsEventIdBadges = async (eventId: string, options?
 );}
 
 
-
-
-
-export const getGetApiReportsEventsEventIdBadgesMutationKey = () => ['getApiReportsEventsEventIdBadges'] as const;
-
-export const getGetApiReportsEventsEventIdBadgesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsEventsEventIdBadges>>, TError,GetApiReportsEventsEventIdBadgesMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiReportsEventsEventIdBadges>>, TError,GetApiReportsEventsEventIdBadgesMutationVariables, TContext> => {
-
-const mutationKey = getGetApiReportsEventsEventIdBadgesMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiReportsEventsEventIdBadges>>, GetApiReportsEventsEventIdBadgesMutationVariables> = (props) => {
-          const {eventId} = props ?? {};
-
-          return  getApiReportsEventsEventIdBadges(eventId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiReportsEventsEventIdBadgesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiReportsEventsEventIdBadges>>>
-
-    export type GetApiReportsEventsEventIdBadgesMutationError = unknown
-    export type GetApiReportsEventsEventIdBadgesMutationVariables = {eventId: string}
-
-    export const useGetApiReportsEventsEventIdBadges = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsEventsEventIdBadges>>, TError,GetApiReportsEventsEventIdBadgesMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiReportsEventsEventIdBadges>>,
-        TError,
-        GetApiReportsEventsEventIdBadgesMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiReportsEventsEventIdBadgesMutationOptions(options), queryClient);
-    }
-    export type getApiReportsEventsEventIdRosterResponse200 = {
+export type getApiReportsEventsEventIdRosterResponse200 = {
   data: EventRosterResponse
   status: 200
 }
@@ -310,54 +154,7 @@ export const getApiReportsEventsEventIdRoster = async (eventId: string, options?
 );}
 
 
-
-
-
-export const getGetApiReportsEventsEventIdRosterMutationKey = () => ['getApiReportsEventsEventIdRoster'] as const;
-
-export const getGetApiReportsEventsEventIdRosterMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsEventsEventIdRoster>>, TError,GetApiReportsEventsEventIdRosterMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiReportsEventsEventIdRoster>>, TError,GetApiReportsEventsEventIdRosterMutationVariables, TContext> => {
-
-const mutationKey = getGetApiReportsEventsEventIdRosterMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiReportsEventsEventIdRoster>>, GetApiReportsEventsEventIdRosterMutationVariables> = (props) => {
-          const {eventId} = props ?? {};
-
-          return  getApiReportsEventsEventIdRoster(eventId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiReportsEventsEventIdRosterMutationResult = NonNullable<Awaited<ReturnType<typeof getApiReportsEventsEventIdRoster>>>
-
-    export type GetApiReportsEventsEventIdRosterMutationError = unknown
-    export type GetApiReportsEventsEventIdRosterMutationVariables = {eventId: string}
-
-    export const useGetApiReportsEventsEventIdRoster = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsEventsEventIdRoster>>, TError,GetApiReportsEventsEventIdRosterMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiReportsEventsEventIdRoster>>,
-        TError,
-        GetApiReportsEventsEventIdRosterMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiReportsEventsEventIdRosterMutationOptions(options), queryClient);
-    }
-    export type getApiReportsDashboardResponse200 = {
+export type getApiReportsDashboardResponse200 = {
   data: DashboardSummaryResponse
   status: 200
 }
@@ -389,54 +186,7 @@ export const getApiReportsDashboard = async ( options?: Parameters<typeof httpCl
 );}
 
 
-
-
-
-export const getGetApiReportsDashboardMutationKey = () => ['getApiReportsDashboard'] as const;
-
-export const getGetApiReportsDashboardMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsDashboard>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiReportsDashboard>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiReportsDashboardMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiReportsDashboard>>, void> = () => {
-
-
-          return  getApiReportsDashboard(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiReportsDashboardMutationResult = NonNullable<Awaited<ReturnType<typeof getApiReportsDashboard>>>
-
-    export type GetApiReportsDashboardMutationError = unknown
-
-
-    export const useGetApiReportsDashboard = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsDashboard>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiReportsDashboard>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiReportsDashboardMutationOptions(options), queryClient);
-    }
-    export type getApiReportsDashboardAnalyticsResponse200 = {
+export type getApiReportsDashboardAnalyticsResponse200 = {
   data: DashboardAnalyticsResponse
   status: 200
 }
@@ -475,50 +225,3 @@ export const getApiReportsDashboardAnalytics = async (params?: GetApiReportsDash
 );}
 
 
-
-
-
-export const getGetApiReportsDashboardAnalyticsMutationKey = () => ['getApiReportsDashboardAnalytics'] as const;
-
-export const getGetApiReportsDashboardAnalyticsMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsDashboardAnalytics>>, TError,GetApiReportsDashboardAnalyticsMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiReportsDashboardAnalytics>>, TError,GetApiReportsDashboardAnalyticsMutationVariables, TContext> => {
-
-const mutationKey = getGetApiReportsDashboardAnalyticsMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiReportsDashboardAnalytics>>, GetApiReportsDashboardAnalyticsMutationVariables> = (props) => {
-          const {params} = props ?? {};
-
-          return  getApiReportsDashboardAnalytics(params,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiReportsDashboardAnalyticsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiReportsDashboardAnalytics>>>
-
-    export type GetApiReportsDashboardAnalyticsMutationError = unknown
-    export type GetApiReportsDashboardAnalyticsMutationVariables = {params?: GetApiReportsDashboardAnalyticsParams}
-
-    export const useGetApiReportsDashboardAnalytics = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiReportsDashboardAnalytics>>, TError,GetApiReportsDashboardAnalyticsMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiReportsDashboardAnalytics>>,
-        TError,
-        GetApiReportsDashboardAnalyticsMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiReportsDashboardAnalyticsMutationOptions(options), queryClient);
-    }

@@ -1,9 +1,4 @@
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Querying;
-using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Participation.Contracts;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Participation.Queries;

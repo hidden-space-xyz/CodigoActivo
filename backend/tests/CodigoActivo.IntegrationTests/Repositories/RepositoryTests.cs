@@ -63,11 +63,10 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
             )
         );
         db.Files.Add(
-            Persisted.As<StoredFile>(
+            TestEntities.New<StoredFile>(
                 new
                 {
                     Id = ThumbId,
-                    Extension = "png",
                     UploadedAt = Fixed,
                     UploadedBy = AuthorId,
                 }
@@ -131,7 +130,7 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
         string description = "{}"
     )
     {
-        return Persisted.As<Event>(
+        return TestEntities.New<Event>(
             new
             {
                 Id = Guid.NewGuid(),
@@ -154,7 +153,7 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
         string description = "{}"
     )
     {
-        return Persisted.As<NewsItem>(
+        return TestEntities.New<NewsItem>(
             new
             {
                 Id = Guid.NewGuid(),
@@ -188,11 +187,10 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
 
     private static StoredFile NewStoredFile()
     {
-        return Persisted.As<StoredFile>(
+        return TestEntities.New<StoredFile>(
             new
             {
                 Id = Guid.NewGuid(),
-                Extension = "png",
                 UploadedAt = Fixed,
                 UploadedBy = AuthorId,
             }
@@ -206,7 +204,7 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
         DateTimeOffset? endsAt = null
     )
     {
-        return Persisted.As<Activity>(
+        return TestEntities.New<Activity>(
             new
             {
                 Id = Guid.NewGuid(),
@@ -216,7 +214,6 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
                 ActivityStartsAt = startsAt ?? Fixed,
                 ActivityEndsAt = endsAt ?? Fixed.AddHours(1),
                 EventId = eventId,
-                Modality = ActivityModality.Presencial,
                 ThumbnailId = ThumbId,
                 CreatedAt = Fixed,
                 CreatedBy = AuthorId,

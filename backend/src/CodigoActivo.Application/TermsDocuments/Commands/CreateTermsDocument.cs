@@ -1,10 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using CodigoActivo.Application.Abstractions.Auditing;
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Validation;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.TermsDocuments;
 
 namespace CodigoActivo.Application.TermsDocuments.Commands;

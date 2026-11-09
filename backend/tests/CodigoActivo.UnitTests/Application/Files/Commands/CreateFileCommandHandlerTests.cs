@@ -271,8 +271,7 @@ public sealed class CreateFileCommandHandlerTests
 
     private Task<int> AssertNotSavedAsync()
     {
-        return uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        return uow.DidNotSaveAsync();
     }
 
     private async Task AssertNothingPersistedAsync()

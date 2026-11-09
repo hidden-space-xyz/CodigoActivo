@@ -1,7 +1,3 @@
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Querying;
-using CodigoActivo.Application.Abstractions.Time;
-
 namespace CodigoActivo.Application.Events.Queries;
 
 /// <summary>

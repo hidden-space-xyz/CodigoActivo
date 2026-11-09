@@ -1,5 +1,3 @@
-using CodigoActivo.Application.Abstractions.Security;
-
 namespace CodigoActivo.Application.Accounts.SecondFactor;
 
 /// <summary>

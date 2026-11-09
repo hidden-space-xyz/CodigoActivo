@@ -1,8 +1,5 @@
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.BlockedData.Contracts;
 using CodigoActivo.Domain.BlockedData;
-using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.BlockedData.Queries;
 

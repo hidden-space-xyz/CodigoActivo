@@ -78,10 +78,11 @@ public sealed class AssignHouseholdCommandHandlerTests
             isAdmin: true
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityHouseholdAssignmentsRequired);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(
+            ErrorKind.Validation,
+            ApplicationErrorCode.ActivityHouseholdAssignmentsRequired
+        );
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -98,10 +99,8 @@ public sealed class AssignHouseholdCommandHandlerTests
             isAdmin: false
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.ActivityNotFound);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -120,10 +119,8 @@ public sealed class AssignHouseholdCommandHandlerTests
             isAdmin: false
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivitySignupClosed);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivitySignupClosed);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -142,10 +139,11 @@ public sealed class AssignHouseholdCommandHandlerTests
             isAdmin: true
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Forbidden);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityHouseholdMemberNotAllowed);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(
+            ErrorKind.Forbidden,
+            ApplicationErrorCode.ActivityHouseholdMemberNotAllowed
+        );
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -168,8 +166,7 @@ public sealed class AssignHouseholdCommandHandlerTests
             ErrorKind.Forbidden,
             ApplicationErrorCode.ActivityHouseholdMemberNotAllowed
         );
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -188,11 +185,9 @@ public sealed class AssignHouseholdCommandHandlerTests
 
         var result = await AssignHouseholdAsync(activityId, actingUserId, request, isAdmin: false);
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityRoleNotAllowed);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityRoleNotAllowed);
         activity.Assignments.Should().BeEmpty();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -220,13 +215,11 @@ public sealed class AssignHouseholdCommandHandlerTests
             isAdmin: false
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.EventTermsAcceptanceRequired);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EventTermsAcceptanceRequired);
         await termsAcceptances
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -331,10 +324,8 @@ public sealed class AssignHouseholdCommandHandlerTests
 
         var result = await AssignHouseholdAsync(activityId, actingUserId, request, isAdmin: false);
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivitySignupEarlyOnly);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivitySignupEarlyOnly);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -426,8 +417,7 @@ public sealed class AssignHouseholdCommandHandlerTests
             isAdmin: false
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityAssignmentAlreadyExists);
+        result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.ActivityAssignmentAlreadyExists);
     }
 
     [Fact]

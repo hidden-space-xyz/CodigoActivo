@@ -1,8 +1,4 @@
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.BlockedData;
-using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.BlockedData.Commands;
 

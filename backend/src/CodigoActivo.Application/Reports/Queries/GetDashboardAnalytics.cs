@@ -1,15 +1,10 @@
 using System.Linq.Expressions;
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
-using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Activities;
 using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Common.Catalogs;
-using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Reports.Contracts;
 using CodigoActivo.Domain.Activities;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Reports.Queries;

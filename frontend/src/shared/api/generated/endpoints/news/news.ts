@@ -4,31 +4,6 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/vue-query';
-import type {
-  DataTag,
-  MutationFunction,
-  QueryClient,
-  QueryFunction,
-  QueryKey,
-  UseMutationOptions,
-  UseMutationReturnType,
-  UseQueryOptions,
-  UseQueryReturnType
-} from '@tanstack/vue-query';
-
-import {
-  computed,
-  toValue,
-  unref
-} from 'vue';
-import type {
-  MaybeRefOrGetter
-} from 'vue';
-
 import type {
   CreateNewsItemRequest,
   GetApiNewsParams,
@@ -38,11 +13,6 @@ import type {
 } from '../../models';
 
 import { httpClient } from '../../../http-client';
-
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
 
 export type getApiNewsResponse200 = {
   data: NewsListItemResponsePagedResult
@@ -83,54 +53,7 @@ export const getApiNews = async (params?: GetApiNewsParams, options?: Parameters
 );}
 
 
-
-
-
-export const getGetApiNewsMutationKey = () => ['getApiNews'] as const;
-
-export const getGetApiNewsMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiNews>>, TError,GetApiNewsMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiNews>>, TError,GetApiNewsMutationVariables, TContext> => {
-
-const mutationKey = getGetApiNewsMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiNews>>, GetApiNewsMutationVariables> = (props) => {
-          const {params} = props ?? {};
-
-          return  getApiNews(params,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiNewsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiNews>>>
-
-    export type GetApiNewsMutationError = unknown
-    export type GetApiNewsMutationVariables = {params?: GetApiNewsParams}
-
-    export const useGetApiNews = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiNews>>, TError,GetApiNewsMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiNews>>,
-        TError,
-        GetApiNewsMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiNewsMutationOptions(options), queryClient);
-    }
-    export type postApiNewsResponse201 = {
+export type postApiNewsResponse201 = {
   data: NewsItemResponse
   status: 201
 }
@@ -176,58 +99,6 @@ return httpClient<postApiNewsResponse>(getPostApiNewsUrl(),
 );}
 
 
-
-
-
-export const getPostApiNewsQueryKey = (createNewsItemRequest?: MaybeRefOrGetter<CreateNewsItemRequest>,) => {
-    return [
-    'POST', 'api','news', createNewsItemRequest
-    ] as const;
-    }
-
-
-export const getPostApiNewsQueryOptions = <TData = Awaited<ReturnType<typeof postApiNews>>, TError = unknown>(createNewsItemRequest?: MaybeRefOrGetter<CreateNewsItemRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiNews>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiNewsQueryKey(createNewsItemRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiNews>>> = ({ signal }) => postApiNews(toValue(createNewsItemRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiNews>>, TError, TData>
-}
-
-export type PostApiNewsQueryResult = NonNullable<Awaited<ReturnType<typeof postApiNews>>>
-export type PostApiNewsQueryError = unknown
-
-
-
-export function usePostApiNews<TData = Awaited<ReturnType<typeof postApiNews>>, TError = unknown>(
- createNewsItemRequest?: MaybeRefOrGetter<CreateNewsItemRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiNews>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiNewsQueryOptions(createNewsItemRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type getApiNewsYearsResponse200 = {
   data: number[]
   status: 200
@@ -260,54 +131,7 @@ export const getApiNewsYears = async ( options?: Parameters<typeof httpClient>[1
 );}
 
 
-
-
-
-export const getGetApiNewsYearsMutationKey = () => ['getApiNewsYears'] as const;
-
-export const getGetApiNewsYearsMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiNewsYears>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiNewsYears>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiNewsYearsMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiNewsYears>>, void> = () => {
-
-
-          return  getApiNewsYears(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiNewsYearsMutationResult = NonNullable<Awaited<ReturnType<typeof getApiNewsYears>>>
-
-    export type GetApiNewsYearsMutationError = unknown
-
-
-    export const useGetApiNewsYears = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiNewsYears>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiNewsYears>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiNewsYearsMutationOptions(options), queryClient);
-    }
-    export type getApiNewsNewsItemIdResponse200 = {
+export type getApiNewsNewsItemIdResponse200 = {
   data: NewsItemResponse
   status: 200
 }
@@ -339,54 +163,7 @@ export const getApiNewsNewsItemId = async (newsItemId: string, options?: Paramet
 );}
 
 
-
-
-
-export const getGetApiNewsNewsItemIdMutationKey = () => ['getApiNewsNewsItemId'] as const;
-
-export const getGetApiNewsNewsItemIdMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiNewsNewsItemId>>, TError,GetApiNewsNewsItemIdMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiNewsNewsItemId>>, TError,GetApiNewsNewsItemIdMutationVariables, TContext> => {
-
-const mutationKey = getGetApiNewsNewsItemIdMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiNewsNewsItemId>>, GetApiNewsNewsItemIdMutationVariables> = (props) => {
-          const {newsItemId} = props ?? {};
-
-          return  getApiNewsNewsItemId(newsItemId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiNewsNewsItemIdMutationResult = NonNullable<Awaited<ReturnType<typeof getApiNewsNewsItemId>>>
-
-    export type GetApiNewsNewsItemIdMutationError = unknown
-    export type GetApiNewsNewsItemIdMutationVariables = {newsItemId: string}
-
-    export const useGetApiNewsNewsItemId = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiNewsNewsItemId>>, TError,GetApiNewsNewsItemIdMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiNewsNewsItemId>>,
-        TError,
-        GetApiNewsNewsItemIdMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiNewsNewsItemIdMutationOptions(options), queryClient);
-    }
-    export type putApiNewsNewsItemIdResponse200 = {
+export type putApiNewsNewsItemIdResponse200 = {
   data: NewsItemResponse
   status: 200
 }
@@ -433,61 +210,6 @@ return httpClient<putApiNewsNewsItemIdResponse>(getPutApiNewsNewsItemIdUrl(newsI
 );}
 
 
-
-
-
-export const getPutApiNewsNewsItemIdQueryKey = (newsItemId: MaybeRefOrGetter<string>,
-    updateNewsItemRequest?: MaybeRefOrGetter<UpdateNewsItemRequest>,) => {
-    return [
-    'PUT', 'api','news',newsItemId, updateNewsItemRequest
-    ] as const;
-    }
-
-
-export const getPutApiNewsNewsItemIdQueryOptions = <TData = Awaited<ReturnType<typeof putApiNewsNewsItemId>>, TError = unknown>(newsItemId: MaybeRefOrGetter<string>,
-    updateNewsItemRequest?: MaybeRefOrGetter<UpdateNewsItemRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiNewsNewsItemId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPutApiNewsNewsItemIdQueryKey(newsItemId,updateNewsItemRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof putApiNewsNewsItemId>>> = ({ signal }) => putApiNewsNewsItemId(toValue(newsItemId),toValue(updateNewsItemRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(newsItemId) !== null && toValue(newsItemId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof putApiNewsNewsItemId>>, TError, TData>
-}
-
-export type PutApiNewsNewsItemIdQueryResult = NonNullable<Awaited<ReturnType<typeof putApiNewsNewsItemId>>>
-export type PutApiNewsNewsItemIdQueryError = unknown
-
-
-
-export function usePutApiNewsNewsItemId<TData = Awaited<ReturnType<typeof putApiNewsNewsItemId>>, TError = unknown>(
- newsItemId: MaybeRefOrGetter<string>,
-    updateNewsItemRequest?: MaybeRefOrGetter<UpdateNewsItemRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiNewsNewsItemId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPutApiNewsNewsItemIdQueryOptions(newsItemId,updateNewsItemRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type deleteApiNewsNewsItemIdResponse200 = {
   data: void
   status: 200
@@ -520,58 +242,6 @@ export const deleteApiNewsNewsItemId = async (newsItemId: string, options?: Para
 );}
 
 
-
-
-
-export const getDeleteApiNewsNewsItemIdQueryKey = (newsItemId: MaybeRefOrGetter<string>,) => {
-    return [
-    'DELETE', 'api','news',newsItemId
-    ] as const;
-    }
-
-
-export const getDeleteApiNewsNewsItemIdQueryOptions = <TData = Awaited<ReturnType<typeof deleteApiNewsNewsItemId>>, TError = unknown>(newsItemId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiNewsNewsItemId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getDeleteApiNewsNewsItemIdQueryKey(newsItemId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteApiNewsNewsItemId>>> = ({ signal }) => deleteApiNewsNewsItemId(toValue(newsItemId), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(newsItemId) !== null && toValue(newsItemId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteApiNewsNewsItemId>>, TError, TData>
-}
-
-export type DeleteApiNewsNewsItemIdQueryResult = NonNullable<Awaited<ReturnType<typeof deleteApiNewsNewsItemId>>>
-export type DeleteApiNewsNewsItemIdQueryError = unknown
-
-
-
-export function useDeleteApiNewsNewsItemId<TData = Awaited<ReturnType<typeof deleteApiNewsNewsItemId>>, TError = unknown>(
- newsItemId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiNewsNewsItemId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getDeleteApiNewsNewsItemIdQueryOptions(newsItemId,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type patchApiNewsNewsItemIdFeatureResponse200 = {
   data: NewsItemResponse
   status: 200
@@ -602,57 +272,5 @@ export const patchApiNewsNewsItemIdFeature = async (newsItemId: string, options?
 
   }
 );}
-
-
-
-
-
-export const getPatchApiNewsNewsItemIdFeatureQueryKey = (newsItemId: MaybeRefOrGetter<string>,) => {
-    return [
-    'PATCH', 'api','news',newsItemId,'feature'
-    ] as const;
-    }
-
-
-export const getPatchApiNewsNewsItemIdFeatureQueryOptions = <TData = Awaited<ReturnType<typeof patchApiNewsNewsItemIdFeature>>, TError = unknown>(newsItemId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiNewsNewsItemIdFeature>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPatchApiNewsNewsItemIdFeatureQueryKey(newsItemId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiNewsNewsItemIdFeature>>> = ({ signal }) => patchApiNewsNewsItemIdFeature(toValue(newsItemId), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(newsItemId) !== null && toValue(newsItemId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiNewsNewsItemIdFeature>>, TError, TData>
-}
-
-export type PatchApiNewsNewsItemIdFeatureQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiNewsNewsItemIdFeature>>>
-export type PatchApiNewsNewsItemIdFeatureQueryError = unknown
-
-
-
-export function usePatchApiNewsNewsItemIdFeature<TData = Awaited<ReturnType<typeof patchApiNewsNewsItemIdFeature>>, TError = unknown>(
- newsItemId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiNewsNewsItemIdFeature>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPatchApiNewsNewsItemIdFeatureQueryOptions(newsItemId,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 

@@ -1,29 +1,23 @@
 using System.Text.Json;
 using AwesomeAssertions;
+using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.DataHistory;
-using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Database;
 
-public sealed class ExpiredAccountChangeCleanupWorkerTests(CodigoActivoWebAppFactory factory)
+public sealed class ExpiredAccountChangeCleanupTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
     private const string ExpiredAddress = "caducada@codigoactivo.test";
     private const string WaitingAddress = "pendiente@codigoactivo.test";
 
-    private ExpiredAccountChangeCleanupWorker Build()
+    private Task<int> CleanUpAsync()
     {
-        return new ExpiredAccountChangeCleanupWorker(
-            Factory.Services.GetRequiredService<IServiceScopeFactory>(),
-            new ExpiredAccountChangeCleanupOptions(),
-            NullLogger<ExpiredAccountChangeCleanupWorker>.Instance
-        );
+        return Factory.RunScheduledAsync<DiscardExpiredAccountChangesCommand>();
     }
 
     private Task SeedChangesAsync()
@@ -84,7 +78,7 @@ public sealed class ExpiredAccountChangeCleanupWorkerTests(CodigoActivoWebAppFac
         await SeedChangesAsync();
         await Factory.QueryAsync(db => db.DataHistory.ExecuteDeleteAsync(Ct));
 
-        (await Build().CleanUpAsync(Ct)).Should().Be(1);
+        (await CleanUpAsync()).Should().Be(1);
 
         var member = await UserAsync(TestSeedData.Users.MemberId);
         member!.EmailChange.Should().Be(default(EmailChange));
@@ -109,6 +103,6 @@ public sealed class ExpiredAccountChangeCleanupWorkerTests(CodigoActivoWebAppFac
                 || key.EndsWith(nameof(EmailChange.CodeHash), StringComparison.Ordinal)
             );
 
-        (await Build().CleanUpAsync(Ct)).Should().Be(0);
+        (await CleanUpAsync()).Should().Be(0);
     }
 }

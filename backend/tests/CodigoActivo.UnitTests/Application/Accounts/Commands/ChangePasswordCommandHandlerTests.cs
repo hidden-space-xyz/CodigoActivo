@@ -168,8 +168,7 @@ public sealed class ChangePasswordCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         user.PasswordHash.Should().Be(hasher.Hash("reset-meanwhile"));
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]

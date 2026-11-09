@@ -56,8 +56,7 @@ public sealed class UpdateNewsItemCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.NewsItemNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.NewsItemNotFound);
         await files
             .DidNotReceiveWithAnyArgs()
             .ListExistingAsync(
@@ -78,8 +77,7 @@ public sealed class UpdateNewsItemCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.NewsItemThumbnailNotFound);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.NewsItemThumbnailNotFound);
         newsItem.Title.Should().Be("Old");
         newsItem.PullDomainEvents().Should().BeEmpty();
     }

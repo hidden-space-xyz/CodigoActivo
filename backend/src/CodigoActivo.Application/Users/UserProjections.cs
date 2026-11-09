@@ -2,7 +2,6 @@ using System.Linq.Expressions;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Users.Contracts;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
 

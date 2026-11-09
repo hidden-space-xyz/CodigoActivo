@@ -86,10 +86,8 @@ public sealed class AssignActivityCommandHandlerTests
             isAdmin: false
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.ActivityNotFound);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -107,10 +105,8 @@ public sealed class AssignActivityCommandHandlerTests
             isAdmin: false
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivitySignupClosed);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivitySignupClosed);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -129,10 +125,8 @@ public sealed class AssignActivityCommandHandlerTests
             isAdmin: false
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.UserNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.UserNotFound);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -209,8 +203,7 @@ public sealed class AssignActivityCommandHandlerTests
             isAdmin: false
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityAssignmentAlreadyExists);
+        result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.ActivityAssignmentAlreadyExists);
     }
 
     [Fact]
@@ -258,10 +251,8 @@ public sealed class AssignActivityCommandHandlerTests
             isAdmin: true
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityRoleNotAllowed);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityRoleNotAllowed);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -282,11 +273,9 @@ public sealed class AssignActivityCommandHandlerTests
             isAdmin: false
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityAssignmentAlreadyExists);
+        result.ShouldFail(ErrorKind.Conflict, DomainErrorCode.ActivityAssignmentAlreadyExists);
         activity.Assignments.Should().ContainSingle().Which.Should().BeSameAs(existing);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -421,10 +410,8 @@ public sealed class AssignActivityCommandHandlerTests
             isAdmin: false
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivitySignupEarlyOnly);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivitySignupEarlyOnly);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -469,10 +456,8 @@ public sealed class AssignActivityCommandHandlerTests
             isAdmin: false
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivitySignupEarlyOnly);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivitySignupEarlyOnly);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -500,13 +485,11 @@ public sealed class AssignActivityCommandHandlerTests
             isAdmin: false
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.EventTermsAcceptanceRequired);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EventTermsAcceptanceRequired);
         await termsAcceptances
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<EventTermsAcceptance>(), TestContext.Current.CancellationToken);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -613,10 +596,8 @@ public sealed class AssignActivityCommandHandlerTests
             isAdmin: true
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.EventTermsAcceptanceRequired);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.EventTermsAcceptanceRequired);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -728,11 +709,9 @@ public sealed class AssignActivityCommandHandlerTests
             isAdmin: true
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Forbidden);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActingForAnotherUserForbidden);
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.ActingForAnotherUserForbidden);
         activity.Assignments.Should().BeEmpty();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -750,9 +729,7 @@ public sealed class AssignActivityCommandHandlerTests
             isAdmin: false
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Forbidden);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActingForAnotherUserForbidden);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.ActingForAnotherUserForbidden);
+        await uow.DidNotSaveAsync();
     }
 }

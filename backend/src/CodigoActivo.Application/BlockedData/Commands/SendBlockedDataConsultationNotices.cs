@@ -1,10 +1,6 @@
-using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Email;
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Legal;
 using CodigoActivo.Domain.BlockedData;
-using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.BlockedData.Commands;
 

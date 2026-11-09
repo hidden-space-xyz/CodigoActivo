@@ -1,26 +1,20 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Accounts.Sessions;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
-using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Database;
 
-public sealed class ExpiredSessionCleanupWorkerTests(CodigoActivoWebAppFactory factory)
+public sealed class ExpiredSessionCleanupTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
-    private ExpiredSessionCleanupWorker Build()
+    private Task<int> PurgeAsync()
     {
-        return new ExpiredSessionCleanupWorker(
-            Factory.Services.GetRequiredService<IServiceScopeFactory>(),
-            new SessionCleanupOptions(),
-            NullLogger<ExpiredSessionCleanupWorker>.Instance
-        );
+        return Factory.RunScheduledAsync<RemoveExpiredSessionsCommand>();
     }
 
     private Task SeedSessionAsync(Guid id, Guid userId, DateTimeOffset expiresAt)
@@ -64,7 +58,7 @@ public sealed class ExpiredSessionCleanupWorkerTests(CodigoActivoWebAppFactory f
         );
         await SeedSessionAsync(expiredExactlyNow, TestSeedData.Users.AdminId, Factory.Clock.UtcNow);
 
-        var removed = await Build().PurgeAsync(Ct);
+        var removed = await PurgeAsync();
 
         removed.Should().Be(2);
         (await RemainingSessionIdsAsync()).Should().Equal(live);
@@ -77,7 +71,7 @@ public sealed class ExpiredSessionCleanupWorkerTests(CodigoActivoWebAppFactory f
         (await RemainingSessionIdsAsync()).Should().ContainSingle();
 
         Factory.Clock.UtcNow += SessionLifetimeOptions.DefaultLifetime + TimeSpan.FromMinutes(1);
-        var removed = await Build().PurgeAsync(Ct);
+        var removed = await PurgeAsync();
 
         removed.Should().Be(1);
         (await RemainingSessionIdsAsync()).Should().BeEmpty();

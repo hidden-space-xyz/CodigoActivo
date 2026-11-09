@@ -88,8 +88,7 @@ public sealed class ConfirmEmailChangeCommandHandlerTests
 
     private Task<int> AssertNotSavedAsync()
     {
-        return uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        return uow.DidNotSaveAsync();
     }
 
     [Fact]

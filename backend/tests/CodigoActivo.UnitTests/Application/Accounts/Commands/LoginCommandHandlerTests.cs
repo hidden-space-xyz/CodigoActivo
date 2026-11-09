@@ -96,8 +96,7 @@ public sealed class LoginCommandHandlerTests
 
     private Task<int> AssertNotSavedAsync()
     {
-        return uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        return uow.DidNotSaveAsync();
     }
 
     [Fact]

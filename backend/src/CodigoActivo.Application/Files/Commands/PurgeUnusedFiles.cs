@@ -1,8 +1,4 @@
-using CodigoActivo.Application.Abstractions.Auditing;
-using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Storage;
-using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 
 namespace CodigoActivo.Application.Files.Commands;

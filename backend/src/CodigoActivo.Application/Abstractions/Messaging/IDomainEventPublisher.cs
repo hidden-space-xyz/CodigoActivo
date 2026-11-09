@@ -1,5 +1,3 @@
-using CodigoActivo.Domain.Common;
-
 namespace CodigoActivo.Application.Abstractions.Messaging;
 
 /// <summary>

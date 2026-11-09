@@ -1,6 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using CodigoActivo.Application.Common.Validation;
-
 namespace CodigoActivo.Application.Emails;
 
 /// <summary>

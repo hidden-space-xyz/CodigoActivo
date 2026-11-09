@@ -1,6 +1,3 @@
-using CodigoActivo.Application.Abstractions.Security;
-using CodigoActivo.Application.Abstractions.Time;
-
 namespace CodigoActivo.Application.Accounts.SecondFactor;
 
 /// <summary>

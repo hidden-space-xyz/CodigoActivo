@@ -4,31 +4,6 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/vue-query';
-import type {
-  DataTag,
-  MutationFunction,
-  QueryClient,
-  QueryFunction,
-  QueryKey,
-  UseMutationOptions,
-  UseMutationReturnType,
-  UseQueryOptions,
-  UseQueryReturnType
-} from '@tanstack/vue-query';
-
-import {
-  computed,
-  toValue,
-  unref
-} from 'vue';
-import type {
-  MaybeRefOrGetter
-} from 'vue';
-
 import type {
   AuthenticatorSetupRequest,
   AuthenticatorSetupResponse,
@@ -47,11 +22,6 @@ import type {
 } from '../../models';
 
 import { httpClient } from '../../../http-client';
-
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
 
 export type getApiAuthCsrfResponse200 = {
   data: CsrfTokenResponse
@@ -85,54 +55,7 @@ export const getApiAuthCsrf = async ( options?: Parameters<typeof httpClient>[1]
 );}
 
 
-
-
-
-export const getGetApiAuthCsrfMutationKey = () => ['getApiAuthCsrf'] as const;
-
-export const getGetApiAuthCsrfMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiAuthCsrf>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiAuthCsrf>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiAuthCsrfMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiAuthCsrf>>, void> = () => {
-
-
-          return  getApiAuthCsrf(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiAuthCsrfMutationResult = NonNullable<Awaited<ReturnType<typeof getApiAuthCsrf>>>
-
-    export type GetApiAuthCsrfMutationError = unknown
-
-
-    export const useGetApiAuthCsrf = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiAuthCsrf>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiAuthCsrf>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiAuthCsrfMutationOptions(options), queryClient);
-    }
-    export type postApiAuthRegisterResponse200 = {
+export type postApiAuthRegisterResponse200 = {
   data: void
   status: 200
 }
@@ -176,58 +99,6 @@ return httpClient<postApiAuthRegisterResponse>(getPostApiAuthRegisterUrl(),
     body: JSON.stringify(registerRequest)
   }
 );}
-
-
-
-
-
-export const getPostApiAuthRegisterQueryKey = (registerRequest?: MaybeRefOrGetter<RegisterRequest>,) => {
-    return [
-    'POST', 'api','auth','register', registerRequest
-    ] as const;
-    }
-
-
-export const getPostApiAuthRegisterQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthRegister>>, TError = unknown>(registerRequest?: MaybeRefOrGetter<RegisterRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthRegister>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiAuthRegisterQueryKey(registerRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthRegister>>> = ({ signal }) => postApiAuthRegister(toValue(registerRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthRegister>>, TError, TData>
-}
-
-export type PostApiAuthRegisterQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthRegister>>>
-export type PostApiAuthRegisterQueryError = unknown
-
-
-
-export function usePostApiAuthRegister<TData = Awaited<ReturnType<typeof postApiAuthRegister>>, TError = unknown>(
- registerRequest?: MaybeRefOrGetter<RegisterRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthRegister>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiAuthRegisterQueryOptions(registerRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 
 export type patchApiAuthUserIdVerifyResponse200 = {
@@ -277,61 +148,6 @@ return httpClient<patchApiAuthUserIdVerifyResponse>(getPatchApiAuthUserIdVerifyU
 );}
 
 
-
-
-
-export const getPatchApiAuthUserIdVerifyQueryKey = (userId: MaybeRefOrGetter<string>,
-    verifyRequest?: MaybeRefOrGetter<VerifyRequest>,) => {
-    return [
-    'PATCH', 'api','auth',userId,'verify', verifyRequest
-    ] as const;
-    }
-
-
-export const getPatchApiAuthUserIdVerifyQueryOptions = <TData = Awaited<ReturnType<typeof patchApiAuthUserIdVerify>>, TError = unknown>(userId: MaybeRefOrGetter<string>,
-    verifyRequest?: MaybeRefOrGetter<VerifyRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdVerify>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPatchApiAuthUserIdVerifyQueryKey(userId,verifyRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiAuthUserIdVerify>>> = ({ signal }) => patchApiAuthUserIdVerify(toValue(userId),toValue(verifyRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdVerify>>, TError, TData>
-}
-
-export type PatchApiAuthUserIdVerifyQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiAuthUserIdVerify>>>
-export type PatchApiAuthUserIdVerifyQueryError = unknown
-
-
-
-export function usePatchApiAuthUserIdVerify<TData = Awaited<ReturnType<typeof patchApiAuthUserIdVerify>>, TError = unknown>(
- userId: MaybeRefOrGetter<string>,
-    verifyRequest?: MaybeRefOrGetter<VerifyRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdVerify>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPatchApiAuthUserIdVerifyQueryOptions(userId,verifyRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type postApiAuthResendVerificationResponse200 = {
   data: void
   status: 200
@@ -376,58 +192,6 @@ return httpClient<postApiAuthResendVerificationResponse>(getPostApiAuthResendVer
     body: JSON.stringify(resendVerificationRequest)
   }
 );}
-
-
-
-
-
-export const getPostApiAuthResendVerificationQueryKey = (resendVerificationRequest?: MaybeRefOrGetter<ResendVerificationRequest>,) => {
-    return [
-    'POST', 'api','auth','resend-verification', resendVerificationRequest
-    ] as const;
-    }
-
-
-export const getPostApiAuthResendVerificationQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthResendVerification>>, TError = unknown>(resendVerificationRequest?: MaybeRefOrGetter<ResendVerificationRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthResendVerification>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiAuthResendVerificationQueryKey(resendVerificationRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthResendVerification>>> = ({ signal }) => postApiAuthResendVerification(toValue(resendVerificationRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthResendVerification>>, TError, TData>
-}
-
-export type PostApiAuthResendVerificationQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthResendVerification>>>
-export type PostApiAuthResendVerificationQueryError = unknown
-
-
-
-export function usePostApiAuthResendVerification<TData = Awaited<ReturnType<typeof postApiAuthResendVerification>>, TError = unknown>(
- resendVerificationRequest?: MaybeRefOrGetter<ResendVerificationRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthResendVerification>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiAuthResendVerificationQueryOptions(resendVerificationRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 
 export type patchApiAuthUserIdConfirmEmailResponse200 = {
@@ -477,61 +241,6 @@ return httpClient<patchApiAuthUserIdConfirmEmailResponse>(getPatchApiAuthUserIdC
 );}
 
 
-
-
-
-export const getPatchApiAuthUserIdConfirmEmailQueryKey = (userId: MaybeRefOrGetter<string>,
-    verifyRequest?: MaybeRefOrGetter<VerifyRequest>,) => {
-    return [
-    'PATCH', 'api','auth',userId,'confirm-email', verifyRequest
-    ] as const;
-    }
-
-
-export const getPatchApiAuthUserIdConfirmEmailQueryOptions = <TData = Awaited<ReturnType<typeof patchApiAuthUserIdConfirmEmail>>, TError = unknown>(userId: MaybeRefOrGetter<string>,
-    verifyRequest?: MaybeRefOrGetter<VerifyRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdConfirmEmail>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPatchApiAuthUserIdConfirmEmailQueryKey(userId,verifyRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiAuthUserIdConfirmEmail>>> = ({ signal }) => patchApiAuthUserIdConfirmEmail(toValue(userId),toValue(verifyRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdConfirmEmail>>, TError, TData>
-}
-
-export type PatchApiAuthUserIdConfirmEmailQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiAuthUserIdConfirmEmail>>>
-export type PatchApiAuthUserIdConfirmEmailQueryError = unknown
-
-
-
-export function usePatchApiAuthUserIdConfirmEmail<TData = Awaited<ReturnType<typeof patchApiAuthUserIdConfirmEmail>>, TError = unknown>(
- userId: MaybeRefOrGetter<string>,
-    verifyRequest?: MaybeRefOrGetter<VerifyRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdConfirmEmail>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPatchApiAuthUserIdConfirmEmailQueryOptions(userId,verifyRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type postApiAuthForgotPasswordResponse200 = {
   data: void
   status: 200
@@ -576,58 +285,6 @@ return httpClient<postApiAuthForgotPasswordResponse>(getPostApiAuthForgotPasswor
     body: JSON.stringify(forgotPasswordRequest)
   }
 );}
-
-
-
-
-
-export const getPostApiAuthForgotPasswordQueryKey = (forgotPasswordRequest?: MaybeRefOrGetter<ForgotPasswordRequest>,) => {
-    return [
-    'POST', 'api','auth','forgot-password', forgotPasswordRequest
-    ] as const;
-    }
-
-
-export const getPostApiAuthForgotPasswordQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthForgotPassword>>, TError = unknown>(forgotPasswordRequest?: MaybeRefOrGetter<ForgotPasswordRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthForgotPassword>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiAuthForgotPasswordQueryKey(forgotPasswordRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthForgotPassword>>> = ({ signal }) => postApiAuthForgotPassword(toValue(forgotPasswordRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthForgotPassword>>, TError, TData>
-}
-
-export type PostApiAuthForgotPasswordQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthForgotPassword>>>
-export type PostApiAuthForgotPasswordQueryError = unknown
-
-
-
-export function usePostApiAuthForgotPassword<TData = Awaited<ReturnType<typeof postApiAuthForgotPassword>>, TError = unknown>(
- forgotPasswordRequest?: MaybeRefOrGetter<ForgotPasswordRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthForgotPassword>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiAuthForgotPasswordQueryOptions(forgotPasswordRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 
 export type patchApiAuthUserIdResetPasswordResponse200 = {
@@ -677,61 +334,6 @@ return httpClient<patchApiAuthUserIdResetPasswordResponse>(getPatchApiAuthUserId
 );}
 
 
-
-
-
-export const getPatchApiAuthUserIdResetPasswordQueryKey = (userId: MaybeRefOrGetter<string>,
-    resetPasswordRequest?: MaybeRefOrGetter<ResetPasswordRequest>,) => {
-    return [
-    'PATCH', 'api','auth',userId,'reset-password', resetPasswordRequest
-    ] as const;
-    }
-
-
-export const getPatchApiAuthUserIdResetPasswordQueryOptions = <TData = Awaited<ReturnType<typeof patchApiAuthUserIdResetPassword>>, TError = unknown>(userId: MaybeRefOrGetter<string>,
-    resetPasswordRequest?: MaybeRefOrGetter<ResetPasswordRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdResetPassword>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPatchApiAuthUserIdResetPasswordQueryKey(userId,resetPasswordRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiAuthUserIdResetPassword>>> = ({ signal }) => patchApiAuthUserIdResetPassword(toValue(userId),toValue(resetPasswordRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdResetPassword>>, TError, TData>
-}
-
-export type PatchApiAuthUserIdResetPasswordQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiAuthUserIdResetPassword>>>
-export type PatchApiAuthUserIdResetPasswordQueryError = unknown
-
-
-
-export function usePatchApiAuthUserIdResetPassword<TData = Awaited<ReturnType<typeof patchApiAuthUserIdResetPassword>>, TError = unknown>(
- userId: MaybeRefOrGetter<string>,
-    resetPasswordRequest?: MaybeRefOrGetter<ResetPasswordRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiAuthUserIdResetPassword>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPatchApiAuthUserIdResetPasswordQueryOptions(userId,resetPasswordRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type postApiAuthLoginResponse200 = {
   data: LoginChallengeResponse
   status: 200
@@ -778,58 +380,6 @@ return httpClient<postApiAuthLoginResponse>(getPostApiAuthLoginUrl(),
 );}
 
 
-
-
-
-export const getPostApiAuthLoginQueryKey = (loginRequest?: MaybeRefOrGetter<LoginRequest>,) => {
-    return [
-    'POST', 'api','auth','login', loginRequest
-    ] as const;
-    }
-
-
-export const getPostApiAuthLoginQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthLogin>>, TError = unknown>(loginRequest?: MaybeRefOrGetter<LoginRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthLogin>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiAuthLoginQueryKey(loginRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthLogin>>> = ({ signal }) => postApiAuthLogin(toValue(loginRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthLogin>>, TError, TData>
-}
-
-export type PostApiAuthLoginQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthLogin>>>
-export type PostApiAuthLoginQueryError = unknown
-
-
-
-export function usePostApiAuthLogin<TData = Awaited<ReturnType<typeof postApiAuthLogin>>, TError = unknown>(
- loginRequest?: MaybeRefOrGetter<LoginRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthLogin>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiAuthLoginQueryOptions(loginRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type getApiAuthLoginTwoFactorResponse200 = {
   data: LoginChallengeResponse
   status: 200
@@ -862,54 +412,7 @@ export const getApiAuthLoginTwoFactor = async ( options?: Parameters<typeof http
 );}
 
 
-
-
-
-export const getGetApiAuthLoginTwoFactorMutationKey = () => ['getApiAuthLoginTwoFactor'] as const;
-
-export const getGetApiAuthLoginTwoFactorMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiAuthLoginTwoFactor>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiAuthLoginTwoFactor>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiAuthLoginTwoFactorMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiAuthLoginTwoFactor>>, void> = () => {
-
-
-          return  getApiAuthLoginTwoFactor(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiAuthLoginTwoFactorMutationResult = NonNullable<Awaited<ReturnType<typeof getApiAuthLoginTwoFactor>>>
-
-    export type GetApiAuthLoginTwoFactorMutationError = unknown
-
-
-    export const useGetApiAuthLoginTwoFactor = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiAuthLoginTwoFactor>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiAuthLoginTwoFactor>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiAuthLoginTwoFactorMutationOptions(options), queryClient);
-    }
-    export type postApiAuthLoginTwoFactorResponse200 = {
+export type postApiAuthLoginTwoFactorResponse200 = {
   data: UserResponse
   status: 200
 }
@@ -955,58 +458,6 @@ return httpClient<postApiAuthLoginTwoFactorResponse>(getPostApiAuthLoginTwoFacto
 );}
 
 
-
-
-
-export const getPostApiAuthLoginTwoFactorQueryKey = (twoFactorLoginRequest?: MaybeRefOrGetter<TwoFactorLoginRequest>,) => {
-    return [
-    'POST', 'api','auth','login','two-factor', twoFactorLoginRequest
-    ] as const;
-    }
-
-
-export const getPostApiAuthLoginTwoFactorQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthLoginTwoFactor>>, TError = unknown>(twoFactorLoginRequest?: MaybeRefOrGetter<TwoFactorLoginRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthLoginTwoFactor>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiAuthLoginTwoFactorQueryKey(twoFactorLoginRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthLoginTwoFactor>>> = ({ signal }) => postApiAuthLoginTwoFactor(toValue(twoFactorLoginRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthLoginTwoFactor>>, TError, TData>
-}
-
-export type PostApiAuthLoginTwoFactorQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthLoginTwoFactor>>>
-export type PostApiAuthLoginTwoFactorQueryError = unknown
-
-
-
-export function usePostApiAuthLoginTwoFactor<TData = Awaited<ReturnType<typeof postApiAuthLoginTwoFactor>>, TError = unknown>(
- twoFactorLoginRequest?: MaybeRefOrGetter<TwoFactorLoginRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthLoginTwoFactor>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiAuthLoginTwoFactorQueryOptions(twoFactorLoginRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type postApiAuthLoginTwoFactorResendResponse200 = {
   data: void
   status: 200
@@ -1037,58 +488,6 @@ export const postApiAuthLoginTwoFactorResend = async ( options?: Parameters<type
 
   }
 );}
-
-
-
-
-
-export const getPostApiAuthLoginTwoFactorResendQueryKey = () => {
-    return [
-    'POST', 'api','auth','login','two-factor','resend'
-    ] as const;
-    }
-
-
-export const getPostApiAuthLoginTwoFactorResendQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthLoginTwoFactorResend>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthLoginTwoFactorResend>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiAuthLoginTwoFactorResendQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthLoginTwoFactorResend>>> = ({ signal }) => postApiAuthLoginTwoFactorResend({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthLoginTwoFactorResend>>, TError, TData>
-}
-
-export type PostApiAuthLoginTwoFactorResendQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthLoginTwoFactorResend>>>
-export type PostApiAuthLoginTwoFactorResendQueryError = unknown
-
-
-
-export function usePostApiAuthLoginTwoFactorResend<TData = Awaited<ReturnType<typeof postApiAuthLoginTwoFactorResend>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthLoginTwoFactorResend>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiAuthLoginTwoFactorResendQueryOptions(options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 
 export type postApiAuthTwoFactorAuthenticatorSetupResponse200 = {
@@ -1137,58 +536,6 @@ return httpClient<postApiAuthTwoFactorAuthenticatorSetupResponse>(getPostApiAuth
 );}
 
 
-
-
-
-export const getPostApiAuthTwoFactorAuthenticatorSetupQueryKey = (authenticatorSetupRequest?: MaybeRefOrGetter<AuthenticatorSetupRequest>,) => {
-    return [
-    'POST', 'api','auth','two-factor','authenticator','setup', authenticatorSetupRequest
-    ] as const;
-    }
-
-
-export const getPostApiAuthTwoFactorAuthenticatorSetupQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorSetup>>, TError = unknown>(authenticatorSetupRequest?: MaybeRefOrGetter<AuthenticatorSetupRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorSetup>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiAuthTwoFactorAuthenticatorSetupQueryKey(authenticatorSetupRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorSetup>>> = ({ signal }) => postApiAuthTwoFactorAuthenticatorSetup(toValue(authenticatorSetupRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorSetup>>, TError, TData>
-}
-
-export type PostApiAuthTwoFactorAuthenticatorSetupQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorSetup>>>
-export type PostApiAuthTwoFactorAuthenticatorSetupQueryError = unknown
-
-
-
-export function usePostApiAuthTwoFactorAuthenticatorSetup<TData = Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorSetup>>, TError = unknown>(
- authenticatorSetupRequest?: MaybeRefOrGetter<AuthenticatorSetupRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorSetup>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiAuthTwoFactorAuthenticatorSetupQueryOptions(authenticatorSetupRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type postApiAuthTwoFactorAuthenticatorConfirmResponse200 = {
   data: void
   status: 200
@@ -1233,58 +580,6 @@ return httpClient<postApiAuthTwoFactorAuthenticatorConfirmResponse>(getPostApiAu
     body: JSON.stringify(confirmAuthenticatorRequest)
   }
 );}
-
-
-
-
-
-export const getPostApiAuthTwoFactorAuthenticatorConfirmQueryKey = (confirmAuthenticatorRequest?: MaybeRefOrGetter<ConfirmAuthenticatorRequest>,) => {
-    return [
-    'POST', 'api','auth','two-factor','authenticator','confirm', confirmAuthenticatorRequest
-    ] as const;
-    }
-
-
-export const getPostApiAuthTwoFactorAuthenticatorConfirmQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorConfirm>>, TError = unknown>(confirmAuthenticatorRequest?: MaybeRefOrGetter<ConfirmAuthenticatorRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorConfirm>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiAuthTwoFactorAuthenticatorConfirmQueryKey(confirmAuthenticatorRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorConfirm>>> = ({ signal }) => postApiAuthTwoFactorAuthenticatorConfirm(toValue(confirmAuthenticatorRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorConfirm>>, TError, TData>
-}
-
-export type PostApiAuthTwoFactorAuthenticatorConfirmQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorConfirm>>>
-export type PostApiAuthTwoFactorAuthenticatorConfirmQueryError = unknown
-
-
-
-export function usePostApiAuthTwoFactorAuthenticatorConfirm<TData = Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorConfirm>>, TError = unknown>(
- confirmAuthenticatorRequest?: MaybeRefOrGetter<ConfirmAuthenticatorRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthTwoFactorAuthenticatorConfirm>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiAuthTwoFactorAuthenticatorConfirmQueryOptions(confirmAuthenticatorRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 
 export type postApiAuthTwoFactorEmailResponse200 = {
@@ -1333,58 +628,6 @@ return httpClient<postApiAuthTwoFactorEmailResponse>(getPostApiAuthTwoFactorEmai
 );}
 
 
-
-
-
-export const getPostApiAuthTwoFactorEmailQueryKey = (disableAuthenticatorRequest?: MaybeRefOrGetter<DisableAuthenticatorRequest>,) => {
-    return [
-    'POST', 'api','auth','two-factor','email', disableAuthenticatorRequest
-    ] as const;
-    }
-
-
-export const getPostApiAuthTwoFactorEmailQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthTwoFactorEmail>>, TError = unknown>(disableAuthenticatorRequest?: MaybeRefOrGetter<DisableAuthenticatorRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthTwoFactorEmail>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiAuthTwoFactorEmailQueryKey(disableAuthenticatorRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthTwoFactorEmail>>> = ({ signal }) => postApiAuthTwoFactorEmail(toValue(disableAuthenticatorRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthTwoFactorEmail>>, TError, TData>
-}
-
-export type PostApiAuthTwoFactorEmailQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthTwoFactorEmail>>>
-export type PostApiAuthTwoFactorEmailQueryError = unknown
-
-
-
-export function usePostApiAuthTwoFactorEmail<TData = Awaited<ReturnType<typeof postApiAuthTwoFactorEmail>>, TError = unknown>(
- disableAuthenticatorRequest?: MaybeRefOrGetter<DisableAuthenticatorRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthTwoFactorEmail>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiAuthTwoFactorEmailQueryOptions(disableAuthenticatorRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type postApiAuthLogoutResponse200 = {
   data: void
   status: 200
@@ -1415,58 +658,6 @@ export const postApiAuthLogout = async ( options?: Parameters<typeof httpClient>
 
   }
 );}
-
-
-
-
-
-export const getPostApiAuthLogoutQueryKey = () => {
-    return [
-    'POST', 'api','auth','logout'
-    ] as const;
-    }
-
-
-export const getPostApiAuthLogoutQueryOptions = <TData = Awaited<ReturnType<typeof postApiAuthLogout>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthLogout>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiAuthLogoutQueryKey();
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiAuthLogout>>> = ({ signal }) => postApiAuthLogout({ signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiAuthLogout>>, TError, TData>
-}
-
-export type PostApiAuthLogoutQueryResult = NonNullable<Awaited<ReturnType<typeof postApiAuthLogout>>>
-export type PostApiAuthLogoutQueryError = unknown
-
-
-
-export function usePostApiAuthLogout<TData = Awaited<ReturnType<typeof postApiAuthLogout>>, TError = unknown>(
-  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiAuthLogout>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiAuthLogoutQueryOptions(options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 
 export type getApiAuthMeResponse200 = {
@@ -1501,50 +692,3 @@ export const getApiAuthMe = async ( options?: Parameters<typeof httpClient>[1]):
 );}
 
 
-
-
-
-export const getGetApiAuthMeMutationKey = () => ['getApiAuthMe'] as const;
-
-export const getGetApiAuthMeMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiAuthMe>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiAuthMe>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiAuthMeMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiAuthMe>>, void> = () => {
-
-
-          return  getApiAuthMe(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiAuthMeMutationResult = NonNullable<Awaited<ReturnType<typeof getApiAuthMe>>>
-
-    export type GetApiAuthMeMutationError = unknown
-
-
-    export const useGetApiAuthMe = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiAuthMe>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiAuthMe>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiAuthMeMutationOptions(options), queryClient);
-    }

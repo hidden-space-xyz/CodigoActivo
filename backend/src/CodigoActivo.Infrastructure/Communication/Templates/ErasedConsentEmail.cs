@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Net;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Common.Localization;
@@ -12,8 +11,6 @@ namespace CodigoActivo.Infrastructure.Communication.Templates;
 /// </summary>
 public static class ErasedConsentEmail
 {
-    private const string TimestampFormat = "dd/MM/yyyy, HH:mm";
-
     /// <summary>
     /// Creates the notice for the association's legal contact: for every consent erased, whose it
     /// was, for which document and event, who gave it and when, then a callout with what to stop
@@ -41,70 +38,37 @@ public static class ErasedConsentEmail
         string siteUrl
     )
     {
-        ArgumentNullException.ThrowIfNull(consents);
-        if (consents.Count is 0)
-        {
-            throw new ArgumentException("A notice needs at least one consent.", nameof(consents));
-        }
-
-        var single = consents.Count is 1;
-        var subject = single
-            ? AppStrings.EmailsConsentErasedSubject
-            : AppStrings.EmailsConsentErasedSubjectMany(consents.Count);
-        var content = EmailLayout.Render(
-            new EmailDocument(
-                single
-                    ? AppStrings.EmailsConsentErasedHeading
-                    : AppStrings.EmailsConsentErasedHeadingMany,
-                single ? IntroText(consents[0]) : subject,
-                toName,
-                siteUrl,
-                EmailBranding.Brand
+        return ListNoticeEmail.Create(
+            EmailKind.ConsentWithdrawalNotice,
+            new ListNoticeEmail.Texts(
+                AppStrings.EmailsConsentErasedSubject,
+                AppStrings.EmailsConsentErasedSubjectMany,
+                AppStrings.EmailsConsentErasedHeading,
+                AppStrings.EmailsConsentErasedHeadingMany,
+                AppStrings.EmailsConsentErasedAction,
+                AppStrings.EmailsConsentErasedActionMany,
+                AppStrings.EmailsConsentErasedBlockedNote,
+                AppStrings.EmailsConsentErasedBlockedNoteMany
             ),
-            [
-                .. consents.SelectMany(consent => Describe(consent, timeZone)),
-                EmailBlocks.Callout(
-                    single
-                        ? AppStrings.EmailsConsentErasedAction
-                        : AppStrings.EmailsConsentErasedActionMany,
-                    EmailBranding.Danger
+            consents,
+            consent =>
+                AppStrings.EmailsConsentErasedIntroText(
+                    consent.PersonName,
+                    consent.DocumentName,
+                    consent.EventTitle
                 ),
-                EmailBlocks.Note(
-                    single
-                        ? AppStrings.EmailsConsentErasedBlockedNote
-                        : AppStrings.EmailsConsentErasedBlockedNoteMany
+            consent =>
+                AppStrings.EmailsConsentErasedIntroHtml(
+                    WebUtility.HtmlEncode(consent.PersonName),
+                    WebUtility.HtmlEncode(consent.DocumentName),
+                    WebUtility.HtmlEncode(consent.EventTitle)
                 ),
-            ]
-        );
-
-        return content.ToMessage(EmailKind.ConsentWithdrawalNotice, toAddress, toName, subject);
-    }
-
-    private static string IntroText(ErasedConsent consent)
-    {
-        return AppStrings.EmailsConsentErasedIntroText(
-            consent.PersonName,
-            consent.DocumentName,
-            consent.EventTitle
-        );
-    }
-
-    private static IEnumerable<EmailBlock> Describe(ErasedConsent consent, TimeZoneInfo timeZone)
-    {
-        var givenAt = TimeZoneInfo
-            .ConvertTime(consent.GivenAt, timeZone)
-            .ToString(TimestampFormat, CultureInfo.InvariantCulture);
-
-        yield return EmailBlocks.Prose(
-            AppStrings.EmailsConsentErasedIntroHtml(
-                WebUtility.HtmlEncode(consent.PersonName),
-                WebUtility.HtmlEncode(consent.DocumentName),
-                WebUtility.HtmlEncode(consent.EventTitle)
-            ),
-            IntroText(consent)
-        );
-        yield return EmailBlocks.Prose(
-            AppStrings.EmailsConsentErasedGiven(consent.DecidedByName, givenAt)
+            (consent, local) =>
+                AppStrings.EmailsConsentErasedGiven(consent.DecidedByName, local(consent.GivenAt)),
+            toAddress,
+            toName,
+            timeZone,
+            siteUrl
         );
     }
 }

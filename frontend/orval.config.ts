@@ -11,17 +11,12 @@ export default defineConfig({
       mode: 'tags-split',
       target: `${generatedRoot}/endpoints`,
       schemas: `${generatedRoot}/models`,
-      client: 'vue-query',
+      client: 'fetch',
       clean: true,
       override: {
         mutator: {
           path: './src/shared/api/http-client.ts',
           name: 'httpClient',
-        },
-        query: {
-          useQuery: true,
-          useMutation: true,
-          signal: true,
         },
       },
     },

@@ -72,9 +72,7 @@ public sealed class GetEventRosterQueryHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.EventNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventNotFound);
         store.ReadsOf<AssignmentRow>().Should().Be(0);
     }
 

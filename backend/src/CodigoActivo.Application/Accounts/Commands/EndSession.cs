@@ -1,5 +1,3 @@
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Accounts.Commands;

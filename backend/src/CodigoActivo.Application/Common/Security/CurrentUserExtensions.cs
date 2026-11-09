@@ -1,4 +1,3 @@
-using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Common.Security;

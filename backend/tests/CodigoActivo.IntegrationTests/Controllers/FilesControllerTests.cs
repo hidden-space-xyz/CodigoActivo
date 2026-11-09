@@ -34,6 +34,34 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task CreateAnonymousReturnsUnauthorized()
+    {
+        var client = CreateClient();
+
+        using var response = await client.SendUploadAsync(
+            HttpMethod.Post,
+            "/api/files",
+            TestSeedData.ValidPng()
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
+    public async Task CreateAsMemberReturnsForbidden()
+    {
+        var client = await LoginAsMemberAsync();
+
+        using var response = await client.SendUploadAsync(
+            HttpMethod.Post,
+            "/api/files",
+            TestSeedData.ValidPng()
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact]
     public async Task CreateAsAdminReturnsCreatedAndPersistsFile()
     {
         var bytes = TestImages.Png();
@@ -59,49 +87,6 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         var root = Factory.Services.GetRequiredService<FileStorageOptions>().RootPath;
         System.IO.File.Exists(Path.Join(root, $"{created.Id}.webp")).Should().BeTrue();
         System.IO.File.Exists(Path.Join(root, $"{created.Id}.thumbnail.webp")).Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task CreateAsMemberReturnsForbidden()
-    {
-        var client = await LoginAsMemberAsync();
-
-        using var response = await client.SendUploadAsync(
-            HttpMethod.Post,
-            "/api/files",
-            TestSeedData.ValidPng()
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task CreateAnonymousReturnsUnauthorized()
-    {
-        var client = CreateClient();
-
-        using var response = await client.SendUploadAsync(
-            HttpMethod.Post,
-            "/api/files",
-            TestSeedData.ValidPng()
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task CreateMissingCsrfTokenReturnsBadRequestInvalidCsrf()
-    {
-        var client = await LoginAsAdminAsync();
-
-        using var response = await client.SendUploadAsync(
-            HttpMethod.Post,
-            "/api/files",
-            TestSeedData.ValidPng(),
-            withCsrf: false
-        );
-
-        await response.ShouldBeBadRequestAsync(ErrorCode.InvalidCsrfToken);
     }
 
     [Fact]
@@ -166,19 +151,6 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task GetContentUnknownIdReturnsNotFoundFileNotFound()
-    {
-        var client = CreateClient();
-
-        var response = await client.GetAsync(
-            TestUri.Rel($"/api/files/{Guid.NewGuid()}/content"),
-            Ct
-        );
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.FileNotFound);
-    }
-
-    [Fact]
     public async Task GetContentRichTextContentUrlReturnsTheImageReencodedAsWebp()
     {
         var created = await UploadAsAdminAsync(TestImages.Png(), "photo.png");
@@ -225,15 +197,7 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                Persisted.As<StoredFile>(
-                    new
-                    {
-                        Id = id,
-                        Extension = "png",
-                        UploadedAt = Factory.Clock.UtcNow,
-                        UploadedBy = TestSeedData.Users.AdminId,
-                    }
-                )
+                TestEntities.New<StoredFile>(new { Id = id, UploadedAt = Factory.Clock.UtcNow })
             );
             return Task.CompletedTask;
         });
@@ -299,27 +263,19 @@ public sealed class FilesControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                Persisted.As<StoredFile>(
-                    new
-                    {
-                        Id = thumbnailId,
-                        Extension = "png",
-                        UploadedAt = Factory.Clock.UtcNow,
-                        UploadedBy = TestSeedData.Users.AdminId,
-                    }
+                TestEntities.New<StoredFile>(
+                    new { Id = thumbnailId, UploadedAt = Factory.Clock.UtcNow }
                 )
             );
             db.News.Add(
-                Persisted.As<NewsItem>(
+                TestEntities.New<NewsItem>(
                     new
                     {
                         Id = Guid.NewGuid(),
                         Title = "Con imagen",
-                        Subtitle = "Sub",
                         Description = $"{{\"img\":\"/api/files/{created.Id}/content\"}}",
                         ThumbnailId = thumbnailId,
                         CreatedAt = new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );

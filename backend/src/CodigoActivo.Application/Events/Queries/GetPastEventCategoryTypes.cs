@@ -1,6 +1,3 @@
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Querying;
-using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.EventCategories;
 using CodigoActivo.Application.EventCategories.Contracts;
 

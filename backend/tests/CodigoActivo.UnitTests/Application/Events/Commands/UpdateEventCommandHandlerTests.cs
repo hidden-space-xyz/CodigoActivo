@@ -73,8 +73,7 @@ public sealed class UpdateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.TermsDocumentNotFound);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.TermsDocumentNotFound);
     }
 
     [Fact]
@@ -97,8 +96,7 @@ public sealed class UpdateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.EventTermsDocumentDuplicated);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventTermsDocumentDuplicated);
     }
 
     [Fact]
@@ -168,8 +166,7 @@ public sealed class UpdateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.EventSignupEndsAfterEvent);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventSignupEndsAfterEvent);
     }
 
     [Fact]
@@ -197,8 +194,7 @@ public sealed class UpdateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.EventNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventNotFound);
     }
 
     [Fact]
@@ -228,8 +224,10 @@ public sealed class UpdateEventCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.EventActivitiesOutsideNewRange);
+        result.ShouldFail(
+            ErrorKind.Validation,
+            ApplicationErrorCode.EventActivitiesOutsideNewRange
+        );
     }
 
     [Fact]

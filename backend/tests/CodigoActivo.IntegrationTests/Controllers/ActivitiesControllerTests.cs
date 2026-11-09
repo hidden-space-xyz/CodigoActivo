@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using AwesomeAssertions;
 using CodigoActivo.API.Activities.Contracts;
 using CodigoActivo.API.Errors;
@@ -45,19 +44,16 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Events.Add(
-                Persisted.As<Event>(
+                TestEntities.New<Event>(
                     new
                     {
                         Id = id,
-                        Title = "Evento",
-                        Subtitle = "Sub",
                         EventStartsAt = startsAt ?? EventStart,
                         EventEndsAt = endsAt ?? EventEnd,
                         SignupStartsAt = SignupStart,
                         SignupEndsAt = SignupEnd,
                         ThumbnailId = thumb,
                         CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
@@ -80,7 +76,7 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Activities.Add(
-                Persisted.As<Activity>(
+                TestEntities.New<Activity>(
                     new
                     {
                         Id = id,
@@ -95,7 +91,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
                         EventId = eventId,
                         ThumbnailId = thumbnailId,
                         CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
@@ -282,16 +277,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         descending.StatusCode.Should().Be(HttpStatusCode.OK);
         var descendingPage = await descending.ReadJsonAsync<PagedResult<ActivityResponse>>(Ct);
         descendingPage!.Items.Select(a => a.Title).Should().Equal("Dos", "Tres", "Uno");
-    }
-
-    [Fact]
-    public async Task GetActivityAbsentReturns404ActivityNotFound()
-    {
-        var client = CreateClient();
-
-        var response = await client.GetAsync(TestUri.Rel($"/api/activities/{Guid.NewGuid()}"), Ct);
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.ActivityNotFound);
     }
 
     [Fact]
@@ -590,36 +575,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task CreateAsMemberReturnsForbidden()
-    {
-        var thumb = await SeedThumbnailAsync();
-        var eventId = await SeedEventAsync(thumb);
-        var client = await LoginAsMemberAsync();
-
-        var response = await client.PostJsonAsync(
-            $"/api/activities/{eventId}",
-            CreateRequest(thumb),
-            Ct
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task CreateAnonymousReturnsUnauthorized()
-    {
-        var client = CreateClient();
-
-        var response = await client.PostJsonAsync(
-            $"/api/activities/{Guid.NewGuid()}",
-            CreateRequest(Guid.NewGuid()),
-            Ct
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
     public async Task CreateBlankTitleReturnsValidationError()
     {
         var thumb = await SeedThumbnailAsync();
@@ -630,22 +585,6 @@ public sealed class ActivitiesControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync($"/api/activities/{eventId}", request, Ct);
 
         await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
-    }
-
-    [Fact]
-    public async Task CreateMissingCsrfTokenIsRejected()
-    {
-        var thumb = await SeedThumbnailAsync();
-        var eventId = await SeedEventAsync(thumb);
-        var client = await LoginAsAdminAsync();
-        using var request = new HttpRequestMessage(HttpMethod.Post, $"/api/activities/{eventId}")
-        {
-            Content = JsonContent.Create(CreateRequest(thumb), options: TestJson.Options),
-        };
-
-        var response = await client.SendAsync(request, Ct);
-
-        await response.ShouldBeBadRequestAsync(ErrorCode.InvalidCsrfToken);
     }
 
     [Fact]

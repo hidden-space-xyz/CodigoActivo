@@ -1,11 +1,7 @@
-using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
-using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Contracts;
-using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Legal.Contracts;
 using CodigoActivo.Application.Logs;
-using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.Accounts;
 

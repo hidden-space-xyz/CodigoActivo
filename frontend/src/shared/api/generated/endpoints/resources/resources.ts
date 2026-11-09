@@ -4,31 +4,6 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/vue-query';
-import type {
-  DataTag,
-  MutationFunction,
-  QueryClient,
-  QueryFunction,
-  QueryKey,
-  UseMutationOptions,
-  UseMutationReturnType,
-  UseQueryOptions,
-  UseQueryReturnType
-} from '@tanstack/vue-query';
-
-import {
-  computed,
-  toValue,
-  unref
-} from 'vue';
-import type {
-  MaybeRefOrGetter
-} from 'vue';
-
 import type {
   CreateResourceRequest,
   GetApiResourcesParams,
@@ -39,11 +14,6 @@ import type {
 } from '../../models';
 
 import { httpClient } from '../../../http-client';
-
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
 
 export type getApiResourcesResponse200 = {
   data: ResourceListItemResponsePagedResult
@@ -84,54 +54,7 @@ export const getApiResources = async (params?: GetApiResourcesParams, options?: 
 );}
 
 
-
-
-
-export const getGetApiResourcesMutationKey = () => ['getApiResources'] as const;
-
-export const getGetApiResourcesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiResources>>, TError,GetApiResourcesMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiResources>>, TError,GetApiResourcesMutationVariables, TContext> => {
-
-const mutationKey = getGetApiResourcesMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiResources>>, GetApiResourcesMutationVariables> = (props) => {
-          const {params} = props ?? {};
-
-          return  getApiResources(params,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiResourcesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiResources>>>
-
-    export type GetApiResourcesMutationError = unknown
-    export type GetApiResourcesMutationVariables = {params?: GetApiResourcesParams}
-
-    export const useGetApiResources = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiResources>>, TError,GetApiResourcesMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiResources>>,
-        TError,
-        GetApiResourcesMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiResourcesMutationOptions(options), queryClient);
-    }
-    export type postApiResourcesResponse201 = {
+export type postApiResourcesResponse201 = {
   data: ResourceResponse
   status: 201
 }
@@ -177,58 +100,6 @@ return httpClient<postApiResourcesResponse>(getPostApiResourcesUrl(),
 );}
 
 
-
-
-
-export const getPostApiResourcesQueryKey = (createResourceRequest?: MaybeRefOrGetter<CreateResourceRequest>,) => {
-    return [
-    'POST', 'api','resources', createResourceRequest
-    ] as const;
-    }
-
-
-export const getPostApiResourcesQueryOptions = <TData = Awaited<ReturnType<typeof postApiResources>>, TError = unknown>(createResourceRequest?: MaybeRefOrGetter<CreateResourceRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiResources>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiResourcesQueryKey(createResourceRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiResources>>> = ({ signal }) => postApiResources(toValue(createResourceRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiResources>>, TError, TData>
-}
-
-export type PostApiResourcesQueryResult = NonNullable<Awaited<ReturnType<typeof postApiResources>>>
-export type PostApiResourcesQueryError = unknown
-
-
-
-export function usePostApiResources<TData = Awaited<ReturnType<typeof postApiResources>>, TError = unknown>(
- createResourceRequest?: MaybeRefOrGetter<CreateResourceRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiResources>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiResourcesQueryOptions(createResourceRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type getApiResourcesTypesResponse200 = {
   data: ResourceTypeResponse[]
   status: 200
@@ -261,54 +132,7 @@ export const getApiResourcesTypes = async ( options?: Parameters<typeof httpClie
 );}
 
 
-
-
-
-export const getGetApiResourcesTypesMutationKey = () => ['getApiResourcesTypes'] as const;
-
-export const getGetApiResourcesTypesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiResourcesTypes>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiResourcesTypes>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiResourcesTypesMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiResourcesTypes>>, void> = () => {
-
-
-          return  getApiResourcesTypes(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiResourcesTypesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiResourcesTypes>>>
-
-    export type GetApiResourcesTypesMutationError = unknown
-
-
-    export const useGetApiResourcesTypes = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiResourcesTypes>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiResourcesTypes>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiResourcesTypesMutationOptions(options), queryClient);
-    }
-    export type getApiResourcesResourceIdResponse200 = {
+export type getApiResourcesResourceIdResponse200 = {
   data: ResourceResponse
   status: 200
 }
@@ -340,54 +164,7 @@ export const getApiResourcesResourceId = async (resourceId: string, options?: Pa
 );}
 
 
-
-
-
-export const getGetApiResourcesResourceIdMutationKey = () => ['getApiResourcesResourceId'] as const;
-
-export const getGetApiResourcesResourceIdMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiResourcesResourceId>>, TError,GetApiResourcesResourceIdMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiResourcesResourceId>>, TError,GetApiResourcesResourceIdMutationVariables, TContext> => {
-
-const mutationKey = getGetApiResourcesResourceIdMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiResourcesResourceId>>, GetApiResourcesResourceIdMutationVariables> = (props) => {
-          const {resourceId} = props ?? {};
-
-          return  getApiResourcesResourceId(resourceId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiResourcesResourceIdMutationResult = NonNullable<Awaited<ReturnType<typeof getApiResourcesResourceId>>>
-
-    export type GetApiResourcesResourceIdMutationError = unknown
-    export type GetApiResourcesResourceIdMutationVariables = {resourceId: string}
-
-    export const useGetApiResourcesResourceId = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiResourcesResourceId>>, TError,GetApiResourcesResourceIdMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiResourcesResourceId>>,
-        TError,
-        GetApiResourcesResourceIdMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiResourcesResourceIdMutationOptions(options), queryClient);
-    }
-    export type putApiResourcesResourceIdResponse200 = {
+export type putApiResourcesResourceIdResponse200 = {
   data: ResourceResponse
   status: 200
 }
@@ -434,61 +211,6 @@ return httpClient<putApiResourcesResourceIdResponse>(getPutApiResourcesResourceI
 );}
 
 
-
-
-
-export const getPutApiResourcesResourceIdQueryKey = (resourceId: MaybeRefOrGetter<string>,
-    updateResourceRequest?: MaybeRefOrGetter<UpdateResourceRequest>,) => {
-    return [
-    'PUT', 'api','resources',resourceId, updateResourceRequest
-    ] as const;
-    }
-
-
-export const getPutApiResourcesResourceIdQueryOptions = <TData = Awaited<ReturnType<typeof putApiResourcesResourceId>>, TError = unknown>(resourceId: MaybeRefOrGetter<string>,
-    updateResourceRequest?: MaybeRefOrGetter<UpdateResourceRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiResourcesResourceId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPutApiResourcesResourceIdQueryKey(resourceId,updateResourceRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof putApiResourcesResourceId>>> = ({ signal }) => putApiResourcesResourceId(toValue(resourceId),toValue(updateResourceRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(resourceId) !== null && toValue(resourceId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof putApiResourcesResourceId>>, TError, TData>
-}
-
-export type PutApiResourcesResourceIdQueryResult = NonNullable<Awaited<ReturnType<typeof putApiResourcesResourceId>>>
-export type PutApiResourcesResourceIdQueryError = unknown
-
-
-
-export function usePutApiResourcesResourceId<TData = Awaited<ReturnType<typeof putApiResourcesResourceId>>, TError = unknown>(
- resourceId: MaybeRefOrGetter<string>,
-    updateResourceRequest?: MaybeRefOrGetter<UpdateResourceRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiResourcesResourceId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPutApiResourcesResourceIdQueryOptions(resourceId,updateResourceRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type deleteApiResourcesResourceIdResponse200 = {
   data: void
   status: 200
@@ -519,57 +241,5 @@ export const deleteApiResourcesResourceId = async (resourceId: string, options?:
 
   }
 );}
-
-
-
-
-
-export const getDeleteApiResourcesResourceIdQueryKey = (resourceId: MaybeRefOrGetter<string>,) => {
-    return [
-    'DELETE', 'api','resources',resourceId
-    ] as const;
-    }
-
-
-export const getDeleteApiResourcesResourceIdQueryOptions = <TData = Awaited<ReturnType<typeof deleteApiResourcesResourceId>>, TError = unknown>(resourceId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiResourcesResourceId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getDeleteApiResourcesResourceIdQueryKey(resourceId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteApiResourcesResourceId>>> = ({ signal }) => deleteApiResourcesResourceId(toValue(resourceId), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(resourceId) !== null && toValue(resourceId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteApiResourcesResourceId>>, TError, TData>
-}
-
-export type DeleteApiResourcesResourceIdQueryResult = NonNullable<Awaited<ReturnType<typeof deleteApiResourcesResourceId>>>
-export type DeleteApiResourcesResourceIdQueryError = unknown
-
-
-
-export function useDeleteApiResourcesResourceId<TData = Awaited<ReturnType<typeof deleteApiResourcesResourceId>>, TError = unknown>(
- resourceId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiResourcesResourceId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getDeleteApiResourcesResourceIdQueryOptions(resourceId,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 

@@ -1,9 +1,6 @@
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Application.Users;
 using CodigoActivo.Application.Users.Contracts;
-using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.Emails.Queries;
 

@@ -26,12 +26,11 @@ public sealed class EventTermsWithdrawalTests(CodigoActivoWebAppFactory factory)
 
     private static TermsDocument Document(Guid id, string name, TermsDocumentKind kind)
     {
-        return Persisted.As<TermsDocument>(
+        return TestEntities.New<TermsDocument>(
             new
             {
                 Id = id,
                 Name = $"{name} {id:N}",
-                Description = "{}",
                 RequiresSignature = false,
                 Kind = kind,
             }
@@ -62,20 +61,17 @@ public sealed class EventTermsWithdrawalTests(CodigoActivoWebAppFactory factory)
                 Document(imageId, "Imagen", TermsDocumentKind.Consent),
                 Document(conditionsId, "Normas", TermsDocumentKind.Conditions)
             );
-            var ev = Persisted.As<Event>(
+            var ev = TestEntities.New<Event>(
                 new
                 {
                     Id = eventId,
                     Title = "Feria",
-                    Subtitle = "Sub",
-                    Description = "{}",
                     EventStartsAt = new DateOnly(2026, 7, 1),
                     EventEndsAt = new DateOnly(2026, 7, 31),
                     SignupStartsAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
                     SignupEndsAt = new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero),
                     ThumbnailId = thumb,
                     CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
                 }
             );
             Persisted.Add(

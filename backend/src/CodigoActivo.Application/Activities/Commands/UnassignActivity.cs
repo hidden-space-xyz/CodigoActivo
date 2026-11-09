@@ -1,12 +1,6 @@
-using CodigoActivo.Application.Abstractions.Auditing;
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
-using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Activities.Erasure;
 using CodigoActivo.Application.Activities.Signups;
-using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Activities;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Activities.Commands;

@@ -244,7 +244,7 @@ send still running by then stays due and goes again after the restart. These val
 and cannot be configured; only the provider pace is.
 
 The legal contact (`LEGAL_EMAIL`) is told about withdrawn consents and opened consultations of the blocked data
-by `LegalNoticeWorker`, 30 seconds after startup and then every minute: each kind goes in one email listing up
+by `ScheduledJobsWorker`, 30 seconds after startup and then every minute: each kind goes in one email listing up
 to 50 of them, and the next one waits until that email has left the outbox. What it tells stays marked in the
 database until the email is queued, so nothing is lost to a failure or a restart.
 

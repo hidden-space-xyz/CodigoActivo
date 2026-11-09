@@ -81,8 +81,7 @@ public sealed class CompleteLoginCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.TwoFactorLocked);
         user.TwoFactorLockout.FailedAttempts.Should().Be(0);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -99,8 +98,7 @@ public sealed class CompleteLoginCommandHandlerTests
         result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
         user.LastLoginAt.Should().BeNull();
         user.LoginCode.Hash.Should().NotBeNull();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
         DomainEvents.Raised<TwoFactorLocked>(user).Should().BeEmpty();
     }
 
@@ -158,8 +156,7 @@ public sealed class CompleteLoginCommandHandlerTests
         result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
         user.LoginChallenge.Id.Should().Be(Challenge);
         added.Should().BeEmpty();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -204,8 +201,7 @@ public sealed class CompleteLoginCommandHandlerTests
         user.TwoFactorLockout.FailedAttempts.Should().Be(0);
         user.LastLoginAt.Should().BeNull();
         added.Should().BeEmpty();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -352,8 +348,7 @@ public sealed class CompleteLoginCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Forbidden, DomainErrorCode.TwoFactorLocked);
         user.LastLoginAt.Should().BeNull();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -365,8 +360,7 @@ public sealed class CompleteLoginCommandHandlerTests
         var result = await VerifyAsync(user.Id.Value, "123456");
 
         result.ShouldFail(ErrorKind.Unauthorized, ApplicationErrorCode.TwoFactorChallengeExpired);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]

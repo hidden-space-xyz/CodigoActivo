@@ -1,7 +1,5 @@
 using System.Globalization;
-using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Localization;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 
 namespace CodigoActivo.Application.Files;

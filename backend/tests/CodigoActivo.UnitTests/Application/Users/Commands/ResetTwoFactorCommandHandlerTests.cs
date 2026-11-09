@@ -89,8 +89,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
 
     private Task<int> AssertNotSavedAsync()
     {
-        return uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        return uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -104,8 +103,7 @@ public sealed class ResetTwoFactorCommandHandlerTests
         result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.UserCurrentPasswordIncorrect);
         user.TwoFactorMethod.Should().Be(TwoFactorMethod.Authenticator);
         actingAdmin.PasswordLockout.FailedAttempts.Should().Be(1);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Theory]

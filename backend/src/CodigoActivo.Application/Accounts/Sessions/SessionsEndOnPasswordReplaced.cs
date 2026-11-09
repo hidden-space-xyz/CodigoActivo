@@ -1,4 +1,3 @@
-using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.Accounts.Sessions;

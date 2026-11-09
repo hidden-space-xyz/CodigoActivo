@@ -7,6 +7,7 @@ using CodigoActivo.Application.EventCategories.Contracts;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.UnitTests.Application.Events;
+using CodigoActivo.UnitTests.TestSupport;
 using NSubstitute;
 using Xunit;
 
@@ -33,8 +34,10 @@ public sealed class CreateEventCategoryTypeCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ApplicationErrorCode.EventCategoryTypeNameAlreadyExists);
+        result.ShouldFail(
+            ErrorKind.Conflict,
+            ApplicationErrorCode.EventCategoryTypeNameAlreadyExists
+        );
         await categoryTypes
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<EventCategoryType>(), TestContext.Current.CancellationToken);

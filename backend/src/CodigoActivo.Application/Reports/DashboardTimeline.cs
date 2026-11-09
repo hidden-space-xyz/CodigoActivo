@@ -1,5 +1,4 @@
 using CodigoActivo.Application.Reports.Contracts;
-using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.Reports;
 

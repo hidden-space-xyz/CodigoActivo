@@ -32,11 +32,8 @@ public sealed class SetNewsItemFeaturedCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.NewsItemNotFound);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.NewsItemNotFound);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]

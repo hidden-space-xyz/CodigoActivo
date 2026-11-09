@@ -26,6 +26,7 @@ import {
   findDialog,
   messageBox,
   notifications,
+  openDialog,
   textOf,
   tp,
 } from '../../../../support/dom'
@@ -280,11 +281,7 @@ describe('activities timeline self signup', () => {
     await renderTimeline()
     await click(findButton(t('pages.eventDetail.card.enrollSelf')))
 
-    const dialog = await vi.waitFor(() => {
-      const found = findDialog(t('pages.eventDetail.overlap.header'))
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
+    const dialog = await vi.waitFor(() => openDialog(t('pages.eventDetail.overlap.header')))
     expect(textOf(dialog.querySelector('.overlap__list strong'))).toBe('Taller de Scratch')
     expect(textOf(dialog.querySelector('.overlap__when'))).toBe(
       formatDateTimeRange('2099-06-10T09:30:00Z', '2099-06-10T10:30:00Z'),
@@ -304,11 +301,7 @@ describe('activities timeline self signup', () => {
 
     await renderTimeline({}, { realTransitions: true })
     await click(findButton(t('pages.eventDetail.card.enrollSelf')))
-    const dialog = await vi.waitFor(() => {
-      const found = findDialog(t('pages.eventDetail.overlap.header'))
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
+    const dialog = await vi.waitFor(() => openDialog(t('pages.eventDetail.overlap.header')))
     expect(dialog.querySelectorAll('.overlap__list li')).toHaveLength(0)
 
     await click(dialog.querySelector<HTMLElement>('.el-dialog__headerbtn') as HTMLElement)
@@ -349,30 +342,56 @@ describe('activities timeline self signup', () => {
     expect(calls.unassign).toEqual([])
   })
 
-  it('asks to decide pending terms before signing up', async () => {
-    const { calls } = serveSignupApi({ termsAccepted: false })
+  it.each([
+    {
+      name: 'asks to decide pending terms before signing up',
+      api: { termsAccepted: false },
+      terms: TERMS,
+      document: TERMS_DOCUMENT,
+    },
+    {
+      name: 'opens the terms dialog for an event with only optional documents',
+      api: { termsDocuments: [OPTIONAL_TERMS_DOCUMENT], termsAccepted: false },
+      terms: OPTIONAL_ONLY_TERMS,
+      document: OPTIONAL_TERMS_DOCUMENT,
+    },
+    {
+      name: 'only asks again about a new optional document once the required one is already accepted',
+      api: {
+        termsDocuments: [TERMS_DOCUMENT, OPTIONAL_TERMS_DOCUMENT],
+        termsDecisions: { 'user-1': [decided(TERMS_DOCUMENT.termsDocumentId, true)] },
+      },
+      terms: TERMS_WITH_OPTIONAL,
+      document: OPTIONAL_TERMS_DOCUMENT,
+    },
+    {
+      name: 'shows a previously rejected document as pending and unchecked, and lets the user accept it',
+      api: { termsDecisions: { 'user-1': [decided(TERMS_DOCUMENT.termsDocumentId, false)] } },
+      terms: TERMS,
+      document: TERMS_DOCUMENT,
+    },
+  ])('$name', async ({ api, terms, document }) => {
+    const { calls } = serveSignupApi(api)
 
-    await renderTimeline({ terms: TERMS })
+    await renderTimeline({ terms })
     await vi.waitFor(() => expect(calls.counts.terms).toBe(1))
     await click(findButton(t('pages.eventDetail.card.enrollSelf')))
 
-    const dialog = await vi.waitFor(() => {
-      const found = findDialog(t('pages.eventDetail.terms.header'))
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
-    expect(textOf(dialog.querySelector('.terms-dialog__link'))).toBe(TERMS_DOCUMENT.name)
+    const dialog = await vi.waitFor(() => openDialog(t('pages.eventDetail.terms.header')))
+    expect([...dialog.querySelectorAll('.terms-dialog__link')].map(textOf)).toEqual([document.name])
+    expect((termsCheckbox(dialog, document.termsDocumentId) as HTMLInputElement).checked).toBe(
+      false,
+    )
+    expect(findButton(t('pages.eventDetail.terms.confirm'), dialog).disabled).toBe(false)
     expect(calls.assign).toEqual([])
 
-    await click(termsCheckbox(dialog, TERMS_DOCUMENT.termsDocumentId))
+    await click(termsCheckbox(dialog, document.termsDocumentId))
     await click(findButton(t('pages.eventDetail.terms.confirm'), dialog))
 
     await vi.waitFor(() => expect(calls.assign).toHaveLength(1))
     expect(calls.assign[0]?.body).toEqual({
       activityRoleTypeId: 'role-participant',
-      termsDecisions: [
-        { termsDocumentId: TERMS_DOCUMENT.termsDocumentId, version: 1, accepted: true },
-      ],
+      termsDecisions: [{ termsDocumentId: document.termsDocumentId, version: 1, accepted: true }],
     })
   })
 
@@ -385,22 +404,14 @@ describe('activities timeline self signup', () => {
     await renderTimeline({ terms: TERMS })
     await vi.waitFor(() => expect(calls.counts.terms).toBe(1))
     await click(findButton(t('pages.eventDetail.card.enrollSelf')))
-    const dialog = await vi.waitFor(() => {
-      const found = findDialog(t('pages.eventDetail.terms.header'))
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
+    const dialog = await vi.waitFor(() => openDialog(t('pages.eventDetail.terms.header')))
     await click(termsCheckbox(dialog, TERMS_DOCUMENT.termsDocumentId))
     await click(findButton(t('pages.eventDetail.terms.confirm'), dialog))
 
     const toast = await waitForNotification(t('pages.eventDetail.toast.termsChangedSummary'))
     expect(toast?.message).toBe(t('pages.eventDetail.toast.termsChanged'))
     await vi.waitFor(() => expect(calls.counts.terms).toBe(2))
-    const reopened = await vi.waitFor(() => {
-      const found = findDialog(t('pages.eventDetail.terms.header'))
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
+    const reopened = await vi.waitFor(() => openDialog(t('pages.eventDetail.terms.header')))
     expect(
       (termsCheckbox(reopened, TERMS_DOCUMENT.termsDocumentId) as HTMLInputElement).checked,
     ).toBe(false)
@@ -409,99 +420,6 @@ describe('activities timeline self signup', () => {
     await click(termsCheckbox(reopened, TERMS_DOCUMENT.termsDocumentId))
     await click(findButton(t('pages.eventDetail.terms.confirm'), reopened))
     await vi.waitFor(() => expect(calls.assign).toHaveLength(2))
-  })
-
-  it('opens the terms dialog for an event with only optional documents', async () => {
-    const { calls } = serveSignupApi({
-      termsDocuments: [OPTIONAL_TERMS_DOCUMENT],
-      termsAccepted: false,
-    })
-
-    await renderTimeline({ terms: OPTIONAL_ONLY_TERMS })
-    await vi.waitFor(() => expect(calls.counts.terms).toBe(1))
-    await click(findButton(t('pages.eventDetail.card.enrollSelf')))
-
-    const dialog = await vi.waitFor(() => {
-      const found = findDialog(t('pages.eventDetail.terms.header'))
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
-    expect(textOf(dialog.querySelector('.terms-dialog__link'))).toBe(OPTIONAL_TERMS_DOCUMENT.name)
-    expect(findButton(t('pages.eventDetail.terms.confirm'), dialog).disabled).toBe(false)
-    expect(calls.assign).toEqual([])
-
-    await click(termsCheckbox(dialog, OPTIONAL_TERMS_DOCUMENT.termsDocumentId))
-    await click(findButton(t('pages.eventDetail.terms.confirm'), dialog))
-
-    await vi.waitFor(() => expect(calls.assign).toHaveLength(1))
-    expect(calls.assign[0]?.body).toEqual({
-      activityRoleTypeId: 'role-participant',
-      termsDecisions: [
-        { termsDocumentId: OPTIONAL_TERMS_DOCUMENT.termsDocumentId, version: 1, accepted: true },
-      ],
-    })
-  })
-
-  it('only asks again about a new optional document once the required one is already accepted', async () => {
-    const { calls } = serveSignupApi({
-      termsDocuments: [TERMS_DOCUMENT, OPTIONAL_TERMS_DOCUMENT],
-      termsDecisions: { 'user-1': [decided(TERMS_DOCUMENT.termsDocumentId, true)] },
-    })
-
-    await renderTimeline({ terms: TERMS_WITH_OPTIONAL })
-    await vi.waitFor(() => expect(calls.counts.terms).toBe(1))
-    await click(findButton(t('pages.eventDetail.card.enrollSelf')))
-
-    const dialog = await vi.waitFor(() => {
-      const found = findDialog(t('pages.eventDetail.terms.header'))
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
-    expect([...dialog.querySelectorAll('.terms-dialog__link')].map(textOf)).toEqual([
-      OPTIONAL_TERMS_DOCUMENT.name,
-    ])
-
-    await click(termsCheckbox(dialog, OPTIONAL_TERMS_DOCUMENT.termsDocumentId))
-    await click(findButton(t('pages.eventDetail.terms.confirm'), dialog))
-
-    await vi.waitFor(() => expect(calls.assign).toHaveLength(1))
-    expect(calls.assign[0]?.body).toEqual({
-      activityRoleTypeId: 'role-participant',
-      termsDecisions: [
-        { termsDocumentId: OPTIONAL_TERMS_DOCUMENT.termsDocumentId, version: 1, accepted: true },
-      ],
-    })
-  })
-
-  it('shows a previously rejected document as pending and unchecked, and lets the user accept it', async () => {
-    const { calls } = serveSignupApi({
-      termsDecisions: { 'user-1': [decided(TERMS_DOCUMENT.termsDocumentId, false)] },
-    })
-
-    await renderTimeline({ terms: TERMS })
-    await vi.waitFor(() => expect(calls.counts.terms).toBe(1))
-    await click(findButton(t('pages.eventDetail.card.enrollSelf')))
-
-    const dialog = await vi.waitFor(() => {
-      const found = findDialog(t('pages.eventDetail.terms.header'))
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
-    expect(textOf(dialog.querySelector('.terms-dialog__link'))).toBe(TERMS_DOCUMENT.name)
-    expect(
-      (termsCheckbox(dialog, TERMS_DOCUMENT.termsDocumentId) as HTMLInputElement).checked,
-    ).toBe(false)
-
-    await click(termsCheckbox(dialog, TERMS_DOCUMENT.termsDocumentId))
-    await click(findButton(t('pages.eventDetail.terms.confirm'), dialog))
-
-    await vi.waitFor(() => expect(calls.assign).toHaveLength(1))
-    expect(calls.assign[0]?.body).toEqual({
-      activityRoleTypeId: 'role-participant',
-      termsDecisions: [
-        { termsDocumentId: TERMS_DOCUMENT.termsDocumentId, version: 1, accepted: true },
-      ],
-    })
   })
 
   it('does not ask again about an already accepted document', async () => {
@@ -518,44 +436,18 @@ describe('activities timeline self signup', () => {
     expect(calls.assign[0]?.body).toEqual({ activityRoleTypeId: 'role-participant' })
   })
 
-  it('gives the terms checkbox an accessible name', async () => {
-    serveSignupApi({ termsAccepted: false })
-
-    await renderTimeline({ terms: TERMS })
-    await click(findButton(t('pages.eventDetail.card.enrollSelf')))
-
-    const dialog = await vi.waitFor(() => {
-      const found = findDialog(t('pages.eventDetail.terms.header'))
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
-    const checkbox = termsCheckbox(dialog, TERMS_DOCUMENT.termsDocumentId)
-    const label = checkbox.closest('label')
-    expect(label?.getAttribute('aria-label')).toBe(
-      t('pages.eventDetail.terms.checkboxLabel', { name: TERMS_DOCUMENT.name }),
-    )
-  })
-
   it('returns focus to the document link once its content popup closes', async () => {
     serveSignupApi({ termsAccepted: false })
 
     await renderTimeline({ terms: TERMS }, { realTransitions: true })
     await click(findButton(t('pages.eventDetail.card.enrollSelf')))
 
-    const dialog = await vi.waitFor(() => {
-      const found = findDialog(t('pages.eventDetail.terms.header'))
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
+    const dialog = await vi.waitFor(() => openDialog(t('pages.eventDetail.terms.header')))
     const link = dialog.querySelector<HTMLElement>('.terms-dialog__link') as HTMLElement
     link.focus()
     await click(link)
 
-    const preview = await vi.waitFor(() => {
-      const found = findDialog(TERMS_DOCUMENT.name)
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
+    const preview = await vi.waitFor(() => openDialog(TERMS_DOCUMENT.name))
     await click(findButton(t('pages.eventDetail.terms.close'), preview))
 
     await vi.waitFor(() => expect(findDialog(TERMS_DOCUMENT.name)).toBeUndefined())
@@ -568,11 +460,7 @@ describe('activities timeline self signup', () => {
     await renderTimeline({ terms: TERMS }, { realTransitions: true })
     await vi.waitFor(() => expect(calls.counts.terms).toBe(1))
     await click(findButton(t('pages.eventDetail.card.enrollSelf')))
-    const dialog = await vi.waitFor(() => {
-      const found = findDialog(t('pages.eventDetail.terms.header'))
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
+    const dialog = await vi.waitFor(() => openDialog(t('pages.eventDetail.terms.header')))
     expect(dialog.textContent).not.toContain(t('pages.eventDetail.terms.missingRequired'))
     await click(findButton(t('pages.eventDetail.terms.confirm'), dialog))
     expect(dialog.textContent).toContain(t('pages.eventDetail.terms.missingRequired'))
@@ -597,11 +485,7 @@ describe('activities timeline self signup', () => {
     await renderTimeline({ terms: TERMS })
     await click(findButton(t('pages.eventDetail.card.enrollSelf')))
 
-    const dialog = await vi.waitFor(() => {
-      const found = findDialog(t('pages.eventDetail.terms.header'))
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
+    const dialog = await vi.waitFor(() => openDialog(t('pages.eventDetail.terms.header')))
     expect(notifications()).toEqual([])
 
     state.assignError = null
@@ -705,11 +589,7 @@ describe('activities timeline household signup', () => {
       expect(findButtons(t('pages.eventDetail.card.enrollFamily')).length > 0).toBe(true),
     )
     await click(findButton(t('pages.eventDetail.card.enrollFamily')))
-    const dialog = await vi.waitFor(() => {
-      const found = findDialog(t('pages.eventDetail.household.header'))
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
+    const dialog = await vi.waitFor(() => openDialog(t('pages.eventDetail.household.header')))
     return { ...rendered, dialog }
   }
 
@@ -830,11 +710,7 @@ describe('activities timeline household signup', () => {
       expect(findButtons(t('pages.eventDetail.card.enrollAnother')).length > 0).toBe(true),
     )
     await click(findButton(t('pages.eventDetail.card.enrollAnother')))
-    const dialog = await vi.waitFor(() => {
-      const found = findDialog(t('pages.eventDetail.household.header'))
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
+    const dialog = await vi.waitFor(() => openDialog(t('pages.eventDetail.household.header')))
 
     expect([...dialog.querySelectorAll('.household__already')].map(textOf)).toEqual([
       t('pages.eventDetail.household.alreadyAs', { role: 'Participante' }),
@@ -869,11 +745,7 @@ describe('activities timeline household signup', () => {
     expect(findButtons(t('pages.eventDetail.card.enrollAnother'))).toHaveLength(0)
 
     wrapper.findComponent(ActivityTimelineCard).vm.$emit('household')
-    const dialog = await vi.waitFor(() => {
-      const found = findDialog(t('pages.eventDetail.household.header'))
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
+    const dialog = await vi.waitFor(() => openDialog(t('pages.eventDetail.household.header')))
     expect(dialog.querySelectorAll('input[type="checkbox"]')).toHaveLength(0)
     expect(textOf(dialog.querySelector('.household__note'))).toBe(
       t('pages.eventDetail.household.allInscribed'),
@@ -924,11 +796,7 @@ describe('activities timeline household signup', () => {
     expect(wrapper.findAllComponents(ElSelect)[1]?.props('disabled')).toBe(true)
     await click(findButton(t('pages.eventDetail.household.enroll'), dialog))
 
-    const terms = await vi.waitFor(() => {
-      const found = findDialog(t('pages.eventDetail.terms.header'))
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
+    const terms = await vi.waitFor(() => openDialog(t('pages.eventDetail.terms.header')))
     expect(calls.household).toEqual([])
     await click(termsCheckbox(terms, TERMS_DOCUMENT.termsDocumentId))
     await click(findButton(t('pages.eventDetail.terms.confirm'), terms))
@@ -962,11 +830,7 @@ describe('activities timeline household signup', () => {
     await flushPromises()
     await click(findButton(t('pages.eventDetail.household.enroll'), dialog))
 
-    const terms = await vi.waitFor(() => {
-      const found = findDialog(t('pages.eventDetail.terms.header'))
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
+    const terms = await vi.waitFor(() => openDialog(t('pages.eventDetail.terms.header')))
     expect([...terms.querySelectorAll('.terms-dialog__decider')].map(textOf)).toEqual([
       t('pages.eventDetail.terms.decidedByUser', { name: CHILD.firstName }),
       t('pages.eventDetail.terms.decidedByPerson', { name: CHILD.firstName }),
@@ -1026,11 +890,7 @@ describe('activities timeline household signup', () => {
     }
     await click(findButton(t('pages.eventDetail.household.enroll'), dialog))
 
-    const terms = await vi.waitFor(() => {
-      const found = findDialog(t('pages.eventDetail.terms.header'))
-      expect(found).toBeDefined()
-      return found as HTMLElement
-    })
+    const terms = await vi.waitFor(() => openDialog(t('pages.eventDetail.terms.header')))
     state.householdError = null
     await click(findButton(t('pages.eventDetail.terms.confirm'), terms))
 

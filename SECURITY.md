@@ -80,7 +80,7 @@ authentication are not supported.
   answer 204 alike. Registration refuses a disposable domain first (`DisposableEmailNotAllowed`), which depends
   only on the domain, and then hashes the password before looking the address up, so every other outcome costs
   the same Argon2 work. An account still unverified 24 hours after registering is erased with its
-  dependents, keeping their data history, by `PurgeUnverifiedAccounts`, which `UnverifiedAccountPurgeWorker` runs 30 seconds
+  dependents, keeping their data history, by `PurgeUnverifiedAccounts`, which `ScheduledJobsWorker` runs 30 seconds
   after startup and then hourly.
 - Only someone who knows an account's password learns its state: after a correct password, the password step
   answers an unverified account with `UserAccountPendingVerification` and a locked second factor with
@@ -120,7 +120,7 @@ authentication are not supported.
   resetting the password drops the pending address, so a change asked for with a stolen password does not
   survive the owner's reset, and confirming it voids the password reset and login codes already emailed to the
   previous address. A pending address whose link expired is dropped by `DiscardExpiredAccountChanges`, which
-  `ExpiredAccountChangeCleanupWorker` runs 30 seconds after startup and then hourly, keeping its data history,
+  `ScheduledJobsWorker` runs 30 seconds after startup and then hourly, keeping its data history,
   together with any authenticator enrollment nobody confirmed in time. When the new
   address belongs to a verified account, its holder gets the same notice as registration instead of the link,
   so the answer never tells whether the address is in use; an account nobody verified that holds it is
@@ -142,7 +142,7 @@ authentication are not supported.
   `SendComingOfAgeNotices` emails the guardian 30 days before, recording it in
   `users.coming_of_age_notice_sent_at`. A changed birth date clears that record, so the corrected day gets its
   own notice; a notice the email limits refuse is retried on the next run, and a guardian whose email nobody
-  verified gets none. `AdultDependentPurgeWorker` runs both 30 seconds after startup and then hourly. A
+  verified gets none. `ScheduledJobsWorker` runs both, one after the other, 30 seconds after startup and then hourly. A
   household signup list holds at most 21 people.
 - `PATCH /api/users/{id}/password` changes only the caller's own password and asks for the current one;
   guardians and administrators get `AccessDenied` (403) for any other account, so nobody else can spend that
@@ -255,7 +255,7 @@ since the row itself is the record, and neither does a change of excluded proper
   news consent changes and ratings, when the very serious infringements prescribe (LOPDGDD article 72). A claim
   interrupts those terms (Civil Code article 1973), so the purge keeps every entry about an account an active
   [hold](#blocked-data-consultations) names, whatever its age, until the hold is lifted.
-  `DataHistoryPurgeWorker` runs `PurgeDataHistory` 30 seconds after startup and then hourly; it also removes the
+  `ScheduledJobsWorker` runs `PurgeDataHistory` 30 seconds after startup and then hourly; it also removes the
   consultations kept five years and the holds lifted five years ago. Nothing else deletes entries, and the
   recorder refuses to change one.
 
@@ -732,13 +732,13 @@ mount of the volume: only editors and administrators upload or delete them, and 
 with. An upload is kept while content references it
 (`StoredFileRepository.GetInUseAsync`); one that nothing references 7 days after it was uploaded, such as an
 image picked for a form that was never saved, is deleted with its content by `PurgeUnusedFiles`, which
-`UnusedFilePurgeWorker` runs 30 seconds after startup and then hourly. Saving an event, activity, news item,
+`ScheduledJobsWorker` runs 30 seconds after startup and then hourly. Saving an event, activity, news item,
 resource or partner checks that its thumbnail and the images its rich text embeds still exist (`ContentFiles`,
 `*ThumbnailNotFound`, `RichTextFileNotFound`), and the foreign key of the thumbnail keeps a purge from deleting
 it once it is referenced. The same run
 then removes every entry of the volume that no file row owns an hour after it was written: a write cut short,
 an upload whose row was never committed or content whose deletion failed. A
-failed run logs `UnusedFilePurgeFailed`, and content that cannot be removed from the volume logs
+failed run logs `ScheduledJobFailed`, and content that cannot be removed from the volume logs
 `StoredFileContentDeleteFailed`. Administrator email
 attachments never reach the `api-files` volume: they are read once
 per batch into the Data Protection-protected outbox content described below and removed once every message

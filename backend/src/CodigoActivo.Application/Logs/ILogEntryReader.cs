@@ -1,4 +1,3 @@
-using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Logs.Contracts;
 
 namespace CodigoActivo.Application.Logs;

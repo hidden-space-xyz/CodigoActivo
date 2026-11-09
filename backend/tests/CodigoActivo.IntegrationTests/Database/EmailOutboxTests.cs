@@ -83,14 +83,8 @@ public sealed class EmailOutboxTests(CodigoActivoWebAppFactory factory)
     {
         await using var scope = Factory.Services.CreateAsyncScope();
         var callerContext = scope.ServiceProvider.GetRequiredService<CodigoActivoDbContext>();
-        var staged = Persisted.As<StoredFile>(
-            new
-            {
-                Id = Guid.NewGuid(),
-                Extension = "png",
-                UploadedAt = Factory.Clock.UtcNow,
-                UploadedBy = TestSeedData.Users.AdminId,
-            }
+        var staged = TestEntities.New<StoredFile>(
+            new { Id = Guid.NewGuid(), UploadedAt = Factory.Clock.UtcNow }
         );
         callerContext.Files.Add(staged);
 

@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Reflection;
-using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.Common.Messaging;
 

@@ -1,9 +1,6 @@
-using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Activities.Commands;
-using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Files;
 using CodigoActivo.Domain.Activities;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
 

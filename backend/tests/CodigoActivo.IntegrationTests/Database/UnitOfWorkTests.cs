@@ -48,23 +48,20 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
 
         db.Users.Add(NewUser(UserId, UserEmail));
         db.Files.Add(
-            Persisted.As<StoredFile>(
+            TestEntities.New<StoredFile>(
                 new
                 {
                     Id = FileId,
-                    Extension = "png",
                     UploadedAt = Fixed,
                     UploadedBy = UserId,
                 }
             )
         );
         db.Events.Add(
-            Persisted.As<Event>(
+            TestEntities.New<Event>(
                 new
                 {
                     Id = EventId,
-                    Title = "Evento",
-                    Subtitle = "Sub",
                     EventStartsAt = new DateOnly(2026, 7, 1),
                     EventEndsAt = new DateOnly(2026, 7, 2),
                     SignupStartsAt = Fixed,
@@ -76,17 +73,14 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
             )
         );
         db.Activities.Add(
-            Persisted.As<Activity>(
+            TestEntities.New<Activity>(
                 new
                 {
                     Id = ActivityId,
                     Title = "Actividad",
-                    Description = "Descripción",
-                    Location = "Sala",
                     ActivityStartsAt = Fixed.AddDays(40),
                     ActivityEndsAt = Fixed.AddDays(40).AddHours(2),
                     EventId = EventId,
-                    Modality = ActivityModality.Presencial,
                     ThumbnailId = FileId,
                     CreatedAt = Fixed,
                     CreatedBy = UserId,
@@ -121,12 +115,11 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
 
     private static Event FeaturedEvent()
     {
-        return Persisted.As<Event>(
+        return TestEntities.New<Event>(
             new
             {
                 Id = Guid.NewGuid(),
                 Title = "Destacado",
-                Subtitle = "Sub",
                 EventStartsAt = new DateOnly(2026, 7, 1),
                 EventEndsAt = new DateOnly(2026, 7, 2),
                 SignupStartsAt = Fixed,
@@ -141,12 +134,11 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
 
     private static NewsItem FeaturedNewsItem()
     {
-        return Persisted.As<NewsItem>(
+        return TestEntities.New<NewsItem>(
             new
             {
                 Id = Guid.NewGuid(),
                 Title = "Destacada",
-                Subtitle = "Sub",
                 Featured = true,
                 ThumbnailId = FileId,
                 CreatedAt = Fixed,

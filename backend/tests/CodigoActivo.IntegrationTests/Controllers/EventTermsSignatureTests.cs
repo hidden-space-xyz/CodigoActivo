@@ -33,30 +33,25 @@ public sealed class EventTermsSignatureTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.TermsDocuments.Add(
-                Persisted.As<TermsDocument>(
+                TestEntities.New<TermsDocument>(
                     new
                     {
                         Id = termsDocumentId,
                         Name = $"Autorización {termsDocumentId:N}",
-                        Description = "{}",
                         RequiresSignature = true,
                     }
                 )
             );
-            var ev = Persisted.As<Event>(
+            var ev = TestEntities.New<Event>(
                 new
                 {
                     Id = eventId,
-                    Title = "Evento",
-                    Subtitle = "Sub",
-                    Description = "{}",
                     EventStartsAt = new DateOnly(2026, 7, 1),
                     EventEndsAt = new DateOnly(2026, 7, 31),
                     SignupStartsAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
                     SignupEndsAt = new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero),
                     ThumbnailId = thumb,
                     CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
                 }
             );
             Persisted.Add(
@@ -72,20 +67,17 @@ public sealed class EventTermsSignatureTests(CodigoActivoWebAppFactory factory)
             );
             db.Events.Add(ev);
             db.Activities.Add(
-                Persisted.As<Activity>(
+                TestEntities.New<Activity>(
                     new
                     {
                         Id = activityId,
                         Title = "Actividad",
                         Description = "Descripcion",
-                        Location = "Sala",
-                        Modality = ActivityModality.Presencial,
                         ActivityStartsAt = new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
                         ActivityEndsAt = new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
                         EventId = eventId,
                         ThumbnailId = thumb,
                         CreatedAt = SeededAt,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );

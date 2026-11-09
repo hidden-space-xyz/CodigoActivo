@@ -1,13 +1,7 @@
-using System.ComponentModel.DataAnnotations;
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.Accounts.Passwords;
 using CodigoActivo.Application.Accounts.SecondFactor;
-using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Domain.BlockedData;
-using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.BlockedData.Commands;
 

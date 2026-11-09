@@ -1,6 +1,5 @@
 using System.Text.Json;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
-using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.BlockedData;

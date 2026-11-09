@@ -1,7 +1,3 @@
-using CodigoActivo.Application.Abstractions.Auditing;
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
 

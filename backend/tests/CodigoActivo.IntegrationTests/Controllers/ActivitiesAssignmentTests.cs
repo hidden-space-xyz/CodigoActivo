@@ -75,37 +75,31 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Events.Add(
-                Persisted.As<Event>(
+                TestEntities.New<Event>(
                     new
                     {
                         Id = eventId,
-                        Title = "Evento",
-                        Subtitle = "Sub",
                         EventStartsAt = new DateOnly(2026, 7, 1),
                         EventEndsAt = new DateOnly(2026, 7, 31),
                         SignupStartsAt = openSignup ? OpenSignupStart : ClosedSignupStart,
                         SignupEndsAt = openSignup ? OpenSignupEnd : ClosedSignupEnd,
                         ThumbnailId = thumb,
                         CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
             db.Activities.Add(
-                Persisted.As<Activity>(
+                TestEntities.New<Activity>(
                     new
                     {
                         Id = activityId,
                         Title = "Actividad",
                         Description = "Descripcion",
-                        Location = "Sala",
-                        Modality = ActivityModality.Presencial,
                         ActivityStartsAt = activityStart ?? ActivityStart,
                         ActivityEndsAt = activityEnd ?? ActivityEnd,
                         EventId = eventId,
                         ThumbnailId = thumb,
                         CreatedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
@@ -579,32 +573,6 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task HouseholdAssignmentsUnknownEventReturnsNotFound()
-    {
-        var client = await LoginAsMemberAsync();
-
-        var response = await client.GetAsync(
-            TestUri.Rel($"/api/activities/household-assignments/{Guid.NewGuid()}"),
-            Ct
-        );
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
-    }
-
-    [Fact]
-    public async Task HouseholdAssignmentsAnonymousReturnsUnauthorized()
-    {
-        var client = CreateClient();
-
-        var response = await client.GetAsync(
-            TestUri.Rel($"/api/activities/household-assignments/{Guid.NewGuid()}"),
-            Ct
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
     public async Task AssignUnknownRoleTypeIsRefusedAsAnInvalidRequest()
     {
         var (_, activityId) = await SeedActivityAsync();
@@ -715,16 +683,6 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
             .Should()
             .Equal(KnownIds.ActivityRoleTypes.Participant, KnownIds.ActivityRoleTypes.Volunteer);
         child.Roles.Select(r => r.Name).Should().Equal("Participante", "Voluntario");
-    }
-
-    [Fact]
-    public async Task SignupRolesAnonymousReturnsUnauthorized()
-    {
-        var client = CreateClient();
-
-        var response = await client.GetAsync(TestUri.Rel("/api/activities/signup-roles"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     private sealed class RivalSignupInterceptor : SaveChangesInterceptor

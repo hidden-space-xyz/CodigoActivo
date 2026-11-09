@@ -1,7 +1,4 @@
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Logs.Contracts;
-using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.Logs.Queries;
 

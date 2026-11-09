@@ -7,12 +7,7 @@ interface NginxBlock {
   header: string
   body: string
   ownStatements: string
-  depth: number
-}
-
-interface NginxToken {
-  kind: 'open' | 'close' | 'end'
-  index: number
+  blocks: NginxBlock[]
 }
 
 interface NginxMapEntry {
@@ -46,43 +41,21 @@ const proxyApiInclude = 'include /etc/nginx/snippets/proxy-api.conf;'
 
 const dockerDirectory = join(import.meta.dirname, '..', '..', '..', 'docker')
 
-function startsToken(source: string, index: number): boolean {
-  if (index === 0) return true
-
-  const previous = source[index - 1] as string
-
-  return /\s/.test(previous) || previous === ';' || previous === '{' || previous === '}'
-}
-
 function stripComments(source: string): string {
-  let result = ''
   let quote: string | null = null
   let commented = false
 
-  for (let index = 0; index < source.length; index += 1) {
-    const char = source[index] as string
-
-    if (char === '\n') {
-      commented = false
-      result += char
-      continue
-    }
-
-    if (commented) continue
-
-    if (quote !== null) {
-      if (char === quote) quote = null
-    } else if (char === '"' || char === "'") {
-      quote = char
-    } else if (char === '#' && startsToken(source, index)) {
-      commented = true
-      continue
-    }
-
-    result += char
-  }
-
-  return result
+  return [...source]
+    .filter((char, index) => {
+      const previous = source[index - 1] ?? ' '
+      if (char === '\n') commented = false
+      else if (commented) return false
+      else if (quote !== null) quote = char === quote ? null : quote
+      else if (char === '"' || char === "'") quote = char
+      else if (char === '#' && /[\s;{}]/.test(previous)) commented = true
+      return !commented
+    })
+    .join('')
 }
 
 function readConfig(name: string): string {
@@ -99,95 +72,57 @@ function normalise(text: string): string {
   return text.replace(/\s+/g, ' ').trim()
 }
 
-function opensBlock(config: string, index: number): boolean {
-  return index === 0 || /\s/.test(config[index - 1] as string)
-}
-
-function closesBlock(config: string, index: number): boolean {
-  if (index === 0) return true
-
-  const previous = config[index - 1] as string
-
-  return previous === ';' || /\s/.test(previous)
-}
-
-function tokenize(config: string): NginxToken[] {
-  const tokens: NginxToken[] = []
+function parse(
+  text: string,
+  all: string[] = [],
+  header = '',
+  from = 0,
+): { block: NginxBlock; end: number; all: string[] } {
+  const own: string[] = []
+  const blocks: NginxBlock[] = []
+  let start = from
   let quote: string | null = null
 
-  for (let index = 0; index < config.length; index += 1) {
-    const char = config[index] as string
+  const close = (end: number) => ({
+    block: { header, body: text.slice(from, end), ownStatements: own.join(' '), blocks },
+    end,
+    all,
+  })
+
+  for (let index = from; index < text.length; index += 1) {
+    const char = text[index] as string
+    const previous = text[index - 1] ?? ' '
 
     if (quote !== null) {
       if (char === quote) quote = null
-      continue
-    }
-
-    if (char === '"' || char === "'") {
+    } else if (char === '"' || char === "'") {
       quote = char
-      continue
+    } else if (char === ';') {
+      const statement = normalise(text.slice(start, index))
+      if (statement.length > 0) {
+        own.push(`${statement};`)
+        all.push(`${statement};`)
+      }
+      start = index + 1
+    } else if (char === '{' && /\s/.test(previous)) {
+      const child = parse(text, all, normalise(text.slice(start, index)), index + 1)
+      blocks.push(child.block)
+      index = child.end
+      start = index + 1
+    } else if (char === '}' && /[\s;]/.test(previous)) {
+      return close(index)
     }
-
-    if (char === ';') tokens.push({ kind: 'end', index })
-    else if (char === '{' && opensBlock(config, index)) tokens.push({ kind: 'open', index })
-    else if (char === '}' && closesBlock(config, index)) tokens.push({ kind: 'close', index })
   }
 
-  return tokens
+  return close(text.length)
 }
 
-function statements(config: string): string[] {
-  const collected: string[] = []
-  let start = 0
-
-  for (const token of tokenize(config)) {
-    if (token.kind === 'end') {
-      const statement = normalise(config.slice(start, token.index))
-      if (statement.length > 0) collected.push(`${statement};`)
-    }
-    start = token.index + 1
-  }
-
-  return collected
+function statements(text: string): string[] {
+  return parse(text).all
 }
 
-function tokenizeStatement(statement: string): string[] {
-  const tokens: string[] = []
-  let current = ''
-  let started = false
-  let quote: string | null = null
-
-  for (const char of statement.replace(/;$/, '')) {
-    if (quote !== null) {
-      if (char === quote) quote = null
-      else current += char
-      continue
-    }
-
-    if (char === '"' || char === "'") {
-      quote = char
-      started = true
-      continue
-    }
-
-    if (/\s/.test(char)) {
-      if (started) tokens.push(current)
-      current = ''
-      started = false
-      continue
-    }
-
-    current += char
-    started = true
-  }
-
-  if (started) tokens.push(current)
-
-  return tokens
-}
-
-function statementsOf(config: string, directive: string): string[] {
-  return statements(config).filter(
+function statementsOf(text: string, directive: string): string[] {
+  return statements(text).filter(
     (statement) => statement === `${directive};` || statement.startsWith(`${directive} `),
   )
 }
@@ -201,72 +136,18 @@ function onlyStatement(config: string, directive: string): string {
   return found[0] as string
 }
 
-function parseBlocks(config: string): NginxBlock[] {
-  const blocks: NginxBlock[] = []
-  const open: { header: string; bodyStart: number; depth: number }[] = []
-  let start = 0
-
-  for (const token of tokenize(config)) {
-    if (token.kind === 'open') {
-      open.push({
-        header: normalise(config.slice(start, token.index)),
-        bodyStart: token.index + 1,
-        depth: open.length,
-      })
-    } else if (token.kind === 'close') {
-      const block = open.pop()
-      if (block !== undefined) {
-        const body = config.slice(block.bodyStart, token.index)
-        blocks.push({
-          header: block.header,
-          body,
-          ownStatements: stripNestedBlocks(body),
-          depth: block.depth,
-        })
-      }
-    }
-    start = token.index + 1
-  }
-
-  return blocks
+function descendants(block: NginxBlock): NginxBlock[] {
+  return block.blocks.flatMap((child) => [...descendants(child), child])
 }
 
 function directChildren(block: NginxBlock): NginxBlock[] {
-  return parseBlocks(block.body).filter((child) => child.depth === 0)
+  return block.blocks
 }
 
 function extractBlocks(config: string, keyword: string): NginxBlock[] {
   const headerPattern = new RegExp(`^${keyword}\\b`)
 
-  return parseBlocks(config).filter((block) => headerPattern.test(block.header))
-}
-
-function stripNestedBlocks(body: string): string {
-  let result = ''
-  let pending = ''
-  let depth = 0
-  let start = 0
-
-  for (const token of tokenize(body)) {
-    if (depth === 0) pending += body.slice(start, token.index)
-
-    if (token.kind === 'open') {
-      pending = ''
-      depth += 1
-    } else if (token.kind === 'close') {
-      pending = ''
-      depth = Math.max(0, depth - 1)
-    } else if (depth === 0) {
-      result += `${pending};`
-      pending = ''
-    }
-
-    start = token.index + 1
-  }
-
-  if (depth === 0) result += body.slice(start)
-
-  return result
+  return descendants(parse(config).block).filter((block) => headerPattern.test(block.header))
 }
 
 function includesOf(block: NginxBlock, include: string): string[] {
@@ -286,7 +167,9 @@ function mapBlock(variable: string): NginxBlock {
 
 function mapEntries(block: NginxBlock): NginxMapEntry[] {
   return statements(block.body).map((statement) => {
-    const tokens = tokenizeStatement(statement)
+    const tokens = (statement.slice(0, -1).match(/"[^"]*"|'[^']*'|\S+/g) ?? []).map((token) =>
+      token.replace(/^(["'])(.*)\1$/, '$2'),
+    )
     if (tokens.length !== 2) throw new Error(`unreadable map entry "${statement}"`)
 
     return { key: tokens[0] as string, value: tokens[1] as string }

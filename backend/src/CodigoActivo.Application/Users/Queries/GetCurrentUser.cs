@@ -1,8 +1,4 @@
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Security;
-using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Users.Contracts;
-using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.Users.Queries;
 

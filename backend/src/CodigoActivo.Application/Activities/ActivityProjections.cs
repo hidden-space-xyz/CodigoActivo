@@ -3,7 +3,6 @@ using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Activities.Contracts;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Domain.Activities;
-using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.Activities;
 

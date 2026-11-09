@@ -1,5 +1,3 @@
-using CodigoActivo.Application.Common.Querying;
-
 namespace CodigoActivo.Application.BlockedData.Contracts;
 
 /// <summary>

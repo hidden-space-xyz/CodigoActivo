@@ -69,8 +69,7 @@ public sealed class ActingUserPolicyTests
 
         var result = await sut.EnsureMayActForAsync(child, TestContext.Current.CancellationToken);
 
-        result.Error!.Kind.Should().Be(ErrorKind.Forbidden);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActingForAnotherUserForbidden);
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.ActingForAnotherUserForbidden);
     }
 
     [Fact]
@@ -81,7 +80,6 @@ public sealed class ActingUserPolicyTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Forbidden);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActingForAnotherUserForbidden);
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.ActingForAnotherUserForbidden);
     }
 }

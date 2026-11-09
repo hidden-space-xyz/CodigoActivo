@@ -1,37 +1,27 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Files.Commands;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.News;
 using CodigoActivo.Infrastructure.Files;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Database;
 
-public sealed class UnusedFilePurgeWorkerTests(CodigoActivoWebAppFactory factory)
+public sealed class UnusedFilePurgeTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
-    private UnusedFilePurgeWorker Build()
+    private Task<int> PurgeAsync()
     {
-        return new UnusedFilePurgeWorker(
-            Factory.Services.GetRequiredService<IServiceScopeFactory>(),
-            new UnusedFilePurgeOptions(),
-            NullLogger<UnusedFilePurgeWorker>.Instance
-        );
+        return Factory.RunScheduledAsync<PurgeUnusedFilesCommand>();
     }
 
     private StoredFile File(int daysAgo)
     {
-        return Persisted.As<StoredFile>(
-            new
-            {
-                Id = Guid.NewGuid(),
-                Extension = "png",
-                UploadedAt = Factory.Clock.UtcNow.AddDays(-daysAgo),
-                UploadedBy = TestSeedData.Users.AdminId,
-            }
+        return TestEntities.New<StoredFile>(
+            new { Id = Guid.NewGuid(), UploadedAt = Factory.Clock.UtcNow.AddDays(-daysAgo) }
         );
     }
 
@@ -54,7 +44,7 @@ public sealed class UnusedFilePurgeWorkerTests(CodigoActivoWebAppFactory factory
         {
             db.Files.AddRange(unused, recent, thumbnail, embedded);
             db.News.Add(
-                Persisted.As<NewsItem>(
+                TestEntities.New<NewsItem>(
                     new
                     {
                         Id = Guid.NewGuid(),
@@ -63,7 +53,6 @@ public sealed class UnusedFilePurgeWorkerTests(CodigoActivoWebAppFactory factory
                         Description = $$"""{"img":"/api/files/{{embedded.Id}}/content"}""",
                         ThumbnailId = thumbnail.Id,
                         CreatedAt = Factory.Clock.UtcNow,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
@@ -72,7 +61,7 @@ public sealed class UnusedFilePurgeWorkerTests(CodigoActivoWebAppFactory factory
         Directory.CreateDirectory(Path.GetDirectoryName(StoredPath(unused))!);
         await System.IO.File.WriteAllBytesAsync(StoredPath(unused), TestSeedData.ValidPng(), Ct);
 
-        var purged = await Build().PurgeAsync(Ct);
+        var purged = await PurgeAsync();
 
         purged.Should().Be(1);
         var remaining = await Factory.QueryAsync(db =>
@@ -106,7 +95,7 @@ public sealed class UnusedFilePurgeWorkerTests(CodigoActivoWebAppFactory factory
 
         System.IO.File.SetLastWriteTimeUtc(recentOwnerless, Factory.Clock.UtcNow.UtcDateTime);
 
-        await Build().PurgeAsync(Ct);
+        await PurgeAsync();
 
         System.IO.File.Exists(ownedContent).Should().BeTrue();
         System.IO.File.Exists(ownerless).Should().BeFalse();

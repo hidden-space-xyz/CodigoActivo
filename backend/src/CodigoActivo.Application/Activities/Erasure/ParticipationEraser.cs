@@ -1,4 +1,3 @@
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.TermsDecisions;
 using CodigoActivo.Domain.Activities;
 

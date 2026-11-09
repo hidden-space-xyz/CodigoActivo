@@ -32,9 +32,7 @@ public sealed class DeleteResourceCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ResourceNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.ResourceNotFound);
         resources.DidNotReceiveWithAnyArgs().Remove(Arg.Any<Resource>());
     }
 

@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace CodigoActivo.Application.Reports.Contracts;
 
 /// <summary>

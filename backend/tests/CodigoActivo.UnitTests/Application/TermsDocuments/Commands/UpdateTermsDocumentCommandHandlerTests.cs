@@ -54,8 +54,7 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.TermsDocumentNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.TermsDocumentNotFound);
     }
 
     [Fact]
@@ -73,8 +72,7 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ApplicationErrorCode.TermsDocumentNameAlreadyExists);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TermsDocumentNameAlreadyExists);
     }
 
     [Fact]
@@ -87,8 +85,7 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
 
         var result = await ChangeKindAsync(termsDocument, TermsDocumentKind.Consent);
 
-        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ApplicationErrorCode.TermsDocumentKindInUse);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TermsDocumentKindInUse);
         termsDocument
             .Kind.Should()
             .Be(CodigoActivo.Domain.TermsDocuments.TermsDocumentKind.Conditions);
@@ -105,8 +102,7 @@ public sealed class UpdateTermsDocumentCommandHandlerTests
 
         var result = await ChangeKindAsync(termsDocument, TermsDocumentKind.Consent);
 
-        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ApplicationErrorCode.TermsDocumentKindInUse);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TermsDocumentKindInUse);
         termsDocument
             .Kind.Should()
             .Be(CodigoActivo.Domain.TermsDocuments.TermsDocumentKind.Conditions);

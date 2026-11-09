@@ -3,11 +3,9 @@ using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Common.Catalogs;
 using CodigoActivo.Application.Common.Diagnostics;
-using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Common.Localization;
 using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Application.Files;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using Microsoft.Extensions.Logging;
 

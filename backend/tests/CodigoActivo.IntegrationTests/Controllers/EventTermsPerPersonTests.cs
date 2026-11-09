@@ -33,40 +33,33 @@ public sealed class EventTermsPerPersonTests(CodigoActivoWebAppFactory factory)
                 Document(conditionsId, "Normas", TermsDocumentKind.Conditions),
                 Document(consentId, "Uso de imágenes", TermsDocumentKind.Consent)
             );
-            var ev = Persisted.As<Event>(
+            var ev = TestEntities.New<Event>(
                 new
                 {
                     Id = eventId,
-                    Title = "Evento",
-                    Subtitle = "Sub",
-                    Description = "{}",
                     EventStartsAt = new DateOnly(2026, 7, 1),
                     EventEndsAt = new DateOnly(2026, 7, 31),
                     SignupStartsAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
                     SignupEndsAt = new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero),
                     ThumbnailId = thumb,
                     CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
                 }
             );
             Persisted.Add(ev.TermsDocuments, Link(conditionsId, required: true, displayOrder: 0));
             Persisted.Add(ev.TermsDocuments, Link(consentId, required: false, displayOrder: 1));
             db.Events.Add(ev);
             db.Activities.Add(
-                Persisted.As<Activity>(
+                TestEntities.New<Activity>(
                     new
                     {
                         Id = activityId,
                         Title = "Actividad",
                         Description = "Descripcion",
-                        Location = "Sala",
-                        Modality = ActivityModality.Presencial,
                         ActivityStartsAt = new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
                         ActivityEndsAt = new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
                         EventId = eventId,
                         ThumbnailId = thumb,
                         CreatedAt = SeededAt,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
@@ -93,12 +86,11 @@ public sealed class EventTermsPerPersonTests(CodigoActivoWebAppFactory factory)
 
     private static TermsDocument Document(Guid id, string name, TermsDocumentKind kind)
     {
-        return Persisted.As<TermsDocument>(
+        return TestEntities.New<TermsDocument>(
             new
             {
                 Id = id,
                 Name = $"{name} {id:N}",
-                Description = "{}",
                 Kind = kind,
             }
         );

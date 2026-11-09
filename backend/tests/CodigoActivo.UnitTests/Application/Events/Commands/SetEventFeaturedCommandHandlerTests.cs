@@ -32,8 +32,7 @@ public sealed class SetEventFeaturedCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.EventNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventNotFound);
     }
 
     [Fact]

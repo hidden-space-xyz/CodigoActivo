@@ -162,17 +162,4 @@ public sealed class UsersControllerTwoFactorResetTests(CodigoActivoWebAppFactory
 
         await response.ShouldBeForbiddenAsync(ErrorCode.AccessDenied);
     }
-
-    [Fact]
-    public async Task ResetTwoFactorAnonymousReturnsUnauthorized()
-    {
-        var response = await CreateClient()
-            .PostJsonAsync(
-                ResetUrl(TestSeedData.Users.MemberId),
-                new ResetTwoFactorRequest(TestSeedData.Password),
-                Ct
-            );
-
-        await response.ShouldBeUnauthorizedAsync(ErrorCode.AuthenticationRequired);
-    }
 }

@@ -1,4 +1,3 @@
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Domain.Events;

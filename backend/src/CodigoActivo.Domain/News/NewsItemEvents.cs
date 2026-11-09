@@ -1,4 +1,3 @@
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Files;
 
 namespace CodigoActivo.Domain.News;

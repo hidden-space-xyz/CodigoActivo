@@ -1,13 +1,6 @@
 using System.Globalization;
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Querying;
-using CodigoActivo.Application.Abstractions.Security;
-using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Activities;
-using CodigoActivo.Application.Common.Querying;
-using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Application.Participation.Contracts;
-using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.Participation.Queries;
 

@@ -48,8 +48,7 @@ public sealed class UpdateResourceCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ResourceNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.ResourceNotFound);
         await files
             .DidNotReceiveWithAnyArgs()
             .ListExistingAsync(
@@ -78,8 +77,7 @@ public sealed class UpdateResourceCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ResourceUrlNotAllowed);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.ResourceUrlNotAllowed);
     }
 
     [Fact]
@@ -103,8 +101,7 @@ public sealed class UpdateResourceCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ResourceThumbnailNotFound);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.ResourceThumbnailNotFound);
     }
 
     [Fact]

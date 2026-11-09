@@ -33,9 +33,7 @@ public sealed class CreateNewsItemCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.NewsItemThumbnailNotFound);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.NewsItemThumbnailNotFound);
         await news.DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<NewsItem>(), TestContext.Current.CancellationToken);
     }

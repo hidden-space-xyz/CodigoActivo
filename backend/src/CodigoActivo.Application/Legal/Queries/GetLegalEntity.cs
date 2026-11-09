@@ -1,4 +1,3 @@
-using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Legal.Contracts;
 
 namespace CodigoActivo.Application.Legal.Queries;

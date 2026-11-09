@@ -1,11 +1,6 @@
-using System.ComponentModel.DataAnnotations;
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Querying;
-using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Emails.Contracts;
 using CodigoActivo.Application.Reports;
 using CodigoActivo.Application.Reports.Contracts;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Emails.Commands;

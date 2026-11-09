@@ -1,5 +1,4 @@
 using System.Buffers;
-using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Domain.Users;
 

@@ -1,8 +1,5 @@
-using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Email;
-using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Legal;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.TermsDecisions;
 
 namespace CodigoActivo.Application.TermsDecisions.Commands;

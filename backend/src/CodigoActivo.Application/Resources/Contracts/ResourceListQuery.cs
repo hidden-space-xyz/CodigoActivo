@@ -1,7 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using CodigoActivo.Application.Common.Querying;
-using CodigoActivo.Application.Common.Validation;
-
 namespace CodigoActivo.Application.Resources.Contracts;
 
 /// <summary>

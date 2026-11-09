@@ -32,8 +32,7 @@ public sealed class EmailClaimsTests
 
         await act.Should().ThrowAsync<ArgumentException>();
         users.DidNotReceiveWithAnyArgs().Remove(default!);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]

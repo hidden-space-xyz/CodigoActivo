@@ -1,12 +1,6 @@
 using System.Diagnostics;
 using System.Reflection;
-using CodigoActivo.Application.Abstractions.Auditing;
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Persistence;
 using CodigoActivo.Application.Common.Diagnostics;
-using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Validation;
-using CodigoActivo.Domain.Common;
 using Microsoft.Extensions.Logging;
 
 namespace CodigoActivo.Application.Common.Messaging;

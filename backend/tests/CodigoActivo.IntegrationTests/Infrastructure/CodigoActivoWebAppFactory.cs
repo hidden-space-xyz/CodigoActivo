@@ -4,21 +4,23 @@ using CodigoActivo.API.Security;
 using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Application.Abstractions.Caching;
 using CodigoActivo.Application.Abstractions.Email;
+using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
+using CodigoActivo.Application.BlockedData.Commands;
 using CodigoActivo.Application.Common.Caching;
+using CodigoActivo.Application.TermsDecisions.Commands;
 using CodigoActivo.Composition.Platform;
+using CodigoActivo.Domain.Common;
 using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
-using CodigoActivo.Infrastructure.DataHistory;
 using CodigoActivo.Infrastructure.Files;
-using CodigoActivo.Infrastructure.Legal;
 using CodigoActivo.Infrastructure.Logs;
+using CodigoActivo.Infrastructure.Messaging;
 using CodigoActivo.Infrastructure.Security;
-using CodigoActivo.Infrastructure.Users;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
@@ -27,7 +29,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
@@ -153,16 +154,10 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, 
 
         builder.ConfigureTestServices(services =>
         {
-            RemoveHostedService<ExpiredSessionCleanupWorker>(services);
-            RemoveHostedService<ExpiredAccountChangeCleanupWorker>(services);
-            RemoveHostedService<DataHistoryPurgeWorker>(services);
-            RemoveHostedService<UnverifiedAccountPurgeWorker>(services);
-            RemoveHostedService<AdultDependentPurgeWorker>(services);
-            RemoveHostedService<UnusedFilePurgeWorker>(services);
+            RemoveHostedService<ScheduledJobsWorker>(services);
             RemoveHostedService<EmailOutboxDeliveryWorker>(services);
             RemoveHostedService<DisposableEmailDomainRefreshWorker>(services);
             RemoveHostedService<LogRetentionWorker>(services);
-            RemoveHostedService<LegalNoticeWorker>(services);
 
             services.RemoveAll<DeploymentModeLock>();
             services.AddSingleton(new DeploymentModeLock(deploymentModeFile));
@@ -262,13 +257,22 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, 
     /// <summary>
     /// Runs the scheduled notices to the legal contact once, which the outbox then delivers inline.
     /// </summary>
-    public Task<(int Withdrawals, int Consultations)> SendLegalNoticesAsync()
+    public async Task<(int Withdrawals, int Consultations)> SendLegalNoticesAsync()
     {
-        return new LegalNoticeWorker(
+        return (
+            await RunScheduledAsync<SendConsentWithdrawalNoticesCommand>(),
+            await RunScheduledAsync<SendBlockedDataConsultationNoticesCommand>()
+        );
+    }
+
+    public Task<int> RunScheduledAsync<TCommand>()
+        where TCommand : ICommand<Result<int>>, new()
+    {
+        return ScheduledCommandRunner.RunAsync(
             Services.GetRequiredService<IServiceScopeFactory>(),
-            new LegalNoticeOptions(),
-            NullLogger<LegalNoticeWorker>.Instance
-        ).NotifyAsync(TestCancellation.Ct);
+            new TCommand(),
+            TestCancellation.Ct
+        );
     }
 
     /// <summary>

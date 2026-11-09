@@ -4,31 +4,6 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/vue-query';
-import type {
-  DataTag,
-  MutationFunction,
-  QueryClient,
-  QueryFunction,
-  QueryKey,
-  UseMutationOptions,
-  UseMutationReturnType,
-  UseQueryOptions,
-  UseQueryReturnType
-} from '@tanstack/vue-query';
-
-import {
-  computed,
-  toValue,
-  unref
-} from 'vue';
-import type {
-  MaybeRefOrGetter
-} from 'vue';
-
 import type {
   ActivityModalityTypeResponse,
   ActivityResponse,
@@ -49,11 +24,6 @@ import type {
 } from '../../models';
 
 import { httpClient } from '../../../http-client';
-
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
 
 export type getApiActivitiesResponse200 = {
   data: ActivityResponsePagedResult
@@ -94,54 +64,7 @@ export const getApiActivities = async (params?: GetApiActivitiesParams, options?
 );}
 
 
-
-
-
-export const getGetApiActivitiesMutationKey = () => ['getApiActivities'] as const;
-
-export const getGetApiActivitiesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivities>>, TError,GetApiActivitiesMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiActivities>>, TError,GetApiActivitiesMutationVariables, TContext> => {
-
-const mutationKey = getGetApiActivitiesMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivities>>, GetApiActivitiesMutationVariables> = (props) => {
-          const {params} = props ?? {};
-
-          return  getApiActivities(params,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiActivitiesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivities>>>
-
-    export type GetApiActivitiesMutationError = unknown
-    export type GetApiActivitiesMutationVariables = {params?: GetApiActivitiesParams}
-
-    export const useGetApiActivities = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivities>>, TError,GetApiActivitiesMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiActivities>>,
-        TError,
-        GetApiActivitiesMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiActivitiesMutationOptions(options), queryClient);
-    }
-    export type getApiActivitiesActivityIdResponse200 = {
+export type getApiActivitiesActivityIdResponse200 = {
   data: ActivityResponse
   status: 200
 }
@@ -173,54 +96,7 @@ export const getApiActivitiesActivityId = async (activityId: string, options?: P
 );}
 
 
-
-
-
-export const getGetApiActivitiesActivityIdMutationKey = () => ['getApiActivitiesActivityId'] as const;
-
-export const getGetApiActivitiesActivityIdMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesActivityId>>, TError,GetApiActivitiesActivityIdMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesActivityId>>, TError,GetApiActivitiesActivityIdMutationVariables, TContext> => {
-
-const mutationKey = getGetApiActivitiesActivityIdMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivitiesActivityId>>, GetApiActivitiesActivityIdMutationVariables> = (props) => {
-          const {activityId} = props ?? {};
-
-          return  getApiActivitiesActivityId(activityId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiActivitiesActivityIdMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivitiesActivityId>>>
-
-    export type GetApiActivitiesActivityIdMutationError = unknown
-    export type GetApiActivitiesActivityIdMutationVariables = {activityId: string}
-
-    export const useGetApiActivitiesActivityId = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesActivityId>>, TError,GetApiActivitiesActivityIdMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiActivitiesActivityId>>,
-        TError,
-        GetApiActivitiesActivityIdMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiActivitiesActivityIdMutationOptions(options), queryClient);
-    }
-    export type putApiActivitiesActivityIdResponse200 = {
+export type putApiActivitiesActivityIdResponse200 = {
   data: ActivityResponse
   status: 200
 }
@@ -267,61 +143,6 @@ return httpClient<putApiActivitiesActivityIdResponse>(getPutApiActivitiesActivit
 );}
 
 
-
-
-
-export const getPutApiActivitiesActivityIdQueryKey = (activityId: MaybeRefOrGetter<string>,
-    updateActivityRequest?: MaybeRefOrGetter<UpdateActivityRequest>,) => {
-    return [
-    'PUT', 'api','activities',activityId, updateActivityRequest
-    ] as const;
-    }
-
-
-export const getPutApiActivitiesActivityIdQueryOptions = <TData = Awaited<ReturnType<typeof putApiActivitiesActivityId>>, TError = unknown>(activityId: MaybeRefOrGetter<string>,
-    updateActivityRequest?: MaybeRefOrGetter<UpdateActivityRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiActivitiesActivityId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPutApiActivitiesActivityIdQueryKey(activityId,updateActivityRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof putApiActivitiesActivityId>>> = ({ signal }) => putApiActivitiesActivityId(toValue(activityId),toValue(updateActivityRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(activityId) !== null && toValue(activityId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof putApiActivitiesActivityId>>, TError, TData>
-}
-
-export type PutApiActivitiesActivityIdQueryResult = NonNullable<Awaited<ReturnType<typeof putApiActivitiesActivityId>>>
-export type PutApiActivitiesActivityIdQueryError = unknown
-
-
-
-export function usePutApiActivitiesActivityId<TData = Awaited<ReturnType<typeof putApiActivitiesActivityId>>, TError = unknown>(
- activityId: MaybeRefOrGetter<string>,
-    updateActivityRequest?: MaybeRefOrGetter<UpdateActivityRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof putApiActivitiesActivityId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPutApiActivitiesActivityIdQueryOptions(activityId,updateActivityRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type deleteApiActivitiesActivityIdResponse200 = {
   data: void
   status: 200
@@ -352,58 +173,6 @@ export const deleteApiActivitiesActivityId = async (activityId: string, options?
 
   }
 );}
-
-
-
-
-
-export const getDeleteApiActivitiesActivityIdQueryKey = (activityId: MaybeRefOrGetter<string>,) => {
-    return [
-    'DELETE', 'api','activities',activityId
-    ] as const;
-    }
-
-
-export const getDeleteApiActivitiesActivityIdQueryOptions = <TData = Awaited<ReturnType<typeof deleteApiActivitiesActivityId>>, TError = unknown>(activityId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiActivitiesActivityId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getDeleteApiActivitiesActivityIdQueryKey(activityId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof deleteApiActivitiesActivityId>>> = ({ signal }) => deleteApiActivitiesActivityId(toValue(activityId), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(activityId) !== null && toValue(activityId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof deleteApiActivitiesActivityId>>, TError, TData>
-}
-
-export type DeleteApiActivitiesActivityIdQueryResult = NonNullable<Awaited<ReturnType<typeof deleteApiActivitiesActivityId>>>
-export type DeleteApiActivitiesActivityIdQueryError = unknown
-
-
-
-export function useDeleteApiActivitiesActivityId<TData = Awaited<ReturnType<typeof deleteApiActivitiesActivityId>>, TError = unknown>(
- activityId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof deleteApiActivitiesActivityId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getDeleteApiActivitiesActivityIdQueryOptions(activityId,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 
 export type getApiActivitiesActivityIdOverlapsUserIdResponse200 = {
@@ -440,54 +209,7 @@ export const getApiActivitiesActivityIdOverlapsUserId = async (activityId: strin
 );}
 
 
-
-
-
-export const getGetApiActivitiesActivityIdOverlapsUserIdMutationKey = () => ['getApiActivitiesActivityIdOverlapsUserId'] as const;
-
-export const getGetApiActivitiesActivityIdOverlapsUserIdMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesActivityIdOverlapsUserId>>, TError,GetApiActivitiesActivityIdOverlapsUserIdMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesActivityIdOverlapsUserId>>, TError,GetApiActivitiesActivityIdOverlapsUserIdMutationVariables, TContext> => {
-
-const mutationKey = getGetApiActivitiesActivityIdOverlapsUserIdMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivitiesActivityIdOverlapsUserId>>, GetApiActivitiesActivityIdOverlapsUserIdMutationVariables> = (props) => {
-          const {activityId,userId} = props ?? {};
-
-          return  getApiActivitiesActivityIdOverlapsUserId(activityId,userId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiActivitiesActivityIdOverlapsUserIdMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivitiesActivityIdOverlapsUserId>>>
-
-    export type GetApiActivitiesActivityIdOverlapsUserIdMutationError = unknown
-    export type GetApiActivitiesActivityIdOverlapsUserIdMutationVariables = {activityId: string;userId: string}
-
-    export const useGetApiActivitiesActivityIdOverlapsUserId = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesActivityIdOverlapsUserId>>, TError,GetApiActivitiesActivityIdOverlapsUserIdMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiActivitiesActivityIdOverlapsUserId>>,
-        TError,
-        GetApiActivitiesActivityIdOverlapsUserIdMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiActivitiesActivityIdOverlapsUserIdMutationOptions(options), queryClient);
-    }
-    export type getApiActivitiesHouseholdAssignmentsEventIdResponse200 = {
+export type getApiActivitiesHouseholdAssignmentsEventIdResponse200 = {
   data: HouseholdMemberAssignmentResponse[]
   status: 200
 }
@@ -519,54 +241,7 @@ export const getApiActivitiesHouseholdAssignmentsEventId = async (eventId: strin
 );}
 
 
-
-
-
-export const getGetApiActivitiesHouseholdAssignmentsEventIdMutationKey = () => ['getApiActivitiesHouseholdAssignmentsEventId'] as const;
-
-export const getGetApiActivitiesHouseholdAssignmentsEventIdMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesHouseholdAssignmentsEventId>>, TError,GetApiActivitiesHouseholdAssignmentsEventIdMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesHouseholdAssignmentsEventId>>, TError,GetApiActivitiesHouseholdAssignmentsEventIdMutationVariables, TContext> => {
-
-const mutationKey = getGetApiActivitiesHouseholdAssignmentsEventIdMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivitiesHouseholdAssignmentsEventId>>, GetApiActivitiesHouseholdAssignmentsEventIdMutationVariables> = (props) => {
-          const {eventId} = props ?? {};
-
-          return  getApiActivitiesHouseholdAssignmentsEventId(eventId,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiActivitiesHouseholdAssignmentsEventIdMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivitiesHouseholdAssignmentsEventId>>>
-
-    export type GetApiActivitiesHouseholdAssignmentsEventIdMutationError = unknown
-    export type GetApiActivitiesHouseholdAssignmentsEventIdMutationVariables = {eventId: string}
-
-    export const useGetApiActivitiesHouseholdAssignmentsEventId = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesHouseholdAssignmentsEventId>>, TError,GetApiActivitiesHouseholdAssignmentsEventIdMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiActivitiesHouseholdAssignmentsEventId>>,
-        TError,
-        GetApiActivitiesHouseholdAssignmentsEventIdMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiActivitiesHouseholdAssignmentsEventIdMutationOptions(options), queryClient);
-    }
-    export type getApiActivitiesRoleTypeResponse200 = {
+export type getApiActivitiesRoleTypeResponse200 = {
   data: ActivityRoleTypeResponse[]
   status: 200
 }
@@ -598,54 +273,7 @@ export const getApiActivitiesRoleType = async ( options?: Parameters<typeof http
 );}
 
 
-
-
-
-export const getGetApiActivitiesRoleTypeMutationKey = () => ['getApiActivitiesRoleType'] as const;
-
-export const getGetApiActivitiesRoleTypeMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesRoleType>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesRoleType>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiActivitiesRoleTypeMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivitiesRoleType>>, void> = () => {
-
-
-          return  getApiActivitiesRoleType(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiActivitiesRoleTypeMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivitiesRoleType>>>
-
-    export type GetApiActivitiesRoleTypeMutationError = unknown
-
-
-    export const useGetApiActivitiesRoleType = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesRoleType>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiActivitiesRoleType>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiActivitiesRoleTypeMutationOptions(options), queryClient);
-    }
-    export type getApiActivitiesSignupRolesResponse200 = {
+export type getApiActivitiesSignupRolesResponse200 = {
   data: HouseholdSignupRolesResponse[]
   status: 200
 }
@@ -677,54 +305,7 @@ export const getApiActivitiesSignupRoles = async ( options?: Parameters<typeof h
 );}
 
 
-
-
-
-export const getGetApiActivitiesSignupRolesMutationKey = () => ['getApiActivitiesSignupRoles'] as const;
-
-export const getGetApiActivitiesSignupRolesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesSignupRoles>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesSignupRoles>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiActivitiesSignupRolesMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivitiesSignupRoles>>, void> = () => {
-
-
-          return  getApiActivitiesSignupRoles(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiActivitiesSignupRolesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivitiesSignupRoles>>>
-
-    export type GetApiActivitiesSignupRolesMutationError = unknown
-
-
-    export const useGetApiActivitiesSignupRoles = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesSignupRoles>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiActivitiesSignupRoles>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiActivitiesSignupRolesMutationOptions(options), queryClient);
-    }
-    export type getApiActivitiesAssignmentStatusTypesResponse200 = {
+export type getApiActivitiesAssignmentStatusTypesResponse200 = {
   data: AssignmentStatusTypeResponse[]
   status: 200
 }
@@ -756,54 +337,7 @@ export const getApiActivitiesAssignmentStatusTypes = async ( options?: Parameter
 );}
 
 
-
-
-
-export const getGetApiActivitiesAssignmentStatusTypesMutationKey = () => ['getApiActivitiesAssignmentStatusTypes'] as const;
-
-export const getGetApiActivitiesAssignmentStatusTypesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesAssignmentStatusTypes>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesAssignmentStatusTypes>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiActivitiesAssignmentStatusTypesMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivitiesAssignmentStatusTypes>>, void> = () => {
-
-
-          return  getApiActivitiesAssignmentStatusTypes(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiActivitiesAssignmentStatusTypesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivitiesAssignmentStatusTypes>>>
-
-    export type GetApiActivitiesAssignmentStatusTypesMutationError = unknown
-
-
-    export const useGetApiActivitiesAssignmentStatusTypes = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesAssignmentStatusTypes>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiActivitiesAssignmentStatusTypes>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiActivitiesAssignmentStatusTypesMutationOptions(options), queryClient);
-    }
-    export type getApiActivitiesModalityTypesResponse200 = {
+export type getApiActivitiesModalityTypesResponse200 = {
   data: ActivityModalityTypeResponse[]
   status: 200
 }
@@ -835,54 +369,7 @@ export const getApiActivitiesModalityTypes = async ( options?: Parameters<typeof
 );}
 
 
-
-
-
-export const getGetApiActivitiesModalityTypesMutationKey = () => ['getApiActivitiesModalityTypes'] as const;
-
-export const getGetApiActivitiesModalityTypesMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesModalityTypes>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesModalityTypes>>, TError,void, TContext> => {
-
-const mutationKey = getGetApiActivitiesModalityTypesMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiActivitiesModalityTypes>>, void> = () => {
-
-
-          return  getApiActivitiesModalityTypes(requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiActivitiesModalityTypesMutationResult = NonNullable<Awaited<ReturnType<typeof getApiActivitiesModalityTypes>>>
-
-    export type GetApiActivitiesModalityTypesMutationError = unknown
-
-
-    export const useGetApiActivitiesModalityTypes = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiActivitiesModalityTypes>>, TError,void, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiActivitiesModalityTypes>>,
-        TError,
-        void,
-        TContext
-      > => {
-      return useMutation(getGetApiActivitiesModalityTypesMutationOptions(options), queryClient);
-    }
-    export type postApiActivitiesEventIdResponse201 = {
+export type postApiActivitiesEventIdResponse201 = {
   data: ActivityResponse
   status: 201
 }
@@ -927,61 +414,6 @@ return httpClient<postApiActivitiesEventIdResponse>(getPostApiActivitiesEventIdU
     body: JSON.stringify(createActivityRequest)
   }
 );}
-
-
-
-
-
-export const getPostApiActivitiesEventIdQueryKey = (eventId: MaybeRefOrGetter<string>,
-    createActivityRequest?: MaybeRefOrGetter<CreateActivityRequest>,) => {
-    return [
-    'POST', 'api','activities',eventId, createActivityRequest
-    ] as const;
-    }
-
-
-export const getPostApiActivitiesEventIdQueryOptions = <TData = Awaited<ReturnType<typeof postApiActivitiesEventId>>, TError = unknown>(eventId: MaybeRefOrGetter<string>,
-    createActivityRequest?: MaybeRefOrGetter<CreateActivityRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiActivitiesEventId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiActivitiesEventIdQueryKey(eventId,createActivityRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiActivitiesEventId>>> = ({ signal }) => postApiActivitiesEventId(toValue(eventId),toValue(createActivityRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(eventId) !== null && toValue(eventId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiActivitiesEventId>>, TError, TData>
-}
-
-export type PostApiActivitiesEventIdQueryResult = NonNullable<Awaited<ReturnType<typeof postApiActivitiesEventId>>>
-export type PostApiActivitiesEventIdQueryError = unknown
-
-
-
-export function usePostApiActivitiesEventId<TData = Awaited<ReturnType<typeof postApiActivitiesEventId>>, TError = unknown>(
- eventId: MaybeRefOrGetter<string>,
-    createActivityRequest?: MaybeRefOrGetter<CreateActivityRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiActivitiesEventId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiActivitiesEventIdQueryOptions(eventId,createActivityRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 
 export type patchApiActivitiesActivityIdUserIdAssignResponse200 = {
@@ -1033,64 +465,6 @@ return httpClient<patchApiActivitiesActivityIdUserIdAssignResponse>(getPatchApiA
 );}
 
 
-
-
-
-export const getPatchApiActivitiesActivityIdUserIdAssignQueryKey = (activityId: MaybeRefOrGetter<string>,
-    userId: MaybeRefOrGetter<string>,
-    assignRequest?: MaybeRefOrGetter<AssignRequest>,) => {
-    return [
-    'PATCH', 'api','activities',activityId,userId,'assign', assignRequest
-    ] as const;
-    }
-
-
-export const getPatchApiActivitiesActivityIdUserIdAssignQueryOptions = <TData = Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdAssign>>, TError = unknown>(activityId: MaybeRefOrGetter<string>,
-    userId: MaybeRefOrGetter<string>,
-    assignRequest?: MaybeRefOrGetter<AssignRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdAssign>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPatchApiActivitiesActivityIdUserIdAssignQueryKey(activityId,userId,assignRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdAssign>>> = ({ signal }) => patchApiActivitiesActivityIdUserIdAssign(toValue(activityId),toValue(userId),toValue(assignRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(activityId) !== null && toValue(activityId) !== undefined && toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdAssign>>, TError, TData>
-}
-
-export type PatchApiActivitiesActivityIdUserIdAssignQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdAssign>>>
-export type PatchApiActivitiesActivityIdUserIdAssignQueryError = unknown
-
-
-
-export function usePatchApiActivitiesActivityIdUserIdAssign<TData = Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdAssign>>, TError = unknown>(
- activityId: MaybeRefOrGetter<string>,
-    userId: MaybeRefOrGetter<string>,
-    assignRequest?: MaybeRefOrGetter<AssignRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdAssign>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPatchApiActivitiesActivityIdUserIdAssignQueryOptions(activityId,userId,assignRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type postApiActivitiesActivityIdAssignHouseholdResponse200 = {
   data: AssignmentResponse[]
   status: 200
@@ -1138,61 +512,6 @@ return httpClient<postApiActivitiesActivityIdAssignHouseholdResponse>(getPostApi
 );}
 
 
-
-
-
-export const getPostApiActivitiesActivityIdAssignHouseholdQueryKey = (activityId: MaybeRefOrGetter<string>,
-    assignHouseholdRequest?: MaybeRefOrGetter<AssignHouseholdRequest>,) => {
-    return [
-    'POST', 'api','activities',activityId,'assign-household', assignHouseholdRequest
-    ] as const;
-    }
-
-
-export const getPostApiActivitiesActivityIdAssignHouseholdQueryOptions = <TData = Awaited<ReturnType<typeof postApiActivitiesActivityIdAssignHousehold>>, TError = unknown>(activityId: MaybeRefOrGetter<string>,
-    assignHouseholdRequest?: MaybeRefOrGetter<AssignHouseholdRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiActivitiesActivityIdAssignHousehold>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiActivitiesActivityIdAssignHouseholdQueryKey(activityId,assignHouseholdRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiActivitiesActivityIdAssignHousehold>>> = ({ signal }) => postApiActivitiesActivityIdAssignHousehold(toValue(activityId),toValue(assignHouseholdRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(activityId) !== null && toValue(activityId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiActivitiesActivityIdAssignHousehold>>, TError, TData>
-}
-
-export type PostApiActivitiesActivityIdAssignHouseholdQueryResult = NonNullable<Awaited<ReturnType<typeof postApiActivitiesActivityIdAssignHousehold>>>
-export type PostApiActivitiesActivityIdAssignHouseholdQueryError = unknown
-
-
-
-export function usePostApiActivitiesActivityIdAssignHousehold<TData = Awaited<ReturnType<typeof postApiActivitiesActivityIdAssignHousehold>>, TError = unknown>(
- activityId: MaybeRefOrGetter<string>,
-    assignHouseholdRequest?: MaybeRefOrGetter<AssignHouseholdRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiActivitiesActivityIdAssignHousehold>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiActivitiesActivityIdAssignHouseholdQueryOptions(activityId,assignHouseholdRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type patchApiActivitiesActivityIdUserIdUnassignResponse200 = {
   data: void
   status: 200
@@ -1225,61 +544,6 @@ export const patchApiActivitiesActivityIdUserIdUnassign = async (activityId: str
 
   }
 );}
-
-
-
-
-
-export const getPatchApiActivitiesActivityIdUserIdUnassignQueryKey = (activityId: MaybeRefOrGetter<string>,
-    userId: MaybeRefOrGetter<string>,) => {
-    return [
-    'PATCH', 'api','activities',activityId,userId,'unassign'
-    ] as const;
-    }
-
-
-export const getPatchApiActivitiesActivityIdUserIdUnassignQueryOptions = <TData = Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdUnassign>>, TError = unknown>(activityId: MaybeRefOrGetter<string>,
-    userId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdUnassign>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPatchApiActivitiesActivityIdUserIdUnassignQueryKey(activityId,userId);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdUnassign>>> = ({ signal }) => patchApiActivitiesActivityIdUserIdUnassign(toValue(activityId),toValue(userId), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(activityId) !== null && toValue(activityId) !== undefined && toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdUnassign>>, TError, TData>
-}
-
-export type PatchApiActivitiesActivityIdUserIdUnassignQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdUnassign>>>
-export type PatchApiActivitiesActivityIdUserIdUnassignQueryError = unknown
-
-
-
-export function usePatchApiActivitiesActivityIdUserIdUnassign<TData = Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdUnassign>>, TError = unknown>(
- activityId: MaybeRefOrGetter<string>,
-    userId: MaybeRefOrGetter<string>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdUnassign>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPatchApiActivitiesActivityIdUserIdUnassignQueryOptions(activityId,userId,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 
 export type patchApiActivitiesActivityIdUserIdChangeStatusResponse200 = {
@@ -1331,64 +595,6 @@ return httpClient<patchApiActivitiesActivityIdUserIdChangeStatusResponse>(getPat
 );}
 
 
-
-
-
-export const getPatchApiActivitiesActivityIdUserIdChangeStatusQueryKey = (activityId: MaybeRefOrGetter<string>,
-    userId: MaybeRefOrGetter<string>,
-    changeAssignmentStatusRequest?: MaybeRefOrGetter<ChangeAssignmentStatusRequest>,) => {
-    return [
-    'PATCH', 'api','activities',activityId,userId,'change-status', changeAssignmentStatusRequest
-    ] as const;
-    }
-
-
-export const getPatchApiActivitiesActivityIdUserIdChangeStatusQueryOptions = <TData = Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeStatus>>, TError = unknown>(activityId: MaybeRefOrGetter<string>,
-    userId: MaybeRefOrGetter<string>,
-    changeAssignmentStatusRequest?: MaybeRefOrGetter<ChangeAssignmentStatusRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeStatus>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPatchApiActivitiesActivityIdUserIdChangeStatusQueryKey(activityId,userId,changeAssignmentStatusRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeStatus>>> = ({ signal }) => patchApiActivitiesActivityIdUserIdChangeStatus(toValue(activityId),toValue(userId),toValue(changeAssignmentStatusRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(activityId) !== null && toValue(activityId) !== undefined && toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeStatus>>, TError, TData>
-}
-
-export type PatchApiActivitiesActivityIdUserIdChangeStatusQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeStatus>>>
-export type PatchApiActivitiesActivityIdUserIdChangeStatusQueryError = unknown
-
-
-
-export function usePatchApiActivitiesActivityIdUserIdChangeStatus<TData = Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeStatus>>, TError = unknown>(
- activityId: MaybeRefOrGetter<string>,
-    userId: MaybeRefOrGetter<string>,
-    changeAssignmentStatusRequest?: MaybeRefOrGetter<ChangeAssignmentStatusRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeStatus>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPatchApiActivitiesActivityIdUserIdChangeStatusQueryOptions(activityId,userId,changeAssignmentStatusRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type patchApiActivitiesActivityIdUserIdChangeRoleResponse200 = {
   data: AssignmentResponse
   status: 200
@@ -1436,63 +642,5 @@ return httpClient<patchApiActivitiesActivityIdUserIdChangeRoleResponse>(getPatch
     body: JSON.stringify(changeAssignmentRoleRequest)
   }
 );}
-
-
-
-
-
-export const getPatchApiActivitiesActivityIdUserIdChangeRoleQueryKey = (activityId: MaybeRefOrGetter<string>,
-    userId: MaybeRefOrGetter<string>,
-    changeAssignmentRoleRequest?: MaybeRefOrGetter<ChangeAssignmentRoleRequest>,) => {
-    return [
-    'PATCH', 'api','activities',activityId,userId,'change-role', changeAssignmentRoleRequest
-    ] as const;
-    }
-
-
-export const getPatchApiActivitiesActivityIdUserIdChangeRoleQueryOptions = <TData = Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeRole>>, TError = unknown>(activityId: MaybeRefOrGetter<string>,
-    userId: MaybeRefOrGetter<string>,
-    changeAssignmentRoleRequest?: MaybeRefOrGetter<ChangeAssignmentRoleRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeRole>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPatchApiActivitiesActivityIdUserIdChangeRoleQueryKey(activityId,userId,changeAssignmentRoleRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeRole>>> = ({ signal }) => patchApiActivitiesActivityIdUserIdChangeRole(toValue(activityId),toValue(userId),toValue(changeAssignmentRoleRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(activityId) !== null && toValue(activityId) !== undefined && toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeRole>>, TError, TData>
-}
-
-export type PatchApiActivitiesActivityIdUserIdChangeRoleQueryResult = NonNullable<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeRole>>>
-export type PatchApiActivitiesActivityIdUserIdChangeRoleQueryError = unknown
-
-
-
-export function usePatchApiActivitiesActivityIdUserIdChangeRole<TData = Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeRole>>, TError = unknown>(
- activityId: MaybeRefOrGetter<string>,
-    userId: MaybeRefOrGetter<string>,
-    changeAssignmentRoleRequest?: MaybeRefOrGetter<ChangeAssignmentRoleRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof patchApiActivitiesActivityIdUserIdChangeRole>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPatchApiActivitiesActivityIdUserIdChangeRoleQueryOptions(activityId,userId,changeAssignmentRoleRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 

@@ -1,7 +1,4 @@
-using System.ComponentModel.DataAnnotations;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
-using CodigoActivo.Application.Common.Querying;
-using CodigoActivo.Application.Common.Validation;
 
 namespace CodigoActivo.Application.Users.Contracts;
 

@@ -1,5 +1,4 @@
 using CodigoActivo.Domain.BlockedData;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.BlockedData;

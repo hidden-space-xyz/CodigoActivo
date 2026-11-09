@@ -37,8 +37,7 @@ public sealed class AccountEraserTests
             .DidNotReceiveWithAnyArgs()
             .HandOverAuthoredContentAsync(default, default, TestContext.Current.CancellationToken);
         users.DidNotReceiveWithAnyArgs().Remove(default!);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
         account.PullDomainEvents().Should().BeEmpty();
     }
 

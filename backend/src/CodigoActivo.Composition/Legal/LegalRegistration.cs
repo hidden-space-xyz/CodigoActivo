@@ -1,8 +1,11 @@
+using CodigoActivo.Application.BlockedData.Commands;
 using CodigoActivo.Application.Legal;
+using CodigoActivo.Application.TermsDecisions.Commands;
 using CodigoActivo.Composition.Configuration;
 using CodigoActivo.Domain.Legal;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Legal;
+using CodigoActivo.Infrastructure.Messaging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -29,8 +32,12 @@ internal static class LegalRegistration
     )
     {
         services.AddScoped<ILegalPolicyRepository, LegalPolicyRepository>();
-        services.AddFixedOptions<LegalNoticeOptions>();
-        services.AddHostedService<LegalNoticeWorker>();
+        services.AddSingleton(
+            ScheduledJob.Of<SendConsentWithdrawalNoticesCommand>(TimeSpan.FromMinutes(1))
+        );
+        services.AddSingleton(
+            ScheduledJob.Of<SendBlockedDataConsultationNoticesCommand>(TimeSpan.FromMinutes(1))
+        );
         var settings = new Settings(configuration);
         services.AddValidatedOptions<LegalEntityOptions>(
             options =>

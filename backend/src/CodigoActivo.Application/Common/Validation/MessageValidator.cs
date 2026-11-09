@@ -1,7 +1,5 @@
 using System.Collections;
-using System.ComponentModel.DataAnnotations;
 using System.Reflection;
-using CodigoActivo.Application.Abstractions.Time;
 
 namespace CodigoActivo.Application.Common.Validation;
 

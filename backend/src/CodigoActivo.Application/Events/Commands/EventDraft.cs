@@ -1,6 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using CodigoActivo.Application.Common.Validation;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;

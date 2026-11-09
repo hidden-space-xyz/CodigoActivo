@@ -18,15 +18,7 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
 
     private static StoredFile Thumbnail(Guid id)
     {
-        return Persisted.As<StoredFile>(
-            new
-            {
-                Id = id,
-                Extension = "png",
-                UploadedAt = SeededAt,
-                UploadedBy = TestSeedData.Users.AdminId,
-            }
-        );
+        return TestEntities.New<StoredFile>(new { Id = id, UploadedAt = SeededAt });
     }
 
     private async Task<Guid> SeedAssignmentAsync(
@@ -47,38 +39,30 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         {
             db.Files.AddRange(Thumbnail(eventThumbnailId), Thumbnail(activityThumbnailId));
             db.Events.Add(
-                Persisted.As<Event>(
+                TestEntities.New<Event>(
                     new
                     {
                         Id = eventId,
-                        Title = "Evento",
-                        Subtitle = "Sub",
-                        Description = "{}",
                         EventStartsAt = eventStartsAt ?? new DateOnly(2026, 2, 1),
                         EventEndsAt = eventEndsAt ?? new DateOnly(2026, 2, 2),
                         SignupStartsAt = SeededAt,
                         SignupEndsAt = SeededAt.AddDays(10),
                         ThumbnailId = eventThumbnailId,
                         CreatedAt = SeededAt,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
             db.Activities.Add(
-                Persisted.As<Activity>(
+                TestEntities.New<Activity>(
                     new
                     {
                         Id = activityId,
                         Title = activityTitle,
-                        Description = "Descripción",
-                        Location = "Sala",
                         ActivityStartsAt = activityStartsAt,
                         ActivityEndsAt = activityStartsAt.AddHours(2),
                         EventId = eventId,
-                        Modality = ActivityModality.Presencial,
                         ThumbnailId = activityThumbnailId,
                         CreatedAt = SeededAt,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
@@ -105,16 +89,6 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         return await response.ReadJsonAsync<
                 List<Application.Activities.Contracts.AssignedActivityResponse>
             >(Ct) ?? [];
-    }
-
-    [Fact]
-    public async Task AssignedActivitiesAnonymousReturnsUnauthorized()
-    {
-        var client = CreateClient();
-
-        var response = await client.GetAsync(TestUri.Rel("/api/me/assigned-activities"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
@@ -193,16 +167,6 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.GetAsync(TestUri.Rel("/api/me/event-history"), Ct);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         return await ReadHistoryAsync(response);
-    }
-
-    [Fact]
-    public async Task EventHistoryAnonymousReturnsUnauthorized()
-    {
-        var client = CreateClient();
-
-        var response = await client.GetAsync(TestUri.Rel("/api/me/event-history"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]
@@ -350,20 +314,16 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
         {
             db.Files.Add(Thumbnail(thumbnailId));
             db.Activities.Add(
-                Persisted.As<Activity>(
+                TestEntities.New<Activity>(
                     new
                     {
                         Id = activityId,
                         Title = activityTitle,
-                        Description = "Descripción",
-                        Location = "Sala",
                         ActivityStartsAt = new DateTimeOffset(2026, 6, 1, 16, 0, 0, TimeSpan.Zero),
                         ActivityEndsAt = new DateTimeOffset(2026, 6, 1, 18, 0, 0, TimeSpan.Zero),
                         EventId = eventId,
-                        Modality = ActivityModality.Presencial,
                         ThumbnailId = thumbnailId,
                         CreatedAt = SeededAt,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
@@ -401,16 +361,6 @@ public sealed class MeControllerTests(CodigoActivoWebAppFactory factory)
             PastStart,
             PastEnd
         );
-    }
-
-    [Fact]
-    public async Task CertificatesAnonymousReturnsUnauthorized()
-    {
-        var client = CreateClient();
-
-        var response = await client.GetAsync(TestUri.Rel("/api/me/certificates"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     [Fact]

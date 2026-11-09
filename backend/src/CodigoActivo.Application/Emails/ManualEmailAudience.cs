@@ -1,4 +1,3 @@
-using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
 using CodigoActivo.Application.Emails.Contracts;
 

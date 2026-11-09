@@ -1,8 +1,4 @@
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Querying;
-using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Application.Resources.Contracts;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Resources;
 
 namespace CodigoActivo.Application.Resources.Queries;

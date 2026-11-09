@@ -4,6 +4,7 @@ using CodigoActivo.API.Accounts.Contracts;
 using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.DataHistory;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -124,14 +125,27 @@ public abstract class IntegrationTestBase(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                Persisted.As<StoredFile>(
+                TestEntities.New<StoredFile>(
                     new
                     {
                         Id = id,
-                        Extension = "png",
                         UploadedAt = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                        UploadedBy = TestSeedData.Users.AdminId,
                     }
+                )
+            );
+            return Task.CompletedTask;
+        });
+        return id;
+    }
+
+    protected async Task<Guid> SeedTermsDocumentAsync(string? name = null)
+    {
+        var id = Guid.NewGuid();
+        await Factory.SeedAsync(db =>
+        {
+            db.TermsDocuments.Add(
+                TestEntities.New<TermsDocument>(
+                    new { Id = id, Name = name ?? Guid.NewGuid().ToString("N") }
                 )
             );
             return Task.CompletedTask;

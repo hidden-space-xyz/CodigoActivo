@@ -1,5 +1,3 @@
-using CodigoActivo.Application.Abstractions.Auditing;
-using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Accounts.Passwords;
 using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Application.Common.Messaging;

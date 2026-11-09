@@ -4,31 +4,6 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
-import {
-  useMutation,
-  useQuery
-} from '@tanstack/vue-query';
-import type {
-  DataTag,
-  MutationFunction,
-  QueryClient,
-  QueryFunction,
-  QueryKey,
-  UseMutationOptions,
-  UseMutationReturnType,
-  UseQueryOptions,
-  UseQueryReturnType
-} from '@tanstack/vue-query';
-
-import {
-  computed,
-  toValue,
-  unref
-} from 'vue';
-import type {
-  MaybeRefOrGetter
-} from 'vue';
-
 import type {
   EmailAudienceResponse,
   GetApiEmailsEventsEventIdAttendeesAudienceParams,
@@ -43,11 +18,6 @@ import type {
 } from '../../models';
 
 import { httpClient } from '../../../http-client';
-
-
-type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
-
-
 
 export type postApiEmailsUsersUserIdResponse200 = {
   data: SendEmailResultResponse
@@ -93,61 +63,6 @@ if(postApiEmailsUsersUserIdBody?.attachments !== undefined) {
     body: formData
   }
 );}
-
-
-
-
-
-export const getPostApiEmailsUsersUserIdQueryKey = (userId: MaybeRefOrGetter<string>,
-    postApiEmailsUsersUserIdBody?: MaybeRefOrGetter<PostApiEmailsUsersUserIdBody>,) => {
-    return [
-    'POST', 'api','emails','users',userId, postApiEmailsUsersUserIdBody
-    ] as const;
-    }
-
-
-export const getPostApiEmailsUsersUserIdQueryOptions = <TData = Awaited<ReturnType<typeof postApiEmailsUsersUserId>>, TError = unknown>(userId: MaybeRefOrGetter<string>,
-    postApiEmailsUsersUserIdBody?: MaybeRefOrGetter<PostApiEmailsUsersUserIdBody>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEmailsUsersUserId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiEmailsUsersUserIdQueryKey(userId,postApiEmailsUsersUserIdBody);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiEmailsUsersUserId>>> = ({ signal }) => postApiEmailsUsersUserId(toValue(userId),toValue(postApiEmailsUsersUserIdBody), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(userId) !== null && toValue(userId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiEmailsUsersUserId>>, TError, TData>
-}
-
-export type PostApiEmailsUsersUserIdQueryResult = NonNullable<Awaited<ReturnType<typeof postApiEmailsUsersUserId>>>
-export type PostApiEmailsUsersUserIdQueryError = unknown
-
-
-
-export function usePostApiEmailsUsersUserId<TData = Awaited<ReturnType<typeof postApiEmailsUsersUserId>>, TError = unknown>(
- userId: MaybeRefOrGetter<string>,
-    postApiEmailsUsersUserIdBody?: MaybeRefOrGetter<PostApiEmailsUsersUserIdBody>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEmailsUsersUserId>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiEmailsUsersUserIdQueryOptions(userId,postApiEmailsUsersUserIdBody,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 
 export type postApiEmailsUsersResponse200 = {
@@ -201,61 +116,6 @@ if(postApiEmailsUsersBody?.attachments !== undefined) {
     body: formData
   }
 );}
-
-
-
-
-
-export const getPostApiEmailsUsersQueryKey = (postApiEmailsUsersBody?: MaybeRefOrGetter<PostApiEmailsUsersBody>,
-    params?: MaybeRefOrGetter<PostApiEmailsUsersParams>,) => {
-    return [
-    'POST', 'api','emails','users', ...(params ? [params] : []), postApiEmailsUsersBody
-    ] as const;
-    }
-
-
-export const getPostApiEmailsUsersQueryOptions = <TData = Awaited<ReturnType<typeof postApiEmailsUsers>>, TError = unknown>(postApiEmailsUsersBody?: MaybeRefOrGetter<PostApiEmailsUsersBody>,
-    params?: MaybeRefOrGetter<PostApiEmailsUsersParams>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEmailsUsers>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiEmailsUsersQueryKey(postApiEmailsUsersBody,params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiEmailsUsers>>> = ({ signal }) => postApiEmailsUsers(toValue(postApiEmailsUsersBody),toValue(params), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiEmailsUsers>>, TError, TData>
-}
-
-export type PostApiEmailsUsersQueryResult = NonNullable<Awaited<ReturnType<typeof postApiEmailsUsers>>>
-export type PostApiEmailsUsersQueryError = unknown
-
-
-
-export function usePostApiEmailsUsers<TData = Awaited<ReturnType<typeof postApiEmailsUsers>>, TError = unknown>(
- postApiEmailsUsersBody?: MaybeRefOrGetter<PostApiEmailsUsersBody>,
-    params?: MaybeRefOrGetter<PostApiEmailsUsersParams>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEmailsUsers>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiEmailsUsersQueryOptions(postApiEmailsUsersBody,params,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 
 export type postApiEmailsEventsEventIdAttendeesResponse200 = {
@@ -313,64 +173,6 @@ if(postApiEmailsEventsEventIdAttendeesBody?.attachments !== undefined) {
 );}
 
 
-
-
-
-export const getPostApiEmailsEventsEventIdAttendeesQueryKey = (eventId: MaybeRefOrGetter<string>,
-    postApiEmailsEventsEventIdAttendeesBody?: MaybeRefOrGetter<PostApiEmailsEventsEventIdAttendeesBody>,
-    params?: MaybeRefOrGetter<PostApiEmailsEventsEventIdAttendeesParams>,) => {
-    return [
-    'POST', 'api','emails','events',eventId,'attendees', ...(params ? [params] : []), postApiEmailsEventsEventIdAttendeesBody
-    ] as const;
-    }
-
-
-export const getPostApiEmailsEventsEventIdAttendeesQueryOptions = <TData = Awaited<ReturnType<typeof postApiEmailsEventsEventIdAttendees>>, TError = unknown>(eventId: MaybeRefOrGetter<string>,
-    postApiEmailsEventsEventIdAttendeesBody?: MaybeRefOrGetter<PostApiEmailsEventsEventIdAttendeesBody>,
-    params?: MaybeRefOrGetter<PostApiEmailsEventsEventIdAttendeesParams>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEmailsEventsEventIdAttendees>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiEmailsEventsEventIdAttendeesQueryKey(eventId,postApiEmailsEventsEventIdAttendeesBody,params);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiEmailsEventsEventIdAttendees>>> = ({ signal }) => postApiEmailsEventsEventIdAttendees(toValue(eventId),toValue(postApiEmailsEventsEventIdAttendeesBody),toValue(params), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, enabled: computed(() => toValue(eventId) !== null && toValue(eventId) !== undefined), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiEmailsEventsEventIdAttendees>>, TError, TData>
-}
-
-export type PostApiEmailsEventsEventIdAttendeesQueryResult = NonNullable<Awaited<ReturnType<typeof postApiEmailsEventsEventIdAttendees>>>
-export type PostApiEmailsEventsEventIdAttendeesQueryError = unknown
-
-
-
-export function usePostApiEmailsEventsEventIdAttendees<TData = Awaited<ReturnType<typeof postApiEmailsEventsEventIdAttendees>>, TError = unknown>(
- eventId: MaybeRefOrGetter<string>,
-    postApiEmailsEventsEventIdAttendeesBody?: MaybeRefOrGetter<PostApiEmailsEventsEventIdAttendeesBody>,
-    params?: MaybeRefOrGetter<PostApiEmailsEventsEventIdAttendeesParams>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEmailsEventsEventIdAttendees>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiEmailsEventsEventIdAttendeesQueryOptions(eventId,postApiEmailsEventsEventIdAttendeesBody,params,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
-
-
 export type getApiEmailsUsersAudienceResponse200 = {
   data: EmailAudienceResponse
   status: 200
@@ -410,54 +212,7 @@ export const getApiEmailsUsersAudience = async (params?: GetApiEmailsUsersAudien
 );}
 
 
-
-
-
-export const getGetApiEmailsUsersAudienceMutationKey = () => ['getApiEmailsUsersAudience'] as const;
-
-export const getGetApiEmailsUsersAudienceMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEmailsUsersAudience>>, TError,GetApiEmailsUsersAudienceMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiEmailsUsersAudience>>, TError,GetApiEmailsUsersAudienceMutationVariables, TContext> => {
-
-const mutationKey = getGetApiEmailsUsersAudienceMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiEmailsUsersAudience>>, GetApiEmailsUsersAudienceMutationVariables> = (props) => {
-          const {params} = props ?? {};
-
-          return  getApiEmailsUsersAudience(params,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiEmailsUsersAudienceMutationResult = NonNullable<Awaited<ReturnType<typeof getApiEmailsUsersAudience>>>
-
-    export type GetApiEmailsUsersAudienceMutationError = unknown
-    export type GetApiEmailsUsersAudienceMutationVariables = {params?: GetApiEmailsUsersAudienceParams}
-
-    export const useGetApiEmailsUsersAudience = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEmailsUsersAudience>>, TError,GetApiEmailsUsersAudienceMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiEmailsUsersAudience>>,
-        TError,
-        GetApiEmailsUsersAudienceMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiEmailsUsersAudienceMutationOptions(options), queryClient);
-    }
-    export type getApiEmailsEventsEventIdAttendeesAudienceResponse200 = {
+export type getApiEmailsEventsEventIdAttendeesAudienceResponse200 = {
   data: EmailAudienceResponse
   status: 200
 }
@@ -498,54 +253,7 @@ export const getApiEmailsEventsEventIdAttendeesAudience = async (eventId: string
 );}
 
 
-
-
-
-export const getGetApiEmailsEventsEventIdAttendeesAudienceMutationKey = () => ['getApiEmailsEventsEventIdAttendeesAudience'] as const;
-
-export const getGetApiEmailsEventsEventIdAttendeesAudienceMutationOptions = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEmailsEventsEventIdAttendeesAudience>>, TError,GetApiEmailsEventsEventIdAttendeesAudienceMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
-): UseMutationOptions<Awaited<ReturnType<typeof getApiEmailsEventsEventIdAttendeesAudience>>, TError,GetApiEmailsEventsEventIdAttendeesAudienceMutationVariables, TContext> => {
-
-const mutationKey = getGetApiEmailsEventsEventIdAttendeesAudienceMutationKey();
-const {mutation: mutationOptions, request: requestOptions} = options ?
-      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
-      options
-      : {...options, mutation: {...options.mutation, mutationKey}}
-      : {mutation: { mutationKey, }, request: undefined};
-
-
-
-
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getApiEmailsEventsEventIdAttendeesAudience>>, GetApiEmailsEventsEventIdAttendeesAudienceMutationVariables> = (props) => {
-          const {eventId,params} = props ?? {};
-
-          return  getApiEmailsEventsEventIdAttendeesAudience(eventId,params,requestOptions)
-        }
-
-
-
-
-
-
-  return  { mutationFn, ...mutationOptions }}
-
-    export type GetApiEmailsEventsEventIdAttendeesAudienceMutationResult = NonNullable<Awaited<ReturnType<typeof getApiEmailsEventsEventIdAttendeesAudience>>>
-
-    export type GetApiEmailsEventsEventIdAttendeesAudienceMutationError = unknown
-    export type GetApiEmailsEventsEventIdAttendeesAudienceMutationVariables = {eventId: string;params?: GetApiEmailsEventsEventIdAttendeesAudienceParams}
-
-    export const useGetApiEmailsEventsEventIdAttendeesAudience = <TError = unknown,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getApiEmailsEventsEventIdAttendeesAudience>>, TError,GetApiEmailsEventsEventIdAttendeesAudienceMutationVariables, TContext>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient): UseMutationReturnType<
-        Awaited<ReturnType<typeof getApiEmailsEventsEventIdAttendeesAudience>>,
-        TError,
-        GetApiEmailsEventsEventIdAttendeesAudienceMutationVariables,
-        TContext
-      > => {
-      return useMutation(getGetApiEmailsEventsEventIdAttendeesAudienceMutationOptions(options), queryClient);
-    }
-    export type postApiEmailsUnsubscribeResponse200 = {
+export type postApiEmailsUnsubscribeResponse200 = {
   data: void
   status: 200
 }
@@ -589,57 +297,5 @@ return httpClient<postApiEmailsUnsubscribeResponse>(getPostApiEmailsUnsubscribeU
     body: JSON.stringify(unsubscribeRequest)
   }
 );}
-
-
-
-
-
-export const getPostApiEmailsUnsubscribeQueryKey = (unsubscribeRequest?: MaybeRefOrGetter<UnsubscribeRequest>,) => {
-    return [
-    'POST', 'api','emails','unsubscribe', unsubscribeRequest
-    ] as const;
-    }
-
-
-export const getPostApiEmailsUnsubscribeQueryOptions = <TData = Awaited<ReturnType<typeof postApiEmailsUnsubscribe>>, TError = unknown>(unsubscribeRequest?: MaybeRefOrGetter<UnsubscribeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEmailsUnsubscribe>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
-) => {
-
-const {query: queryOptions, request: requestOptions} = options ?? {};
-
-  const queryKey =  getPostApiEmailsUnsubscribeQueryKey(unsubscribeRequest);
-
-
-
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof postApiEmailsUnsubscribe>>> = ({ signal }) => postApiEmailsUnsubscribe(toValue(unsubscribeRequest), { signal, ...requestOptions });
-
-
-
-
-
-   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof postApiEmailsUnsubscribe>>, TError, TData>
-}
-
-export type PostApiEmailsUnsubscribeQueryResult = NonNullable<Awaited<ReturnType<typeof postApiEmailsUnsubscribe>>>
-export type PostApiEmailsUnsubscribeQueryError = unknown
-
-
-
-export function usePostApiEmailsUnsubscribe<TData = Awaited<ReturnType<typeof postApiEmailsUnsubscribe>>, TError = unknown>(
- unsubscribeRequest?: MaybeRefOrGetter<UnsubscribeRequest>, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof postApiEmailsUnsubscribe>>, TError, TData>>, request?: SecondParameter<typeof httpClient>}
- , queryClient?: QueryClient
- ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
-
-  const queryOptions = getPostApiEmailsUnsubscribeQueryOptions(unsubscribeRequest,options)
-
-  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
-
-  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
-
-  return query;
-}
-
-
-
-
 
 

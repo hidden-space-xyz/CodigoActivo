@@ -58,8 +58,7 @@ public sealed class UnassignActivityCommandHandlerTests
 
         var result = await UnassignAsync(activity.Id.Value, Guid.NewGuid(), isAdmin: false);
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityAssignmentNotFound);
+        result.ShouldFail(ErrorKind.NotFound, DomainErrorCode.ActivityAssignmentNotFound);
     }
 
     [Fact]
@@ -69,8 +68,7 @@ public sealed class UnassignActivityCommandHandlerTests
 
         var result = await UnassignAsync(Guid.NewGuid(), Guid.NewGuid(), isAdmin: true);
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityAssignmentNotFound);
+        result.ShouldFail(ErrorKind.NotFound, DomainErrorCode.ActivityAssignmentNotFound);
     }
 
     [Fact]
@@ -100,8 +98,7 @@ public sealed class UnassignActivityCommandHandlerTests
 
         var result = await UnassignAsync(activityId, assignment.UserId.Value, isAdmin: false);
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivitySignupClosed);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivitySignupClosed);
         activity.Assignments.Should().ContainSingle().Which.Should().BeSameAs(assignment);
         await uow.DidNotReceiveWithAnyArgs().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -136,8 +133,7 @@ public sealed class UnassignActivityCommandHandlerTests
 
         var result = await UnassignAsync(activityId, assignment.UserId.Value, isAdmin: false);
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityAlreadyStarted);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityAlreadyStarted);
         activity.Assignments.Should().Contain(assignment);
     }
 
@@ -173,8 +169,7 @@ public sealed class UnassignActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Forbidden);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActingForAnotherUserForbidden);
+        result.ShouldFail(ErrorKind.Forbidden, ApplicationErrorCode.ActingForAnotherUserForbidden);
         activity.Assignments.Should().Contain(assignment);
     }
 }

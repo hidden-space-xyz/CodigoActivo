@@ -63,20 +63,17 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
 
     private static Event NewEvent(Guid id, string title, DateOnly startsOn)
     {
-        return Persisted.As<Event>(
+        return TestEntities.New<Event>(
             new
             {
                 Id = id,
                 Title = title,
-                Subtitle = "Sub",
-                Description = "{}",
                 EventStartsAt = startsOn,
                 EventEndsAt = startsOn.AddDays(1),
                 SignupStartsAt = SeededAt,
                 SignupEndsAt = SeededAt.AddDays(10),
                 ThumbnailId = ThumbnailId,
                 CreatedAt = SeededAt,
-                CreatedBy = TestSeedData.Users.AdminId,
             }
         );
     }
@@ -89,12 +86,11 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         Guid modalityId
     )
     {
-        return Persisted.As<Activity>(
+        return TestEntities.New<Activity>(
             new
             {
                 Id = id,
                 Title = title,
-                Description = "Descripción",
                 Location = $"Sala {title}",
                 ActivityStartsAt = startsAt,
                 ActivityEndsAt = startsAt.AddHours(2),
@@ -102,7 +98,6 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                 Modality = CatalogIds.ActivityModalities.ValueOf(modalityId),
                 ThumbnailId = ThumbnailId,
                 CreatedAt = SeededAt,
-                CreatedBy = TestSeedData.Users.AdminId,
             }
         );
     }
@@ -230,18 +225,10 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             );
 
             db.Files.Add(
-                Persisted.As<StoredFile>(
-                    new
-                    {
-                        Id = ThumbnailId,
-                        Extension = "png",
-                        UploadedAt = SeededAt,
-                        UploadedBy = TestSeedData.Users.AdminId,
-                    }
-                )
+                TestEntities.New<StoredFile>(new { Id = ThumbnailId, UploadedAt = SeededAt })
             );
             db.TermsDocuments.AddRange(
-                Persisted.As<TermsDocument>(
+                TestEntities.New<TermsDocument>(
                     new
                     {
                         Id = ConditionsId,
@@ -250,13 +237,8 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                     }
                 ),
                 ImageRightsRewritten(),
-                Persisted.As<TermsDocument>(
-                    new
-                    {
-                        Id = TripRulesId,
-                        Name = "Normas de la excursión",
-                        Description = "{}",
-                    }
+                TestEntities.New<TermsDocument>(
+                    new { Id = TripRulesId, Name = "Normas de la excursión" }
                 )
             );
             db.Events.AddRange(
@@ -748,13 +730,11 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.News.Add(
-                Persisted.As<NewsItem>(
+                TestEntities.New<NewsItem>(
                     new
                     {
                         Id = NewsItemId,
                         Title = "Nota",
-                        Subtitle = "Sub",
-                        Description = "{}",
                         ThumbnailId = ThumbnailId,
                         CreatedAt = SeededAt,
                         CreatedBy = TestSeedData.Users.PendingId,
@@ -820,13 +800,11 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             db.Events.Add(reviewed);
             db.Activities.Add(authored);
             db.News.Add(
-                Persisted.As<NewsItem>(
+                TestEntities.New<NewsItem>(
                     new
                     {
                         Id = NewsItemId,
                         Title = "Nota",
-                        Subtitle = "Sub",
-                        Description = "{}",
                         ThumbnailId = ThumbnailId,
                         CreatedAt = SeededAt,
                         CreatedBy = member,
@@ -865,20 +843,18 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
                 )
             );
             db.Files.AddRange(
-                Persisted.As<StoredFile>(
+                TestEntities.New<StoredFile>(
                     new
                     {
                         Id = UploadId,
-                        Extension = "png",
                         UploadedAt = SeededAt,
                         UploadedBy = child,
                     }
                 ),
-                Persisted.As<StoredFile>(
+                TestEntities.New<StoredFile>(
                     new
                     {
                         Id = OtherUploadId,
-                        Extension = "png",
                         UploadedAt = SeededAt,
                         UploadedBy = other,
                     }

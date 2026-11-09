@@ -1,6 +1,3 @@
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Querying;
-
 namespace CodigoActivo.Application.Seo.Queries;
 
 /// <summary>

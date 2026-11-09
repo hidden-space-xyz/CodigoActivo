@@ -1,9 +1,12 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Accounts.Commands;
+using CodigoActivo.Application.BlockedData.Commands;
+using CodigoActivo.Application.Files.Commands;
+using CodigoActivo.Application.TermsDecisions.Commands;
+using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Composition;
-using CodigoActivo.Infrastructure.DataHistory;
-using CodigoActivo.Infrastructure.Legal;
 using CodigoActivo.Infrastructure.Logs;
-using CodigoActivo.Infrastructure.Users;
+using CodigoActivo.Infrastructure.Messaging;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,13 +17,7 @@ namespace CodigoActivo.UnitTests.Composition;
 
 public sealed class BackgroundWorkerWiringTests
 {
-    [Theory]
-    [InlineData(typeof(DataHistoryPurgeWorker))]
-    [InlineData(typeof(ExpiredAccountChangeCleanupWorker))]
-    [InlineData(typeof(LegalNoticeWorker))]
-    [InlineData(typeof(LogRetentionWorker))]
-    [InlineData(typeof(UnverifiedAccountPurgeWorker))]
-    public void AddCodigoActivoRegistersTheWorkerAsAHostedService(Type worker)
+    private static ServiceProvider Build()
     {
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(
@@ -32,14 +29,47 @@ public sealed class BackgroundWorkerWiringTests
                 }
             )
             .Build();
-        using var provider = new ServiceCollection()
+        return new ServiceCollection()
             .AddLogging()
             .AddCodigoActivo(configuration)
             .BuildServiceProvider();
+    }
+
+    [Theory]
+    [InlineData(typeof(LogRetentionWorker))]
+    [InlineData(typeof(ScheduledJobsWorker))]
+    public void AddCodigoActivoRegistersTheWorkerAsAHostedService(Type worker)
+    {
+        using var provider = Build();
 
         provider
             .GetServices<IHostedService>()
             .Should()
             .ContainSingle(service => service.GetType() == worker);
+    }
+
+    [Fact]
+    public void AddCodigoActivoSchedulesEveryJobThirtySecondsAfterStartupAndThenOnItsInterval()
+    {
+        using var provider = Build();
+        var hourly = TimeSpan.FromHours(1);
+        var everyMinute = TimeSpan.FromMinutes(1);
+
+        provider
+            .GetServices<ScheduledJob>()
+            .Should()
+            .OnlyContain(job => job.StartupDelay == TimeSpan.FromSeconds(30))
+            .And.Subject.Select(job => (job.Name, job.Interval))
+            .Should()
+            .BeEquivalentTo([
+                (nameof(RemoveExpiredSessionsCommand), hourly),
+                (nameof(DiscardExpiredAccountChangesCommand), hourly),
+                (nameof(PurgeUnverifiedAccountsCommand), hourly),
+                (nameof(PurgeAdultDependentsCommand), hourly),
+                (nameof(PurgeUnusedFilesCommand), hourly),
+                (nameof(PurgeDataHistoryCommand), hourly),
+                (nameof(SendConsentWithdrawalNoticesCommand), everyMinute),
+                (nameof(SendBlockedDataConsultationNoticesCommand), everyMinute),
+            ]);
     }
 }

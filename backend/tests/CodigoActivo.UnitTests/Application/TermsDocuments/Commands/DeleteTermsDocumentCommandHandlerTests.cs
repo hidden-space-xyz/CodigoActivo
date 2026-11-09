@@ -40,8 +40,7 @@ public sealed class DeleteTermsDocumentCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.TermsDocumentNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.TermsDocumentNotFound);
     }
 
     [Fact]
@@ -55,8 +54,7 @@ public sealed class DeleteTermsDocumentCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ApplicationErrorCode.TermsDocumentInUse);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TermsDocumentInUse);
         termsDocuments.DidNotReceiveWithAnyArgs().Remove(Arg.Any<TermsDocument>());
     }
 
@@ -72,8 +70,7 @@ public sealed class DeleteTermsDocumentCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Conflict);
-        result.Error.Code.Should().Be(ApplicationErrorCode.TermsDocumentInUse);
+        result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.TermsDocumentInUse);
         termsDocuments.DidNotReceiveWithAnyArgs().Remove(Arg.Any<TermsDocument>());
     }
 

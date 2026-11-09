@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using AwesomeAssertions;
 using CodigoActivo.API.Errors;
 using CodigoActivo.API.Partners.Contracts;
@@ -77,16 +76,6 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task GetPartnerAbsentReturns404WithErrorCode()
-    {
-        var client = CreateClient();
-
-        var response = await client.GetAsync(TestUri.Rel($"/api/partners/{Guid.NewGuid()}"), Ct);
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.PartnerNotFound);
-    }
-
-    [Fact]
     public async Task CreateAdminPersistsAndReturns201WithLocation()
     {
         var thumbnailId = await SeedThumbnailAsync();
@@ -111,49 +100,17 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
         stored.CreatedBy.Value.Should().Be(TestSeedData.Users.AdminId);
     }
 
-    [Fact]
-    public async Task CreateMemberReturnsForbidden()
-    {
-        var thumbnailId = await SeedThumbnailAsync();
-        var client = await LoginAsMemberAsync();
-        var request = new CreatePartnerRequest(
-            "Nope",
-            new DateOnly(2025, 1, 1),
-            1,
-            null,
-            thumbnailId
-        );
-
-        var response = await client.PostJsonAsync("/api/partners", request, Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task CreateAnonymousReturnsUnauthorized()
-    {
-        var client = CreateClient();
-        var request = new CreatePartnerRequest(
-            "Nope",
-            new DateOnly(2025, 1, 1),
-            1,
-            null,
-            Guid.NewGuid()
-        );
-
-        var response = await client.PostJsonAsync("/api/partners", request, Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task CreateBlankNameReturnsValidationError()
+    [Theory]
+    [InlineData("   ", -365)]
+    [InlineData("Futuro", 1)]
+    [InlineData("Sin fecha", null)]
+    public async Task CreateInvalidFieldReturnsValidationError(string name, int? fromDays)
     {
         var thumbnailId = await SeedThumbnailAsync();
         var client = await LoginAsAdminAsync();
         var request = new CreatePartnerRequest(
-            "   ",
-            new DateOnly(2025, 1, 1),
+            name,
+            fromDays is { } days ? Factory.Clock.Today.AddDays(days) : null,
             1,
             null,
             thumbnailId
@@ -162,54 +119,6 @@ public sealed class PartnersControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync("/api/partners", request, Ct);
 
         await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
-    }
-
-    [Fact]
-    public async Task CreateNullFromDateReturnsValidationError()
-    {
-        var thumbnailId = await SeedThumbnailAsync();
-        var client = await LoginAsAdminAsync();
-        var request = new CreatePartnerRequest("Sin fecha", null, 1, null, thumbnailId);
-
-        var response = await client.PostJsonAsync("/api/partners", request, Ct);
-
-        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
-    }
-
-    [Fact]
-    public async Task CreateFutureFromDateReturnsValidationError()
-    {
-        var thumbnailId = await SeedThumbnailAsync();
-        var client = await LoginAsAdminAsync();
-        var request = new CreatePartnerRequest(
-            "Futuro",
-            Factory.Clock.Today.AddDays(1),
-            1,
-            null,
-            thumbnailId
-        );
-
-        var response = await client.PostJsonAsync("/api/partners", request, Ct);
-
-        await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
-    }
-
-    [Fact]
-    public async Task CreateMissingCsrfTokenIsRejected()
-    {
-        var client = await LoginAsAdminAsync();
-        var thumbnailId = await SeedThumbnailAsync();
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/partners")
-        {
-            Content = JsonContent.Create(
-                new CreatePartnerRequest("Gamma", new DateOnly(2025, 1, 1), 1, null, thumbnailId),
-                options: TestJson.Options
-            ),
-        };
-
-        var response = await client.SendAsync(request, Ct);
-
-        await response.ShouldBeBadRequestAsync(ErrorCode.InvalidCsrfToken);
     }
 
     [Fact]

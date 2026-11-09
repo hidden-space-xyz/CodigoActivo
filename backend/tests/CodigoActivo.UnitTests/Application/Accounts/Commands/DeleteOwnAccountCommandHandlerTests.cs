@@ -100,8 +100,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
 
     private Task<int> AssertNotSavedAsync()
     {
-        return uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        return uow.DidNotSaveAsync();
     }
 
     private void AssertNothingRemoved()
@@ -163,8 +162,7 @@ public sealed class DeleteOwnAccountCommandHandlerTests
         user.TwoFactorLockout.FailedAttempts.Should().Be(0);
         user.PasswordLockout.FailedAttempts.Should().Be(1);
         AssertNothingRemoved();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]

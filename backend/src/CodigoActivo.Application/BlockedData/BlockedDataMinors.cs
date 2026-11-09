@@ -1,4 +1,3 @@
-using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.BlockedData;

@@ -44,8 +44,7 @@ public sealed class AccountLockTests
 
         result.Should().BeSameAs(Gone);
         ran.Should().BeFalse();
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 
     [Fact]
@@ -81,7 +80,6 @@ public sealed class AccountLockTests
         );
 
         result.Should().BeSameAs(refused);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 }

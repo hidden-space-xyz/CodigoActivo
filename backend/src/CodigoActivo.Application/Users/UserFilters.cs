@@ -1,5 +1,4 @@
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
-using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Users.Contracts;
 using CodigoActivo.Domain.Users;
 

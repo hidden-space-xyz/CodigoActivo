@@ -21,7 +21,6 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.News;
-using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Caching.Memory;
@@ -435,16 +434,14 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.News.Add(
-                Persisted.As<NewsItem>(
+                TestEntities.New<NewsItem>(
                     new
                     {
                         Id = id,
                         Title = title,
                         Subtitle = "Subtítulo",
-                        Description = "{}",
                         ThumbnailId = thumbnailId,
                         CreatedAt = SeededAt,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
@@ -461,38 +458,31 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Events.Add(
-                Persisted.As<Event>(
+                TestEntities.New<Event>(
                     new
                     {
                         Id = eventId,
-                        Title = "Evento",
-                        Subtitle = "Sub",
-                        Description = "{}",
                         EventStartsAt = new DateOnly(2026, 7, 1),
                         EventEndsAt = new DateOnly(2026, 7, 31),
                         SignupStartsAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
                         SignupEndsAt = new DateTimeOffset(2026, 7, 30, 0, 0, 0, TimeSpan.Zero),
                         ThumbnailId = thumbnailId,
                         CreatedAt = SeededAt,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
             db.Activities.Add(
-                Persisted.As<Activity>(
+                TestEntities.New<Activity>(
                     new
                     {
                         Id = activityId,
                         Title = "Actividad",
                         Description = "{}",
-                        Location = "Sala",
-                        Modality = ActivityModality.Presencial,
                         ActivityStartsAt = new DateTimeOffset(2026, 7, 10, 10, 0, 0, TimeSpan.Zero),
                         ActivityEndsAt = new DateTimeOffset(2026, 7, 10, 12, 0, 0, TimeSpan.Zero),
                         EventId = eventId,
                         ThumbnailId = thumbnailId,
                         CreatedAt = SeededAt,
-                        CreatedBy = TestSeedData.Users.AdminId,
                         RoleCapacities = new List<ActivityRoleCapacity>
                         {
                             Persisted.As<ActivityRoleCapacity>(
@@ -544,13 +534,11 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
         var id = Guid.NewGuid();
         await Factory.SeedAsync(db =>
         {
-            var ev = Persisted.As<Event>(
+            var ev = TestEntities.New<Event>(
                 new
                 {
                     Id = id,
                     Title = title,
-                    Subtitle = "Sub",
-                    Description = "{}",
                     EventStartsAt = new DateOnly(2026, 8, 1),
                     EventEndsAt = new DateOnly(2026, 8, 10),
                     SignupStartsAt = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero),
@@ -558,7 +546,6 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
                     Featured = featured,
                     ThumbnailId = thumbnailId,
                     CreatedAt = SeededAt,
-                    CreatedBy = TestSeedData.Users.AdminId,
                 }
             );
             Persisted.Add(
@@ -581,26 +568,6 @@ public sealed class CachingBehaviorTests(CodigoActivoWebAppFactory factory)
             }
 
             db.Events.Add(ev);
-            return Task.CompletedTask;
-        });
-        return id;
-    }
-
-    private async Task<Guid> SeedTermsDocumentAsync(string? name = null)
-    {
-        var id = Guid.NewGuid();
-        await Factory.SeedAsync(db =>
-        {
-            db.TermsDocuments.Add(
-                Persisted.As<TermsDocument>(
-                    new
-                    {
-                        Id = id,
-                        Name = name ?? Guid.NewGuid().ToString("N"),
-                        Description = "{}",
-                    }
-                )
-            );
             return Task.CompletedTask;
         });
         return id;

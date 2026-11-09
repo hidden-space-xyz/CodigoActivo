@@ -39,45 +39,30 @@ public sealed class SeoControllerTests(CodigoActivoWebAppFactory factory)
         await Factory.SeedAsync(db =>
         {
             db.Files.Add(
-                Persisted.As<StoredFile>(
-                    new
-                    {
-                        Id = thumbnailId,
-                        Extension = "png",
-                        UploadedAt = SeededAt,
-                        UploadedBy = TestSeedData.Users.AdminId,
-                    }
-                )
+                TestEntities.New<StoredFile>(new { Id = thumbnailId, UploadedAt = SeededAt })
             );
             db.Events.Add(
-                Persisted.As<Event>(
+                TestEntities.New<Event>(
                     new
                     {
                         Id = content.EventId,
-                        Title = "Evento",
-                        Subtitle = "Sub",
-                        Description = "{}",
                         EventStartsAt = new DateOnly(2026, 8, 1),
                         EventEndsAt = new DateOnly(2026, 8, 2),
                         SignupStartsAt = SeededAt,
                         SignupEndsAt = SeededAt.AddDays(30),
                         ThumbnailId = thumbnailId,
                         CreatedAt = SeededAt,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
             db.News.Add(
-                Persisted.As<NewsItem>(
+                TestEntities.New<NewsItem>(
                     new
                     {
                         Id = content.NewsItemId,
                         Title = "Novedad",
-                        Subtitle = "Sub",
-                        Description = "{}",
                         ThumbnailId = thumbnailId,
                         CreatedAt = SeededAt,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );

@@ -1,6 +1,3 @@
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Querying;
-using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.TermsDocuments.Contracts;
 
 namespace CodigoActivo.Application.TermsDocuments.Queries;

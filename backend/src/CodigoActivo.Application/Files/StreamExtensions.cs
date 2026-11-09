@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using CodigoActivo.Domain.Common;
 
 namespace CodigoActivo.Application.Files;
 

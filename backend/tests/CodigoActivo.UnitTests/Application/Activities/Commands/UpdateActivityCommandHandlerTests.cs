@@ -73,8 +73,7 @@ public sealed class UpdateActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.ActivityNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.ActivityNotFound);
     }
 
     [Fact]
@@ -89,8 +88,7 @@ public sealed class UpdateActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.EventNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.EventNotFound);
     }
 
     [Fact]
@@ -116,8 +114,7 @@ public sealed class UpdateActivityCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityScheduleRequired);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivityScheduleRequired);
     }
 
     [Fact]

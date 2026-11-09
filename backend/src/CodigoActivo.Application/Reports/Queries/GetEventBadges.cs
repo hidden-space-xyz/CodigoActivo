@@ -1,11 +1,5 @@
-using CodigoActivo.Application.Abstractions.Auditing;
-using CodigoActivo.Application.Abstractions.Messaging;
-using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Activities;
-using CodigoActivo.Application.Common.Errors;
-using CodigoActivo.Application.Common.Querying;
 using CodigoActivo.Application.Reports.Contracts;
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 
 namespace CodigoActivo.Application.Reports.Queries;

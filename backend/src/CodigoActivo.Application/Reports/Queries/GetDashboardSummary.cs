@@ -1,4 +1,3 @@
-using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Common.Caching;
 using CodigoActivo.Application.Reports.Contracts;
 

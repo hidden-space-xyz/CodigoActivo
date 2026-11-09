@@ -1,7 +1,5 @@
 using CodigoActivo.Application.Abstractions.Email;
-using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.Abstractions.Querying.ReadModel;
-using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Legal;
 using CodigoActivo.Domain.TermsDecisions;
 

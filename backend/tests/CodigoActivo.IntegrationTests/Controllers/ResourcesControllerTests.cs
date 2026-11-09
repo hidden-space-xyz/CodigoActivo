@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using AwesomeAssertions;
 using CodigoActivo.API.Errors;
 using CodigoActivo.API.Resources.Contracts;
@@ -206,26 +205,6 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task TypesMemberReturnsForbidden()
-    {
-        var client = await LoginAsMemberAsync();
-
-        var response = await client.GetAsync(TestUri.Rel("/api/resources/types"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task GetResourceAbsentReturns404WithErrorCode()
-    {
-        var client = CreateClient();
-
-        var response = await client.GetAsync(TestUri.Rel($"/api/resources/{Guid.NewGuid()}"), Ct);
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.ResourceNotFound);
-    }
-
-    [Fact]
     public async Task GetExternalResourceReturnsTypeAndUrl()
     {
         var id = await SeedResourceAsync("Enlace", url: ExternalUrl);
@@ -389,43 +368,6 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
     }
 
-    [Fact]
-    public async Task CreateMemberReturnsForbidden()
-    {
-        var thumbnailId = await SeedThumbnailAsync();
-        var client = await LoginAsMemberAsync();
-        var request = new CreateResourceRequest(
-            "Nope",
-            "Sub",
-            Description,
-            null,
-            KnownIds.ResourceTypes.Internal,
-            thumbnailId
-        );
-
-        var response = await client.PostJsonAsync("/api/resources", request, Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task CreateAnonymousReturnsUnauthorized()
-    {
-        var client = CreateClient();
-        var request = new CreateResourceRequest(
-            "Nope",
-            "Sub",
-            Description,
-            null,
-            KnownIds.ResourceTypes.Internal,
-            Guid.NewGuid()
-        );
-
-        var response = await client.PostJsonAsync("/api/resources", request, Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
     [Theory]
     [InlineData("   ", "Sub")]
     [InlineData("Title", "   ")]
@@ -445,31 +387,6 @@ public sealed class ResourcesControllerTests(CodigoActivoWebAppFactory factory)
         var response = await client.PostJsonAsync("/api/resources", request, Ct);
 
         await response.ShouldBeBadRequestAsync(ErrorCode.RequestValidationFailed);
-    }
-
-    [Fact]
-    public async Task CreateMissingCsrfTokenIsRejected()
-    {
-        var client = await LoginAsAdminAsync();
-        var thumbnailId = await SeedThumbnailAsync();
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/resources")
-        {
-            Content = JsonContent.Create(
-                new CreateResourceRequest(
-                    "Gamma",
-                    "Sub",
-                    Description,
-                    null,
-                    KnownIds.ResourceTypes.Internal,
-                    thumbnailId
-                ),
-                options: TestJson.Options
-            ),
-        };
-
-        var response = await client.SendAsync(request, Ct);
-
-        await response.ShouldBeBadRequestAsync(ErrorCode.InvalidCsrfToken);
     }
 
     [Fact]

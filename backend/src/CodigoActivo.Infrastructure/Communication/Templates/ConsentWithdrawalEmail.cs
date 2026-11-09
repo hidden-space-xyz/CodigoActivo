@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Net;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.Common.Localization;
@@ -12,8 +11,6 @@ namespace CodigoActivo.Infrastructure.Communication.Templates;
 /// </summary>
 public static class ConsentWithdrawalEmail
 {
-    private const string TimestampFormat = "dd/MM/yyyy, HH:mm";
-
     /// <summary>
     /// Creates the notice for the association's legal contact: for every withdrawal, whose consent
     /// was withdrawn, for which document and event, who recorded it and when, then a callout with
@@ -38,76 +35,40 @@ public static class ConsentWithdrawalEmail
         string siteUrl
     )
     {
-        ArgumentNullException.ThrowIfNull(withdrawals);
-        if (withdrawals.Count is 0)
-        {
-            throw new ArgumentException(
-                "A notice needs at least one withdrawal.",
-                nameof(withdrawals)
-            );
-        }
-
-        var single = withdrawals.Count is 1;
-        var subject = single
-            ? AppStrings.EmailsConsentWithdrawnSubject
-            : AppStrings.EmailsConsentWithdrawnSubjectMany(withdrawals.Count);
-        var content = EmailLayout.Render(
-            new EmailDocument(
-                single
-                    ? AppStrings.EmailsConsentWithdrawnHeading
-                    : AppStrings.EmailsConsentWithdrawnHeadingMany,
-                single ? IntroText(withdrawals[0]) : subject,
-                toName,
-                siteUrl,
-                EmailBranding.Brand
+        return ListNoticeEmail.Create(
+            EmailKind.ConsentWithdrawalNotice,
+            new ListNoticeEmail.Texts(
+                AppStrings.EmailsConsentWithdrawnSubject,
+                AppStrings.EmailsConsentWithdrawnSubjectMany,
+                AppStrings.EmailsConsentWithdrawnHeading,
+                AppStrings.EmailsConsentWithdrawnHeadingMany,
+                AppStrings.EmailsConsentWithdrawnAction,
+                AppStrings.EmailsConsentWithdrawnActionMany,
+                AppStrings.EmailsConsentWithdrawnHistoryNote,
+                AppStrings.EmailsConsentWithdrawnHistoryNoteMany
             ),
-            [
-                .. withdrawals.SelectMany(withdrawal => Describe(withdrawal, timeZone)),
-                EmailBlocks.Callout(
-                    single
-                        ? AppStrings.EmailsConsentWithdrawnAction
-                        : AppStrings.EmailsConsentWithdrawnActionMany,
-                    EmailBranding.Danger
+            withdrawals,
+            withdrawal =>
+                AppStrings.EmailsConsentWithdrawnIntroText(
+                    withdrawal.PersonName,
+                    withdrawal.DocumentName,
+                    withdrawal.EventTitle
                 ),
-                EmailBlocks.Note(
-                    single
-                        ? AppStrings.EmailsConsentWithdrawnHistoryNote
-                        : AppStrings.EmailsConsentWithdrawnHistoryNoteMany
+            withdrawal =>
+                AppStrings.EmailsConsentWithdrawnIntroHtml(
+                    WebUtility.HtmlEncode(withdrawal.PersonName),
+                    WebUtility.HtmlEncode(withdrawal.DocumentName),
+                    WebUtility.HtmlEncode(withdrawal.EventTitle)
                 ),
-            ]
-        );
-
-        return content.ToMessage(EmailKind.ConsentWithdrawalNotice, toAddress, toName, subject);
-    }
-
-    private static string IntroText(ConsentWithdrawal withdrawal)
-    {
-        return AppStrings.EmailsConsentWithdrawnIntroText(
-            withdrawal.PersonName,
-            withdrawal.DocumentName,
-            withdrawal.EventTitle
-        );
-    }
-
-    private static IEnumerable<EmailBlock> Describe(
-        ConsentWithdrawal withdrawal,
-        TimeZoneInfo timeZone
-    )
-    {
-        var withdrawnAt = TimeZoneInfo
-            .ConvertTime(withdrawal.WithdrawnAt, timeZone)
-            .ToString(TimestampFormat, CultureInfo.InvariantCulture);
-
-        yield return EmailBlocks.Prose(
-            AppStrings.EmailsConsentWithdrawnIntroHtml(
-                WebUtility.HtmlEncode(withdrawal.PersonName),
-                WebUtility.HtmlEncode(withdrawal.DocumentName),
-                WebUtility.HtmlEncode(withdrawal.EventTitle)
-            ),
-            IntroText(withdrawal)
-        );
-        yield return EmailBlocks.Prose(
-            AppStrings.EmailsConsentWithdrawnRecorded(withdrawal.RecordedByName, withdrawnAt)
+            (withdrawal, local) =>
+                AppStrings.EmailsConsentWithdrawnRecorded(
+                    withdrawal.RecordedByName,
+                    local(withdrawal.WithdrawnAt)
+                ),
+            toAddress,
+            toName,
+            timeZone,
+            siteUrl
         );
     }
 }

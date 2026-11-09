@@ -1,24 +1,18 @@
 using AwesomeAssertions;
+using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Domain.Users;
-using CodigoActivo.Infrastructure.Users;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Database;
 
-public sealed class UnverifiedAccountPurgeWorkerTests(CodigoActivoWebAppFactory factory)
+public sealed class UnverifiedAccountPurgeTests(CodigoActivoWebAppFactory factory)
     : IntegrationTestBase(factory)
 {
-    private UnverifiedAccountPurgeWorker Build()
+    private Task<int> PurgeAsync()
     {
-        return new UnverifiedAccountPurgeWorker(
-            Factory.Services.GetRequiredService<IServiceScopeFactory>(),
-            new UnverifiedAccountPurgeOptions(),
-            NullLogger<UnverifiedAccountPurgeWorker>.Instance
-        );
+        return Factory.RunScheduledAsync<PurgeUnverifiedAccountsCommand>();
     }
 
     private Task<List<Guid>> UserIdsAsync()
@@ -73,7 +67,7 @@ public sealed class UnverifiedAccountPurgeWorkerTests(CodigoActivoWebAppFactory 
             return Task.CompletedTask;
         });
 
-        (await Build().PurgeAsync(Ct)).Should().Be(1);
+        (await PurgeAsync()).Should().Be(1);
         (await UserIdsAsync()).Should().NotContain(TestSeedData.Users.PendingId);
         (await UserIdsAsync())
             .Should()
@@ -81,7 +75,7 @@ public sealed class UnverifiedAccountPurgeWorkerTests(CodigoActivoWebAppFactory 
         (await ErasedIdsAsync()).Should().Equal(TestSeedData.Users.PendingId);
 
         Factory.Clock.UtcNow = Factory.Clock.UtcNow.AddSeconds(1);
-        (await Build().PurgeAsync(Ct)).Should().Be(1);
+        (await PurgeAsync()).Should().Be(1);
         (await UserIdsAsync()).Should().NotContain([recentId, recentChildId]);
         (await ErasedIdsAsync())
             .Should()

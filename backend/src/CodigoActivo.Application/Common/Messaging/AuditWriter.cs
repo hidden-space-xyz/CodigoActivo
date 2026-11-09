@@ -1,5 +1,3 @@
-using CodigoActivo.Application.Abstractions.Auditing;
-using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Common.Diagnostics;
 using Microsoft.Extensions.Logging;
 

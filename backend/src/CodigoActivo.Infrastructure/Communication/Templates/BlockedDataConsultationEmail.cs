@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Net;
 using CodigoActivo.Application.Abstractions.Email;
 using CodigoActivo.Application.BlockedData;
@@ -11,8 +10,6 @@ namespace CodigoActivo.Infrastructure.Communication.Templates;
 /// </summary>
 public static class BlockedDataConsultationEmail
 {
-    private const string TimestampFormat = "dd/MM/yyyy, HH:mm";
-
     /// <summary>
     /// Creates the notice for the association's legal contact: for every consultation, who opened
     /// it, who asks for the data, the reference and when, then a note on what to do if nobody
@@ -37,73 +34,37 @@ public static class BlockedDataConsultationEmail
         string siteUrl
     )
     {
-        ArgumentNullException.ThrowIfNull(consultations);
-        if (consultations.Count is 0)
-        {
-            throw new ArgumentException(
-                "A notice needs at least one consultation.",
-                nameof(consultations)
-            );
-        }
-
-        var single = consultations.Count is 1;
-        var subject = single
-            ? AppStrings.EmailsBlockedDataConsultationSubject
-            : AppStrings.EmailsBlockedDataConsultationSubjectMany(consultations.Count);
-        var content = EmailLayout.Render(
-            new EmailDocument(
-                single
-                    ? AppStrings.EmailsBlockedDataConsultationHeading
-                    : AppStrings.EmailsBlockedDataConsultationHeadingMany,
-                single ? IntroText(consultations[0]) : subject,
-                toName,
-                siteUrl,
-                EmailBranding.Brand
-            ),
-            [
-                .. consultations.SelectMany(consultation => Describe(consultation, timeZone)),
-                EmailBlocks.Note(
-                    single
-                        ? AppStrings.EmailsBlockedDataConsultationNote
-                        : AppStrings.EmailsBlockedDataConsultationNoteMany
-                ),
-            ]
-        );
-
-        return content.ToMessage(
+        return ListNoticeEmail.Create(
             EmailKind.BlockedDataConsultationNotice,
+            new ListNoticeEmail.Texts(
+                AppStrings.EmailsBlockedDataConsultationSubject,
+                AppStrings.EmailsBlockedDataConsultationSubjectMany,
+                AppStrings.EmailsBlockedDataConsultationHeading,
+                AppStrings.EmailsBlockedDataConsultationHeadingMany,
+                null,
+                null,
+                AppStrings.EmailsBlockedDataConsultationNote,
+                AppStrings.EmailsBlockedDataConsultationNoteMany
+            ),
+            consultations,
+            consultation =>
+                AppStrings.EmailsBlockedDataConsultationIntroText(
+                    consultation.OfficerName,
+                    consultation.Requester,
+                    consultation.Reference
+                ),
+            consultation =>
+                AppStrings.EmailsBlockedDataConsultationIntroHtml(
+                    WebUtility.HtmlEncode(consultation.OfficerName),
+                    WebUtility.HtmlEncode(consultation.Requester),
+                    WebUtility.HtmlEncode(consultation.Reference)
+                ),
+            (consultation, local) =>
+                AppStrings.EmailsBlockedDataConsultationOpened(local(consultation.OpenedAt)),
             toAddress,
             toName,
-            subject
+            timeZone,
+            siteUrl
         );
-    }
-
-    private static string IntroText(OpenedConsultation consultation)
-    {
-        return AppStrings.EmailsBlockedDataConsultationIntroText(
-            consultation.OfficerName,
-            consultation.Requester,
-            consultation.Reference
-        );
-    }
-
-    private static IEnumerable<EmailBlock> Describe(
-        OpenedConsultation consultation,
-        TimeZoneInfo timeZone
-    )
-    {
-        var openedAt = TimeZoneInfo
-            .ConvertTime(consultation.OpenedAt, timeZone)
-            .ToString(TimestampFormat, CultureInfo.InvariantCulture);
-
-        yield return EmailBlocks.Prose(
-            AppStrings.EmailsBlockedDataConsultationIntroHtml(
-                WebUtility.HtmlEncode(consultation.OfficerName),
-                WebUtility.HtmlEncode(consultation.Requester),
-                WebUtility.HtmlEncode(consultation.Reference)
-            ),
-            IntroText(consultation)
-        );
-        yield return EmailBlocks.Prose(AppStrings.EmailsBlockedDataConsultationOpened(openedAt));
     }
 }

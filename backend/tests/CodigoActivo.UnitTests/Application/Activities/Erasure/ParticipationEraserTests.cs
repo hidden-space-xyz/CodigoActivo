@@ -43,7 +43,6 @@ public sealed class ParticipationEraserTests
         await store
             .DidNotReceiveWithAnyArgs()
             .LoadAsync(default!, TestContext.Current.CancellationToken);
-        await uow.DidNotReceiveWithAnyArgs()
-            .SaveChangesAsync(TestContext.Current.CancellationToken);
+        await uow.DidNotSaveAsync();
     }
 }

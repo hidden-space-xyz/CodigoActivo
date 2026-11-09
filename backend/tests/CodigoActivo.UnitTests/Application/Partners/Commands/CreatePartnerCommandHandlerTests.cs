@@ -52,9 +52,7 @@ public sealed class CreatePartnerCommandHandlerTests
 
         var result = await sut.HandleAsync(Command(), TestContext.Current.CancellationToken);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(ApplicationErrorCode.PartnerThumbnailNotFound);
+        result.ShouldFail(ErrorKind.Validation, ApplicationErrorCode.PartnerThumbnailNotFound);
         await partners
             .DidNotReceiveWithAnyArgs()
             .AddAsync(Arg.Any<Partner>(), TestContext.Current.CancellationToken);

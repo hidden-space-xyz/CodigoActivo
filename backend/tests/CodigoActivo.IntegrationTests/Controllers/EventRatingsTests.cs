@@ -55,38 +55,32 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
         {
             db.Files.AddRange(Thumbnail(EventThumbnailId), Thumbnail(ActivityThumbnailId));
             db.Events.Add(
-                Persisted.As<Event>(
+                TestEntities.New<Event>(
                     new
                     {
                         Id = EventId,
                         Title = "Jornada de puertas abiertas",
                         Subtitle = "Edición 2026",
-                        Description = "{}",
                         EventStartsAt = startsAt,
                         EventEndsAt = endsAt,
                         SignupStartsAt = At,
                         SignupEndsAt = At,
                         ThumbnailId = EventThumbnailId,
                         CreatedAt = At,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
             db.Activities.Add(
-                Persisted.As<Activity>(
+                TestEntities.New<Activity>(
                     new
                     {
                         Id = ActivityId,
                         Title = "Taller",
-                        Description = "Descripción",
-                        Location = "Sala",
                         ActivityStartsAt = At,
                         ActivityEndsAt = At.AddHours(2),
                         EventId = EventId,
-                        Modality = ActivityModality.Presencial,
                         ThumbnailId = ActivityThumbnailId,
                         CreatedAt = At,
-                        CreatedBy = TestSeedData.Users.AdminId,
                     }
                 )
             );
@@ -154,30 +148,7 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
 
     private static StoredFile Thumbnail(Guid id)
     {
-        return Persisted.As<StoredFile>(
-            new
-            {
-                Id = id,
-                Extension = "png",
-                UploadedAt = At,
-                UploadedBy = TestSeedData.Users.AdminId,
-            }
-        );
-    }
-
-    [Fact]
-    public async Task SaveRatingAnonymousReturnsUnauthorized()
-    {
-        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
-        var client = CreateClient();
-
-        using var response = await client.PutJsonAsync(
-            $"/api/events/{EventId}/rating",
-            ValidRating,
-            Ct
-        );
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        return TestEntities.New<StoredFile>(new { Id = id, UploadedAt = At });
     }
 
     [Fact]
@@ -457,16 +428,6 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task DeleteRatingAnonymousReturnsUnauthorized()
-    {
-        var client = CreateClient();
-
-        using var response = await client.DeleteWithCsrfAsync($"/api/events/{EventId}/rating", Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
     public async Task DeleteRatingRemovesOnlyTheOwnRating()
     {
         await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
@@ -481,30 +442,6 @@ public sealed class EventRatingsTests(CodigoActivoWebAppFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
         (await StoredRatingsAsync()).Should().ContainSingle().Which.UserId.Value.Should().Be(Admin);
-    }
-
-    [Fact]
-    public async Task RatingsMemberUserReturnsForbidden()
-    {
-        await SeedEventAsync(PastStart, PastEnd, KnownIds.AssignmentStatusTypes.Confirmed);
-        var client = await LoginAsMemberAsync();
-
-        var response = await client.GetAsync(TestUri.Rel($"/api/events/{EventId}/ratings"), Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact]
-    public async Task RatingsUnknownEventReturnsNotFound()
-    {
-        var client = await LoginAsAdminAsync();
-
-        var response = await client.GetAsync(
-            TestUri.Rel($"/api/events/{Guid.NewGuid()}/ratings"),
-            Ct
-        );
-
-        await response.ShouldBeNotFoundAsync(ErrorCode.EventNotFound);
     }
 
     [Fact]

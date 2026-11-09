@@ -149,11 +149,10 @@ public sealed class DashboardCountsReaderTests(PostgresDatabaseFixture postgres)
     {
         ctx.Users.Add(NewUser(AuthorId, "Author"));
         ctx.Files.Add(
-            Persisted.As<StoredFile>(
+            TestEntities.New<StoredFile>(
                 new
                 {
                     Id = ThumbId,
-                    Extension = "png",
                     UploadedAt = Fixed,
                     UploadedBy = AuthorId,
                 }
@@ -212,13 +211,11 @@ public sealed class DashboardCountsReaderTests(PostgresDatabaseFixture postgres)
             Enumerable
                 .Range(0, 4)
                 .Select(i =>
-                    Persisted.As<NewsItem>(
+                    TestEntities.New<NewsItem>(
                         new
                         {
                             Id = Guid.NewGuid(),
                             Title = $"Novedad {i.ToString(CultureInfo.InvariantCulture)}",
-                            Subtitle = "Sub",
-                            Description = "{}",
                             ThumbnailId = ThumbId,
                             CreatedAt = Fixed,
                             CreatedBy = AuthorId,
@@ -268,13 +265,12 @@ public sealed class DashboardCountsReaderTests(PostgresDatabaseFixture postgres)
 
     private static Event NewEvent(string title)
     {
-        return Persisted.As<Event>(
+        return TestEntities.New<Event>(
             new
             {
                 Id = Guid.NewGuid(),
                 Title = title,
                 Subtitle = "sub",
-                Description = "{}",
                 EventStartsAt = new DateOnly(2026, 6, 1),
                 EventEndsAt = new DateOnly(2026, 6, 2),
                 ThumbnailId = ThumbId,
@@ -286,7 +282,7 @@ public sealed class DashboardCountsReaderTests(PostgresDatabaseFixture postgres)
 
     private static Activity NewActivity(Guid eventId, string title)
     {
-        return Persisted.As<Activity>(
+        return TestEntities.New<Activity>(
             new
             {
                 Id = Guid.NewGuid(),
@@ -296,7 +292,6 @@ public sealed class DashboardCountsReaderTests(PostgresDatabaseFixture postgres)
                 ActivityStartsAt = Fixed,
                 ActivityEndsAt = Fixed.AddHours(1),
                 EventId = eventId,
-                Modality = ActivityModality.Presencial,
                 ThumbnailId = ThumbId,
                 CreatedAt = Fixed,
                 CreatedBy = AuthorId,

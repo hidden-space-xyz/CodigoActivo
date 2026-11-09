@@ -32,9 +32,7 @@ public sealed class DeleteNewsItemCommandHandlerTests
             TestContext.Current.CancellationToken
         );
 
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(ApplicationErrorCode.NewsItemNotFound);
+        result.ShouldFail(ErrorKind.NotFound, ApplicationErrorCode.NewsItemNotFound);
         news.DidNotReceiveWithAnyArgs().Remove(Arg.Any<NewsItem>());
     }
 

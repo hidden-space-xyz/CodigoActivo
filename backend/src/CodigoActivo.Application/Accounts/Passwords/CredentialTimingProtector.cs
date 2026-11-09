@@ -1,5 +1,4 @@
 using System.Security.Cryptography;
-using CodigoActivo.Application.Abstractions.Security;
 
 namespace CodigoActivo.Application.Accounts.Passwords;
 

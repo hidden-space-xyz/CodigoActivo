@@ -1,8 +1,11 @@
+using CodigoActivo.Application.Accounts.Commands;
 using CodigoActivo.Application.Common.Security;
+using CodigoActivo.Application.Users.Commands;
 using CodigoActivo.Composition.Configuration;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database;
 using CodigoActivo.Infrastructure.Database.Repositories;
+using CodigoActivo.Infrastructure.Messaging;
 using CodigoActivo.Infrastructure.Users;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,10 +26,14 @@ internal static class UsersRegistration
     {
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<ActingUserPolicy>();
-        services.AddFixedOptions<UnverifiedAccountPurgeOptions>();
-        services.AddHostedService<UnverifiedAccountPurgeWorker>();
-        services.AddFixedOptions<AdultDependentPurgeOptions>();
-        services.AddHostedService<AdultDependentPurgeWorker>();
+        services.AddSingleton(
+            ScheduledJob.Of<PurgeUnverifiedAccountsCommand>(TimeSpan.FromHours(1))
+        );
+        services.AddSingleton(
+            ScheduledJob.Of<PurgeAdultDependentsCommand, SendComingOfAgeNoticesCommand>(
+                TimeSpan.FromHours(1)
+            )
+        );
         return services;
     }
 }

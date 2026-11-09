@@ -762,9 +762,7 @@ public sealed class EventTests
     {
         var result = SubmitRating(null, "  ", string.Empty, null);
 
-        result.IsFailure.Should().BeTrue();
-        result.Error!.Kind.Should().Be(ErrorKind.Validation);
-        result.Error.Code.Should().Be(DomainErrorCode.EventRatingEmpty);
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.EventRatingEmpty);
     }
 
     [Theory]

@@ -26,14 +26,4 @@ public sealed class DataHistoryRetentionOptions
             [nameof(NewsConsentChange)] = 3,
             [nameof(EventRating)] = 3,
         };
-
-    /// <summary>
-    /// Gets or sets the interval between two purges.
-    /// </summary>
-    public TimeSpan PurgeInterval { get; set; } = TimeSpan.FromHours(1);
-
-    /// <summary>
-    /// Gets or sets the delay applied before the first purge, so startup work finishes first.
-    /// </summary>
-    public TimeSpan PurgeStartupDelay { get; set; } = TimeSpan.FromSeconds(30);
 }

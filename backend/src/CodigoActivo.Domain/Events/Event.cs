@@ -1,4 +1,3 @@
-using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Files;
 using CodigoActivo.Domain.Users;

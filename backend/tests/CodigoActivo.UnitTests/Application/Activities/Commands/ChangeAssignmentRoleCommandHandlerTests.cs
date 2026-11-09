@@ -63,8 +63,7 @@ public sealed class ChangeAssignmentRoleCommandHandlerTests
             new ChangeAssignmentRoleRequest(KnownIds.ActivityRoleTypes.Volunteer)
         );
 
-        result.Error!.Kind.Should().Be(ErrorKind.NotFound);
-        result.Error.Code.Should().Be(DomainErrorCode.ActivityAssignmentNotFound);
+        result.ShouldFail(ErrorKind.NotFound, DomainErrorCode.ActivityAssignmentNotFound);
     }
 
     [Fact]
