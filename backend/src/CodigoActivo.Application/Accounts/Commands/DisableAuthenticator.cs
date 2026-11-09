@@ -21,8 +21,8 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// </param>
 /// <param name="Code">Current code of the authenticator.</param>
 public sealed record DisableAuthenticatorCommand(
-    [property: Required, MaxLength(128), NotBlank] string CurrentPassword,
-    [property: Required, MaxLength(16), NotBlank] string Code
+    [property: Required, MaxLength(128)] string CurrentPassword,
+    [property: Required, MaxLength(16)] string Code
 ) : ICommand<Result>;
 
 /// <summary>

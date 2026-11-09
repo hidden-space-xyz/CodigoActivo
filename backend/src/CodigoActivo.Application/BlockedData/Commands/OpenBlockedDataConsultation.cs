@@ -21,22 +21,12 @@ namespace CodigoActivo.Application.BlockedData.Commands;
 /// </param>
 /// <param name="Code">Code from the consultation email or the authenticator application.</param>
 public sealed record OpenBlockedDataConsultationCommand(
-    [property:
-        Required,
-        MaxLength(BlockedDataConsultation.RequesterMaxLength),
-        NotBlank,
-        SingleLine
-    ]
+    [property: Required, MaxLength(BlockedDataConsultation.RequesterMaxLength), SingleLine]
         string Requester,
-    [property:
-        Required,
-        MaxLength(BlockedDataConsultation.ReferenceMaxLength),
-        NotBlank,
-        SingleLine
-    ]
+    [property: Required, MaxLength(BlockedDataConsultation.ReferenceMaxLength), SingleLine]
         string Reference,
-    [property: Required, MaxLength(128), NotBlank] string CurrentPassword,
-    [property: Required, MaxLength(16), NotBlank] string Code
+    [property: Required, MaxLength(128)] string CurrentPassword,
+    [property: Required, MaxLength(16)] string Code
 ) : ICommand<Result<BlockedDataConsultationId>>;
 
 /// <summary>

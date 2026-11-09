@@ -20,8 +20,8 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <param name="NewPassword">New password; it must differ from the current one.</param>
 public sealed record ChangePasswordCommand(
     UserId UserId,
-    [property: Required, MaxLength(128), NotBlank] string CurrentPassword,
-    [property: Required, MinLength(12), MaxLength(128), NotBlank] string NewPassword
+    [property: Required, MaxLength(128)] string CurrentPassword,
+    [property: Required, MinLength(12), MaxLength(128)] string NewPassword
 ) : ICommand<Result>;
 
 /// <summary>

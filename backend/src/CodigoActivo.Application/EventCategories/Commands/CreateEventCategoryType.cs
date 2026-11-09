@@ -15,7 +15,7 @@ namespace CodigoActivo.Application.EventCategories.Commands;
 /// <param name="Name">Name of up to 120 characters, unique among category types.</param>
 /// <param name="Color">Color as <c>#RRGGBB</c>.</param>
 public sealed record CreateEventCategoryTypeCommand(
-    [property: Required, MaxLength(120), NotBlank] string Name,
+    [property: Required, MaxLength(120)] string Name,
     [property: Required, MaxLength(9), RegularExpression("^#[0-9A-Fa-f]{6}$")] string Color
 ) : ICommand<Result<EventCategoryTypeId>>, IRoutineCommand;
 

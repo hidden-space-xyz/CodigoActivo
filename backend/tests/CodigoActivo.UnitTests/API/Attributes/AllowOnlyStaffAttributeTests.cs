@@ -34,11 +34,11 @@ public sealed class AllowOnlyStaffAttributeTests
     }
 
     [Fact]
-    public void OnAuthorizationNoUserIdChallenges()
+    public async Task OnAuthorizationAsyncNoUserIdChallenges()
     {
         var context = BuildContext(Anonymous());
 
-        new AllowOnlyStaffAttribute(StaffRole.Editor).OnAuthorization(context);
+        await new AllowOnlyStaffAttribute(StaffRole.Editor).OnAuthorizationAsync(context);
 
         context.Result.Should().BeOfType<ChallengeResult>();
     }
@@ -46,21 +46,21 @@ public sealed class AllowOnlyStaffAttributeTests
     [Theory]
     [InlineData(StaffRole.Editor)]
     [InlineData(StaffRole.Administrator)]
-    public void OnAuthorizationUserWithoutStaffRoleForbids(StaffRole staffRole)
+    public async Task OnAuthorizationAsyncUserWithoutStaffRoleForbids(StaffRole staffRole)
     {
         var context = BuildContext(User());
 
-        new AllowOnlyStaffAttribute(staffRole).OnAuthorization(context);
+        await new AllowOnlyStaffAttribute(staffRole).OnAuthorizationAsync(context);
 
         context.Result.Should().BeOfType<ForbidResult>();
     }
 
     [Fact]
-    public void OnAuthorizationEditorOnAnAdministratorTargetForbids()
+    public async Task OnAuthorizationAsyncEditorOnAnAdministratorTargetForbids()
     {
         var context = BuildContext(User(ClaimsPrincipalExtensions.EditorRole));
 
-        new AllowOnlyStaffAttribute(StaffRole.Administrator).OnAuthorization(context);
+        await new AllowOnlyStaffAttribute(StaffRole.Administrator).OnAuthorizationAsync(context);
 
         context.Result.Should().BeOfType<ForbidResult>();
     }
@@ -68,13 +68,13 @@ public sealed class AllowOnlyStaffAttributeTests
     [Theory]
     [InlineData(StaffRole.Editor)]
     [InlineData(StaffRole.Administrator)]
-    public void OnAuthorizationAdministratorAllowsEveryStaffTarget(StaffRole staffRole)
+    public async Task OnAuthorizationAsyncAdministratorAllowsEveryStaffTarget(StaffRole staffRole)
     {
         var context = BuildContext(
             User(ClaimsPrincipalExtensions.EditorRole, ClaimsPrincipalExtensions.AdministratorRole)
         );
 
-        new AllowOnlyStaffAttribute(staffRole).OnAuthorization(context);
+        await new AllowOnlyStaffAttribute(staffRole).OnAuthorizationAsync(context);
 
         context.Result.Should().BeNull();
     }

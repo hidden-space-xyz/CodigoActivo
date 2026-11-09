@@ -1,7 +1,5 @@
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Domain.Users;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace CodigoActivo.API.Attributes;
@@ -12,7 +10,7 @@ namespace CodigoActivo.API.Attributes;
 /// (403).
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public sealed class AllowOnlyStaffAttribute : AuthorizeAttribute, IAuthorizationFilter
+public sealed class AllowOnlyStaffAttribute : AllowOnlyAttribute
 {
     /// <summary>
     /// Initializes the attribute so it also requires the role claim of the staff role.
@@ -31,25 +29,9 @@ public sealed class AllowOnlyStaffAttribute : AuthorizeAttribute, IAuthorization
     /// </summary>
     public StaffRole StaffRole { get; }
 
-    /// <summary>
-    /// Challenges a request without a signed-in user and forbids one from any other account.
-    /// </summary>
-    /// <param name="context">
-    /// Authorization context of the request; its result is set to refuse it.
-    /// </param>
-    public void OnAuthorization(AuthorizationFilterContext context)
+    /// <inheritdoc />
+    protected override ValueTask<bool> IsAllowedAsync(AuthorizationFilterContext context)
     {
-        var user = context.HttpContext.User;
-
-        if (user.GetUserId() is null)
-        {
-            context.Result = new ChallengeResult();
-            return;
-        }
-
-        if (!user.HasStaffRole(StaffRole))
-        {
-            context.Result = new ForbidResult();
-        }
+        return ValueTask.FromResult(context.HttpContext.User.HasStaffRole(StaffRole));
     }
 }

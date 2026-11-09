@@ -20,7 +20,7 @@ namespace CodigoActivo.Application.TermsDocuments.Commands;
 /// <param name="Kind">Whether it holds conditions or a consent.</param>
 public sealed record UpdateTermsDocumentCommand(
     TermsDocumentId TermsDocumentId,
-    [property: Required, MaxLength(120), NotBlank] string Name,
+    [property: Required, MaxLength(120)] string Name,
     [property: Required, RichText(AllowImages = false), MaxLength(RichTextAllowlist.MaxJsonLength)]
         string Description,
     bool RequiresSignature,

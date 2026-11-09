@@ -20,6 +20,7 @@ namespace CodigoActivo.API.Reports;
 [ApiController]
 [Route("api/reports")]
 [EnableRateLimiting(SecurityPolicies.Reports)]
+[AllowOnlyStaff(StaffRole.Administrator)]
 public class ReportsController : ApiControllerBase
 {
     /// <summary>
@@ -30,7 +31,6 @@ public class ReportsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the event summary, or an error response.</returns>
     [HttpGet("events/{eventId:guid}/summary")]
-    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<EventSummaryResponse>> EventSummaryAsync(
         Guid eventId,
         [FromServices] IQueryHandler<GetEventSummaryQuery, Result<EventSummaryResponse>> handler,
@@ -50,7 +50,6 @@ public class ReportsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a page of attendees, or an error response.</returns>
     [HttpGet("events/{eventId:guid}/attendees")]
-    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<PagedResult<EventAttendeeResponse>>> EventAttendeesAsync(
         Guid eventId,
         [FromQuery] EventAttendeeListQuery query,
@@ -76,7 +75,6 @@ public class ReportsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the badges, or an error response.</returns>
     [HttpGet("events/{eventId:guid}/badges")]
-    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<EventBadgesResponse>> EventBadgesAsync(
         Guid eventId,
         [FromServices] IQueryHandler<GetEventBadgesQuery, Result<EventBadgesResponse>> handler,
@@ -95,7 +93,6 @@ public class ReportsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the roster, or an error response.</returns>
     [HttpGet("events/{eventId:guid}/roster")]
-    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<EventRosterResponse>> EventRosterAsync(
         Guid eventId,
         [FromServices] IQueryHandler<GetEventRosterQuery, Result<EventRosterResponse>> handler,
@@ -113,7 +110,6 @@ public class ReportsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the dashboard totals.</returns>
     [HttpGet("dashboard")]
-    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<DashboardSummaryResponse>> DashboardAsync(
         [FromServices] IQueryHandler<GetDashboardSummaryQuery, DashboardSummaryResponse> handler,
         CancellationToken ct
@@ -131,7 +127,6 @@ public class ReportsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the dashboard analytics.</returns>
     [HttpGet("dashboard/analytics")]
-    [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<DashboardAnalyticsResponse>> DashboardAnalyticsAsync(
         [FromQuery] DashboardAnalyticsQuery query,
         [FromServices]

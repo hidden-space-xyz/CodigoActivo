@@ -17,7 +17,7 @@ namespace CodigoActivo.Application.EventCategories.Commands;
 /// <param name="Color">Color as <c>#RRGGBB</c>.</param>
 public sealed record UpdateEventCategoryTypeCommand(
     EventCategoryTypeId CategoryTypeId,
-    [property: Required, MaxLength(120), NotBlank] string Name,
+    [property: Required, MaxLength(120)] string Name,
     [property: Required, MaxLength(9), RegularExpression("^#[0-9A-Fa-f]{6}$")] string Color
 ) : ICommand<Result>, IRoutineCommand;
 

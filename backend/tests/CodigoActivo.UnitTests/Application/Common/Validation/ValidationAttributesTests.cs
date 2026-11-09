@@ -10,28 +10,6 @@ public sealed class ValidationAttributesTests
 {
     private static readonly DateOnly Today = new(2026, 7, 4);
 
-    [Fact]
-    public void IsValidNotBlankNonStringValuesReturnsTrue()
-    {
-        new NotBlankAttribute().IsValid(123).Should().BeTrue();
-        new NotBlankAttribute().IsValid(null).Should().BeTrue();
-    }
-
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    [InlineData("\t\n")]
-    public void IsValidNotBlankBlankOrWhitespaceStringReturnsFalse(string value)
-    {
-        new NotBlankAttribute().IsValid(value).Should().BeFalse();
-    }
-
-    [Fact]
-    public void IsValidNotBlankNonBlankStringReturnsTrue()
-    {
-        new NotBlankAttribute().IsValid("Acme").Should().BeTrue();
-    }
-
     [Theory]
     [InlineData(null)]
     [InlineData("")]

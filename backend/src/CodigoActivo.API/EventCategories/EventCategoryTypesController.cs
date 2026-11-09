@@ -19,6 +19,7 @@ namespace CodigoActivo.API.EventCategories;
 [ApiController]
 [Route("api/events/categoryType")]
 [Tags("Events")]
+[AllowOnlyStaff(StaffRole.Editor)]
 public class EventCategoryTypesController : ApiControllerBase
 {
     /// <summary>
@@ -29,7 +30,6 @@ public class EventCategoryTypesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a page of category types.</returns>
     [HttpGet]
-    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<ActionResult<PagedResult<EventCategoryTypeResponse>>> CategoryTypesAsync(
         [FromQuery] EventCategoryTypeListQuery query,
         [FromServices]
@@ -54,7 +54,6 @@ public class EventCategoryTypesController : ApiControllerBase
     /// A 201 response with the category type and its location, or an error response.
     /// </returns>
     [HttpPost]
-    [AllowOnlyStaff(StaffRole.Editor)]
     [ProducesResponseType<EventCategoryTypeResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<EventCategoryTypeResponse>> CreateCategoryTypeAsync(
         [FromBody] CreateEventCategoryTypeRequest request,
@@ -82,7 +81,6 @@ public class EventCategoryTypesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the category type, or an error response.</returns>
     [HttpPut("{eventCategoryTypeId:guid}")]
-    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<ActionResult<EventCategoryTypeResponse>> UpdateCategoryTypeAsync(
         Guid eventCategoryTypeId,
         [FromBody] UpdateEventCategoryTypeRequest request,
@@ -108,7 +106,6 @@ public class EventCategoryTypesController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 204 response, or an error response.</returns>
     [HttpDelete("{eventCategoryTypeId:guid}")]
-    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<IActionResult> DeleteCategoryTypeAsync(
         Guid eventCategoryTypeId,
         [FromServices] ICommandHandler<DeleteEventCategoryTypeCommand, Result> handler,

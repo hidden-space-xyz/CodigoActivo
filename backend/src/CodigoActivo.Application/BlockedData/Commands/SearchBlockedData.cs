@@ -25,7 +25,6 @@ public sealed record SearchBlockedDataCommand(
         Required,
         MinLength(SearchBlockedDataCommand.MinQueryLength),
         MaxLength(PageQuery.MaxTextLength),
-        NotBlank,
         SingleLine
     ]
         string Query

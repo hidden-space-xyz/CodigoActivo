@@ -28,8 +28,8 @@ namespace CodigoActivo.Application.Resources.Commands;
 /// <param name="Type">Whether the resource is written on the site or links elsewhere.</param>
 /// <param name="ThumbnailId">Identifier of the thumbnail file, which must exist.</param>
 public sealed record CreateResourceCommand(
-    [property: Required, MaxLength(200), NotBlank] string Title,
-    [property: Required, MaxLength(300), NotBlank] string Subtitle,
+    [property: Required, MaxLength(200)] string Title,
+    [property: Required, MaxLength(300)] string Subtitle,
     [property: RichText, MaxLength(RichTextAllowlist.MaxJsonLength)] string? Description,
     [property: HttpUrl, MaxLength(500)] string? Url,
     ResourceType Type,

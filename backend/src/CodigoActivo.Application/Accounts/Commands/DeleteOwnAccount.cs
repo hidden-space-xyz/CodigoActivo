@@ -24,8 +24,8 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// Code from the account deletion email or the authenticator application.
 /// </param>
 public sealed record DeleteOwnAccountCommand(
-    [property: Required, MaxLength(128), NotBlank] string CurrentPassword,
-    [property: Required, MaxLength(16), NotBlank] string Code
+    [property: Required, MaxLength(128)] string CurrentPassword,
+    [property: Required, MaxLength(16)] string Code
 ) : ICommand<Result>;
 
 /// <summary>

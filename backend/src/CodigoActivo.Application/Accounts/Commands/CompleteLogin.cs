@@ -20,7 +20,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <param name="Code">Code from the email or the authenticator application.</param>
 public sealed record CompleteLoginCommand(
     LoginChallengeKey Challenge,
-    [property: Required, MaxLength(16), NotBlank] string Code
+    [property: Required, MaxLength(16)] string Code
 ) : ICommand<Result<UserSessionId>>;
 
 /// <summary>

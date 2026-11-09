@@ -29,27 +29,27 @@ public sealed class AllowOnlySuperAdministratorAttributeTests
     }
 
     [Fact]
-    public void OnAuthorizationNoUserIdChallenges()
+    public async Task OnAuthorizationAsyncNoUserIdChallenges()
     {
         var context = BuildContext(new ClaimsPrincipal(new ClaimsIdentity()));
 
-        new AllowOnlySuperAdministratorAttribute().OnAuthorization(context);
+        await new AllowOnlySuperAdministratorAttribute().OnAuthorizationAsync(context);
 
         context.Result.Should().BeOfType<ChallengeResult>();
     }
 
     [Fact]
-    public void OnAuthorizationInitialAdministratorAllowsRequest()
+    public async Task OnAuthorizationAsyncInitialAdministratorAllowsRequest()
     {
         var context = BuildContext(User(KnownIds.Users.InitialAdministrator));
 
-        new AllowOnlySuperAdministratorAttribute().OnAuthorization(context);
+        await new AllowOnlySuperAdministratorAttribute().OnAuthorizationAsync(context);
 
         context.Result.Should().BeNull();
     }
 
     [Fact]
-    public void OnAuthorizationAnotherAdministratorForbids()
+    public async Task OnAuthorizationAsyncAnotherAdministratorForbids()
     {
         var context = BuildContext(
             User(
@@ -59,24 +59,26 @@ public sealed class AllowOnlySuperAdministratorAttributeTests
             )
         );
 
-        new AllowOnlySuperAdministratorAttribute { PrivacyOfficerAllowed = true }.OnAuthorization(
-            context
-        );
+        await new AllowOnlySuperAdministratorAttribute
+        {
+            PrivacyOfficerAllowed = true,
+        }.OnAuthorizationAsync(context);
 
         context.Result.Should().BeOfType<ForbidResult>();
     }
 
     [Fact]
-    public void OnAuthorizationPrivacyOfficerPassesOnlyWhereAllowed()
+    public async Task OnAuthorizationAsyncPrivacyOfficerPassesOnlyWhereAllowed()
     {
         var officer = User(Guid.NewGuid(), ClaimsPrincipalExtensions.PrivacyOfficerRole);
         var refused = BuildContext(officer);
         var allowed = BuildContext(officer);
 
-        new AllowOnlySuperAdministratorAttribute().OnAuthorization(refused);
-        new AllowOnlySuperAdministratorAttribute { PrivacyOfficerAllowed = true }.OnAuthorization(
-            allowed
-        );
+        await new AllowOnlySuperAdministratorAttribute().OnAuthorizationAsync(refused);
+        await new AllowOnlySuperAdministratorAttribute
+        {
+            PrivacyOfficerAllowed = true,
+        }.OnAuthorizationAsync(allowed);
 
         refused.Result.Should().BeOfType<ForbidResult>();
         allowed.Result.Should().BeNull();

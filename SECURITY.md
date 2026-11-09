@@ -375,7 +375,7 @@ API replicas multiplies aggregate capacity.
 ### Input, output and error handling
 
 - DataAnnotations validate the HTTP request models, and the same rules, together with the custom ones
-  (`[NotBlank]`, `[HttpUrl]`, `[RichText]`, `[SpanishNationalId]`, `[NotDefaultOrFutureDate]`), are checked
+  (`[HttpUrl]`, `[RichText]`, `[SpanishNationalId]`, `[NotDefaultOrFutureDate]`), are checked
   again on every command before its handler runs, whatever starts it. JSON bodies accept enum values only by
   their declared name, never as integers, and enums bound from the query string reject undefined values.
 - JSON bodies refuse any string holding a control character other than a tab or a line break

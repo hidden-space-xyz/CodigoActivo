@@ -19,6 +19,7 @@ namespace CodigoActivo.API.TermsDocuments;
 [ApiController]
 [Route("api/events/termsDocument")]
 [Tags("Events")]
+[AllowOnlyStaff(StaffRole.Editor)]
 public class TermsDocumentsController : ApiControllerBase
 {
     /// <summary>
@@ -29,7 +30,6 @@ public class TermsDocumentsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing a page of terms documents.</returns>
     [HttpGet]
-    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<ActionResult<PagedResult<TermsDocumentResponse>>> TermsDocumentsAsync(
         [FromQuery] TermsDocumentListQuery query,
         [FromServices]
@@ -51,7 +51,6 @@ public class TermsDocumentsController : ApiControllerBase
     /// A 201 response with the terms document and its location, or an error response.
     /// </returns>
     [HttpPost]
-    [AllowOnlyStaff(StaffRole.Editor)]
     [ProducesResponseType<TermsDocumentResponse>(StatusCodes.Status201Created)]
     public async Task<ActionResult<TermsDocumentResponse>> CreateTermsDocumentAsync(
         [FromBody] CreateTermsDocumentRequest request,
@@ -78,7 +77,6 @@ public class TermsDocumentsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the terms document, or an error response.</returns>
     [HttpPut("{termsDocumentId:guid}")]
-    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<ActionResult<TermsDocumentResponse>> UpdateTermsDocumentAsync(
         Guid termsDocumentId,
         [FromBody] UpdateTermsDocumentRequest request,
@@ -103,7 +101,6 @@ public class TermsDocumentsController : ApiControllerBase
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>A 204 response, or an error response.</returns>
     [HttpDelete("{termsDocumentId:guid}")]
-    [AllowOnlyStaff(StaffRole.Editor)]
     public async Task<IActionResult> DeleteTermsDocumentAsync(
         Guid termsDocumentId,
         [FromServices] ICommandHandler<DeleteTermsDocumentCommand, Result> handler,

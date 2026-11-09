@@ -1,6 +1,4 @@
 using CodigoActivo.API.Extensions;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace CodigoActivo.API.Attributes;
@@ -12,7 +10,7 @@ namespace CodigoActivo.API.Attributes;
 /// included, is forbidden (403).
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public sealed class AllowOnlySuperAdministratorAttribute : AuthorizeAttribute, IAuthorizationFilter
+public sealed class AllowOnlySuperAdministratorAttribute : AllowOnlyAttribute
 {
     /// <summary>
     /// Gets or sets a value indicating whether the administrator designated for data protection
@@ -20,25 +18,12 @@ public sealed class AllowOnlySuperAdministratorAttribute : AuthorizeAttribute, I
     /// </summary>
     public bool PrivacyOfficerAllowed { get; set; }
 
-    /// <summary>
-    /// Challenges a request without a signed-in user and forbids one from any other account.
-    /// </summary>
-    /// <param name="context">
-    /// Authorization context of the request; its result is set to refuse it.
-    /// </param>
-    public void OnAuthorization(AuthorizationFilterContext context)
+    /// <inheritdoc />
+    protected override ValueTask<bool> IsAllowedAsync(AuthorizationFilterContext context)
     {
         var user = context.HttpContext.User;
-
-        if (user.GetUserId() is null)
-        {
-            context.Result = new ChallengeResult();
-            return;
-        }
-
-        if (!user.IsSuperAdministrator() && !(PrivacyOfficerAllowed && user.IsPrivacyOfficer()))
-        {
-            context.Result = new ForbidResult();
-        }
+        return ValueTask.FromResult(
+            user.IsSuperAdministrator() || (PrivacyOfficerAllowed && user.IsPrivacyOfficer())
+        );
     }
 }

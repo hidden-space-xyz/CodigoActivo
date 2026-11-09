@@ -1,7 +1,6 @@
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.Common.Security;
 using CodigoActivo.Domain.Users;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace CodigoActivo.API.Attributes;
@@ -13,7 +12,7 @@ namespace CodigoActivo.API.Attributes;
 /// pass.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilter
+public sealed class AllowOnlySelfAttribute : AllowOnlyAttribute
 {
     private const string RouteKey = "userId";
 
@@ -24,19 +23,11 @@ public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilte
     public bool AdministratorsAllowed { get; set; } = true;
 
     /// <inheritdoc />
-    public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
+    protected override async ValueTask<bool> IsAllowedAsync(AuthorizationFilterContext context)
     {
-        var user = context.HttpContext.User;
-
-        if (user.GetUserId() is null)
+        if (AdministratorsAllowed && context.HttpContext.User.HasStaffRole(StaffRole.Administrator))
         {
-            context.Result = new ChallengeResult();
-            return;
-        }
-
-        if (AdministratorsAllowed && user.HasStaffRole(StaffRole.Administrator))
-        {
-            return;
+            return true;
         }
 
         if (
@@ -44,8 +35,7 @@ public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilte
             || !Guid.TryParse(raw?.ToString(), out var targetUserId)
         )
         {
-            context.Result = new ForbidResult();
-            return;
+            return false;
         }
 
         var policy = context.HttpContext.RequestServices.GetRequiredService<ActingUserPolicy>();
@@ -56,9 +46,6 @@ public sealed class AllowOnlySelfAttribute : Attribute, IAsyncAuthorizationFilte
                 target,
                 context.HttpContext.RequestAborted
             );
-        if (allowed.IsFailure)
-        {
-            context.Result = new ForbidResult();
-        }
+        return allowed.IsSuccess;
     }
 }

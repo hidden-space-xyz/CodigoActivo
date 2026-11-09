@@ -17,7 +17,7 @@ namespace CodigoActivo.Application.TermsDocuments.Commands;
 /// <param name="RequiresSignature">Whether accepting it asks for a handwritten signature.</param>
 /// <param name="Kind">Whether it holds conditions or a consent.</param>
 public sealed record CreateTermsDocumentCommand(
-    [property: Required, MaxLength(120), NotBlank] string Name,
+    [property: Required, MaxLength(120)] string Name,
     [property: Required, RichText(AllowImages = false), MaxLength(RichTextAllowlist.MaxJsonLength)]
         string Description,
     bool RequiresSignature,

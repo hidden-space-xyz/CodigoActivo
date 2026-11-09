@@ -31,8 +31,8 @@ namespace CodigoActivo.Application.Events.Commands;
 /// Terms documents linked to the event, in display order, each once; a consent cannot be required.
 /// </param>
 public sealed record EventDraft(
-    [property: Required, MaxLength(200), NotBlank] string Title,
-    [property: Required, MaxLength(300), NotBlank] string Subtitle,
+    [property: Required, MaxLength(200)] string Title,
+    [property: Required, MaxLength(300)] string Subtitle,
     [property: RichText, MaxLength(RichTextAllowlist.MaxJsonLength)] string Description,
     DateOnly? EventStartsAt,
     DateOnly? EventEndsAt,

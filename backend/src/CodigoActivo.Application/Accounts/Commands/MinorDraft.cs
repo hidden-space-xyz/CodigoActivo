@@ -15,8 +15,8 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// Whether the adult adding the minor declared being its parent or legal guardian.
 /// </param>
 public sealed record MinorDraft(
-    [property: Required, MaxLength(120), NotBlank] string FirstName,
-    [property: Required, MaxLength(120), NotBlank] string LastName,
+    [property: Required, MaxLength(120)] string FirstName,
+    [property: Required, MaxLength(120)] string LastName,
     [property: NotDefaultOrFutureDate] DateOnly BirthDate,
     [property: EnumDataType(typeof(Gender))] Gender Gender,
     bool DeclaresGuardianship

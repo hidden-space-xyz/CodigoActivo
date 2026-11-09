@@ -21,8 +21,8 @@ namespace CodigoActivo.Application.News.Commands;
 /// <param name="Description">Body as rich text JSON within the rich text allowlist.</param>
 /// <param name="ThumbnailId">Identifier of the thumbnail file, which must exist.</param>
 public sealed record CreateNewsItemCommand(
-    [property: Required, MaxLength(200), NotBlank] string Title,
-    [property: Required, MaxLength(300), NotBlank] string Subtitle,
+    [property: Required, MaxLength(200)] string Title,
+    [property: Required, MaxLength(300)] string Subtitle,
     [property: RichText, MaxLength(RichTextAllowlist.MaxJsonLength)] string Description,
     StoredFileId ThumbnailId
 ) : ICommand<Result<NewsItemId>>, IRoutineCommand;

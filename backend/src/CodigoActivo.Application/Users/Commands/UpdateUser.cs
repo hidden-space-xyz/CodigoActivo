@@ -50,8 +50,8 @@ namespace CodigoActivo.Application.Users.Commands;
 /// </param>
 public sealed record UpdateUserCommand(
     UserId UserId,
-    [property: Required, MaxLength(120), NotBlank] string FirstName,
-    [property: Required, MaxLength(120), NotBlank] string LastName,
+    [property: Required, MaxLength(120)] string FirstName,
+    [property: Required, MaxLength(120)] string LastName,
     [property: EmailAddress, MaxLength(256)] string? Email,
     [property: MaxLength(40)] string? Phone,
     [property: NotDefaultOrFutureDate] DateOnly? BirthDate,

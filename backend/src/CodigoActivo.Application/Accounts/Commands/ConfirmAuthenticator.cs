@@ -16,9 +16,8 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// Carries the input required to confirm an authenticator enrollment.
 /// </summary>
 /// <param name="Code">Code the authenticator shows.</param>
-public sealed record ConfirmAuthenticatorCommand(
-    [property: Required, MaxLength(16), NotBlank] string Code
-) : ICommand<Result>;
+public sealed record ConfirmAuthenticatorCommand([property: Required, MaxLength(16)] string Code)
+    : ICommand<Result>;
 
 /// <summary>
 /// Executes the command that activates the pending authenticator of the signed-in user once they

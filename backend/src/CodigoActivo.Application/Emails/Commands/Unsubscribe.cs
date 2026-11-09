@@ -18,7 +18,7 @@ namespace CodigoActivo.Application.Emails.Commands;
 /// mail client, recorded with the withdrawal.
 /// </param>
 public sealed record UnsubscribeCommand(
-    [property: Required, MaxLength(UnsubscribeCommand.TokenMaxLength), NotBlank] string Token,
+    [property: Required, MaxLength(UnsubscribeCommand.TokenMaxLength)] string Token,
     [property: AllowedValues(
         NewsConsentSource.UnsubscribeLink,
         NewsConsentSource.OneClickUnsubscribe

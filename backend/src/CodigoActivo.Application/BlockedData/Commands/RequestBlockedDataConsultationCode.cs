@@ -20,7 +20,7 @@ namespace CodigoActivo.Application.BlockedData.Commands;
 /// Password of the signed-in user, re-entered to authorize it.
 /// </param>
 public sealed record RequestBlockedDataConsultationCodeCommand(
-    [property: Required, MaxLength(128), NotBlank] string CurrentPassword
+    [property: Required, MaxLength(128)] string CurrentPassword
 ) : ICommand<Result>, IPreparatoryCommand;
 
 /// <summary>

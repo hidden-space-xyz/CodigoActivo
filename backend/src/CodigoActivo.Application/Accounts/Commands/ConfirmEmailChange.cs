@@ -17,7 +17,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <param name="Code">Code from the link emailed to the new address.</param>
 public sealed record ConfirmEmailChangeCommand(
     UserId UserId,
-    [property: Required, MaxLength(128), NotBlank] string Code
+    [property: Required, MaxLength(128)] string Code
 ) : ICommand<Result>;
 
 /// <summary>

@@ -22,8 +22,8 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// </param>
 /// <param name="Code">Code emailed to the account, its current second factor.</param>
 public sealed record BeginAuthenticatorSetupCommand(
-    [property: Required, MaxLength(128), NotBlank] string CurrentPassword,
-    [property: Required, MaxLength(16), NotBlank] string Code
+    [property: Required, MaxLength(128)] string CurrentPassword,
+    [property: Required, MaxLength(16)] string Code
 ) : ICommand<Result<AuthenticatorSetup>>, IPreparatoryCommand;
 
 /// <summary>

@@ -23,7 +23,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// </param>
 /// <param name="Purpose">Change the code is asked for, which the email names.</param>
 public sealed record RequestConfirmationCodeCommand(
-    [property: Required, MaxLength(128), NotBlank] string CurrentPassword,
+    [property: Required, MaxLength(128)] string CurrentPassword,
     [property: EnumDataType(typeof(ConfirmationCodePurpose))] ConfirmationCodePurpose Purpose
 ) : ICommand<Result>, IPreparatoryCommand;
 

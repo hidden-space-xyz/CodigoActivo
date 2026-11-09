@@ -17,8 +17,8 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <param name="Identifier">Email of the account.</param>
 /// <param name="Password">Password of the account.</param>
 public sealed record LoginCommand(
-    [property: Required, MaxLength(256), NotBlank] string Identifier,
-    [property: Required, MaxLength(128), NotBlank] string Password
+    [property: Required, MaxLength(256)] string Identifier,
+    [property: Required, MaxLength(128)] string Password
 ) : ICommand<Result<LoginChallengeKey>>;
 
 /// <summary>

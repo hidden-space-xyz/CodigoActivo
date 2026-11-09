@@ -23,9 +23,9 @@ namespace CodigoActivo.Application.Activities.Commands;
 /// How many people each role takes, each role at most once; empty when no role has a capacity.
 /// </param>
 public sealed record ActivityDraft(
-    [property: Required, MaxLength(200), NotBlank] string Title,
-    [property: Required, MaxLength(4000), NotBlank] string Description,
-    [property: Required, MaxLength(200), NotBlank] string Location,
+    [property: Required, MaxLength(200)] string Title,
+    [property: Required, MaxLength(4000)] string Description,
+    [property: Required, MaxLength(200)] string Location,
     ActivityModality Modality,
     DateTimeOffset? ActivityStartsAt,
     DateTimeOffset? ActivityEndsAt,

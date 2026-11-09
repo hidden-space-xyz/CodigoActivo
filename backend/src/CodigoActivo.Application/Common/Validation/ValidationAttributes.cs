@@ -4,20 +4,6 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Common.Validation;
 
 /// <summary>
-/// Refuses text that is empty or only whitespace. A <see langword="null"/> value and values that
-/// are not strings are left to other attributes.
-/// </summary>
-[AttributeUsage(AttributeTargets.Property | AttributeTargets.Parameter)]
-public sealed class NotBlankAttribute : ValidationAttribute
-{
-    /// <inheritdoc />
-    public override bool IsValid(object? value)
-    {
-        return value is not string text || !string.IsNullOrWhiteSpace(text);
-    }
-}
-
-/// <summary>
 /// Refuses text holding a control character, line breaks and tabs included, for values that must
 /// stay on one line, such as an email subject or a search term. PostgreSQL refuses U+0000 in text,
 /// so such a value would otherwise fail in the database instead of being answered as invalid input.

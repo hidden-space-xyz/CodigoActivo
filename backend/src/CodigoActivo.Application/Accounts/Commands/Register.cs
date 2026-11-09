@@ -30,12 +30,12 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <param name="Minors">Minors registered with the adult.</param>
 /// <param name="SecondaryPhone">Optional second phone of the adult.</param>
 public sealed record RegisterCommand(
-    [property: Required, MaxLength(120), NotBlank] string FirstName,
-    [property: Required, MaxLength(120), NotBlank] string LastName,
+    [property: Required, MaxLength(120)] string FirstName,
+    [property: Required, MaxLength(120)] string LastName,
     [property: Required, EmailAddress, MaxLength(256)] string Email,
     [property: Required, MaxLength(40)] string Phone,
-    [property: Required, MinLength(12), MaxLength(128), NotBlank] string Password,
-    [property: Required, MaxLength(12), NotBlank, SpanishNationalId] string NationalId,
+    [property: Required, MinLength(12), MaxLength(128)] string Password,
+    [property: Required, MaxLength(12), SpanishNationalId] string NationalId,
     [property: EnumDataType(typeof(Gender))] Gender Gender,
     bool DeclaresAdult,
     bool NewsConsent,

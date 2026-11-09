@@ -24,7 +24,7 @@ namespace CodigoActivo.Application.Partners.Commands;
 /// </param>
 /// <param name="ThumbnailId">Identifier of the logo file, which must exist.</param>
 public sealed record CreatePartnerCommand(
-    [property: Required, MaxLength(200), NotBlank] string Name,
+    [property: Required, MaxLength(200)] string Name,
     [property: NotDefaultOrFutureDate] DateOnly FromDate,
     [property: Range(0, int.MaxValue)] int Tier,
     [property: HttpUrl, MaxLength(500)] string? Website,

@@ -21,7 +21,7 @@ namespace CodigoActivo.Application.Users.Commands;
 /// </param>
 public sealed record ResetTwoFactorCommand(
     UserId UserId,
-    [property: Required, MaxLength(128), NotBlank] string CurrentPassword
+    [property: Required, MaxLength(128)] string CurrentPassword
 ) : ICommand<Result>;
 
 /// <summary>

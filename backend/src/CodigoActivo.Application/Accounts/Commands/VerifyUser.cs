@@ -16,7 +16,7 @@ namespace CodigoActivo.Application.Accounts.Commands;
 /// <param name="Otp">Code from the verification link emailed to the account.</param>
 public sealed record VerifyUserCommand(
     UserId UserId,
-    [property: Required, MaxLength(128), NotBlank] string Otp
+    [property: Required, MaxLength(128)] string Otp
 ) : ICommand<Result>;
 
 /// <summary>
