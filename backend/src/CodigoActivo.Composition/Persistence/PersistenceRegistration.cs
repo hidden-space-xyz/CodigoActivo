@@ -17,6 +17,8 @@ namespace CodigoActivo.Composition.Persistence;
 /// </summary>
 internal static class PersistenceRegistration
 {
+    private const int MaxPoolSize = 90;
+
     /// <summary>
     /// Adds the database services.
     /// </summary>
@@ -55,7 +57,10 @@ internal static class PersistenceRegistration
     /// settings; every one but the password has a local development default. The database
     /// authenticates with a password, so GSS encryption is disabled: negotiating it makes every new
     /// connection resolve the host through Kerberos, whose lookup on musl (the Alpine image) is
-    /// not thread-safe and crashed the process when connections opened concurrently.
+    /// not thread-safe and crashed the process when connections opened concurrently. The pool
+    /// opens at most <see cref="MaxPoolSize"/> connections, so with the three of the log pool they
+    /// stay under PostgreSQL's default of 100, which the account, a superuser, may use in full, and
+    /// leave a few for administration.
     /// </summary>
     /// <param name="settings">Settings of the application.</param>
     /// <returns>The connection string.</returns>
@@ -69,6 +74,7 @@ internal static class PersistenceRegistration
             Username = settings.Text("POSTGRES_USER", "codigoactivo"),
             Password = settings.Verbatim("POSTGRES_PASSWORD"),
             GssEncryptionMode = GssEncryptionMode.Disable,
+            MaxPoolSize = MaxPoolSize,
         }.ConnectionString;
     }
 }

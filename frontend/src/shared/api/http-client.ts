@@ -10,13 +10,22 @@ export class ApiError extends Error {
   readonly traceId?: string | undefined
   /** Backend business error code; drives the localized `errors.*` message when present. */
   readonly code?: ErrorCode | undefined
+  /** Milliseconds the server asked to wait before retrying, from a `Retry-After` in seconds. */
+  readonly retryAfterMs?: number | undefined
 
-  constructor(status: number, message: string, traceId?: string, code?: ErrorCode) {
+  constructor(
+    status: number,
+    message: string,
+    traceId?: string,
+    code?: ErrorCode,
+    retryAfterMs?: number,
+  ) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.traceId = traceId
     this.code = code
+    this.retryAfterMs = retryAfterMs
   }
 }
 
@@ -87,7 +96,9 @@ async function buildApiError(response: Response): Promise<ApiError> {
       if (text) message = text
     }
   } catch {}
-  return new ApiError(response.status, message, traceId, code)
+  const retryAfter = response.headers.get('retry-after')?.trim() ?? ''
+  const retryAfterMs = /^\d+$/.test(retryAfter) ? Number(retryAfter) * 1_000 : undefined
+  return new ApiError(response.status, message, traceId, code, retryAfterMs)
 }
 
 async function parseData(response: Response): Promise<unknown> {

@@ -54,7 +54,10 @@ serves directly (`gzip_static`). A reverse proxy in front must not strip `Accept
 
 nginx allows 8,192 connections per worker, 10,000 active client connections and 2,000 per IP (`web`'s open-file
 limit is raised to 65,536). It buffers each request body in `web`'s `/tmp`, a 256 MB tmpfs, before passing it to
-the API. Application request and credential-work rate limits are documented once, in
+the API, and reuses up to 256 idle connections to it per worker, since opening one per request would run out of
+local ports at a few hundred requests per second. The API opens at most 90 PostgreSQL connections, plus the three
+of its log pool, under PostgreSQL's default of 100, leaving a few for administration. Application request and
+credential-work rate limits are documented once, in
 [SECURITY.md](SECURITY.md#passwords-and-credential-endpoints).
 
 ## First production start

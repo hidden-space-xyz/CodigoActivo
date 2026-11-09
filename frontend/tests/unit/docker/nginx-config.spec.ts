@@ -321,7 +321,7 @@ function mapKeyRegex(entry: NginxMapEntry): RegExp {
 describe('nginx configuration parsing', () => {
   it('reads every statement of the shared configurations', () => {
     expect(statements(nginxConf).length, 'nginx.conf').toBeGreaterThanOrEqual(20)
-    expect(statements(proxyApiConf).length, 'proxy-api.conf').toBeGreaterThanOrEqual(16)
+    expect(statements(proxyApiConf).length, 'proxy-api.conf').toBeGreaterThanOrEqual(15)
     expect(statements(securityHeadersConf).length, 'security-headers.conf').toBeGreaterThanOrEqual(
       10,
     )
@@ -742,6 +742,21 @@ describe('nginx API proxying', () => {
         `${name} forwards a request header outside the snippet`,
       ).toHaveLength(0)
     }
+  })
+
+  it('reuses its connections to the API through a keepalive upstream', () => {
+    const upstream = findBlock(
+      extractBlocks(defaultConf, 'upstream'),
+      (block) => block.header === 'upstream codigoactivo_api',
+    )
+
+    expect(onlyStatement(proxyApiConf, 'proxy_pass')).toBe('proxy_pass http://codigoactivo_api;')
+    expect(onlyStatement(proxyApiConf, 'proxy_http_version')).toBe('proxy_http_version 1.1;')
+    expect(onlyStatement(proxyApiConf, 'proxy_set_header Connection')).toBe(
+      'proxy_set_header Connection "";',
+    )
+    expect(statementsOf(upstream.ownStatements, 'server')).toEqual(['server api:8080 resolve;'])
+    expect(statementsOf(upstream.ownStatements, 'keepalive')).toHaveLength(1)
   })
 
   it('includes the proxy snippet in every proxied location', () => {

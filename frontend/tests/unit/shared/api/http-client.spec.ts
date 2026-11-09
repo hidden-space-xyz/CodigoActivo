@@ -352,6 +352,42 @@ describe('httpClient', () => {
       expect(error.message).toBe('Error 500')
       expect(error.traceId).toBeUndefined()
     })
+
+    it('reads the wait of a Retry-After given in seconds', async () => {
+      server.use(
+        http.get('/api/seconds', () =>
+          HttpResponse.json(
+            { title: 'Too Many Requests', status: 429, code: ErrorCode.TooManyRequests },
+            { status: 429, headers: { 'Retry-After': '7' } },
+          ),
+        ),
+      )
+
+      const error = await failure(httpClient('/api/seconds'))
+
+      expect(error.code).toBe(ErrorCode.TooManyRequests)
+      expect(error.retryAfterMs).toBe(7_000)
+    })
+
+    it('ignores a missing or unreadable Retry-After', async () => {
+      server.use(
+        http.get('/api/none', () => new HttpResponse(null, { status: 429 })),
+        http.get(
+          '/api/date',
+          () =>
+            new HttpResponse(null, {
+              status: 429,
+              headers: { 'Retry-After': 'Wed, 21 Oct 2026 07:28:00 GMT' },
+            }),
+        ),
+      )
+
+      const missing = await failure(httpClient('/api/none'))
+      const unreadable = await failure(httpClient('/api/date'))
+
+      expect(missing.retryAfterMs).toBeUndefined()
+      expect(unreadable.retryAfterMs).toBeUndefined()
+    })
   })
 
   describe('response parsing', () => {

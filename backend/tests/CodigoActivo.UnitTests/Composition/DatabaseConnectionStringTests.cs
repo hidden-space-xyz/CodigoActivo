@@ -28,4 +28,20 @@ public sealed class DatabaseConnectionStringTests
 
         connection.GssEncryptionMode.Should().Be(GssEncryptionMode.Disable);
     }
+
+    [Fact]
+    public void BuildConnectionStringPoolLeavesRoomUnderTheDatabaseConnectionLimit()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(
+                new Dictionary<string, string?> { ["POSTGRES_PASSWORD"] = "secret" }
+            )
+            .Build();
+
+        var connection = new NpgsqlConnectionStringBuilder(
+            PersistenceRegistration.BuildConnectionString(new Settings(configuration))
+        );
+
+        connection.MaxPoolSize.Should().Be(90);
+    }
 }

@@ -42,6 +42,7 @@ describe('queryClient', () => {
       staleTime: 0,
       gcTime: 0,
       retry: expect.any(Function),
+      retryDelay: expect.any(Function),
       refetchOnMount: 'always',
       refetchOnWindowFocus: true,
       refetchOnReconnect: 'always',
@@ -59,5 +60,38 @@ describe('queryClient', () => {
     expect(retry(0, failure)).toBe(true)
     expect(retry(1, failure)).toBe(false)
     expect(retry(0, lost)).toBe(false)
+  })
+
+  it('retries a rate-limited query only when its Retry-After is short', () => {
+    const retry = queryClient.getDefaultOptions().queries?.retry as (
+      failureCount: number,
+      error: unknown,
+    ) => boolean
+
+    expect(retry(0, new ApiError(429, 'Error 429', undefined, 'TooManyRequests', 5_000))).toBe(true)
+    expect(retry(0, new ApiError(429, 'Error 429', undefined, 'TooManyRequests', 6_000))).toBe(
+      false,
+    )
+    expect(retry(0, new ApiError(429, 'Error 429'))).toBe(true)
+  })
+
+  it('waits a second, or the Retry-After of a 429 plus up to as long again', () => {
+    const retryDelay = queryClient.getDefaultOptions().queries?.retryDelay as (
+      failureCount: number,
+      error: unknown,
+    ) => number
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.5)
+
+    expect(retryDelay(0, new ApiError(500, 'Error 500'))).toBe(1_000)
+    expect(retryDelay(0, new ApiError(429, 'Error 429'))).toBe(1_000)
+    expect(retryDelay(0, new ApiError(429, 'Error 429', undefined, 'TooManyRequests', 4_000))).toBe(
+      6_000,
+    )
+    expect(retryDelay(0, new ApiError(429, 'Error 429', undefined, 'TooManyRequests', 0))).toBe(
+      1_500,
+    )
+    expect(retryDelay(0, new ApiError(503, 'Error 503', undefined, undefined, 4_000))).toBe(1_000)
+
+    random.mockRestore()
   })
 })
