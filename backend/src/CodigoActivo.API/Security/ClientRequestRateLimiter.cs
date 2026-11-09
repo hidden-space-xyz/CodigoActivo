@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
 using CodigoActivo.API.Extensions;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CodigoActivo.API.Security;
 
@@ -64,36 +65,67 @@ public static class ClientRequestRateLimiter
     }
 
     /// <summary>
-    /// Creates a named per-user policy for comparatively expensive endpoints; a request without a
-    /// signed-in user is counted by its IP.
+    /// Creates the per-user budget of a named policy for comparatively expensive endpoints, counted
+    /// only on the endpoints that use the policy; a request without a signed-in user is counted by
+    /// its IP.
     /// </summary>
+    /// <param name="policyName">Policy whose endpoints share the budget.</param>
     /// <param name="permitLimit">Requests allowed per user and window.</param>
-    /// <returns>A partition factory for the named policy.</returns>
-    public static Func<HttpContext, RateLimitPartition<string>> CreateAuthenticatedPolicy(
+    /// <returns>The configured partitioned limiter.</returns>
+    public static PartitionedRateLimiter<HttpContext> CreateAuthenticatedPolicy(
+        string policyName,
         int permitLimit
     )
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(permitLimit, 1);
 
-        return context =>
-        {
-            var key = context.User.GetUserId() is { } userId ? $"user:{userId:N}" : IpKey(context);
-
-            return SlidingWindow(key, permitLimit);
-        };
+        return ForPolicy(
+            policyName,
+            context =>
+                SlidingWindow(
+                    context.User.GetUserId() is { } userId ? $"user:{userId:N}" : IpKey(context),
+                    permitLimit
+                )
+        );
     }
 
     /// <summary>
-    /// Creates a named per-IP policy, which counts the requests of one address whether or not they
-    /// come from a signed-in user.
+    /// Creates the per-IP budget of a named policy, counted only on the endpoints that use the
+    /// policy, which counts the requests of one address whether or not they come from a signed-in
+    /// user.
     /// </summary>
+    /// <param name="policyName">Policy whose endpoints share the budget.</param>
     /// <param name="permitLimit">Requests allowed per IP and window.</param>
-    /// <returns>A partition factory for the named policy.</returns>
-    public static Func<HttpContext, RateLimitPartition<string>> CreateIpPolicy(int permitLimit)
+    /// <returns>The configured partitioned limiter.</returns>
+    public static PartitionedRateLimiter<HttpContext> CreateIpPolicy(
+        string policyName,
+        int permitLimit
+    )
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(permitLimit, 1);
 
-        return context => SlidingWindow(IpKey(context), permitLimit);
+        return ForPolicy(policyName, context => SlidingWindow(IpKey(context), permitLimit));
+    }
+
+    private static PartitionedRateLimiter<HttpContext> ForPolicy(
+        string policyName,
+        Func<HttpContext, RateLimitPartition<string>> partition
+    )
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(policyName);
+
+        return PartitionedRateLimiter.Create<HttpContext, string>(context =>
+            string.Equals(
+                context
+                    .GetEndpoint()
+                    ?.Metadata.GetMetadata<EnableRateLimitingAttribute>()
+                    ?.PolicyName,
+                policyName,
+                StringComparison.Ordinal
+            )
+                ? partition(context)
+                : RateLimitPartition.GetNoLimiter("unlimited")
+        );
     }
 
     private static string IpKey(HttpContext context)

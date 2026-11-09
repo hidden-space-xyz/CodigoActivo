@@ -8,18 +8,18 @@ namespace CodigoActivo.API.Configuration;
 
 internal static class ApiRateLimitConfiguration
 {
-    private const int MaxConcurrentApiRequests = 128;
-    private const int MaxQueuedApiRequests = 256;
+    private const int MaxConcurrentApiRequests = 64;
+    private const int MaxQueuedApiRequests = 2048;
     private const int MaxConcurrentPasswordHashingRequests = 4;
     private const int MaxQueuedPasswordHashingRequests = 64;
-    private const int MaxConcurrentReportRequests = 16;
-    private const int MaxQueuedReportRequests = 32;
+    private const int MaxConcurrentReportRequests = 8;
+    private const int MaxQueuedReportRequests = 40;
     private const int MaxConcurrentSingleRecipientEmailRequests = 10;
     private const int MaxQueuedSingleRecipientEmailRequests = 10;
     private const int MaxConcurrentBulkEmailRequests = 2;
     private const int MaxQueuedBulkEmailRequests = 0;
-    private const int MaxConcurrentFileUploadRequests = 12;
-    private const int MaxQueuedFileUploadRequests = 12;
+    private const int MaxConcurrentFileUploadRequests = 4;
+    private const int MaxQueuedFileUploadRequests = 20;
 
     internal static void AddApiRateLimiting(this IServiceCollection services)
     {
@@ -43,34 +43,19 @@ internal static class ApiRateLimitConfiguration
     {
         options.GlobalLimiter = CreateGlobalLimiter(limits);
 
-        options.AddPolicy(
-            SecurityPolicies.Credentials,
-            ClientRequestRateLimiter.CreateIpPolicy(limits.CredentialRequestsPerMinutePerIp)
-        );
-        options.AddPolicy(
-            SecurityPolicies.Reports,
-            ClientRequestRateLimiter.CreateAuthenticatedPolicy(
-                limits.ReportRequestsPerMinutePerUser
-            )
-        );
-        options.AddPolicy(
-            SecurityPolicies.SingleRecipientEmail,
-            ClientRequestRateLimiter.CreateAuthenticatedPolicy(
-                limits.SingleRecipientEmailRequestsPerMinutePerUser
-            )
-        );
-        options.AddPolicy(
-            SecurityPolicies.BulkEmail,
-            ClientRequestRateLimiter.CreateAuthenticatedPolicy(
-                limits.BulkEmailRequestsPerMinutePerUser
-            )
-        );
-        options.AddPolicy(
-            SecurityPolicies.FileUploads,
-            ClientRequestRateLimiter.CreateAuthenticatedPolicy(
-                limits.FileUploadRequestsPerMinutePerUser
-            )
-        );
+        foreach (
+            var policy in (string[])
+                [
+                    SecurityPolicies.Credentials,
+                    SecurityPolicies.Reports,
+                    SecurityPolicies.SingleRecipientEmail,
+                    SecurityPolicies.BulkEmail,
+                    SecurityPolicies.FileUploads,
+                ]
+        )
+        {
+            options.AddPolicy(policy, _ => RateLimitPartition.GetNoLimiter(policy));
+        }
     }
 
     private static string GetRetryAfter(RateLimitLease lease)
@@ -82,18 +67,34 @@ internal static class ApiRateLimitConfiguration
             : "1";
     }
 
-    private static PartitionedRateLimiter<HttpContext> CreateGlobalLimiter(
+    internal static PartitionedRateLimiter<HttpContext> CreateGlobalLimiter(
         ApiRateLimitOptions limits
     )
     {
-        return PartitionedRateLimiter.CreateChained(
+        return new SinglePassChainedRateLimiter(
             ClientRequestRateLimiter.CreateGlobal(
                 limits.AuthenticatedRequestsPerMinute,
                 limits.AnonymousRequestsPerMinutePerIp
             ),
-            ClientRequestRateLimiter.CreateConcurrency(
-                MaxConcurrentApiRequests,
-                MaxQueuedApiRequests
+            ClientRequestRateLimiter.CreateIpPolicy(
+                SecurityPolicies.Credentials,
+                limits.CredentialRequestsPerMinutePerIp
+            ),
+            ClientRequestRateLimiter.CreateAuthenticatedPolicy(
+                SecurityPolicies.Reports,
+                limits.ReportRequestsPerMinutePerUser
+            ),
+            ClientRequestRateLimiter.CreateAuthenticatedPolicy(
+                SecurityPolicies.SingleRecipientEmail,
+                limits.SingleRecipientEmailRequestsPerMinutePerUser
+            ),
+            ClientRequestRateLimiter.CreateAuthenticatedPolicy(
+                SecurityPolicies.BulkEmail,
+                limits.BulkEmailRequestsPerMinutePerUser
+            ),
+            ClientRequestRateLimiter.CreateAuthenticatedPolicy(
+                SecurityPolicies.FileUploads,
+                limits.FileUploadRequestsPerMinutePerUser
             ),
             EndpointConcurrencyLimiter.CreateForMarker<PasswordHashingAttribute>(
                 MaxConcurrentPasswordHashingRequests,
@@ -118,6 +119,10 @@ internal static class ApiRateLimitConfiguration
                 SecurityPolicies.FileUploads,
                 MaxConcurrentFileUploadRequests,
                 MaxQueuedFileUploadRequests
+            ),
+            ClientRequestRateLimiter.CreateConcurrency(
+                MaxConcurrentApiRequests,
+                MaxQueuedApiRequests
             )
         );
     }

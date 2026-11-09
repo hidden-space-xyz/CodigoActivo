@@ -50,7 +50,7 @@ part of a journey.
   site: besides `setup`, which designates `privacyOfficer`, only `specs/public/featured.spec.ts`,
   `specs/admin-content/legal-policies.spec.ts` and `specs/admin-people/data-protection.spec.ts` change them, and
   only that last spec signs in as `privacyOfficer`.
-- The API limits each account to 300 requests and 30 uploads a minute: `admin` changes every few tests for
+- The API limits each account to 600 requests and 30 uploads a minute: `admin` changes every few tests for
   that reason and `seed` shares one image per worker.
 - Selects share their option ids and a closing list stays visible: open them with `chooseOption`, which waits
   for the previous list to close.

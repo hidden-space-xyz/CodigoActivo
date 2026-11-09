@@ -3,7 +3,9 @@ namespace CodigoActivo.API.Security;
 /// <summary>
 /// Names the rate-limit policies of the endpoints. Each one has its own per-minute budget in
 /// <see cref="ApiRateLimitOptions"/>, and each but <see cref="Credentials"/> its own process-wide
-/// cap on concurrent requests.
+/// cap on concurrent requests. The global limiter enforces both, counting the budget before the
+/// request waits for any concurrency permit, so a client over its budget never holds a place in a
+/// queue; the policy registered with the middleware only names the endpoints.
 /// </summary>
 public static class SecurityPolicies
 {

@@ -52,7 +52,7 @@ serves directly (`gzip_static`). A reverse proxy in front must not strip `Accept
 
 ### Capacity and rate limits
 
-nginx allows 8,192 connections per worker, 4,000 active client connections and 2,000 per IP (`web`'s open-file
+nginx allows 8,192 connections per worker, 10,000 active client connections and 2,000 per IP (`web`'s open-file
 limit is raised to 65,536). It buffers each request body in `web`'s `/tmp`, a 256 MB tmpfs, before passing it to
 the API. Application request and credential-work rate limits are documented once, in
 [SECURITY.md](SECURITY.md#passwords-and-credential-endpoints).

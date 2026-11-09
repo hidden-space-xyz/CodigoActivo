@@ -8,12 +8,12 @@ public sealed class ApiRateLimitOptions
     /// <summary>
     /// Gets or sets the requests allowed per authenticated user across all API endpoints.
     /// </summary>
-    public int AuthenticatedRequestsPerMinute { get; set; } = 300;
+    public int AuthenticatedRequestsPerMinute { get; set; } = 600;
 
     /// <summary>
     /// Gets or sets the requests allowed per anonymous IP across all API endpoints.
     /// </summary>
-    public int AnonymousRequestsPerMinutePerIp { get; set; } = 3_000;
+    public int AnonymousRequestsPerMinutePerIp { get; set; } = 10_000;
 
     /// <summary>
     /// Gets or sets the credential requests allowed per IP.
@@ -23,7 +23,7 @@ public sealed class ApiRateLimitOptions
     /// <summary>
     /// Gets or sets the report requests allowed per user.
     /// </summary>
-    public int ReportRequestsPerMinutePerUser { get; set; } = 30;
+    public int ReportRequestsPerMinutePerUser { get; set; } = 60;
 
     /// <summary>
     /// Gets or sets the single-recipient email requests allowed per user.

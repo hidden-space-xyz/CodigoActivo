@@ -348,18 +348,28 @@ open a blocked data consultation and both unsubscribe endpoints) have layered co
   `users/{id}/two-factor/reset`, `me/confirmation-code`, `me/deletion`, `blocked-data/consultations` and
   its `/code`, `emails/unsubscribe*`) rely only on nginx's general 200 requests/second limit and the API
   controls below.
-- the API enforces 120 requests/minute per client IP in every environment on every credential route;
+- the API enforces 120 requests/minute per client IP in every environment on every credential route, about 60
+  logins a minute behind one address, counted before the request waits for the Argon2 pool, so a client over
+  it never holds a place in that queue;
 - the credential routes that run Argon2 (`[PasswordHashing]`: the login password step, registration, password
   reset and change, and every route that asks for the password again) share a process-wide concurrency limit of
   4 executing requests and a FIFO queue of 64, which bounds the memory-hard Argon2 work; a queued request holds
   no Argon2 memory. The other credential routes never wait behind them (`ApiConventionTests` checks the split).
 
-Normal API traffic uses different limits, since an IP may represent many legitimate users: nginx allows 200
-requests/second per IP, burst 500; the API applies a sliding one-minute budget of 300 requests per
-authenticated user, or 3,000 per IP for anonymous traffic, with 128 requests executing and 256 waiting
-process-wide. Report routes add a 30-request/minute budget per user (16 executing, 32 waiting); multipart
-file writes allow 30 requests/minute per user (12 executing, 12 waiting). Rejected requests, by nginx or the
-API, answer 429 `TooManyRequests` with `Retry-After`. These are per-instance controls; scaling API replicas multiplies aggregate capacity.
+Normal API traffic uses different limits, sized for about 100 people browsing at once behind one address (a
+classroom, a venue's Wi-Fi, a carrier's CGNAT address), since an active person's SPA sends about 100
+requests/minute, images included; the credential and mail limits above stay stricter on purpose. nginx allows
+200 requests/second per IP, burst 1,000, of which the first 500 pass at once and the rest are paced at that
+rate; the API applies a sliding one-minute budget of 600 requests per authenticated user, about twice what an
+administrator paging through tables of thumbnails sends, or 10,000 per IP for anonymous traffic. Report routes
+add a 60-request/minute budget per user (8 executing, 40 waiting); multipart file writes allow 30
+requests/minute per user (4 executing, since only two uploads are decoded at a time, and 20 waiting). Each
+request counts once against every budget, whether it executes, waits or is refused, and before it waits for a
+concurrency permit (`SinglePassChainedRateLimiter`). Process-wide, 64 requests execute and 2,048 wait in FIFO
+order, enough for the refetch that 1,000 open event pages send together when signups open; a request waiting
+for a route's own limit holds none of those 64. Rejected requests, by nginx or the API, answer 429
+`TooManyRequests` with `Retry-After`. These are per-instance controls; scaling API replicas multiplies aggregate
+capacity.
 
 ### Input, output and error handling
 
