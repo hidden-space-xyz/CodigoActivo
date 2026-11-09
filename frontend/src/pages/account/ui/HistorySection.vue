@@ -192,11 +192,6 @@ const groups = computed(() => [
   max-width: 62ch;
 }
 
-.acc-pane__state {
-  color: var(--ca-text-dim);
-  font-family: var(--ca-font-mono);
-}
-
 .acc-history__group + .acc-history__group {
   margin-top: 22px;
 }

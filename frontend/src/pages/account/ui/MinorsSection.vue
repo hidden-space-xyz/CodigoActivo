@@ -6,12 +6,11 @@ import { useAccount } from '../model/use-account'
 import type { AccountChild } from '@/entities/account'
 import {
   fullName,
-  GENDERS,
   genderLabelKey,
   minorBirthDateRange,
+  PersonFields,
   usePersonForm,
 } from '@/entities/user'
-import { PERSON_NAME_MAX_LENGTH } from '@/shared/config'
 import { formatDate } from '@/shared/lib/date'
 import { useCrudFeedback } from '@/shared/lib/feedback'
 import { BrandButton } from '@/shared/ui/brand-button'
@@ -121,15 +120,15 @@ function confirmDelete(): void {
       {{ $t('pages.account.minors.empty') }}
     </p>
 
-    <ul v-else class="acc-minors">
-      <li v-for="child in items" :key="child.id" class="acc-minor" data-testid="minors-item">
-        <div class="acc-minor__info">
-          <span class="acc-minor__name">{{ fullName(child) }}</span>
-          <span class="acc-minor__meta">
+    <ul v-else class="acc-items">
+      <li v-for="child in items" :key="child.id" class="acc-item" data-testid="minors-item">
+        <div class="acc-item__info">
+          <span class="acc-item__name">{{ fullName(child) }}</span>
+          <span class="acc-item__meta">
             {{ formatDate(child.birthDate) }} · {{ $t(genderLabelKey(child.gender)) }}
           </span>
         </div>
-        <div class="acc-minor__actions">
+        <div class="acc-item__actions">
           <BrandButton variant="ghost" data-testid="minors-item-edit" @click="openEdit(child)">{{
             $t('common.edit')
           }}</BrandButton>
@@ -155,76 +154,16 @@ function confirmDelete(): void {
       :close-on-click-modal="false"
     >
       <form class="acc-form" @submit.prevent="save">
-        <div class="ca-form-grid">
-          <div class="ca-field acc-form__field">
-            <label class="ca-field__label" for="m-firstname">{{ $t('common.firstName') }}</label>
-            <el-input
-              id="m-firstname"
-              v-model="draft.firstName"
-              data-testid="minor-dialog-first-name"
-              :maxlength="PERSON_NAME_MAX_LENGTH"
-              :class="{ 'ca-invalid': errors.firstName }"
-              :aria-invalid="!!errors.firstName"
-              :aria-describedby="errors.firstName ? 'm-firstname-error' : undefined"
-              required
-            />
-            <small v-if="errors.firstName" id="m-firstname-error" class="ca-field__error">{{
-              errors.firstName
-            }}</small>
-          </div>
-          <div class="ca-field acc-form__field">
-            <label class="ca-field__label" for="m-lastname">{{ $t('common.lastName') }}</label>
-            <el-input
-              id="m-lastname"
-              v-model="draft.lastName"
-              data-testid="minor-dialog-last-name"
-              :maxlength="PERSON_NAME_MAX_LENGTH"
-              :class="{ 'ca-invalid': errors.lastName }"
-              :aria-invalid="!!errors.lastName"
-              :aria-describedby="errors.lastName ? 'm-lastname-error' : undefined"
-              required
-            />
-            <small v-if="errors.lastName" id="m-lastname-error" class="ca-field__error">{{
-              errors.lastName
-            }}</small>
-          </div>
-          <div class="ca-field acc-form__field">
-            <label class="ca-field__label" for="m-dob">{{ $t('common.birthDate') }}</label>
-            <input
-              id="m-dob"
-              v-model="draft.birthDate"
-              data-testid="minor-dialog-birth-date"
-              type="date"
-              class="acc-date"
-              :class="{ 'acc-date--invalid': errors.birthDate }"
-              :aria-invalid="!!errors.birthDate"
-              :aria-describedby="errors.birthDate ? 'm-dob-error' : undefined"
-              :min="minBirthDateIso"
-              :max="birthDateRange.max"
-              required
-            />
-            <small v-if="errors.birthDate" id="m-dob-error" class="ca-field__error">{{
-              errors.birthDate
-            }}</small>
-          </div>
-          <div class="ca-field acc-form__field">
-            <label class="ca-field__label" for="m-gender">{{ $t('common.gender') }}</label>
-            <el-select
-              id="m-gender"
-              v-model="draft.gender"
-              data-testid="minor-dialog-gender"
-              :class="{ 'ca-invalid': errors.gender }"
-            >
-              <el-option
-                v-for="gender in GENDERS"
-                :key="gender"
-                :label="$t(genderLabelKey(gender))"
-                :value="gender"
-                :data-testid="`option-${gender}`"
-              />
-            </el-select>
-            <small v-if="errors.gender" class="ca-field__error">{{ errors.gender }}</small>
-          </div>
+        <div class="ca-form-grid acc-form__grid">
+          <PersonFields
+            v-model:first-name="draft.firstName"
+            v-model:last-name="draft.lastName"
+            v-model:birth-date="draft.birthDate"
+            v-model:gender="draft.gender"
+            id-prefix="m"
+            :errors="errors"
+            :birth-date-range="{ min: minBirthDateIso, max: birthDateRange.max }"
+          />
         </div>
         <p
           v-if="mode === 'add'"
@@ -308,72 +247,10 @@ function confirmDelete(): void {
   max-width: 62ch;
 }
 
-.acc-pane__state {
-  color: var(--ca-text-dim);
-  font-family: var(--ca-font-mono);
-}
-
-.acc-minors {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.acc-minor {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  background: var(--ca-surface);
-  border: 1px solid var(--ca-border-soft);
-  border-radius: 12px;
-  padding: 14px 16px;
-}
-
-.acc-minor__info {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.acc-minor__name {
-  font-weight: 600;
-  color: var(--ca-text-bright);
-}
-
-.acc-minor__meta {
-  font-size: 13px;
-  color: var(--ca-text-muted);
-}
-
-.acc-minor__actions {
+.acc-item__actions {
   display: flex;
   gap: 6px;
   flex-shrink: 0;
-}
-
-.acc-form__field {
-  margin-bottom: 14px;
-}
-
-.acc-date {
-  width: 100%;
-  background: var(--ca-input-bg);
-  color: var(--ca-text);
-  border: 1px solid var(--ca-border-strong);
-  border-radius: 10px;
-  padding: 11px 13px;
-  font-family: inherit;
-  font-size: 15px;
-  outline: none;
-}
-
-.acc-date:focus {
-  border-color: var(--ca-orange);
 }
 
 .acc-form__declaration {
@@ -383,17 +260,6 @@ function confirmDelete(): void {
   color: var(--ca-text-muted);
 }
 
-.acc-form__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 8px;
-}
-
-.acc-date--invalid {
-  border-color: var(--ca-danger);
-}
-
 .acc-confirm {
   color: var(--ca-text);
   line-height: 1.6;
@@ -401,13 +267,7 @@ function confirmDelete(): void {
 }
 
 @media (max-width: 640px) {
-  .acc-minor {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .acc-minor__actions {
+  .acc-item__actions {
     justify-content: flex-end;
   }
 }

@@ -2,6 +2,7 @@
 import { useLogin } from '../model/use-login'
 import { EMAIL_ADDRESS_MAX_LENGTH, PASSWORD_MAX_LENGTH } from '@/shared/config'
 import { BrandButton } from '@/shared/ui/brand-button'
+import { FormField } from '@/shared/ui/form-field'
 import { PageHeading } from '@/shared/ui/page-heading'
 
 const { form, submit, isSubmitting, errorMessage } = useLogin()
@@ -18,10 +19,7 @@ const { form, submit, isSubmitting, errorMessage } = useLogin()
     <section class="login-body">
       <div class="login-card">
         <form class="login-form" @submit.prevent="submit">
-          <div class="ca-field">
-            <label class="ca-field__label" for="login-identifier">{{
-              $t('pages.login.identifierLabel')
-            }}</label>
+          <FormField for="login-identifier" :label="$t('pages.login.identifierLabel')">
             <el-input
               id="login-identifier"
               v-model="form.identifier"
@@ -34,9 +32,8 @@ const { form, submit, isSubmitting, errorMessage } = useLogin()
               spellcheck="false"
               required
             />
-          </div>
-          <div class="ca-field">
-            <label class="ca-field__label" for="login-password">{{ $t('common.password') }}</label>
+          </FormField>
+          <FormField for="login-password" :label="$t('common.password')">
             <el-input
               id="login-password"
               v-model="form.password"
@@ -47,7 +44,7 @@ const { form, submit, isSubmitting, errorMessage } = useLogin()
               :maxlength="PASSWORD_MAX_LENGTH"
               required
             />
-          </div>
+          </FormField>
 
           <RouterLink
             :to="{ name: 'forgot-password' }"

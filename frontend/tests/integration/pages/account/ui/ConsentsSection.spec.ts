@@ -35,8 +35,8 @@ async function renderSection() {
 }
 
 function consentItem(name: string): HTMLElement {
-  const item = [...document.querySelectorAll<HTMLElement>('.acc-consent')].find((candidate) =>
-    candidate.querySelector('.acc-consent__name')?.textContent.includes(name),
+  const item = [...document.querySelectorAll<HTMLElement>('.acc-item')].find((candidate) =>
+    candidate.querySelector('.acc-item__name')?.textContent.includes(name),
   )
   if (!item) throw new Error(`No consent of "${name}"`)
   return item
@@ -56,7 +56,7 @@ describe('ConsentsSection', () => {
     ])
     const { wrapper } = await renderSection()
 
-    await vi.waitFor(() => expect(wrapper.findAll('.acc-consent')).toHaveLength(3))
+    await vi.waitFor(() => expect(wrapper.findAll('.acc-item')).toHaveLength(3))
     const action = t('pages.account.consents.withdraw.action')
     const given = consentItem('Byron Lovelace')
     expect(given.textContent).toContain('Uso de imágenes')

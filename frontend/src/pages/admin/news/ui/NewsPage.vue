@@ -8,7 +8,7 @@ import { AdminPageHeader } from '@/shared/ui/admin-page-header'
 import { ColumnFilterDate } from '@/shared/ui/column-filter'
 import { DataTable } from '@/shared/ui/data-table'
 import { ListThumbnail } from '@/shared/ui/list-thumbnail'
-import { RowActions, type RowAction } from '@/shared/ui/row-actions'
+import { editAction, RowActions, type RowAction } from '@/shared/ui/row-actions'
 import { TablePrimaryCell } from '@/shared/ui/table-primary-cell'
 
 import { useNewsAdmin } from '../model/use-news-admin'
@@ -20,16 +20,7 @@ const { visible, editing, loading, openCreate, openEdit } = dialog
 
 function newsActions(newsItem: NewsSummary): RowAction[] {
   return [
-    {
-      key: 'edit',
-      label: t('common.edit'),
-      icon: 'pencil',
-      inline: true,
-      disabled: loading.value,
-      run: () => {
-        void openEdit(newsItem)
-      },
-    },
+    editAction(() => void openEdit(newsItem), loading.value),
     {
       key: 'feature',
       label: t('pages.admin.news.feature'),
@@ -80,7 +71,7 @@ function newsActions(newsItem: NewsSummary): RowAction[] {
     >
       <el-table-column
         prop="title"
-        :label="$t('pages.admin.news.columns.title')"
+        :label="$t('common.title')"
         min-width="240"
         sortable="custom"
         :fixed="table.isNarrow.value ? false : 'left'"

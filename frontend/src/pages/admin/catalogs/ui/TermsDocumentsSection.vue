@@ -1,36 +1,20 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-
 import type { TermsDocument } from '@/entities/terms-document'
 import { DataTable } from '@/shared/ui/data-table'
-import { RowActions, type RowAction } from '@/shared/ui/row-actions'
+import { deleteAction, editAction, RowActions, type RowAction } from '@/shared/ui/row-actions'
 import { TablePrimaryCell } from '@/shared/ui/table-primary-cell'
 
 import { useTermsDocumentsAdmin } from '../model/use-terms-documents-admin'
 import CatalogSection from './CatalogSection.vue'
 import TermsDocumentFormDialog from './TermsDocumentFormDialog.vue'
 
-const { t } = useI18n()
 const { table, dialog, saving, save, confirmRemove } = useTermsDocumentsAdmin()
 const { visible, editing, openCreate, openEdit } = dialog
 
 function rowActions(termsDocument: TermsDocument): RowAction[] {
   return [
-    {
-      key: 'edit',
-      label: t('common.edit'),
-      icon: 'pencil',
-      inline: true,
-      run: () => void openEdit(termsDocument),
-    },
-    {
-      key: 'delete',
-      label: t('common.delete'),
-      icon: 'trash',
-      inline: true,
-      danger: true,
-      run: () => confirmRemove(termsDocument),
-    },
+    editAction(() => void openEdit(termsDocument)),
+    deleteAction(() => confirmRemove(termsDocument)),
   ]
 }
 </script>
@@ -47,7 +31,7 @@ function rowActions(termsDocument: TermsDocument): RowAction[] {
       variant="flush"
       :empty-text="$t('pages.admin.catalogs.termsDocuments.empty.none')"
       :error-text="$t('pages.admin.catalogs.termsDocuments.empty.error')"
-      :search="{ key: 'name', label: $t('pages.admin.catalogs.termsDocuments.search.name') }"
+      :search="{ key: 'name', label: $t('common.searchByName') }"
     >
       <el-table-column
         prop="name"

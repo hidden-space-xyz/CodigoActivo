@@ -6,7 +6,8 @@ import { ThumbnailField, uploadFileRequest, useThumbnailUpload } from '@/entitie
 import { resourceQueries, type LearningResource, type ResourceInput } from '@/entities/resource'
 import { SUBTITLE_MAX_LENGTH, TITLE_MAX_LENGTH, URL_MAX_LENGTH } from '@/shared/config'
 import { useForm } from '@/shared/lib/form'
-import { ActionButton } from '@/shared/ui/action-button'
+import { FormDialog } from '@/shared/ui/form-dialog'
+import { FormField } from '@/shared/ui/form-field'
 import { RichTextEditor } from '@/shared/ui/rich-text-editor'
 
 import { readResourceDraft, toResourceDraft } from '../model/resource-form'
@@ -60,10 +61,8 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-  <el-dialog
-    v-model="visible"
-    :close-on-click-modal="false"
-    :close-on-press-escape="false"
+  <FormDialog
+    v-model:visible="visible"
     data-testid="resource-form-dialog"
     :title="
       resource
@@ -71,147 +70,104 @@ async function save(): Promise<void> {
         : $t('pages.admin.resources.form.newHeader')
     "
     width="min(920px, 94vw)"
+    :saving="saving || uploading"
+    scroll-height="68vh"
+    @submit="save"
   >
-    <form class="form form--scroll" @submit.prevent="save">
-      <div class="ca-field">
-        <label class="ca-field__label" for="resource-title">{{
-          $t('pages.admin.resources.form.title')
-        }}</label>
-        <el-input
-          id="resource-title"
-          v-model="draft.title"
-          data-testid="resource-form-title"
-          :maxlength="TITLE_MAX_LENGTH"
-          :class="{ 'ca-invalid': invalid('title') }"
-          :aria-invalid="invalid('title')"
-        />
-      </div>
-      <div class="ca-field">
-        <label class="ca-field__label" for="resource-subtitle">{{
-          $t('pages.admin.resources.form.subtitle')
-        }}</label>
-        <el-input
-          id="resource-subtitle"
-          v-model="draft.subtitle"
-          data-testid="resource-form-subtitle"
-          :maxlength="SUBTITLE_MAX_LENGTH"
-          :class="{ 'ca-invalid': invalid('subtitle') }"
-          :aria-invalid="invalid('subtitle')"
-        />
-      </div>
-      <div class="ca-field">
-        <label class="ca-field__label" for="resource-type">{{
-          $t('pages.admin.resources.form.type')
-        }}</label>
-        <el-select
-          id="resource-type"
-          v-model="draft.resourceTypeId"
-          data-testid="resource-form-type"
-          :placeholder="$t('pages.admin.resources.form.typePlaceholder')"
-          :loading="typesLoading"
-          :class="{ 'ca-invalid': errors.resourceTypeId }"
-        >
-          <el-option
-            v-for="type in types"
-            :key="type.id"
-            :label="type.name"
-            :value="type.id"
-            :data-testid="`option-${type.id}`"
-          />
-        </el-select>
-        <small v-if="typesFailed" class="ca-field__error">{{
-          $t('pages.admin.resources.form.typesLoadError')
-        }}</small>
-        <small v-else-if="errors.resourceTypeId" class="ca-field__error">{{
-          errors.resourceTypeId
-        }}</small>
-      </div>
-      <div v-if="selectedType && !selectedType.isExternal" class="ca-field">
-        <div class="ca-field__label">{{ $t('pages.admin.resources.form.description') }}</div>
-        <RichTextEditor
-          v-model="draft.description"
-          data-testid="resource-form-description"
-          :label="$t('pages.admin.resources.form.description')"
-          :upload="uploadFileRequest"
-          :invalid="!!errors.description"
-        />
-        <small
-          v-if="errors.description"
-          data-testid="resource-form-description-error"
-          class="ca-field__error"
-          >{{ errors.description }}</small
-        >
-      </div>
-      <div v-if="selectedType?.isExternal" class="ca-field">
-        <label class="ca-field__label" for="resource-url">{{
-          $t('pages.admin.resources.form.url')
-        }}</label>
-        <el-input
-          id="resource-url"
-          v-model="draft.url"
-          data-testid="resource-form-url"
-          :maxlength="URL_MAX_LENGTH"
-          :placeholder="$t('pages.admin.resources.form.urlPlaceholder')"
-          :class="{ 'ca-invalid': errors.url }"
-          :aria-invalid="!!errors.url"
-          :aria-describedby="errors.url ? 'resource-url-error' : undefined"
-        />
-        <small
-          v-if="errors.url"
-          id="resource-url-error"
-          data-testid="resource-form-url-error"
-          class="ca-field__error"
-          >{{ errors.url }}</small
-        >
-      </div>
-      <div class="ca-field">
-        <div id="resource-image-label" class="ca-field__label">{{ $t('common.image') }}</div>
-        <ThumbnailField
-          role="group"
-          aria-labelledby="resource-image-label"
-          :existing-thumbnail-id="resource?.thumbnailId"
-          :invalid="submitted && missingThumbnail"
-          :upload-error="uploadError"
-          @update:file="pickedFile = $event"
-        />
-      </div>
-    </form>
-
-    <template #footer>
-      <ActionButton
-        :label="$t('common.cancel')"
-        text
-        :disabled="saving || uploading"
-        @click="visible = false"
+    <FormField
+      v-slot="{ control }"
+      for="resource-title"
+      :label="$t('common.title')"
+      :invalid="invalid('title')"
+    >
+      <el-input
+        v-model="draft.title"
+        v-bind="control"
+        data-testid="resource-form-title"
+        :maxlength="TITLE_MAX_LENGTH"
       />
-      <ActionButton
-        data-testid="resource-form-dialog-save"
-        :label="$t('common.save')"
-        type="primary"
-        :loading="saving || uploading"
-        @click="save"
+    </FormField>
+    <FormField
+      v-slot="{ control }"
+      for="resource-subtitle"
+      :label="$t('common.subtitle')"
+      :invalid="invalid('subtitle')"
+    >
+      <el-input
+        v-model="draft.subtitle"
+        v-bind="control"
+        data-testid="resource-form-subtitle"
+        :maxlength="SUBTITLE_MAX_LENGTH"
       />
-    </template>
-  </el-dialog>
+    </FormField>
+    <FormField
+      v-slot="{ control }"
+      for="resource-type"
+      :label="$t('pages.admin.resources.form.type')"
+      :invalid="!!errors.resourceTypeId"
+      :error="typesFailed ? undefined : errors.resourceTypeId"
+    >
+      <el-select
+        :id="control.id"
+        v-model="draft.resourceTypeId"
+        data-testid="resource-form-type"
+        :placeholder="$t('pages.admin.resources.form.typePlaceholder')"
+        :loading="typesLoading"
+        :class="control.class"
+      >
+        <el-option
+          v-for="type in types"
+          :key="type.id"
+          :label="type.name"
+          :value="type.id"
+          :data-testid="`option-${type.id}`"
+        />
+      </el-select>
+      <small v-if="typesFailed" class="ca-field__error">{{
+        $t('pages.admin.resources.form.typesLoadError')
+      }}</small>
+    </FormField>
+    <FormField
+      v-if="selectedType && !selectedType.isExternal"
+      v-slot="{ invalid: refused }"
+      :label="$t('common.description')"
+      :error="errors.description"
+      error-testid="resource-form-description-error"
+    >
+      <RichTextEditor
+        v-model="draft.description"
+        data-testid="resource-form-description"
+        :label="$t('common.description')"
+        :upload="uploadFileRequest"
+        :invalid="refused"
+      />
+    </FormField>
+    <FormField
+      v-if="selectedType?.isExternal"
+      v-slot="{ control }"
+      for="resource-url"
+      :label="$t('pages.admin.resources.form.url')"
+      :error="errors.url"
+      error-testid="resource-form-url-error"
+    >
+      <el-input
+        v-model="draft.url"
+        v-bind="control"
+        data-testid="resource-form-url"
+        :maxlength="URL_MAX_LENGTH"
+        :placeholder="$t('pages.admin.resources.form.urlPlaceholder')"
+      />
+    </FormField>
+    <div class="ca-field">
+      <div id="resource-image-label" class="ca-field__label">{{ $t('common.image') }}</div>
+      <ThumbnailField
+        role="group"
+        aria-labelledby="resource-image-label"
+        :existing-thumbnail-id="resource?.thumbnailId"
+        :invalid="submitted && missingThumbnail"
+        :upload-error="uploadError"
+        @update:file="pickedFile = $event"
+      />
+    </div>
+  </FormDialog>
 </template>
-
-<style scoped>
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding-top: 6px;
-}
-
-.form--scroll {
-  max-height: 68vh;
-  overflow-y: auto;
-}
-
-@media (max-width: 640px) {
-  .form--scroll {
-    max-height: none;
-    overflow-y: visible;
-  }
-}
-</style>

@@ -15,7 +15,7 @@ import { BrandButton } from '@/shared/ui/brand-button'
 import { ColumnFilterDate, ColumnFilterSelect, toSelectOptions } from '@/shared/ui/column-filter'
 import { DataTable } from '@/shared/ui/data-table'
 import { ListThumbnail } from '@/shared/ui/list-thumbnail'
-import { RowActions, type RowAction } from '@/shared/ui/row-actions'
+import { deleteAction, editAction, RowActions, type RowAction } from '@/shared/ui/row-actions'
 import { TablePrimaryCell } from '@/shared/ui/table-primary-cell'
 
 import { eventReportQueries } from '../api/queries'
@@ -62,24 +62,8 @@ const modalityOptions = computed(() => toSelectOptions(modalities.data.value))
 
 function activityActions(activity: ActivityListing): RowAction[] {
   return [
-    {
-      key: 'edit',
-      label: t('common.edit'),
-      icon: 'pencil',
-      inline: true,
-      disabled: loading.value,
-      run: () => void openEdit(activity),
-    },
-    {
-      key: 'delete',
-      label: t('common.delete'),
-      icon: 'trash',
-      inline: true,
-      danger: true,
-      run: () => {
-        confirmRemove(activity)
-      },
-    },
+    editAction(() => void openEdit(activity), loading.value),
+    deleteAction(() => confirmRemove(activity)),
   ]
 }
 
@@ -164,7 +148,7 @@ function openRoster(): void {
           </template>
           <el-table-column
             prop="title"
-            :label="$t('pages.admin.eventDetail.columns.title')"
+            :label="$t('common.title')"
             min-width="240"
             sortable="custom"
             :fixed="table.isNarrow.value ? false : 'left'"

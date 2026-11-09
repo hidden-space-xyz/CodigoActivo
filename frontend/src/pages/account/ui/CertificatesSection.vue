@@ -121,11 +121,6 @@ async function onDownload(
   max-width: 62ch;
 }
 
-.acc-pane__state {
-  color: var(--ca-text-dim);
-  font-family: var(--ca-font-mono);
-}
-
 .cert-grid {
   list-style: none;
   margin: 0;

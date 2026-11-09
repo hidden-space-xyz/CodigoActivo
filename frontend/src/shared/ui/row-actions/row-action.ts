@@ -1,3 +1,5 @@
+import { i18n } from '@/shared/i18n'
+
 /** One command of a table row. */
 export interface RowAction {
   /** Stable key for rendering. */
@@ -18,4 +20,28 @@ export interface RowAction {
   readonly danger?: boolean
   /** Separator above the menu item. */
   readonly divided?: boolean
+}
+
+/** Inline pencil button that opens the row for editing; `disabled` while another row loads. */
+export function editAction(run: () => void, disabled = false): RowAction {
+  return {
+    key: 'edit',
+    label: i18n.global.t('common.edit'),
+    icon: 'pencil',
+    inline: true,
+    disabled,
+    run,
+  }
+}
+
+/** Inline trash button, red on hover, that deletes the row. */
+export function deleteAction(run: () => void): RowAction {
+  return {
+    key: 'delete',
+    label: i18n.global.t('common.delete'),
+    icon: 'trash',
+    inline: true,
+    danger: true,
+    run,
+  }
 }

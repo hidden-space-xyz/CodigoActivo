@@ -128,9 +128,9 @@ describe('RegistrationForm', () => {
       'reg-phone',
       'reg-email',
       'reg-password',
-      'minor-firstname-0',
-      'minor-lastname-0',
-      'minor-dob-0',
+      'minor-0-firstname',
+      'minor-0-lastname',
+      'minor-0-dob',
     ]
     for (const id of ids) {
       expect(wrapper.get(`#${id}`).attributes('aria-invalid')).toBe('false')
@@ -321,9 +321,9 @@ describe('RegistrationForm', () => {
       ]).flat(),
     )
 
-    await wrapper.find('#minor-firstname-0').setValue('Byron')
-    await wrapper.find('#minor-lastname-0').setValue('King')
-    await wrapper.find('#minor-dob-0').setValue('2016-02-03')
+    await wrapper.find('#minor-0-firstname').setValue('Byron')
+    await wrapper.find('#minor-0-lastname').setValue('King')
+    await wrapper.find('#minor-0-dob').setValue('2016-02-03')
     await selectGender(wrapper, 1, 'Male')
     await wrapper.find('form').trigger('submit')
     expect(wrapper.emitted('submit')).toBeUndefined()
@@ -345,16 +345,16 @@ describe('RegistrationForm', () => {
   })
 
   it.each([
-    ['#minor-firstname-0', ''],
-    ['#minor-lastname-0', ' '],
-    ['#minor-dob-0', ''],
+    ['#minor-0-firstname', ''],
+    ['#minor-0-lastname', ' '],
+    ['#minor-0-dob', ''],
   ])('does not emit when the minor field %s is set to %j', async (selector, value) => {
     const { wrapper } = await renderForm()
     await fillAdult(wrapper)
     await addMinorButton(wrapper).trigger('click')
-    await wrapper.find('#minor-firstname-0').setValue('Byron')
-    await wrapper.find('#minor-lastname-0').setValue('King')
-    await wrapper.find('#minor-dob-0').setValue('2016-02-03')
+    await wrapper.find('#minor-0-firstname').setValue('Byron')
+    await wrapper.find('#minor-0-lastname').setValue('King')
+    await wrapper.find('#minor-0-dob').setValue('2016-02-03')
     await selectGender(wrapper, 1, 'Male')
     await wrapper.find(selector).setValue(value)
 
@@ -371,8 +371,8 @@ describe('RegistrationForm', () => {
     await addMinorButton(wrapper).trigger('click')
 
     expect(wrapper.find('#reg-dob').exists()).toBe(false)
-    expect(wrapper.get('#minor-dob-0').attributes('min')).toBe('2008-09-18')
-    expect(wrapper.get('#minor-dob-0').attributes('max')).toBe('2026-09-17')
+    expect(wrapper.get('#minor-0-dob').attributes('min')).toBe('2008-09-18')
+    expect(wrapper.get('#minor-0-dob').attributes('max')).toBe('2026-09-17')
   })
 
   it('refuses a minor who turns 18 today, as the server would', async () => {
@@ -381,17 +381,17 @@ describe('RegistrationForm', () => {
     const { wrapper } = await renderForm()
     await fillAdult(wrapper)
     await addMinorButton(wrapper).trigger('click')
-    await wrapper.find('#minor-firstname-0').setValue('Byron')
-    await wrapper.find('#minor-lastname-0').setValue('King')
+    await wrapper.find('#minor-0-firstname').setValue('Byron')
+    await wrapper.find('#minor-0-lastname').setValue('King')
     await selectGender(wrapper, 1, 'Male')
-    await wrapper.find('#minor-dob-0').setValue('2008-09-17')
+    await wrapper.find('#minor-0-dob').setValue('2008-09-17')
 
     await wrapper.find('form').trigger('submit')
 
     expect(wrapper.emitted('submit')).toBeUndefined()
     expect(errors(wrapper)).toEqual([t('entities.user.person.birthDateNotMinor')])
 
-    await wrapper.find('#minor-dob-0').setValue('2008-09-18')
+    await wrapper.find('#minor-0-dob').setValue('2008-09-18')
     await wrapper.find('form').trigger('submit')
 
     expect(wrapper.emitted('submit')).toHaveLength(1)

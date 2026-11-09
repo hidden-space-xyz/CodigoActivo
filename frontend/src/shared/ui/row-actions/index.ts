@@ -1,2 +1,2 @@
 export { default as RowActions } from './RowActions.vue'
-export type { RowAction } from './row-action'
+export { deleteAction, editAction, type RowAction } from './row-action'

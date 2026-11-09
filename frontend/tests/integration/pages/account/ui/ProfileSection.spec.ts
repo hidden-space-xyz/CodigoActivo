@@ -261,12 +261,12 @@ describe('ProfileSection', () => {
       dialog.querySelector('[data-testid="profile-dialog-code-hint"]')?.textContent.trim(),
     ).toBe(t('pages.account.profile.emailChange.emailHint', { email: 'ada@example.test' }))
 
-    await click(findButton(t('pages.account.profile.emailChange.sendCode'), dialog))
+    await click(findButton(t('common.sendCode'), dialog))
     expect(dialog.textContent).toContain(t('pages.account.profile.emailChange.passwordFirst'))
     expect(codes).toHaveLength(0)
 
     await typeInto('#p-current', 'old-password', dialog)
-    await click(findButton(t('pages.account.profile.emailChange.sendCode'), dialog))
+    await click(findButton(t('common.sendCode'), dialog))
     await vi.waitFor(() => expect(codes).toHaveLength(1))
     expect(codes[0]).toEqual({ currentPassword: 'old-password', purpose: 'EmailChange' })
     await vi.waitFor(() =>
@@ -274,7 +274,7 @@ describe('ProfileSection', () => {
         dialog.querySelector('[data-testid="profile-dialog-code-hint"]')?.textContent.trim(),
       ).toBe(t('pages.account.profile.emailChange.codeSent', { email: 'ada@example.test' })),
     )
-    expect(findButton(t('pages.account.profile.emailChange.resend'), dialog)).toBeTruthy()
+    expect(findButton(t('common.resendCode'), dialog)).toBeTruthy()
 
     await click(findButton(t('common.save'), dialog))
     expect(dialog.textContent).toContain(t('pages.account.profile.emailChange.codeRequired'))
@@ -326,14 +326,14 @@ describe('ProfileSection', () => {
     const dialog = openDialog(t('pages.account.profile.editDialogHeader'))
     await typeInto('#p-email', 'augusta@example.test', dialog)
     await typeInto('#p-current', 'old-password', dialog)
-    await click(findButton(t('pages.account.profile.emailChange.sendCode'), dialog))
+    await click(findButton(t('common.sendCode'), dialog))
 
     await vi.waitFor(() =>
       expect(
         dialog.querySelector('[data-testid="profile-dialog-code-error"]')?.textContent.trim(),
       ).toBe(t('errors.TwoFactorResendCooldownActive')),
     )
-    expect(findButton(t('pages.account.profile.emailChange.sendCode'), dialog)).toBeTruthy()
+    expect(findButton(t('common.sendCode'), dialog)).toBeTruthy()
   })
 
   it('asks an authenticator user for the app code without emailing one', async () => {
@@ -354,7 +354,7 @@ describe('ProfileSection', () => {
     expect(
       dialog.querySelector('[data-testid="profile-dialog-code-hint"]')?.textContent.trim(),
     ).toBe(t('pages.account.profile.emailChange.authenticatorHint'))
-    expect(findButtons(t('pages.account.profile.emailChange.sendCode'), dialog)).toHaveLength(0)
+    expect(findButtons(t('common.sendCode'), dialog)).toHaveLength(0)
     await typeInto('#p-current', 'old-password', dialog)
     await typeInto('#p-code', '123456', dialog)
     await click(findButton(t('common.save'), dialog))

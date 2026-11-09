@@ -2,6 +2,7 @@
 import { useForgotPassword } from '../model/use-forgot-password'
 import { EMAIL_ADDRESS_MAX_LENGTH, ONE_TIME_CODE_LIFETIME_MINUTES } from '@/shared/config'
 import { BrandButton } from '@/shared/ui/brand-button'
+import { FormField } from '@/shared/ui/form-field'
 import { PageHead } from '@/shared/ui/page-head'
 import { StatusPanel } from '@/shared/ui/status-panel'
 
@@ -22,8 +23,7 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
     <section class="forgot-body">
       <div class="forgot-card">
         <form v-if="!sent" class="forgot-form" @submit.prevent="submit">
-          <div class="ca-field">
-            <label class="ca-field__label" for="forgot-email">{{ $t('common.emailLong') }}</label>
+          <FormField for="forgot-email" :label="$t('common.emailLong')">
             <el-input
               id="forgot-email"
               v-model="form.email"
@@ -37,7 +37,7 @@ const { form, sent, submit, isSubmitting, isError } = useForgotPassword()
               :maxlength="EMAIL_ADDRESS_MAX_LENGTH"
               required
             />
-          </div>
+          </FormField>
 
           <p v-if="isError" class="ca-form-alert" role="alert">
             {{ $t('pages.forgotPassword.error') }}

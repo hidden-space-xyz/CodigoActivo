@@ -52,7 +52,7 @@ describe('TermsDocumentsSection', () => {
 
     expect(wrapper.findAllComponents(ColumnSearch)).toHaveLength(0)
     const search = wrapper.findComponent(SearchInput)
-    expect(search.props('label')).toBe(t('pages.admin.catalogs.termsDocuments.search.name'))
+    expect(search.props('label')).toBe(t('common.searchByName'))
     search.vm.$emit('update:modelValue', 'priv')
     await flushPromises()
     expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ name: 'priv' })

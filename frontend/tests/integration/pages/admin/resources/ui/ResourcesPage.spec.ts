@@ -93,12 +93,12 @@ describe('admin resources page', () => {
         .findAll('.el-table__header .caret-wrapper')
         .map((sort) => sort.attributes('aria-label')),
     ).toEqual(
-      ['title', 'type', 'url', 'created'].map((column) =>
-        elementPlusLocale.el.table.sortLabel.replace(
-          '{column}',
-          t(`pages.admin.resources.columns.${column}`),
-        ),
-      ),
+      [
+        t('common.title'),
+        t('pages.admin.resources.columns.type'),
+        t('pages.admin.resources.columns.url'),
+        t('pages.admin.resources.columns.created'),
+      ].map((column) => elementPlusLocale.el.table.sortLabel.replace('{column}', column)),
     )
   })
 

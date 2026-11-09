@@ -24,21 +24,21 @@ const { consents, entries, isWithdrawing, withdraw } = useAccountConsents()
       {{ $t('pages.account.consents.empty') }}
     </p>
 
-    <ul v-else class="acc-consents">
+    <ul v-else class="acc-items">
       <li
         v-for="consent in entries"
         :key="consentKey(consent)"
-        class="acc-consent"
+        class="acc-item"
         data-testid="consents-item"
       >
-        <div class="acc-consent__info">
-          <span class="acc-consent__name">
+        <div class="acc-item__info">
+          <span class="acc-item__name">
             {{ consent.documentName }} · {{ consent.personName }}
           </span>
-          <span class="acc-consent__meta">
+          <span class="acc-item__meta">
             {{ consent.eventTitle }} · {{ formatDate(consent.eventStartsAt) }}
           </span>
-          <span class="acc-consent__meta">
+          <span class="acc-item__meta">
             {{
               $t('pages.account.consents.decided', {
                 name: consent.decidedByName,
@@ -47,7 +47,7 @@ const { consents, entries, isWithdrawing, withdraw } = useAccountConsents()
             }}
           </span>
         </div>
-        <div class="acc-consent__actions">
+        <div class="acc-item__actions">
           <el-tag
             :type="consent.accepted ? 'success' : consent.withdrawn ? 'warning' : 'info'"
             size="small"
@@ -106,49 +106,7 @@ const { consents, entries, isWithdrawing, withdraw } = useAccountConsents()
   max-width: 62ch;
 }
 
-.acc-pane__state {
-  color: var(--ca-text-dim);
-  font-family: var(--ca-font-mono);
-}
-
-.acc-consents {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.acc-consent {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  background: var(--ca-surface);
-  border: 1px solid var(--ca-border-soft);
-  border-radius: 12px;
-  padding: 14px 16px;
-}
-
-.acc-consent__info {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.acc-consent__name {
-  font-weight: 600;
-  color: var(--ca-text-bright);
-}
-
-.acc-consent__meta {
-  font-size: 13px;
-  color: var(--ca-text-muted);
-}
-
-.acc-consent__actions {
+.acc-item__actions {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -156,13 +114,7 @@ const { consents, entries, isWithdrawing, withdraw } = useAccountConsents()
 }
 
 @media (max-width: 640px) {
-  .acc-consent {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .acc-consent__actions {
+  .acc-item__actions {
     justify-content: space-between;
   }
 }

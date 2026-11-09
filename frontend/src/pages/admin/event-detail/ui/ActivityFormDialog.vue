@@ -17,7 +17,8 @@ import {
 } from '@/shared/config'
 import { isDayBefore } from '@/shared/lib/date'
 import { useForm } from '@/shared/lib/form'
-import { ActionButton } from '@/shared/ui/action-button'
+import { FormDialog } from '@/shared/ui/form-dialog'
+import { FormField } from '@/shared/ui/form-field'
 
 import {
   type EventDays,
@@ -95,10 +96,8 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-  <el-dialog
-    v-model="visible"
-    :close-on-click-modal="false"
-    :close-on-press-escape="false"
+  <FormDialog
+    v-model:visible="visible"
     :title="
       activity
         ? $t('pages.admin.eventDetail.activities.form.editHeader')
@@ -106,192 +105,159 @@ async function save(): Promise<void> {
     "
     width="min(560px, 92vw)"
     data-testid="activity-form-dialog"
+    :saving="saving || uploading"
+    @submit="save"
   >
-    <form class="form" @submit.prevent="save">
-      <div class="ca-field">
-        <label class="ca-field__label" for="activity-title">{{
-          $t('pages.admin.eventDetail.activities.form.fields.title')
-        }}</label>
-        <el-input
-          id="activity-title"
-          v-model="draft.title"
-          :maxlength="TITLE_MAX_LENGTH"
-          :class="{ 'ca-invalid': invalid('title') }"
-          :aria-invalid="invalid('title')"
-          data-testid="activity-form-title"
-        />
-      </div>
-      <div class="ca-field">
-        <label class="ca-field__label" for="activity-description">{{
-          $t('pages.admin.eventDetail.activities.form.fields.description')
-        }}</label>
-        <el-input
-          id="activity-description"
-          v-model="draft.description"
-          type="textarea"
-          :maxlength="ACTIVITY_DESCRIPTION_MAX_LENGTH"
-          :autosize="{ minRows: 3 }"
-          :class="{ 'ca-invalid': invalid('description') }"
-          :aria-invalid="invalid('description')"
-          data-testid="activity-form-description"
-        />
-      </div>
-      <div class="ca-form-grid">
-        <div class="ca-field">
-          <label class="ca-field__label" for="activity-modality">{{
-            $t('pages.admin.eventDetail.activities.form.fields.modality')
-          }}</label>
-          <el-select
-            id="activity-modality"
-            v-model="draft.modalityId"
-            :placeholder="$t('pages.admin.eventDetail.activities.form.modalityPlaceholder')"
-            :class="{ 'ca-invalid': invalid('modalityId') }"
-            data-testid="activity-form-modality"
-          >
-            <el-option
-              v-for="modality in modalities"
-              :key="modality.id"
-              :label="modality.name"
-              :value="modality.id"
-              :data-testid="`option-${modality.id}`"
-            />
-          </el-select>
-          <small
-            v-if="errors.modalityId"
-            class="ca-field__error"
-            data-testid="activity-form-modality-error"
-            >{{ errors.modalityId }}</small
-          >
-        </div>
-        <div class="ca-field">
-          <label class="ca-field__label" for="activity-location">{{
-            $t('pages.admin.eventDetail.activities.form.fields.location')
-          }}</label>
-          <el-input
-            id="activity-location"
-            v-model="draft.location"
-            :maxlength="ACTIVITY_LOCATION_MAX_LENGTH"
-            :class="{ 'ca-invalid': invalid('location') }"
-            :aria-invalid="invalid('location')"
-            :aria-describedby="errors.location ? 'activity-location-error' : undefined"
-            data-testid="activity-form-location"
-          />
-          <small
-            v-if="errors.location"
-            id="activity-location-error"
-            class="ca-field__error"
-            data-testid="activity-form-location-error"
-            >{{ errors.location }}</small
-          >
-        </div>
-      </div>
-      <div class="ca-form-grid">
-        <div class="ca-field" data-testid="activity-form-start">
-          <label class="ca-field__label" for="activity-start">{{
-            $t('pages.admin.eventDetail.activities.form.fields.start')
-          }}</label>
-          <el-date-picker
-            id="activity-start"
-            v-model="draft.startsAt"
-            type="datetime"
-            :format="DATE_TIME_FORMAT"
-            :disabled-date="outsideEvent"
-            :class="{ 'ca-invalid': invalid('startsAt') }"
-          />
-          <small
-            v-if="errors.startsAt"
-            class="ca-field__error"
-            data-testid="activity-form-start-error"
-            >{{ errors.startsAt }}</small
-          >
-        </div>
-        <div class="ca-field" data-testid="activity-form-end">
-          <label class="ca-field__label" for="activity-end">{{
-            $t('pages.admin.eventDetail.activities.form.fields.end')
-          }}</label>
-          <el-date-picker
-            id="activity-end"
-            v-model="draft.endsAt"
-            type="datetime"
-            :format="DATE_TIME_FORMAT"
-            :disabled-date="beforeStartOrOutsideEvent"
-            :class="{ 'ca-invalid': invalid('endsAt') }"
-          />
-          <small
-            v-if="errors.endsAt"
-            class="ca-field__error"
-            data-testid="activity-form-end-error"
-            >{{ errors.endsAt }}</small
-          >
-        </div>
-      </div>
-      <small v-if="errors.schedule" class="ca-field__error">{{ errors.schedule }}</small>
-      <div v-if="roles.length" class="ca-field">
-        <div id="activity-capacities-label" class="ca-field__label">
-          {{ $t('pages.admin.eventDetail.activities.form.fields.desiredCounts') }}
-        </div>
-        <div class="form__capacities" role="group" aria-labelledby="activity-capacities-label">
-          <div
-            v-for="role in roles"
-            :key="role.id"
-            class="form__capacity"
-            data-testid="activity-form-capacity"
-          >
-            <span class="form__capacity-name">{{ role.name }}</span>
-            <el-input-number
-              v-model="draft.desiredCounts[role.id]"
-              :aria-label="role.name"
-              :min="ROLE_MIN_DESIRED_COUNT"
-              :max="ROLE_MAX_DESIRED_COUNT"
-              :precision="0"
-              controls-position="right"
-              :placeholder="$t('pages.admin.eventDetail.activities.form.noTargetPlaceholder')"
-            />
-          </div>
-        </div>
-        <small class="ca-field__hint">
-          {{ $t('pages.admin.eventDetail.activities.form.hint') }}
-        </small>
-      </div>
-      <div class="ca-field">
-        <div id="activity-image-label" class="ca-field__label">{{ $t('common.image') }}</div>
-        <ThumbnailField
-          role="group"
-          aria-labelledby="activity-image-label"
-          :existing-thumbnail-id="activity?.thumbnailId"
-          :invalid="submitted && missingThumbnail"
-          :upload-error="uploadError"
-          @update:file="pickedFile = $event"
-        />
-      </div>
-    </form>
-
-    <template #footer>
-      <ActionButton
-        :label="$t('common.cancel')"
-        text
-        :disabled="saving || uploading"
-        @click="visible = false"
+    <FormField
+      v-slot="{ control }"
+      for="activity-title"
+      :label="$t('common.title')"
+      :invalid="invalid('title')"
+    >
+      <el-input
+        v-model="draft.title"
+        v-bind="control"
+        :maxlength="TITLE_MAX_LENGTH"
+        data-testid="activity-form-title"
       />
-      <ActionButton
-        :label="$t('common.save')"
-        type="primary"
-        :loading="saving || uploading"
-        data-testid="activity-form-save"
-        @click="save"
+    </FormField>
+    <FormField
+      v-slot="{ control }"
+      for="activity-description"
+      :label="$t('common.description')"
+      :invalid="invalid('description')"
+    >
+      <el-input
+        v-model="draft.description"
+        v-bind="control"
+        type="textarea"
+        :maxlength="ACTIVITY_DESCRIPTION_MAX_LENGTH"
+        :autosize="{ minRows: 3 }"
+        data-testid="activity-form-description"
       />
-    </template>
-  </el-dialog>
+    </FormField>
+    <div class="ca-form-grid">
+      <FormField
+        v-slot="{ control }"
+        for="activity-modality"
+        :label="$t('pages.admin.eventDetail.activities.form.fields.modality')"
+        :invalid="invalid('modalityId')"
+        :error="errors.modalityId"
+        error-testid="activity-form-modality-error"
+      >
+        <el-select
+          :id="control.id"
+          v-model="draft.modalityId"
+          :placeholder="$t('pages.admin.eventDetail.activities.form.modalityPlaceholder')"
+          :class="control.class"
+          data-testid="activity-form-modality"
+        >
+          <el-option
+            v-for="modality in modalities"
+            :key="modality.id"
+            :label="modality.name"
+            :value="modality.id"
+            :data-testid="`option-${modality.id}`"
+          />
+        </el-select>
+      </FormField>
+      <FormField
+        v-slot="{ control }"
+        for="activity-location"
+        :label="$t('pages.admin.eventDetail.activities.form.fields.location')"
+        :invalid="invalid('location')"
+        :error="errors.location"
+        error-testid="activity-form-location-error"
+      >
+        <el-input
+          v-model="draft.location"
+          v-bind="control"
+          :maxlength="ACTIVITY_LOCATION_MAX_LENGTH"
+          data-testid="activity-form-location"
+        />
+      </FormField>
+    </div>
+    <div class="ca-form-grid">
+      <FormField
+        v-slot="{ control }"
+        for="activity-start"
+        :label="$t('pages.admin.eventDetail.activities.form.fields.start')"
+        :invalid="invalid('startsAt')"
+        :error="errors.startsAt"
+        error-testid="activity-form-start-error"
+        data-testid="activity-form-start"
+      >
+        <el-date-picker
+          :id="control.id"
+          v-model="draft.startsAt"
+          type="datetime"
+          :format="DATE_TIME_FORMAT"
+          :disabled-date="outsideEvent"
+          :class="control.class"
+        />
+      </FormField>
+      <FormField
+        v-slot="{ control }"
+        for="activity-end"
+        :label="$t('pages.admin.eventDetail.activities.form.fields.end')"
+        :invalid="invalid('endsAt')"
+        :error="errors.endsAt"
+        error-testid="activity-form-end-error"
+        data-testid="activity-form-end"
+      >
+        <el-date-picker
+          :id="control.id"
+          v-model="draft.endsAt"
+          type="datetime"
+          :format="DATE_TIME_FORMAT"
+          :disabled-date="beforeStartOrOutsideEvent"
+          :class="control.class"
+        />
+      </FormField>
+    </div>
+    <small v-if="errors.schedule" class="ca-field__error">{{ errors.schedule }}</small>
+    <div v-if="roles.length" class="ca-field">
+      <div id="activity-capacities-label" class="ca-field__label">
+        {{ $t('pages.admin.eventDetail.activities.form.fields.desiredCounts') }}
+      </div>
+      <div class="form__capacities" role="group" aria-labelledby="activity-capacities-label">
+        <div
+          v-for="role in roles"
+          :key="role.id"
+          class="form__capacity"
+          data-testid="activity-form-capacity"
+        >
+          <span class="form__capacity-name">{{ role.name }}</span>
+          <el-input-number
+            v-model="draft.desiredCounts[role.id]"
+            :aria-label="role.name"
+            :min="ROLE_MIN_DESIRED_COUNT"
+            :max="ROLE_MAX_DESIRED_COUNT"
+            :precision="0"
+            controls-position="right"
+            :placeholder="$t('pages.admin.eventDetail.activities.form.noTargetPlaceholder')"
+          />
+        </div>
+      </div>
+      <small class="ca-field__hint">
+        {{ $t('pages.admin.eventDetail.activities.form.hint') }}
+      </small>
+    </div>
+    <div class="ca-field">
+      <div id="activity-image-label" class="ca-field__label">{{ $t('common.image') }}</div>
+      <ThumbnailField
+        role="group"
+        aria-labelledby="activity-image-label"
+        :existing-thumbnail-id="activity?.thumbnailId"
+        :invalid="submitted && missingThumbnail"
+        :upload-error="uploadError"
+        @update:file="pickedFile = $event"
+      />
+    </div>
+  </FormDialog>
 </template>
 
 <style scoped>
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding-top: 6px;
-}
-
 .form__capacities {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

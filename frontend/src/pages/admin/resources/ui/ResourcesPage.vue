@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import type { LearningResourceSummary } from '@/entities/resource'
 import { formatDateTime } from '@/shared/lib/date'
@@ -16,13 +15,12 @@ import {
 import { DataTable } from '@/shared/ui/data-table'
 import { ExternalLink } from '@/shared/ui/external-link'
 import { ListThumbnail } from '@/shared/ui/list-thumbnail'
-import { RowActions, type RowAction } from '@/shared/ui/row-actions'
+import { deleteAction, editAction, RowActions, type RowAction } from '@/shared/ui/row-actions'
 import { TablePrimaryCell } from '@/shared/ui/table-primary-cell'
 
 import { useResourcesAdmin } from '../model/use-resources-admin'
 import ResourceFormDialog from './ResourceFormDialog.vue'
 
-const { t } = useI18n()
 const { table, types, dialog, saving, save, confirmRemove } = useResourcesAdmin()
 const { visible, editing, loading, openCreate, openEdit } = dialog
 
@@ -30,26 +28,8 @@ const typeOptions = computed(() => toSelectOptions(types.data.value))
 
 function rowActions(resource: LearningResourceSummary): RowAction[] {
   return [
-    {
-      key: 'edit',
-      label: t('common.edit'),
-      icon: 'pencil',
-      inline: true,
-      disabled: loading.value,
-      run: () => {
-        void openEdit(resource)
-      },
-    },
-    {
-      key: 'delete',
-      label: t('common.delete'),
-      icon: 'trash',
-      inline: true,
-      danger: true,
-      run: () => {
-        confirmRemove(resource)
-      },
-    },
+    editAction(() => void openEdit(resource), loading.value),
+    deleteAction(() => confirmRemove(resource)),
   ]
 }
 </script>
@@ -80,7 +60,7 @@ function rowActions(resource: LearningResourceSummary): RowAction[] {
     >
       <el-table-column
         prop="title"
-        :label="$t('pages.admin.resources.columns.title')"
+        :label="$t('common.title')"
         min-width="240"
         sortable="custom"
         :fixed="table.isNarrow.value ? false : 'left'"

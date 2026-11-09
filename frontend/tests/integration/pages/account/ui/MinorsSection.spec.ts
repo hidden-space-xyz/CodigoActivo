@@ -47,8 +47,8 @@ async function renderSection() {
 }
 
 function minorItem(name: string): HTMLElement {
-  const item = [...document.querySelectorAll<HTMLElement>('.acc-minor')].find(
-    (candidate) => candidate.querySelector('.acc-minor__name')?.textContent.trim() === name,
+  const item = [...document.querySelectorAll<HTMLElement>('.acc-item')].find(
+    (candidate) => candidate.querySelector('.acc-item__name')?.textContent.trim() === name,
   )
   if (!item) throw new Error(`No minor "${name}"`)
   return item
@@ -101,10 +101,10 @@ describe('MinorsSection', () => {
     const { wrapper } = await renderSection()
 
     expect(wrapper.text()).toContain(t('pages.account.minors.title'))
-    expect(minorItem('Byron Lovelace').querySelector('.acc-minor__meta')?.textContent.trim()).toBe(
+    expect(minorItem('Byron Lovelace').querySelector('.acc-item__meta')?.textContent.trim()).toBe(
       `${formatDate('2015-03-02')} · ${t(genderLabelKey('Male'))}`,
     )
-    expect(minorItem('Anne King').querySelector('.acc-minor__meta')?.textContent.trim()).toBe(
+    expect(minorItem('Anne King').querySelector('.acc-item__meta')?.textContent.trim()).toBe(
       `${formatDate('2018-11-20')} · ${t(genderLabelKey('Female'))}`,
     )
   })

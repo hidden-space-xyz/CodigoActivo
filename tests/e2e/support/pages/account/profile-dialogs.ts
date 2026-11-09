@@ -52,12 +52,12 @@ export class ProfileDialog {
 
   constructor(page: Page) {
     this.root = page.getByTestId('profile-dialog')
-    this.firstName = this.root.getByTestId('profile-dialog-first-name')
-    this.lastName = this.root.getByTestId('profile-dialog-last-name')
-    const nationalIdField = this.root.getByTestId('profile-dialog-national-id')
+    this.firstName = this.root.getByTestId('person-fields-first-name')
+    this.lastName = this.root.getByTestId('person-fields-last-name')
+    const nationalIdField = this.root.getByTestId('person-fields-national-id')
     this.nationalId = nationalIdField.locator('input')
     this.nationalIdError = nationalIdField.getByTestId('national-id-input-error')
-    this.gender = this.root.getByTestId('profile-dialog-gender')
+    this.gender = this.root.getByTestId('person-fields-gender')
     this.phone = this.root.getByTestId('profile-dialog-phone')
     this.email = this.root.getByTestId('profile-dialog-email')
     this.newsConsent = this.root.getByTestId('profile-dialog-news-consent')

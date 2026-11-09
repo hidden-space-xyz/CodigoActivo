@@ -11,12 +11,12 @@ export class FormDialog {
   /** The dialog itself, found by its test id. */
   readonly root: Locator
 
-  /** The button that sends the form, whose test id is the dialog's followed by `-save`. */
+  /** The button that sends the form, the `form-dialog-save` of the dialog. */
   readonly saveButton: Locator
 
   constructor(page: Page, testId: string) {
     this.root = page.getByTestId(testId)
-    this.saveButton = this.root.getByTestId(`${testId}-save`)
+    this.saveButton = this.root.getByTestId('form-dialog-save')
   }
 
   /** The control, or the message, of the dialog that carries the test id `testId`. */

@@ -38,7 +38,7 @@ describe('OpenConsultationDialog', () => {
     const { emitted } = await renderDialog()
     const dialog = openDialog(t('pages.admin.blockedData.open.title'))
 
-    await click(findButton(t('pages.admin.blockedData.open.sendCode'), document.body))
+    await click(findButton(t('common.sendCode'), document.body))
 
     expect(emitted.continue).toEqual([])
     expect(dialog.textContent).toContain(
@@ -73,7 +73,7 @@ describe('OpenConsultationDialog', () => {
     expect(dialog.textContent).toContain(
       t('pages.admin.blockedData.open.codeSent', { email: 'dpd@example.test' }),
     )
-    await click(findButton(t('pages.admin.blockedData.open.resend'), document.body))
+    await click(findButton(t('common.resendCode'), document.body))
 
     expect(emitted.resend).toBe(1)
   })
@@ -83,7 +83,7 @@ describe('OpenConsultationDialog', () => {
     const dialog = openDialog(t('pages.admin.blockedData.open.title'))
 
     expect(dialog.textContent).toContain(t('pages.admin.blockedData.open.authenticatorIntro'))
-    expect(dialog.textContent).not.toContain(t('pages.admin.blockedData.open.resend'))
+    expect(dialog.textContent).not.toContain(t('common.resendCode'))
   })
 
   it('submits the six digits of the code', async () => {

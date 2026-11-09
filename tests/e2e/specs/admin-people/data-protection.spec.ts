@@ -143,14 +143,14 @@ test.describe('data protection', () => {
     const dialog = page.getByTestId('privacy-officer-dialog')
     const password = dialog.getByTestId('admin-password-input')
     await password.fill(`${PASSWORD}-wrong`)
-    await dialog.getByTestId('admin-password-confirm').click()
+    await dialog.getByTestId('form-dialog-save').click()
     await expect(dialog.getByTestId('admin-password-error')).toHaveText(
       t('errors.UserCurrentPasswordIncorrect'),
     )
 
     try {
       await password.fill(PASSWORD)
-      await dialog.getByTestId('admin-password-confirm').click()
+      await dialog.getByTestId('form-dialog-save').click()
 
       await expect(
         notification(page, t('pages.admin.users.toasts.privacyOfficerDesignated')),

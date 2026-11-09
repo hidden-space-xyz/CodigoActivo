@@ -1,10 +1,8 @@
-import { computed } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 
-import { partnerList, partnerMutations, type Partner, type PartnerInput } from '@/entities/partner'
-import { useCrudDialog } from '@/shared/lib/crud'
-import { useCrudFeedback, useDeleteConfirm } from '@/shared/lib/feedback'
+import { partnerList, partnerMutations, type Partner } from '@/entities/partner'
+import { useCrudActions, useCrudDialog } from '@/shared/lib/crud'
 import { useServerTable } from '@/shared/lib/paging'
 
 /**
@@ -13,8 +11,6 @@ import { useServerTable } from '@/shared/lib/paging'
  */
 export function usePartnersAdmin() {
   const { t } = useI18n()
-  const feedback = useCrudFeedback()
-  const { confirmDelete } = useDeleteConfirm()
 
   const table = useServerTable({
     ...partnerList,
@@ -27,32 +23,20 @@ export function usePartnersAdmin() {
     },
   })
   const dialog = useCrudDialog<Partner>()
-  const create = useMutation(partnerMutations.create())
-  const update = useMutation(partnerMutations.update())
-  const remove = useMutation(partnerMutations.remove())
-  const saving = computed(() => create.isPending.value || update.isPending.value)
+  const actions = useCrudActions({
+    dialog,
+    create: useMutation(partnerMutations.create()),
+    update: useMutation(partnerMutations.update()),
+    remove: useMutation(partnerMutations.remove()),
+    messages: {
+      created: t('pages.admin.partners.toasts.created'),
+      updated: t('pages.admin.partners.toasts.updated'),
+      deleted: t('pages.admin.partners.toasts.deleted'),
+      deleteHeader: t('pages.admin.partners.delete.header'),
+      deleteMessage: (partner: Partner) =>
+        t('pages.admin.partners.delete.message', { name: partner.name }),
+    },
+  })
 
-  function save(input: PartnerInput): void {
-    const partner = dialog.editing.value
-    if (partner) {
-      update.mutate(
-        { id: partner.id, input },
-        feedback.outcome(t('pages.admin.partners.toasts.updated'), dialog.close),
-      )
-      return
-    }
-    create.mutate(input, feedback.outcome(t('pages.admin.partners.toasts.created'), dialog.close))
-  }
-
-  function confirmRemove(partner: Partner): void {
-    confirmDelete({
-      header: t('pages.admin.partners.delete.header'),
-      message: t('pages.admin.partners.delete.message', { name: partner.name }),
-      accept: () => {
-        remove.mutate(partner.id, feedback.outcome(t('pages.admin.partners.toasts.deleted')))
-      },
-    })
-  }
-
-  return { table, dialog, saving, save, confirmRemove }
+  return { table, dialog, ...actions }
 }

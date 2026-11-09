@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-
 import type { Partner } from '@/entities/partner'
 import { formatDate } from '@/shared/lib/date'
 import { ActionButton } from '@/shared/ui/action-button'
@@ -9,34 +7,17 @@ import { ColumnFilterDate, ColumnSearch } from '@/shared/ui/column-filter'
 import { DataTable } from '@/shared/ui/data-table'
 import { ExternalLink } from '@/shared/ui/external-link'
 import { ListThumbnail } from '@/shared/ui/list-thumbnail'
-import { RowActions, type RowAction } from '@/shared/ui/row-actions'
+import { deleteAction, editAction, RowActions, type RowAction } from '@/shared/ui/row-actions'
 import { TablePrimaryCell } from '@/shared/ui/table-primary-cell'
 
 import { usePartnersAdmin } from '../model/use-partners-admin'
 import PartnerFormDialog from './PartnerFormDialog.vue'
 
-const { t } = useI18n()
 const { table, dialog, saving, save, confirmRemove } = usePartnersAdmin()
 const { visible, editing, openCreate, openEdit } = dialog
 
 function partnerActions(partner: Partner): RowAction[] {
-  return [
-    {
-      key: 'edit',
-      label: t('common.edit'),
-      icon: 'pencil',
-      inline: true,
-      run: () => void openEdit(partner),
-    },
-    {
-      key: 'delete',
-      label: t('common.delete'),
-      icon: 'trash',
-      inline: true,
-      danger: true,
-      run: () => confirmRemove(partner),
-    },
-  ]
+  return [editAction(() => void openEdit(partner)), deleteAction(() => confirmRemove(partner))]
 }
 </script>
 
@@ -61,7 +42,7 @@ function partnerActions(partner: Partner): RowAction[] {
       :table="table"
       :empty-text="$t('pages.admin.partners.empty.none')"
       :error-text="$t('pages.admin.partners.empty.error')"
-      :search="{ key: 'name', label: $t('pages.admin.partners.search.name') }"
+      :search="{ key: 'name', label: $t('common.searchByName') }"
     >
       <el-table-column
         prop="name"

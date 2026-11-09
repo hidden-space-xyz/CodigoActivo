@@ -13,6 +13,7 @@ import { useForm } from '@/shared/lib/form'
 import { formatFileSize } from '@/shared/lib/number'
 import { ActionButton } from '@/shared/ui/action-button'
 import { AppIcon } from '@/shared/ui/app-icon'
+import { FormField } from '@/shared/ui/form-field'
 
 import { addAttachments, reachedBy, readEmailDraft, toEmailDraft } from '../model/email-form'
 import type { SendEmailPayload } from '../model/types'
@@ -196,54 +197,42 @@ function send(): void {
         </small>
       </div>
 
-      <div class="ca-field">
-        <label class="ca-field__label" for="send-email-subject">{{
-          $t('features.sendEmail.subject')
-        }}</label>
+      <FormField
+        v-slot="{ control }"
+        for="send-email-subject"
+        :label="$t('features.sendEmail.subject')"
+        :invalid="invalid('subject')"
+        :error="errors.subject"
+        error-testid="send-email-subject-error"
+      >
         <el-input
-          id="send-email-subject"
           v-model="draft.subject"
+          v-bind="control"
           data-testid="send-email-subject"
           :maxlength="MANUAL_EMAIL_SUBJECT_MAX_LENGTH"
-          :class="{ 'ca-invalid': invalid('subject') }"
-          :aria-invalid="invalid('subject')"
-          :aria-describedby="errors.subject ? 'send-email-subject-error' : undefined"
           :placeholder="$t('features.sendEmail.subjectPlaceholder')"
         />
-        <small
-          v-if="errors.subject"
-          id="send-email-subject-error"
-          class="ca-field__error"
-          data-testid="send-email-subject-error"
-          >{{ errors.subject }}</small
-        >
-      </div>
+      </FormField>
 
-      <div class="ca-field">
-        <label class="ca-field__label" for="send-email-body">{{
-          $t('features.sendEmail.body')
-        }}</label>
+      <FormField
+        v-slot="{ control }"
+        for="send-email-body"
+        :label="$t('features.sendEmail.body')"
+        :invalid="invalid('body')"
+        :error="errors.body"
+        error-testid="send-email-body-error"
+        :hint="$t('features.sendEmail.bodyHint')"
+      >
         <el-input
-          id="send-email-body"
           v-model="draft.body"
+          v-bind="control"
           data-testid="send-email-body"
           type="textarea"
           :maxlength="MANUAL_EMAIL_BODY_MAX_LENGTH"
-          :class="{ 'ca-invalid': invalid('body') }"
-          :aria-invalid="invalid('body')"
-          :aria-describedby="errors.body ? 'send-email-body-error' : undefined"
           :placeholder="$t('features.sendEmail.bodyPlaceholder')"
           :autosize="{ minRows: 6, maxRows: 12 }"
         />
-        <small
-          v-if="errors.body"
-          id="send-email-body-error"
-          class="ca-field__error"
-          data-testid="send-email-body-error"
-          >{{ errors.body }}</small
-        >
-        <small v-else class="ca-field__hint">{{ $t('features.sendEmail.bodyHint') }}</small>
-      </div>
+      </FormField>
 
       <div class="ca-field">
         <div id="send-email-attachments-label" class="ca-field__label">

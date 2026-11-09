@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { PASSWORD_MAX_LENGTH, TWO_FACTOR_CODE_MAX_LENGTH } from '@/shared/config'
 import { BrandButton } from '@/shared/ui/brand-button'
+import { FormField } from '@/shared/ui/form-field'
 
 import { useAuthenticatorSetupDialog } from '../model/use-authenticator-setup-dialog'
 import { useDisableAuthenticatorDialog } from '../model/use-disable-authenticator-dialog'
@@ -97,63 +98,49 @@ const {
       <form class="acc-form" @submit.prevent="submitSetup">
         <template v-if="setupStep === 'password'">
           <p class="acc-form__intro">{{ $t('pages.account.twoFactor.setupPasswordIntro') }}</p>
-          <div class="ca-field acc-form__field">
-            <label class="ca-field__label" for="tf-setup-password">{{
-              $t('pages.account.twoFactor.passwordLabel')
-            }}</label>
+          <FormField
+            v-slot="{ control }"
+            for="tf-setup-password"
+            :label="$t('common.yourPassword')"
+            :error="setupPasswordErrors.password"
+            error-testid="two-factor-setup-password-error"
+            class="acc-form__field"
+          >
             <el-input
-              id="tf-setup-password"
               v-model="setupPassword.password"
+              v-bind="control"
               data-testid="two-factor-setup-password"
               type="password"
               show-password
               autocomplete="current-password"
               :maxlength="PASSWORD_MAX_LENGTH"
-              :aria-invalid="!!setupPasswordErrors.password"
-              :aria-describedby="
-                setupPasswordErrors.password ? 'tf-setup-password-error' : undefined
-              "
             />
-            <small
-              v-if="setupPasswordErrors.password"
-              id="tf-setup-password-error"
-              class="ca-field__error"
-              data-testid="two-factor-setup-password-error"
-              >{{ setupPasswordErrors.password }}</small
-            >
-          </div>
+          </FormField>
         </template>
 
         <template v-else-if="setupStep === 'emailCode'">
           <p class="acc-form__intro" data-testid="two-factor-setup-code-sent">
             {{ $t('pages.account.twoFactor.setupCodeSent', { email }) }}
           </p>
-          <div class="ca-field acc-form__field">
-            <label class="ca-field__label" for="tf-setup-email-code">{{
-              $t('pages.account.twoFactor.emailCodeLabel')
-            }}</label>
+          <FormField
+            v-slot="{ control }"
+            for="tf-setup-email-code"
+            :label="$t('pages.account.twoFactor.emailCodeLabel')"
+            :error="setupEmailCodeErrors.code"
+            error-testid="two-factor-setup-email-code-error"
+            class="acc-form__field"
+          >
             <el-input
-              id="tf-setup-email-code"
               v-model="setupEmailCode.code"
+              v-bind="control"
               data-testid="two-factor-setup-email-code"
               inputmode="numeric"
               autocomplete="one-time-code"
               :maxlength="TWO_FACTOR_CODE_MAX_LENGTH"
-              :aria-invalid="!!setupEmailCodeErrors.code"
-              :aria-describedby="
-                setupEmailCodeErrors.code ? 'tf-setup-email-code-error' : undefined
-              "
             />
-            <small
-              v-if="setupEmailCodeErrors.code"
-              id="tf-setup-email-code-error"
-              class="ca-field__error"
-              data-testid="two-factor-setup-email-code-error"
-              >{{ setupEmailCodeErrors.code }}</small
-            >
-          </div>
+          </FormField>
           <p class="tf-resend">
-            {{ $t('pages.account.twoFactor.resendPrompt') }}
+            {{ $t('common.resendPrompt') }}
             <BrandButton
               variant="link"
               class="tf-resend__button"
@@ -161,7 +148,7 @@ const {
               :loading="requestSetupCode.isPending.value"
               @click="resendSetupCode"
             >
-              {{ $t('pages.account.twoFactor.resend') }}
+              {{ $t('common.resendCode') }}
             </BrandButton>
           </p>
         </template>
@@ -187,28 +174,23 @@ const {
             </div>
           </div>
           <p class="acc-form__intro">{{ $t('pages.account.twoFactor.codeIntro') }}</p>
-          <div class="ca-field acc-form__field">
-            <label class="ca-field__label" for="tf-setup-code">{{
-              $t('pages.account.twoFactor.codeLabel')
-            }}</label>
+          <FormField
+            v-slot="{ control }"
+            for="tf-setup-code"
+            :label="$t('pages.account.twoFactor.codeLabel')"
+            :error="setupCodeErrors.code"
+            error-testid="two-factor-setup-code-error"
+            class="acc-form__field"
+          >
             <el-input
-              id="tf-setup-code"
               v-model="setupCode.code"
+              v-bind="control"
               data-testid="two-factor-setup-code"
               inputmode="numeric"
               autocomplete="one-time-code"
               :maxlength="TWO_FACTOR_CODE_MAX_LENGTH"
-              :aria-invalid="!!setupCodeErrors.code"
-              :aria-describedby="setupCodeErrors.code ? 'tf-setup-code-error' : undefined"
             />
-            <small
-              v-if="setupCodeErrors.code"
-              id="tf-setup-code-error"
-              class="ca-field__error"
-              data-testid="two-factor-setup-code-error"
-              >{{ setupCodeErrors.code }}</small
-            >
-          </div>
+          </FormField>
         </template>
 
         <p
@@ -234,7 +216,7 @@ const {
             data-testid="two-factor-setup-send-code"
             :loading="setupSubmitting"
           >
-            {{ $t('pages.account.twoFactor.sendCode') }}
+            {{ $t('common.sendCode') }}
           </BrandButton>
           <BrandButton
             v-else-if="setupStep === 'emailCode'"
@@ -268,51 +250,41 @@ const {
     >
       <form class="acc-form" @submit.prevent="submitDisable">
         <p class="acc-form__intro">{{ $t('pages.account.twoFactor.disableIntro') }}</p>
-        <div class="ca-field acc-form__field">
-          <label class="ca-field__label" for="tf-disable-password">{{
-            $t('pages.account.twoFactor.passwordLabel')
-          }}</label>
+        <FormField
+          v-slot="{ control }"
+          for="tf-disable-password"
+          :label="$t('common.yourPassword')"
+          :error="disableErrors.password"
+          error-testid="two-factor-disable-password-error"
+          class="acc-form__field"
+        >
           <el-input
-            id="tf-disable-password"
             v-model="disableDraft.password"
+            v-bind="control"
             data-testid="two-factor-disable-password"
             type="password"
             show-password
             autocomplete="current-password"
             :maxlength="PASSWORD_MAX_LENGTH"
-            :aria-invalid="!!disableErrors.password"
-            :aria-describedby="disableErrors.password ? 'tf-disable-password-error' : undefined"
           />
-          <small
-            v-if="disableErrors.password"
-            id="tf-disable-password-error"
-            class="ca-field__error"
-            data-testid="two-factor-disable-password-error"
-            >{{ disableErrors.password }}</small
-          >
-        </div>
-        <div class="ca-field acc-form__field">
-          <label class="ca-field__label" for="tf-disable-code">{{
-            $t('pages.account.twoFactor.codeLabel')
-          }}</label>
+        </FormField>
+        <FormField
+          v-slot="{ control }"
+          for="tf-disable-code"
+          :label="$t('pages.account.twoFactor.codeLabel')"
+          :error="disableErrors.code"
+          error-testid="two-factor-disable-code-error"
+          class="acc-form__field"
+        >
           <el-input
-            id="tf-disable-code"
             v-model="disableDraft.code"
+            v-bind="control"
             data-testid="two-factor-disable-code"
             inputmode="numeric"
             autocomplete="one-time-code"
             :maxlength="TWO_FACTOR_CODE_MAX_LENGTH"
-            :aria-invalid="!!disableErrors.code"
-            :aria-describedby="disableErrors.code ? 'tf-disable-code-error' : undefined"
           />
-          <small
-            v-if="disableErrors.code"
-            id="tf-disable-code-error"
-            class="ca-field__error"
-            data-testid="two-factor-disable-code-error"
-            >{{ disableErrors.code }}</small
-          >
-        </div>
+        </FormField>
         <p
           v-if="errorMessage"
           class="ca-form-alert acc-form__alert"
@@ -370,60 +342,6 @@ const {
   max-width: 56ch;
 }
 
-.acc-pane__actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.acc-info {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px 24px;
-  margin: 0;
-}
-
-.acc-info__row {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.acc-info__row dt {
-  font-size: 12px;
-  color: var(--ca-text-dim);
-}
-
-.acc-info__row dd {
-  margin: 0;
-  font-weight: 600;
-  color: var(--ca-text);
-  overflow-wrap: anywhere;
-}
-
-.acc-form__intro {
-  margin: 0 0 14px;
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--ca-text-muted);
-}
-
-.acc-form__field {
-  margin-bottom: 14px;
-}
-
-.acc-form__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 8px;
-}
-
-.acc-form__alert {
-  margin-bottom: 10px;
-}
-
 .tf-resend {
   margin: 0 0 14px;
   font-size: 13.5px;
@@ -474,19 +392,5 @@ const {
   color: var(--ca-text);
   overflow-wrap: anywhere;
   user-select: all;
-}
-
-@media (max-width: 640px) {
-  .acc-info {
-    grid-template-columns: 1fr;
-  }
-
-  .acc-pane__actions {
-    width: 100%;
-  }
-
-  .acc-pane__actions > * {
-    flex: 1 1 100%;
-  }
 }
 </style>

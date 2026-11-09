@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { PASSWORD_MAX_LENGTH, TWO_FACTOR_CODE_MAX_LENGTH } from '@/shared/config'
 import { BrandButton } from '@/shared/ui/brand-button'
+import { FormField } from '@/shared/ui/form-field'
 
 import { useDeleteAccount } from '../model/use-delete-account'
 import { useDeleteAccountDialog } from '../model/use-delete-account-dialog'
@@ -56,29 +57,24 @@ const {
       <form class="acc-form" @submit.prevent="submit">
         <template v-if="!codeStep">
           <p class="acc-form__intro">{{ $t('pages.account.deleteAccount.passwordIntro') }}</p>
-          <div class="ca-field acc-form__field">
-            <label class="ca-field__label" for="del-password">{{
-              $t('pages.account.deleteAccount.passwordLabel')
-            }}</label>
+          <FormField
+            v-slot="{ control }"
+            for="del-password"
+            :label="$t('common.yourPassword')"
+            :error="errors.password"
+            error-testid="delete-account-password-error"
+            class="acc-form__field"
+          >
             <el-input
-              id="del-password"
               v-model="draft.password"
+              v-bind="control"
               data-testid="delete-account-password"
               type="password"
               show-password
               autocomplete="current-password"
               :maxlength="PASSWORD_MAX_LENGTH"
-              :aria-invalid="!!errors.password"
-              :aria-describedby="errors.password ? 'del-password-error' : undefined"
             />
-            <small
-              v-if="errors.password"
-              id="del-password-error"
-              class="ca-field__error"
-              data-testid="delete-account-password-error"
-              >{{ errors.password }}</small
-            >
-          </div>
+          </FormField>
         </template>
 
         <template v-else>
@@ -89,10 +85,11 @@ const {
                 : $t('pages.account.deleteAccount.codeSent', { email })
             }}
           </p>
-          <div class="ca-field acc-form__field">
-            <label class="ca-field__label" for="del-code">{{
-              $t('pages.account.deleteAccount.codeLabel')
-            }}</label>
+          <FormField
+            for="del-code"
+            :label="$t('pages.account.deleteAccount.codeLabel')"
+            class="acc-form__field"
+          >
             <el-input
               id="del-code"
               v-model="draft.code"
@@ -101,16 +98,16 @@ const {
               autocomplete="one-time-code"
               :maxlength="TWO_FACTOR_CODE_MAX_LENGTH"
             />
-          </div>
+          </FormField>
           <p v-if="!isAuthenticator" class="acc-danger__resend">
-            {{ $t('pages.account.deleteAccount.resendPrompt') }}
+            {{ $t('common.resendPrompt') }}
             <BrandButton
               variant="link"
               class="acc-danger__resend-button"
               :loading="requestCode.isPending.value"
               @click="resendCode"
             >
-              {{ $t('pages.account.deleteAccount.resend') }}
+              {{ $t('common.resendCode') }}
             </BrandButton>
           </p>
           <div class="acc-danger__consent">
@@ -145,9 +142,7 @@ const {
             :loading="requestCode.isPending.value"
           >
             {{
-              isAuthenticator
-                ? $t('pages.account.deleteAccount.continue')
-                : $t('pages.account.deleteAccount.sendCode')
+              isAuthenticator ? $t('pages.account.deleteAccount.continue') : $t('common.sendCode')
             }}
           </BrandButton>
           <BrandButton
@@ -246,28 +241,6 @@ const {
 
 .acc-danger__submit:hover {
   background: var(--ca-danger-ink);
-}
-
-.acc-form__intro {
-  margin: 0 0 14px;
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--ca-text-muted);
-}
-
-.acc-form__field {
-  margin-bottom: 14px;
-}
-
-.acc-form__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 8px;
-}
-
-.acc-form__alert {
-  margin-bottom: 10px;
 }
 
 @media (max-width: 640px) {

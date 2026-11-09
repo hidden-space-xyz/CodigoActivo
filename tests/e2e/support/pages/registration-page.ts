@@ -75,10 +75,10 @@ export class RegistrationPage {
   async fill(form: RegistrationForm): Promise<void> {
     const { person } = form
     const yourData = this.section('your-data')
-    await yourData.getByTestId('register-first-name').fill(person.firstName)
-    await yourData.getByTestId('register-last-name').fill(person.lastName)
-    await yourData.getByTestId('register-national-id').locator('input').fill(person.nationalId)
-    await chooseOption(yourData.getByTestId('register-gender'), person.gender)
+    await yourData.getByTestId('person-fields-first-name').fill(person.firstName)
+    await yourData.getByTestId('person-fields-last-name').fill(person.lastName)
+    await yourData.getByTestId('person-fields-national-id').locator('input').fill(person.nationalId)
+    await chooseOption(yourData.getByTestId('person-fields-gender'), person.gender)
     await this.section('contact').getByTestId('register-phone').fill(person.phone)
     const access = this.section('access')
     await access.getByTestId('register-email').fill(person.email)
@@ -96,9 +96,9 @@ export class RegistrationPage {
   async addMinor(n: number, minor: Minor): Promise<void> {
     await this.page.getByTestId('register-add-minor').click()
     const fieldset = this.minor(n)
-    await fieldset.getByTestId('register-minor-first-name').fill(minor.firstName)
-    await fieldset.getByTestId('register-minor-last-name').fill(minor.lastName)
-    await fieldset.getByTestId('register-minor-birth-date').fill(minor.birthDate)
-    await chooseOption(fieldset.getByTestId('register-minor-gender'), minor.gender)
+    await fieldset.getByTestId('person-fields-first-name').fill(minor.firstName)
+    await fieldset.getByTestId('person-fields-last-name').fill(minor.lastName)
+    await fieldset.getByTestId('person-fields-birth-date').fill(minor.birthDate)
+    await chooseOption(fieldset.getByTestId('person-fields-gender'), minor.gender)
   }
 }

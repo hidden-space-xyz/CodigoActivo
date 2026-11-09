@@ -18,7 +18,7 @@ import { sessionOf } from '../../../../support/session'
 
 const ACTION = 'pages.account.deleteAccount.action'
 const HEADER = 'pages.account.deleteAccount.dialogHeader'
-const SEND_CODE = 'pages.account.deleteAccount.sendCode'
+const SEND_CODE = 'common.sendCode'
 const CONTINUE = 'pages.account.deleteAccount.continue'
 const SUBMIT = 'pages.account.deleteAccount.submit'
 
@@ -144,7 +144,7 @@ describe('DeleteAccountSection', () => {
     await click(findButton(t(CONTINUE), dialog))
 
     expect(dialog.textContent).toContain(t('pages.account.deleteAccount.authenticatorIntro'))
-    expect(findButtons(t('pages.account.deleteAccount.resend'), dialog)).toHaveLength(0)
+    expect(findButtons(t('common.resendCode'), dialog)).toHaveLength(0)
     expect(calls).toHaveLength(0)
 
     await typeInto('#del-code', '654321', dialog)
@@ -207,7 +207,7 @@ describe('DeleteAccountSection', () => {
     expect(openDialogs()).toHaveLength(1)
     expect(router.currentRoute.value.name).toBe('account')
 
-    await click(findButton(t('pages.account.deleteAccount.resend'), dialog))
+    await click(findButton(t('common.resendCode'), dialog))
 
     await vi.waitFor(() =>
       expect(dialog.querySelector('[role="alert"]')?.textContent).toBe(

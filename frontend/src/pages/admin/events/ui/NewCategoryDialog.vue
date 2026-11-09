@@ -2,7 +2,7 @@
 import { watch } from 'vue'
 
 import { EventCategoryFields } from '@/entities/event-category'
-import { ActionButton } from '@/shared/ui/action-button'
+import { FormDialog } from '@/shared/ui/form-dialog'
 
 import { useNewCategory } from '../model/use-new-category'
 
@@ -26,46 +26,21 @@ watch(visible, (open) => {
 </script>
 
 <template>
-  <el-dialog
-    v-model="visible"
-    :close-on-click-modal="false"
-    :close-on-press-escape="false"
+  <FormDialog
+    v-model:visible="visible"
     :title="$t('pages.admin.events.categoryDialog.header')"
     width="min(380px, 92vw)"
     append-to-body
     data-testid="new-category-dialog"
+    :saving="creating"
+    :confirm-label="$t('common.create')"
+    @submit="create"
   >
-    <form class="form" @submit.prevent="create">
-      <EventCategoryFields
-        v-model:name="draft.name"
-        v-model:color="draft.color"
-        :invalid="invalid('name')"
-      />
-      <p v-if="error" class="ca-form-alert" role="alert">{{ error }}</p>
-    </form>
-    <template #footer>
-      <ActionButton
-        :label="$t('common.cancel')"
-        text
-        :disabled="creating"
-        @click="visible = false"
-      />
-      <ActionButton
-        :label="$t('common.create')"
-        type="primary"
-        :loading="creating"
-        data-testid="new-category-dialog-create"
-        @click="create"
-      />
-    </template>
-  </el-dialog>
+    <EventCategoryFields
+      v-model:name="draft.name"
+      v-model:color="draft.color"
+      :invalid="invalid('name')"
+    />
+    <p v-if="error" class="ca-form-alert" role="alert">{{ error }}</p>
+  </FormDialog>
 </template>
-
-<style scoped>
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding-top: 6px;
-}
-</style>

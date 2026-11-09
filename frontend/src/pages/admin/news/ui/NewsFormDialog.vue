@@ -5,7 +5,8 @@ import { ThumbnailField, uploadFileRequest, useThumbnailUpload } from '@/entitie
 import type { NewsItem, NewsItemInput } from '@/entities/news-item'
 import { SUBTITLE_MAX_LENGTH, TITLE_MAX_LENGTH } from '@/shared/config'
 import { useForm } from '@/shared/lib/form'
-import { ActionButton } from '@/shared/ui/action-button'
+import { FormDialog } from '@/shared/ui/form-dialog'
+import { FormField } from '@/shared/ui/form-field'
 import { RichTextEditor } from '@/shared/ui/rich-text-editor'
 
 import { readNewsDraft, toNewsDraft } from '../model/news-form'
@@ -46,97 +47,64 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-  <el-dialog
-    v-model="visible"
-    :close-on-click-modal="false"
-    :close-on-press-escape="false"
+  <FormDialog
+    v-model:visible="visible"
     data-testid="news-form-dialog"
     :title="newsItem ? $t('pages.admin.news.form.editHeader') : $t('pages.admin.news.newLabel')"
     width="min(920px, 94vw)"
+    :saving="saving || uploading"
+    scroll-height="78vh"
+    @submit="save"
   >
-    <form class="form" @submit.prevent="save">
-      <div class="ca-field">
-        <label class="ca-field__label" for="news-title">{{
-          $t('pages.admin.news.form.title')
-        }}</label>
-        <el-input
-          id="news-title"
-          v-model="draft.title"
-          data-testid="news-form-title"
-          :maxlength="TITLE_MAX_LENGTH"
-          :class="{ 'ca-invalid': invalid('title') }"
-          :aria-invalid="invalid('title')"
-        />
-      </div>
-      <div class="ca-field">
-        <label class="ca-field__label" for="news-subtitle">{{
-          $t('pages.admin.news.form.subtitle')
-        }}</label>
-        <el-input
-          id="news-subtitle"
-          v-model="draft.subtitle"
-          data-testid="news-form-subtitle"
-          :maxlength="SUBTITLE_MAX_LENGTH"
-          :class="{ 'ca-invalid': invalid('subtitle') }"
-          :aria-invalid="invalid('subtitle')"
-        />
-      </div>
-      <div class="ca-field">
-        <div class="ca-field__label">{{ $t('pages.admin.news.form.description') }}</div>
-        <RichTextEditor
-          v-model="draft.description"
-          data-testid="news-form-description"
-          :label="$t('pages.admin.news.form.description')"
-          :upload="uploadFileRequest"
-          :invalid="!!errors.description"
-        />
-        <small v-if="errors.description" class="ca-field__error">{{ errors.description }}</small>
-      </div>
-      <div class="ca-field">
-        <div id="news-image-label" class="ca-field__label">{{ $t('common.image') }}</div>
-        <ThumbnailField
-          role="group"
-          aria-labelledby="news-image-label"
-          :existing-thumbnail-id="newsItem?.thumbnailId"
-          :invalid="submitted && missingThumbnail"
-          :upload-error="uploadError"
-          @update:file="pickedFile = $event"
-        />
-      </div>
-    </form>
-
-    <template #footer>
-      <ActionButton
-        :label="$t('common.cancel')"
-        text
-        :disabled="saving || uploading"
-        @click="visible = false"
+    <FormField
+      v-slot="{ control }"
+      for="news-title"
+      :label="$t('common.title')"
+      :invalid="invalid('title')"
+    >
+      <el-input
+        v-model="draft.title"
+        v-bind="control"
+        data-testid="news-form-title"
+        :maxlength="TITLE_MAX_LENGTH"
       />
-      <ActionButton
-        data-testid="news-form-dialog-save"
-        :label="$t('common.save')"
-        type="primary"
-        :loading="saving || uploading"
-        @click="save"
+    </FormField>
+    <FormField
+      v-slot="{ control }"
+      for="news-subtitle"
+      :label="$t('common.subtitle')"
+      :invalid="invalid('subtitle')"
+    >
+      <el-input
+        v-model="draft.subtitle"
+        v-bind="control"
+        data-testid="news-form-subtitle"
+        :maxlength="SUBTITLE_MAX_LENGTH"
       />
-    </template>
-  </el-dialog>
+    </FormField>
+    <FormField
+      v-slot="{ invalid: refused }"
+      :label="$t('common.description')"
+      :error="errors.description"
+    >
+      <RichTextEditor
+        v-model="draft.description"
+        data-testid="news-form-description"
+        :label="$t('common.description')"
+        :upload="uploadFileRequest"
+        :invalid="refused"
+      />
+    </FormField>
+    <div class="ca-field">
+      <div id="news-image-label" class="ca-field__label">{{ $t('common.image') }}</div>
+      <ThumbnailField
+        role="group"
+        aria-labelledby="news-image-label"
+        :existing-thumbnail-id="newsItem?.thumbnailId"
+        :invalid="submitted && missingThumbnail"
+        :upload-error="uploadError"
+        @update:file="pickedFile = $event"
+      />
+    </div>
+  </FormDialog>
 </template>
-
-<style scoped>
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding-top: 6px;
-  max-height: 78vh;
-  overflow-y: auto;
-}
-
-@media (max-width: 640px) {
-  .form {
-    max-height: none;
-    overflow-y: visible;
-  }
-}
-</style>

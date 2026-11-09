@@ -217,7 +217,7 @@ const staffRoleOptions = computed(() =>
       :table="table"
       :empty-text="emptyText"
       :error-text="$t('pages.admin.users.empty.error')"
-      :search="{ key: 'name', label: $t('pages.admin.users.search.name') }"
+      :search="{ key: 'name', label: $t('common.searchByName') }"
       :extra-filters="relationChips"
     >
       <template #filters>

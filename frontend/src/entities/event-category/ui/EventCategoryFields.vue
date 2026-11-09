@@ -3,6 +3,7 @@ import { computed } from 'vue'
 
 import { CATALOG_NAME_MAX_LENGTH } from '@/shared/config'
 import { ColorTag } from '@/shared/ui/color-tag'
+import { FormField } from '@/shared/ui/form-field'
 
 import { DEFAULT_CATEGORY_COLOR, toHexColor } from '../model/category-form'
 
@@ -26,17 +27,19 @@ function pickColor(value: string | null): void {
 
 <template>
   <div class="category-fields">
-    <div class="ca-field">
-      <label class="ca-field__label" for="event-category-name">{{ $t('common.name') }}</label>
+    <FormField
+      v-slot="{ control }"
+      for="event-category-name"
+      :label="$t('common.name')"
+      :invalid="invalid"
+    >
       <el-input
-        id="event-category-name"
         v-model="name"
+        v-bind="control"
         data-testid="event-category-fields-name"
         :maxlength="CATALOG_NAME_MAX_LENGTH"
-        :class="{ 'ca-invalid': invalid }"
-        :aria-invalid="invalid"
       />
-    </div>
+    </FormField>
     <div class="ca-field">
       <div id="event-category-color-label" class="ca-field__label">
         {{ $t('entities.eventCategory.fields.color') }}

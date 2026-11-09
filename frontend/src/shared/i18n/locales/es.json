@@ -10,6 +10,7 @@
     "loading": "Cargando…",
     "loadMore": "Cargar más",
     "searchByTitleOrSubtitle": "Buscar por título o subtítulo",
+    "searchByName": "Buscar por nombre",
     "retry": "Reintentar",
     "backToHome": "Volver al inicio",
     "name": "Nombre",
@@ -22,6 +23,11 @@
     "secondaryPhoneOptional": "Teléfono secundario (opcional)",
     "password": "Contraseña",
     "confirmPassword": "Repite la contraseña",
+    "yourPassword": "Tu contraseña",
+    "verificationCode": "Código de verificación",
+    "sendCode": "Enviar código",
+    "resendCode": "Reenviar código",
+    "resendPrompt": "¿No te ha llegado?",
     "birthDate": "Fecha de nacimiento",
     "nationalId": "DNI/NIE",
     "newsConsent": "Acepta novedades",
@@ -33,6 +39,9 @@
     "imageUploadFailed": "No se pudo subir la imagen.",
     "status": "Estado",
     "actions": "Acciones",
+    "title": "Título",
+    "subtitle": "Subtítulo",
+    "description": "Descripción",
     "greeting": "Hola, {name}",
     "login": "Iniciar sesión",
     "logout": "Cerrar sesión",
@@ -514,14 +523,10 @@
         "action": "Eliminar mi cuenta",
         "dialogHeader": "Eliminar mi cuenta",
         "passwordIntro": "Para confirmar que eres tú, escribe tu contraseña actual. Después te pediremos tu código de verificación en dos pasos.",
-        "passwordLabel": "Tu contraseña",
-        "sendCode": "Enviar código",
         "continue": "Continuar",
         "codeSent": "Te hemos enviado un código a {email}. Escríbelo aquí para confirmar la eliminación.",
         "authenticatorIntro": "Escribe el código que muestra ahora tu aplicación de autenticación. No te enviamos ningún correo.",
         "codeLabel": "Código de confirmación",
-        "resendPrompt": "¿No te ha llegado?",
-        "resend": "Reenviar código",
         "irreversible": "Entiendo que esta acción es irreversible y que también da de baja a los menores a mi cargo",
         "submit": "Eliminar definitivamente",
         "deletedSummary": "Cuenta eliminada",
@@ -585,12 +590,9 @@
           "passwordRequired": "Introduce tu contraseña actual."
         },
         "emailChange": {
-          "codeLabel": "Código de verificación",
           "emailHint": "Para cambiar el correo también necesitas un código de verificación: te lo enviaremos a tu correo actual, {email}.",
           "codeSent": "Te hemos enviado un código a {email}. Escríbelo aquí para confirmar el cambio.",
           "authenticatorHint": "Para cambiar el correo, escribe también el código que muestra ahora tu aplicación de autenticación.",
-          "sendCode": "Enviar código",
-          "resend": "Reenviar código",
           "passwordFirst": "Escribe tu contraseña actual para recibir el código.",
           "codeRequired": "Introduce el código de verificación."
         },
@@ -620,12 +622,8 @@
         "useEmail": "Volver al código por correo",
         "setupHeader": "Configurar aplicación de autenticación",
         "setupPasswordIntro": "Para cambiar tu método de verificación, confirma primero tu contraseña. Después te enviaremos un código a tu correo.",
-        "passwordLabel": "Tu contraseña",
-        "sendCode": "Enviar código",
         "setupCodeSent": "Te hemos enviado un código a {email}. Escríbelo aquí para continuar.",
         "emailCodeLabel": "Código del correo",
-        "resendPrompt": "¿No te ha llegado?",
-        "resend": "Reenviar código",
         "continue": "Continuar",
         "scanIntro": "Escanea este código QR con tu aplicación de autenticación (Google Authenticator, Microsoft Authenticator, Aegis…) o introduce la clave a mano.",
         "qrAlt": "Código QR para la aplicación de autenticación",
@@ -687,7 +685,6 @@
           "none": "Aún no hay recursos."
         },
         "columns": {
-          "title": "Título",
           "type": "Tipo",
           "url": "Enlace",
           "created": "Creado"
@@ -708,12 +705,9 @@
         "form": {
           "editHeader": "Editar recurso",
           "newHeader": "Nuevo recurso",
-          "title": "Título",
-          "subtitle": "Subtítulo",
           "type": "Tipo",
           "typePlaceholder": "Selecciona un tipo",
           "typesLoadError": "No se pudieron cargar los tipos de recurso. Cierra el diálogo y vuelve a intentarlo.",
-          "description": "Descripción",
           "url": "Enlace",
           "urlPlaceholder": "https://…",
           "problems": {
@@ -740,7 +734,6 @@
           "fromDate": "Alta"
         },
         "search": {
-          "name": "Buscar por nombre",
           "website": "Buscar sitio"
         },
         "toasts": {
@@ -837,7 +830,6 @@
           "selfRole": "Debe cambiarlo otro administrador"
         },
         "search": {
-          "name": "Buscar por nombre",
           "email": "Buscar correo",
           "phone": "Buscar teléfono",
           "nationalId": "Buscar DNI/NIE"
@@ -875,7 +867,6 @@
           "placeholder": "Selecciona un tipo"
         },
         "adminPassword": {
-          "label": "Tu contraseña",
           "form": {
             "problems": {
               "passwordRequired": "Introduce tu contraseña."
@@ -952,11 +943,8 @@
           "newCategory": "Nueva",
           "categoriesPlaceholder": "Selecciona categorías",
           "fields": {
-            "title": "Título",
-            "subtitle": "Subtítulo",
             "categories": "Categorías",
             "termsDocuments": "Términos y condiciones (opcional)",
-            "description": "Descripción",
             "eventStart": "Inicio del evento",
             "eventEnd": "Fin del evento",
             "earlySignupStart": "Apertura de inscripción anticipada (opcional)",
@@ -991,7 +979,6 @@
       "news": {
         "newLabel": "Añadir novedad",
         "columns": {
-          "title": "Título",
           "created": "Creado"
         },
         "delete": {
@@ -999,10 +986,7 @@
           "message": "¿Seguro que quieres eliminar \"{title}\"? Esta acción no se puede deshacer."
         },
         "form": {
-          "editHeader": "Editar novedad",
-          "description": "Descripción",
-          "subtitle": "Subtítulo",
-          "title": "Título"
+          "editHeader": "Editar novedad"
         },
         "feature": "Destacar en portada",
         "featured": "Destacada",
@@ -1043,9 +1027,6 @@
             "error": "No se pudieron cargar las categorías."
           },
           "newButton": "Nueva categoría",
-          "search": {
-            "name": "Buscar por nombre"
-          },
           "title": "Categorías de eventos"
         },
         "termsDocuments": {
@@ -1085,9 +1066,6 @@
           "kinds": {
             "Conditions": "Condiciones",
             "Consent": "Consentimiento"
-          },
-          "search": {
-            "name": "Buscar por nombre"
           }
         },
         "header": {
@@ -1195,7 +1173,6 @@
           "none": "Este evento aún no tiene actividades."
         },
         "columns": {
-          "title": "Título",
           "searchTitle": "Buscar por título",
           "schedule": "Horario",
           "modality": "Modalidad"
@@ -1264,8 +1241,6 @@
             "noTargetPlaceholder": "Sin objetivo",
             "hint": "Opcional. Al superarse, el listado avisará de que la actividad está muy solicitada; nunca se impide la inscripción.",
             "fields": {
-              "title": "Título",
-              "description": "Descripción",
               "modality": "Modalidad",
               "location": "Ubicación o plataforma",
               "start": "Inicio",
@@ -1622,14 +1597,9 @@
           "intro": "Indica quién pide los datos y la referencia de la petición. La consulta dura 15 minutos, queda registrada y se avisa al contacto legal de la asociación. Después te pediremos tu código de verificación en dos pasos.",
           "requester": "Quién pide los datos",
           "reference": "Referencia de la petición",
-          "password": "Tu contraseña",
-          "sendCode": "Enviar código",
           "continue": "Continuar",
           "codeSent": "Te hemos enviado un código a {email}. Escríbelo aquí para abrir la consulta.",
           "authenticatorIntro": "Escribe el código que muestra ahora tu aplicación de autenticación. No te enviamos ningún correo.",
-          "code": "Código de verificación",
-          "resendPrompt": "¿No te ha llegado?",
-          "resend": "Reenviar código",
           "confirm": "Confirmar y abrir",
           "form": {
             "problems": {
@@ -1742,7 +1712,6 @@
       "emailIntroBefore": "Te hemos enviado un código de 6 dígitos a ",
       "emailIntroAfter": ". Introdúcelo para terminar de iniciar sesión.",
       "authenticatorIntro": "Introduce el código que muestra tu aplicación de autenticación.",
-      "codeLabel": "Código de verificación",
       "submit": "Verificar",
       "resendPrompt": "¿No has recibido el correo? Revisa la carpeta de spam o",
       "resend": "pide otro código",

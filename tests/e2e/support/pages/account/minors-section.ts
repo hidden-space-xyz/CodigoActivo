@@ -52,11 +52,11 @@ export class MinorDialog {
 
   constructor(page: Page, mode: 'add' | 'edit') {
     this.root = page.getByTestId(`minor-dialog-${mode}`)
-    this.firstName = this.root.getByTestId('minor-dialog-first-name')
-    this.lastName = this.root.getByTestId('minor-dialog-last-name')
-    this.birthDate = this.root.getByTestId('minor-dialog-birth-date')
+    this.firstName = this.root.getByTestId('person-fields-first-name')
+    this.lastName = this.root.getByTestId('person-fields-last-name')
+    this.birthDate = this.root.getByTestId('person-fields-birth-date')
     this.birthDateOutOfRange = this.birthDate.and(page.locator(':out-of-range'))
-    this.gender = this.root.getByTestId('minor-dialog-gender')
+    this.gender = this.root.getByTestId('person-fields-gender')
     this.save = this.root.getByTestId('minor-dialog-save')
   }
 

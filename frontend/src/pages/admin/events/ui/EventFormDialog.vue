@@ -10,6 +10,8 @@ import { SUBTITLE_MAX_LENGTH, TITLE_MAX_LENGTH } from '@/shared/config'
 import { isDayAfter, isDayBefore } from '@/shared/lib/date'
 import { useForm } from '@/shared/lib/form'
 import { ActionButton } from '@/shared/ui/action-button'
+import { FormDialog } from '@/shared/ui/form-dialog'
+import { FormField } from '@/shared/ui/form-field'
 import { RichTextEditor } from '@/shared/ui/rich-text-editor'
 
 import { readEventDraft, toEventDraft } from '../model/event-form'
@@ -83,295 +85,255 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-  <el-dialog
-    v-model="visible"
-    :close-on-click-modal="false"
-    :close-on-press-escape="false"
+  <FormDialog
+    v-model:visible="visible"
     :title="
       event ? $t('pages.admin.events.form.editHeader') : $t('pages.admin.events.form.newHeader')
     "
     width="min(920px, 94vw)"
     append-to-body
     data-testid="event-form-dialog"
+    :saving="saving || uploading"
+    scroll-height="68vh"
+    @submit="save"
   >
-    <form class="form form--scroll" @submit.prevent="save">
-      <div class="ca-field">
-        <label class="ca-field__label" for="event-title">{{
-          $t('pages.admin.events.form.fields.title')
-        }}</label>
-        <el-input
-          id="event-title"
-          v-model="draft.title"
-          :maxlength="TITLE_MAX_LENGTH"
-          :class="{ 'ca-invalid': invalid('title') }"
-          :aria-invalid="invalid('title')"
-          data-testid="event-form-title"
-        />
-      </div>
-      <div class="ca-field">
-        <label class="ca-field__label" for="event-subtitle">{{
-          $t('pages.admin.events.form.fields.subtitle')
-        }}</label>
-        <el-input
-          id="event-subtitle"
-          v-model="draft.subtitle"
-          :maxlength="SUBTITLE_MAX_LENGTH"
-          :class="{ 'ca-invalid': invalid('subtitle') }"
-          :aria-invalid="invalid('subtitle')"
-          data-testid="event-form-subtitle"
-        />
-      </div>
-      <div class="ca-field">
-        <label class="ca-field__label" for="event-categories">{{
-          $t('pages.admin.events.form.fields.categories')
-        }}</label>
-        <div class="form__cats">
-          <el-select
-            id="event-categories"
-            v-model="draft.categoryIds"
-            multiple
-            filterable
-            collapse-tags
-            collapse-tags-tooltip
-            :placeholder="$t('pages.admin.events.form.categoriesPlaceholder')"
-            class="form__cats-select"
-            :class="{ 'ca-invalid': invalid('categoryIds') }"
-            data-testid="event-form-categories"
-          >
-            <el-option
-              v-for="category in categoryOptions"
-              :key="category.id"
-              :label="category.name"
-              :value="category.id"
-              :data-testid="`option-${category.id}`"
-            />
-          </el-select>
-          <ActionButton
-            :label="$t('pages.admin.events.form.newCategory')"
-            icon="plus"
-            type="primary"
-            text
-            size="small"
-            data-testid="event-form-new-category"
-            @click="categoryDialogVisible = true"
-          />
-        </div>
-        <small
-          v-if="errors.categoryIds"
-          class="ca-field__error"
-          data-testid="event-form-categories-error"
-          >{{ errors.categoryIds }}</small
-        >
-      </div>
-      <div class="ca-field">
-        <label class="ca-field__label" for="event-terms-documents">{{
-          $t('pages.admin.events.form.fields.termsDocuments')
-        }}</label>
+    <FormField
+      v-slot="{ control }"
+      for="event-title"
+      :label="$t('common.title')"
+      :invalid="invalid('title')"
+    >
+      <el-input
+        v-model="draft.title"
+        v-bind="control"
+        :maxlength="TITLE_MAX_LENGTH"
+        data-testid="event-form-title"
+      />
+    </FormField>
+    <FormField
+      v-slot="{ control }"
+      for="event-subtitle"
+      :label="$t('common.subtitle')"
+      :invalid="invalid('subtitle')"
+    >
+      <el-input
+        v-model="draft.subtitle"
+        v-bind="control"
+        :maxlength="SUBTITLE_MAX_LENGTH"
+        data-testid="event-form-subtitle"
+      />
+    </FormField>
+    <FormField
+      v-slot="{ control }"
+      for="event-categories"
+      :label="$t('pages.admin.events.form.fields.categories')"
+      :invalid="invalid('categoryIds')"
+      :error="errors.categoryIds"
+      error-testid="event-form-categories-error"
+    >
+      <div class="form__cats">
         <el-select
-          id="event-terms-documents"
-          v-model="draft.termsDocumentIds"
+          :id="control.id"
+          v-model="draft.categoryIds"
           multiple
           filterable
           collapse-tags
           collapse-tags-tooltip
-          :placeholder="$t('pages.admin.events.form.termsPlaceholder')"
-          data-testid="event-form-terms"
+          :placeholder="$t('pages.admin.events.form.categoriesPlaceholder')"
+          class="form__cats-select"
+          :class="control.class"
+          data-testid="event-form-categories"
         >
           <el-option
-            v-for="document in termsOptions"
-            :key="document.id"
-            :label="document.name"
-            :value="document.id"
-            :data-testid="`option-${document.id}`"
+            v-for="category in categoryOptions"
+            :key="category.id"
+            :label="category.name"
+            :value="category.id"
+            :data-testid="`option-${category.id}`"
           />
         </el-select>
-        <small class="ca-field__hint">{{
-          $t('pages.admin.events.form.hints.termsDocuments')
-        }}</small>
-        <ul v-if="draft.termsDocumentIds.length" class="form__terms-list">
-          <li
-            v-for="id in draft.termsDocumentIds"
-            :key="id"
-            class="form__terms-row"
-            data-testid="event-form-terms-row"
-          >
-            <span class="form__terms-name">{{ termsName(id) }}</span>
-            <span v-if="consentIds.has(id)" class="form__terms-consent">{{
-              $t('pages.admin.events.form.termsConsentOptional')
-            }}</span>
-            <el-switch
-              v-else
-              :model-value="draft.termsRequired[id] ?? true"
-              :active-text="$t('pages.admin.events.form.termsRequired')"
-              data-testid="event-form-terms-required"
-              @update:model-value="
-                (value: string | number | boolean) => setTermsRequired(id, value)
-              "
-            />
-          </li>
-        </ul>
-      </div>
-      <div class="ca-field">
-        <div class="ca-field__label">{{ $t('pages.admin.events.form.fields.description') }}</div>
-        <RichTextEditor
-          v-model="draft.description"
-          :label="$t('pages.admin.events.form.fields.description')"
-          :upload="uploadFileRequest"
-          :invalid="!!errors.description"
-          data-testid="event-form-description"
+        <ActionButton
+          :label="$t('pages.admin.events.form.newCategory')"
+          icon="plus"
+          type="primary"
+          text
+          size="small"
+          data-testid="event-form-new-category"
+          @click="categoryDialogVisible = true"
         />
-        <small v-if="errors.description" class="ca-field__error">{{ errors.description }}</small>
       </div>
-      <div class="ca-form-grid">
-        <div class="ca-field" data-testid="event-form-starts-on">
-          <label class="ca-field__label" for="event-start">{{
-            $t('pages.admin.events.form.fields.eventStart')
-          }}</label>
-          <el-date-picker
-            id="event-start"
-            v-model="draft.startsAt"
-            type="date"
-            :format="DATE_FORMAT"
-            :class="{ 'ca-invalid': invalid('startsAt') }"
-          />
-          <small
-            v-if="errors.startsAt"
-            class="ca-field__error"
-            data-testid="event-form-starts-on-error"
-            >{{ errors.startsAt }}</small
-          >
-        </div>
-        <div class="ca-field" data-testid="event-form-ends-on">
-          <label class="ca-field__label" for="event-end">{{
-            $t('pages.admin.events.form.fields.eventEnd')
-          }}</label>
-          <el-date-picker
-            id="event-end"
-            v-model="draft.endsAt"
-            type="date"
-            :format="DATE_FORMAT"
-            :disabled-date="(date: Date) => isDayBefore(date, draft.startsAt)"
-            :class="{ 'ca-invalid': invalid('endsAt') }"
-          />
-          <small
-            v-if="errors.endsAt"
-            class="ca-field__error"
-            data-testid="event-form-ends-on-error"
-            >{{ errors.endsAt }}</small
-          >
-        </div>
-      </div>
-      <div class="ca-field" data-testid="event-form-early-signup-from">
-        <label class="ca-field__label" for="event-early-signup-start">{{
-          $t('pages.admin.events.form.fields.earlySignupStart')
-        }}</label>
-        <el-date-picker
-          id="event-early-signup-start"
-          v-model="draft.earlySignupStartsAt"
-          type="datetime"
-          clearable
-          :format="DATE_TIME_FORMAT"
-          :disabled-date="(date: Date) => isDayAfter(date, draft.signupStartsAt)"
-          :class="{ 'ca-invalid': invalid('earlySignupStartsAt') }"
+    </FormField>
+    <FormField
+      for="event-terms-documents"
+      :label="$t('pages.admin.events.form.fields.termsDocuments')"
+    >
+      <el-select
+        id="event-terms-documents"
+        v-model="draft.termsDocumentIds"
+        multiple
+        filterable
+        collapse-tags
+        collapse-tags-tooltip
+        :placeholder="$t('pages.admin.events.form.termsPlaceholder')"
+        data-testid="event-form-terms"
+      >
+        <el-option
+          v-for="document in termsOptions"
+          :key="document.id"
+          :label="document.name"
+          :value="document.id"
+          :data-testid="`option-${document.id}`"
         />
-        <small
-          v-if="errors.earlySignupStartsAt"
-          class="ca-field__error"
-          data-testid="event-form-early-signup-from-error"
-          >{{ errors.earlySignupStartsAt }}</small
+      </el-select>
+      <small class="ca-field__hint">{{ $t('pages.admin.events.form.hints.termsDocuments') }}</small>
+      <ul v-if="draft.termsDocumentIds.length" class="form__terms-list">
+        <li
+          v-for="id in draft.termsDocumentIds"
+          :key="id"
+          class="form__terms-row"
+          data-testid="event-form-terms-row"
         >
-        <small v-else class="ca-field__hint">{{
-          $t('pages.admin.events.form.hints.earlySignupStart')
-        }}</small>
-      </div>
-      <div class="ca-form-grid">
-        <div class="ca-field" data-testid="event-form-signup-from">
-          <label class="ca-field__label" for="event-signup-start">{{
-            $t('pages.admin.events.form.fields.signupStart')
-          }}</label>
-          <el-date-picker
-            id="event-signup-start"
-            v-model="draft.signupStartsAt"
-            type="datetime"
-            :format="DATE_TIME_FORMAT"
-            :class="{ 'ca-invalid': invalid('signupStartsAt') }"
+          <span class="form__terms-name">{{ termsName(id) }}</span>
+          <span v-if="consentIds.has(id)" class="form__terms-consent">{{
+            $t('pages.admin.events.form.termsConsentOptional')
+          }}</span>
+          <el-switch
+            v-else
+            :model-value="draft.termsRequired[id] ?? true"
+            :active-text="$t('pages.admin.events.form.termsRequired')"
+            data-testid="event-form-terms-required"
+            @update:model-value="(value: string | number | boolean) => setTermsRequired(id, value)"
           />
-          <small
-            v-if="errors.signupStartsAt"
-            class="ca-field__error"
-            data-testid="event-form-signup-from-error"
-            >{{ errors.signupStartsAt }}</small
-          >
-        </div>
-        <div class="ca-field" data-testid="event-form-signup-until">
-          <label class="ca-field__label" for="event-signup-end">{{
-            $t('pages.admin.events.form.fields.signupEnd')
-          }}</label>
-          <el-date-picker
-            id="event-signup-end"
-            v-model="draft.signupEndsAt"
-            type="datetime"
-            :format="DATE_TIME_FORMAT"
-            :disabled-date="
-              (date: Date) =>
-                isDayBefore(date, draft.signupStartsAt) || isDayAfter(date, draft.endsAt)
-            "
-            :class="{ 'ca-invalid': invalid('signupEndsAt') }"
-          />
-          <small
-            v-if="errors.signupEndsAt"
-            class="ca-field__error"
-            data-testid="event-form-signup-until-error"
-            >{{ errors.signupEndsAt }}</small
-          >
-        </div>
-      </div>
-      <div class="ca-field">
-        <div id="event-image-label" class="ca-field__label">{{ $t('common.image') }}</div>
-        <ThumbnailField
-          role="group"
-          aria-labelledby="event-image-label"
-          :existing-thumbnail-id="event?.thumbnailId"
-          :invalid="submitted && missingThumbnail"
-          :upload-error="uploadError"
-          @update:file="pickedFile = $event"
+        </li>
+      </ul>
+    </FormField>
+    <FormField
+      v-slot="{ invalid: refused }"
+      :label="$t('common.description')"
+      :error="errors.description"
+    >
+      <RichTextEditor
+        v-model="draft.description"
+        :label="$t('common.description')"
+        :upload="uploadFileRequest"
+        :invalid="refused"
+        data-testid="event-form-description"
+      />
+    </FormField>
+    <div class="ca-form-grid">
+      <FormField
+        v-slot="{ control }"
+        for="event-start"
+        :label="$t('pages.admin.events.form.fields.eventStart')"
+        :invalid="invalid('startsAt')"
+        :error="errors.startsAt"
+        error-testid="event-form-starts-on-error"
+        data-testid="event-form-starts-on"
+      >
+        <el-date-picker
+          :id="control.id"
+          v-model="draft.startsAt"
+          type="date"
+          :format="DATE_FORMAT"
+          :class="control.class"
         />
-      </div>
-    </form>
-
-    <template #footer>
-      <ActionButton
-        :label="$t('common.cancel')"
-        text
-        :disabled="saving || uploading"
-        @click="visible = false"
+      </FormField>
+      <FormField
+        v-slot="{ control }"
+        for="event-end"
+        :label="$t('pages.admin.events.form.fields.eventEnd')"
+        :invalid="invalid('endsAt')"
+        :error="errors.endsAt"
+        error-testid="event-form-ends-on-error"
+        data-testid="event-form-ends-on"
+      >
+        <el-date-picker
+          :id="control.id"
+          v-model="draft.endsAt"
+          type="date"
+          :format="DATE_FORMAT"
+          :disabled-date="(date: Date) => isDayBefore(date, draft.startsAt)"
+          :class="control.class"
+        />
+      </FormField>
+    </div>
+    <FormField
+      v-slot="{ control }"
+      for="event-early-signup-start"
+      :label="$t('pages.admin.events.form.fields.earlySignupStart')"
+      :invalid="invalid('earlySignupStartsAt')"
+      :error="errors.earlySignupStartsAt"
+      error-testid="event-form-early-signup-from-error"
+      :hint="$t('pages.admin.events.form.hints.earlySignupStart')"
+      data-testid="event-form-early-signup-from"
+    >
+      <el-date-picker
+        :id="control.id"
+        v-model="draft.earlySignupStartsAt"
+        type="datetime"
+        clearable
+        :format="DATE_TIME_FORMAT"
+        :disabled-date="(date: Date) => isDayAfter(date, draft.signupStartsAt)"
+        :class="control.class"
       />
-      <ActionButton
-        :label="$t('common.save')"
-        type="primary"
-        :loading="saving || uploading"
-        data-testid="event-form-save"
-        @click="save"
+    </FormField>
+    <div class="ca-form-grid">
+      <FormField
+        v-slot="{ control }"
+        for="event-signup-start"
+        :label="$t('pages.admin.events.form.fields.signupStart')"
+        :invalid="invalid('signupStartsAt')"
+        :error="errors.signupStartsAt"
+        error-testid="event-form-signup-from-error"
+        data-testid="event-form-signup-from"
+      >
+        <el-date-picker
+          :id="control.id"
+          v-model="draft.signupStartsAt"
+          type="datetime"
+          :format="DATE_TIME_FORMAT"
+          :class="control.class"
+        />
+      </FormField>
+      <FormField
+        v-slot="{ control }"
+        for="event-signup-end"
+        :label="$t('pages.admin.events.form.fields.signupEnd')"
+        :invalid="invalid('signupEndsAt')"
+        :error="errors.signupEndsAt"
+        error-testid="event-form-signup-until-error"
+        data-testid="event-form-signup-until"
+      >
+        <el-date-picker
+          :id="control.id"
+          v-model="draft.signupEndsAt"
+          type="datetime"
+          :format="DATE_TIME_FORMAT"
+          :disabled-date="
+            (date: Date) =>
+              isDayBefore(date, draft.signupStartsAt) || isDayAfter(date, draft.endsAt)
+          "
+          :class="control.class"
+        />
+      </FormField>
+    </div>
+    <div class="ca-field">
+      <div id="event-image-label" class="ca-field__label">{{ $t('common.image') }}</div>
+      <ThumbnailField
+        role="group"
+        aria-labelledby="event-image-label"
+        :existing-thumbnail-id="event?.thumbnailId"
+        :invalid="submitted && missingThumbnail"
+        :upload-error="uploadError"
+        @update:file="pickedFile = $event"
       />
-    </template>
-  </el-dialog>
+    </div>
+  </FormDialog>
 
   <NewCategoryDialog v-model:visible="categoryDialogVisible" @created="selectCategory" />
 </template>
 
 <style scoped>
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding-top: 6px;
-}
-
-.form--scroll {
-  max-height: 68vh;
-  overflow-y: auto;
-}
-
 .form__cats {
   display: flex;
   align-items: center;
@@ -415,12 +377,5 @@ async function save(): Promise<void> {
   font-size: 12.5px;
   color: var(--ca-text-muted);
   white-space: nowrap;
-}
-
-@media (max-width: 640px) {
-  .form--scroll {
-    max-height: none;
-    overflow-y: visible;
-  }
 }
 </style>

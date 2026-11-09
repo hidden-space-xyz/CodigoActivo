@@ -4,12 +4,10 @@ import { useI18n } from 'vue-i18n'
 
 import { isPasswordTooShort } from '@/entities/account'
 import {
-  GENDERS,
-  genderLabelKey,
   minorBirthDateRange,
-  NationalIdInput,
   parseDependentPerson,
   parseIndependentPerson,
+  PersonFields,
   personProblemKey,
   type PersonField,
   type PersonProblem,
@@ -18,11 +16,11 @@ import {
   EMAIL_ADDRESS_MAX_LENGTH,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
-  PERSON_NAME_MAX_LENGTH,
   PHONE_MAX_LENGTH,
 } from '@/shared/config'
 import { toDateOnly } from '@/shared/lib/date'
 import { BrandButton } from '@/shared/ui/brand-button'
+import { FormField } from '@/shared/ui/form-field'
 
 import { canAddMinor, createEmptyMinor, type RegistrationForm } from '../model/registration-form'
 import PrivacyNotice from './PrivacyNotice.vue'
@@ -80,11 +78,15 @@ function personMessage(field: PersonField, problem: PersonProblem | undefined): 
   return problem ? t(personProblemKey(field, problem)) : null
 }
 
-function minorError(
-  index: number,
-  field: 'firstName' | 'lastName' | 'gender' | 'birthDate',
-): string | null {
-  return submitted.value ? personMessage(field, minors.value[index]?.[field]) : null
+function minorErrors(index: number): Partial<Record<PersonField, string | null>> {
+  const problems = minors.value[index]
+  if (!submitted.value || !problems) return {}
+  return {
+    firstName: personMessage('firstName', problems.firstName),
+    lastName: personMessage('lastName', problems.lastName),
+    gender: personMessage('gender', problems.gender),
+    birthDate: personMessage('birthDate', problems.birthDate),
+  }
 }
 
 const passwordTooShort = computed(() => isPasswordTooShort(model.password))
@@ -131,132 +133,70 @@ function removeMinor(index: number): void {
       <section class="reg__section" data-testid="register-your-data">
         <h2 class="reg__section-title">{{ $t('pages.register.form.yourData') }}</h2>
         <div class="ca-form-grid">
-          <div class="ca-field">
-            <label class="ca-field__label" for="reg-firstname">{{ $t('common.firstName') }}</label>
-            <el-input
-              id="reg-firstname"
-              v-model="model.firstName"
-              data-testid="register-first-name"
-              autocomplete="given-name"
-              :maxlength="PERSON_NAME_MAX_LENGTH"
-              :class="{ 'ca-invalid': adultErrors.firstName }"
-              :aria-invalid="!!adultErrors.firstName"
-              :aria-describedby="adultErrors.firstName ? 'reg-firstname-error' : undefined"
-              required
-            />
-            <small v-if="adultErrors.firstName" id="reg-firstname-error" class="ca-field__error">{{
-              adultErrors.firstName
-            }}</small>
-          </div>
-          <div class="ca-field">
-            <label class="ca-field__label" for="reg-lastname">{{ $t('common.lastName') }}</label>
-            <el-input
-              id="reg-lastname"
-              v-model="model.lastName"
-              data-testid="register-last-name"
-              autocomplete="family-name"
-              :maxlength="PERSON_NAME_MAX_LENGTH"
-              :class="{ 'ca-invalid': adultErrors.lastName }"
-              :aria-invalid="!!adultErrors.lastName"
-              :aria-describedby="adultErrors.lastName ? 'reg-lastname-error' : undefined"
-              required
-            />
-            <small v-if="adultErrors.lastName" id="reg-lastname-error" class="ca-field__error">{{
-              adultErrors.lastName
-            }}</small>
-          </div>
-          <div class="ca-field">
-            <label class="ca-field__label" for="reg-national-id">{{
-              $t('common.nationalId')
-            }}</label>
-            <NationalIdInput
-              id="reg-national-id"
-              v-model="model.nationalId"
-              data-testid="register-national-id"
-              :show-errors="submitted"
-            />
-          </div>
-          <div class="ca-field">
-            <label class="ca-field__label" for="reg-gender">{{ $t('common.gender') }}</label>
-            <el-select
-              id="reg-gender"
-              v-model="model.gender"
-              data-testid="register-gender"
-              :class="{ 'ca-invalid': adultErrors.gender }"
-            >
-              <el-option
-                v-for="gender in GENDERS"
-                :key="gender"
-                :label="$t(genderLabelKey(gender))"
-                :value="gender"
-                :data-testid="`option-${gender}`"
-              />
-            </el-select>
-            <small v-if="adultErrors.gender" class="ca-field__error">{{
-              adultErrors.gender
-            }}</small>
-          </div>
+          <PersonFields
+            v-model:first-name="model.firstName"
+            v-model:last-name="model.lastName"
+            v-model:national-id="model.nationalId"
+            v-model:gender="model.gender"
+            id-prefix="reg"
+            :errors="adultErrors"
+            :show-national-id-errors="submitted"
+          />
         </div>
       </section>
 
       <section class="reg__section" data-testid="register-contact">
         <h2 class="reg__section-title">{{ $t('pages.register.form.contactTitle') }}</h2>
         <div class="ca-form-grid">
-          <div class="ca-field">
-            <label class="ca-field__label" for="reg-phone">{{ $t('common.phone') }}</label>
+          <FormField
+            v-slot="{ control }"
+            for="reg-phone"
+            :label="$t('common.phone')"
+            :error="adultErrors.phone"
+          >
             <el-input
-              id="reg-phone"
               v-model="model.phone"
+              v-bind="control"
               data-testid="register-phone"
               type="tel"
               inputmode="tel"
               autocomplete="tel"
               :maxlength="PHONE_MAX_LENGTH"
-              :class="{ 'ca-invalid': adultErrors.phone }"
-              :aria-invalid="!!adultErrors.phone"
-              :aria-describedby="adultErrors.phone ? 'reg-phone-error' : undefined"
               required
             />
-            <small v-if="adultErrors.phone" id="reg-phone-error" class="ca-field__error">{{
-              adultErrors.phone
-            }}</small>
-          </div>
-          <div class="ca-field">
-            <label class="ca-field__label" for="reg-secondary-phone">{{
-              $t('common.secondaryPhoneOptional')
-            }}</label>
+          </FormField>
+          <FormField
+            v-slot="{ control }"
+            for="reg-secondary-phone"
+            :label="$t('common.secondaryPhoneOptional')"
+            :error="adultErrors.secondaryPhone"
+          >
             <el-input
-              id="reg-secondary-phone"
               v-model="model.secondaryPhone"
+              v-bind="control"
               type="tel"
               inputmode="tel"
               autocomplete="tel"
               :maxlength="PHONE_MAX_LENGTH"
-              :class="{ 'ca-invalid': adultErrors.secondaryPhone }"
-              :aria-invalid="!!adultErrors.secondaryPhone"
-              :aria-describedby="
-                adultErrors.secondaryPhone ? 'reg-secondary-phone-error' : undefined
-              "
               @blur="touched.secondaryPhone = true"
             />
-            <small
-              v-if="adultErrors.secondaryPhone"
-              id="reg-secondary-phone-error"
-              class="ca-field__error"
-              >{{ adultErrors.secondaryPhone }}</small
-            >
-          </div>
+          </FormField>
         </div>
       </section>
 
       <section class="reg__section" data-testid="register-access">
         <h2 class="reg__section-title">{{ $t('pages.register.form.accessTitle') }}</h2>
         <div class="ca-form-grid">
-          <div class="ca-field ca-field--wide">
-            <label class="ca-field__label" for="reg-email">{{ $t('common.email') }}</label>
+          <FormField
+            v-slot="{ control }"
+            for="reg-email"
+            :label="$t('common.email')"
+            :error="adultErrors.email"
+            wide
+          >
             <el-input
-              id="reg-email"
               v-model="model.email"
+              v-bind="control"
               data-testid="register-email"
               type="email"
               inputmode="email"
@@ -265,66 +205,52 @@ function removeMinor(index: number): void {
               autocorrect="off"
               spellcheck="false"
               :maxlength="EMAIL_ADDRESS_MAX_LENGTH"
-              :class="{ 'ca-invalid': adultErrors.email }"
-              :aria-invalid="!!adultErrors.email"
-              :aria-describedby="adultErrors.email ? 'reg-email-error' : undefined"
               required
               @blur="touched.email = true"
             />
-            <small v-if="adultErrors.email" id="reg-email-error" class="ca-field__error">{{
-              adultErrors.email
-            }}</small>
-          </div>
-          <div class="ca-field">
-            <label class="ca-field__label" for="reg-password">{{ $t('common.password') }}</label>
+          </FormField>
+          <FormField
+            v-slot="{ control }"
+            for="reg-password"
+            :label="$t('common.password')"
+            :error="
+              showPasswordTooShort
+                ? $t('validation.passwordMin', { min: PASSWORD_MIN_LENGTH })
+                : null
+            "
+            error-testid="register-password-error"
+          >
             <el-input
-              id="reg-password"
               v-model="model.password"
+              v-bind="control"
               data-testid="register-password"
               type="password"
               show-password
               autocomplete="new-password"
               :maxlength="PASSWORD_MAX_LENGTH"
-              :class="{ 'ca-invalid': showPasswordTooShort }"
-              :aria-invalid="showPasswordTooShort"
-              :aria-describedby="showPasswordTooShort ? 'reg-password-error' : undefined"
               required
               @blur="touched.password = true"
             />
-            <small
-              v-if="showPasswordTooShort"
-              id="reg-password-error"
-              class="ca-field__error"
-              data-testid="register-password-error"
-              >{{ $t('validation.passwordMin', { min: PASSWORD_MIN_LENGTH }) }}</small
-            >
-          </div>
-          <div class="ca-field">
-            <label class="ca-field__label" for="reg-password-confirm">{{
-              $t('common.confirmPassword')
-            }}</label>
+          </FormField>
+          <FormField
+            v-slot="{ control }"
+            for="reg-password-confirm"
+            :label="$t('common.confirmPassword')"
+            :error="showMismatch ? $t('validation.passwordsMismatch') : null"
+            error-testid="register-password-confirm-error"
+          >
             <el-input
-              id="reg-password-confirm"
               v-model="model.confirmPassword"
+              v-bind="control"
               data-testid="register-password-confirm"
               type="password"
               show-password
               autocomplete="new-password"
               :maxlength="PASSWORD_MAX_LENGTH"
-              :class="{ 'ca-invalid': showMismatch }"
-              :aria-invalid="showMismatch"
-              :aria-describedby="showMismatch ? 'reg-password-confirm-error' : undefined"
               required
               @blur="touched.confirmPassword = true"
             />
-            <small
-              v-if="showMismatch"
-              id="reg-password-confirm-error"
-              class="ca-field__error"
-              data-testid="register-password-confirm-error"
-              >{{ $t('validation.passwordsMismatch') }}</small
-            >
-          </div>
+          </FormField>
         </div>
       </section>
 
@@ -354,100 +280,15 @@ function removeMinor(index: number): void {
               ✕
             </button>
             <div class="ca-form-grid">
-              <div class="ca-field">
-                <label class="ca-field__label" :for="`minor-firstname-${index}`">{{
-                  $t('common.firstName')
-                }}</label>
-                <el-input
-                  :id="`minor-firstname-${index}`"
-                  v-model="minor.firstName"
-                  data-testid="register-minor-first-name"
-                  :maxlength="PERSON_NAME_MAX_LENGTH"
-                  :class="{ 'ca-invalid': minorError(index, 'firstName') }"
-                  :aria-invalid="!!minorError(index, 'firstName')"
-                  :aria-describedby="
-                    minorError(index, 'firstName') ? `minor-firstname-${index}-error` : undefined
-                  "
-                  required
-                />
-                <small
-                  v-if="minorError(index, 'firstName')"
-                  :id="`minor-firstname-${index}-error`"
-                  class="ca-field__error"
-                  >{{ minorError(index, 'firstName') }}</small
-                >
-              </div>
-              <div class="ca-field">
-                <label class="ca-field__label" :for="`minor-lastname-${index}`">{{
-                  $t('common.lastName')
-                }}</label>
-                <el-input
-                  :id="`minor-lastname-${index}`"
-                  v-model="minor.lastName"
-                  data-testid="register-minor-last-name"
-                  :maxlength="PERSON_NAME_MAX_LENGTH"
-                  :class="{ 'ca-invalid': minorError(index, 'lastName') }"
-                  :aria-invalid="!!minorError(index, 'lastName')"
-                  :aria-describedby="
-                    minorError(index, 'lastName') ? `minor-lastname-${index}-error` : undefined
-                  "
-                  required
-                />
-                <small
-                  v-if="minorError(index, 'lastName')"
-                  :id="`minor-lastname-${index}-error`"
-                  class="ca-field__error"
-                  >{{ minorError(index, 'lastName') }}</small
-                >
-              </div>
-              <div class="ca-field">
-                <label class="ca-field__label" :for="`minor-dob-${index}`">{{
-                  $t('common.birthDate')
-                }}</label>
-                <input
-                  :id="`minor-dob-${index}`"
-                  v-model="minor.birthDate"
-                  data-testid="register-minor-birth-date"
-                  type="date"
-                  class="reg__date"
-                  :class="{ 'reg__date--invalid': minorError(index, 'birthDate') }"
-                  :aria-invalid="!!minorError(index, 'birthDate')"
-                  :aria-describedby="
-                    minorError(index, 'birthDate') ? `minor-dob-${index}-error` : undefined
-                  "
-                  :min="birthDateRange.min"
-                  :max="birthDateRange.max"
-                  required
-                />
-                <small
-                  v-if="minorError(index, 'birthDate')"
-                  :id="`minor-dob-${index}-error`"
-                  class="ca-field__error"
-                  >{{ minorError(index, 'birthDate') }}</small
-                >
-              </div>
-              <div class="ca-field">
-                <label class="ca-field__label" :for="`minor-gender-${index}`">{{
-                  $t('common.gender')
-                }}</label>
-                <el-select
-                  :id="`minor-gender-${index}`"
-                  v-model="minor.gender"
-                  data-testid="register-minor-gender"
-                  :class="{ 'ca-invalid': minorError(index, 'gender') }"
-                >
-                  <el-option
-                    v-for="gender in GENDERS"
-                    :key="gender"
-                    :label="$t(genderLabelKey(gender))"
-                    :value="gender"
-                    :data-testid="`option-${gender}`"
-                  />
-                </el-select>
-                <small v-if="minorError(index, 'gender')" class="ca-field__error">{{
-                  minorError(index, 'gender')
-                }}</small>
-              </div>
+              <PersonFields
+                v-model:first-name="minor.firstName"
+                v-model:last-name="minor.lastName"
+                v-model:birth-date="minor.birthDate"
+                v-model:gender="minor.gender"
+                :id-prefix="`minor-${index}`"
+                :errors="minorErrors(index)"
+                :birth-date-range="birthDateRange"
+              />
             </div>
           </fieldset>
         </transition-group>
@@ -513,26 +354,6 @@ function removeMinor(index: number): void {
   font-size: 18px;
   color: var(--ca-text-bright);
   margin-bottom: 14px;
-}
-
-.reg__date {
-  width: 100%;
-  background: var(--ca-input-bg);
-  color: var(--ca-text);
-  border: 1px solid var(--ca-border-strong);
-  border-radius: 10px;
-  padding: 12px 14px;
-  font-family: inherit;
-  font-size: 15px;
-  outline: none;
-}
-
-.reg__date:focus {
-  border-color: var(--ca-orange);
-}
-
-.reg__date--invalid {
-  border-color: var(--ca-danger);
 }
 
 .reg__minors {

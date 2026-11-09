@@ -1,4 +1,3 @@
-import { computed } from 'vue'
 import { useMutation } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 
@@ -6,10 +5,8 @@ import {
   eventCategoryList,
   eventCategoryMutations,
   type EventCategory,
-  type EventCategoryInput,
 } from '@/entities/event-category'
-import { useCrudDialog } from '@/shared/lib/crud'
-import { useCrudFeedback, useDeleteConfirm } from '@/shared/lib/feedback'
+import { useCrudActions, useCrudDialog } from '@/shared/lib/crud'
 import { useServerTable } from '@/shared/lib/paging'
 
 /**
@@ -18,8 +15,6 @@ import { useServerTable } from '@/shared/lib/paging'
  */
 export function useEventCategoriesAdmin() {
   const { t } = useI18n()
-  const feedback = useCrudFeedback()
-  const { confirmDelete } = useDeleteConfirm()
 
   const table = useServerTable({
     ...eventCategoryList,
@@ -29,38 +24,20 @@ export function useEventCategoriesAdmin() {
     },
   })
   const dialog = useCrudDialog<EventCategory>()
-  const create = useMutation(eventCategoryMutations.create())
-  const update = useMutation(eventCategoryMutations.update())
-  const remove = useMutation(eventCategoryMutations.remove())
-  const saving = computed(() => create.isPending.value || update.isPending.value)
+  const actions = useCrudActions({
+    dialog,
+    create: useMutation(eventCategoryMutations.create()),
+    update: useMutation(eventCategoryMutations.update()),
+    remove: useMutation(eventCategoryMutations.remove()),
+    messages: {
+      created: t('pages.admin.catalogs.eventCategories.toasts.created'),
+      updated: t('pages.admin.catalogs.eventCategories.toasts.updated'),
+      deleted: t('pages.admin.catalogs.eventCategories.toasts.deleted'),
+      deleteHeader: t('pages.admin.catalogs.eventCategories.delete.header'),
+      deleteMessage: (category: EventCategory) =>
+        t('pages.admin.catalogs.eventCategories.delete.message', { name: category.name }),
+    },
+  })
 
-  function save(input: EventCategoryInput): void {
-    const category = dialog.editing.value
-    if (category) {
-      update.mutate(
-        { id: category.id, input },
-        feedback.outcome(t('pages.admin.catalogs.eventCategories.toasts.updated'), dialog.close),
-      )
-      return
-    }
-    create.mutate(
-      input,
-      feedback.outcome(t('pages.admin.catalogs.eventCategories.toasts.created'), dialog.close),
-    )
-  }
-
-  function confirmRemove(category: EventCategory): void {
-    confirmDelete({
-      header: t('pages.admin.catalogs.eventCategories.delete.header'),
-      message: t('pages.admin.catalogs.eventCategories.delete.message', { name: category.name }),
-      accept: () => {
-        remove.mutate(
-          category.id,
-          feedback.outcome(t('pages.admin.catalogs.eventCategories.toasts.deleted')),
-        )
-      },
-    })
-  }
-
-  return { table, dialog, saving, save, confirmRemove }
+  return { table, dialog, ...actions }
 }

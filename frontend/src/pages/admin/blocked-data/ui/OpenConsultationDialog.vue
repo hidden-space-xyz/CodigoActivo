@@ -9,6 +9,7 @@ import {
 } from '@/shared/config'
 import { useForm } from '@/shared/lib/form'
 import { ActionButton } from '@/shared/ui/action-button'
+import { FormField } from '@/shared/ui/form-field'
 
 import {
   readConsultationCodeDraft,
@@ -82,62 +83,53 @@ function confirm(): void {
       <template v-if="!codeStep">
         <p class="form__message">{{ $t('pages.admin.blockedData.open.intro') }}</p>
 
-        <div class="ca-field">
-          <label class="ca-field__label" for="blocked-requester">{{
-            $t('pages.admin.blockedData.open.requester')
-          }}</label>
+        <FormField
+          v-slot="{ control }"
+          for="blocked-requester"
+          :label="$t('pages.admin.blockedData.open.requester')"
+          :invalid="invalid('requester')"
+          :error="errors.requester"
+        >
           <el-input
-            id="blocked-requester"
             v-model="draft.requester"
+            v-bind="control"
             data-testid="blocked-data-dialog-requester"
             :maxlength="BLOCKED_DATA_REQUESTER_MAX_LENGTH"
-            :class="{ 'ca-invalid': invalid('requester') }"
-            :aria-invalid="invalid('requester')"
-            :aria-describedby="errors.requester ? 'blocked-requester-error' : undefined"
           />
-          <small v-if="errors.requester" id="blocked-requester-error" class="ca-field__error">{{
-            errors.requester
-          }}</small>
-        </div>
+        </FormField>
 
-        <div class="ca-field">
-          <label class="ca-field__label" for="blocked-reference">{{
-            $t('pages.admin.blockedData.open.reference')
-          }}</label>
+        <FormField
+          v-slot="{ control }"
+          for="blocked-reference"
+          :label="$t('pages.admin.blockedData.open.reference')"
+          :invalid="invalid('reference')"
+          :error="errors.reference"
+        >
           <el-input
-            id="blocked-reference"
             v-model="draft.reference"
+            v-bind="control"
             data-testid="blocked-data-dialog-reference"
             :maxlength="BLOCKED_DATA_REFERENCE_MAX_LENGTH"
-            :class="{ 'ca-invalid': invalid('reference') }"
-            :aria-invalid="invalid('reference')"
-            :aria-describedby="errors.reference ? 'blocked-reference-error' : undefined"
           />
-          <small v-if="errors.reference" id="blocked-reference-error" class="ca-field__error">{{
-            errors.reference
-          }}</small>
-        </div>
+        </FormField>
 
-        <div class="ca-field">
-          <label class="ca-field__label" for="blocked-password">{{
-            $t('pages.admin.blockedData.open.password')
-          }}</label>
+        <FormField
+          v-slot="{ control }"
+          for="blocked-password"
+          :label="$t('common.yourPassword')"
+          :invalid="invalid('password')"
+          :error="errors.password"
+        >
           <el-input
-            id="blocked-password"
             v-model="draft.password"
+            v-bind="control"
             data-testid="blocked-data-dialog-password"
             type="password"
             show-password
             autocomplete="current-password"
             :maxlength="PASSWORD_MAX_LENGTH"
-            :class="{ 'ca-invalid': invalid('password') }"
-            :aria-invalid="invalid('password')"
-            :aria-describedby="errors.password ? 'blocked-password-error' : undefined"
           />
-          <small v-if="errors.password" id="blocked-password-error" class="ca-field__error">{{
-            errors.password
-          }}</small>
-        </div>
+        </FormField>
       </template>
 
       <template v-else>
@@ -149,30 +141,27 @@ function confirm(): void {
           }}
         </p>
 
-        <div class="ca-field">
-          <label class="ca-field__label" for="blocked-code">{{
-            $t('pages.admin.blockedData.open.code')
-          }}</label>
+        <FormField
+          v-slot="{ control }"
+          for="blocked-code"
+          :label="$t('common.verificationCode')"
+          :invalid="codeInvalid('code')"
+          :error="codeErrors.code"
+        >
           <el-input
-            id="blocked-code"
             v-model="codeDraft.code"
+            v-bind="control"
             data-testid="blocked-data-dialog-code"
             inputmode="numeric"
             autocomplete="one-time-code"
             :maxlength="TWO_FACTOR_CODE_MAX_LENGTH"
-            :class="{ 'ca-invalid': codeInvalid('code') }"
-            :aria-invalid="codeInvalid('code')"
-            :aria-describedby="codeErrors.code ? 'blocked-code-error' : undefined"
           />
-          <small v-if="codeErrors.code" id="blocked-code-error" class="ca-field__error">{{
-            codeErrors.code
-          }}</small>
-        </div>
+        </FormField>
 
         <p v-if="!usesAuthenticator" class="form__resend">
-          {{ $t('pages.admin.blockedData.open.resendPrompt') }}
+          {{ $t('common.resendPrompt') }}
           <ActionButton
-            :label="$t('pages.admin.blockedData.open.resend')"
+            :label="$t('common.resendCode')"
             type="primary"
             link
             :loading="sendingCode"
@@ -191,9 +180,7 @@ function confirm(): void {
       <ActionButton
         v-if="!codeStep"
         :label="
-          usesAuthenticator
-            ? $t('pages.admin.blockedData.open.continue')
-            : $t('pages.admin.blockedData.open.sendCode')
+          usesAuthenticator ? $t('pages.admin.blockedData.open.continue') : $t('common.sendCode')
         "
         data-testid="blocked-data-dialog-continue"
         type="primary"

@@ -4,7 +4,8 @@ import { watch } from 'vue'
 import type { TermsDocument, TermsDocumentInput } from '@/entities/terms-document'
 import { CATALOG_NAME_MAX_LENGTH } from '@/shared/config'
 import { useForm } from '@/shared/lib/form'
-import { ActionButton } from '@/shared/ui/action-button'
+import { FormDialog } from '@/shared/ui/form-dialog'
+import { FormField } from '@/shared/ui/form-field'
 import { RichTextEditor } from '@/shared/ui/rich-text-editor'
 
 import { readTermsDocumentDraft, toTermsDocumentDraft } from '../model/terms-document-form'
@@ -38,10 +39,8 @@ function save(): void {
 </script>
 
 <template>
-  <el-dialog
-    v-model="visible"
-    :close-on-click-modal="false"
-    :close-on-press-escape="false"
+  <FormDialog
+    v-model:visible="visible"
     data-testid="terms-document-form-dialog"
     :title="
       termsDocument
@@ -50,102 +49,74 @@ function save(): void {
     "
     width="min(860px, 94vw)"
     append-to-body
+    :saving="saving"
+    scroll-height="68vh"
+    @submit="save"
   >
-    <form class="form" @submit.prevent="save">
-      <p v-if="termsDocument" class="ca-field__hint" data-testid="terms-document-form-version-hint">
-        {{
-          $t('pages.admin.catalogs.termsDocuments.form.versionHint', {
-            version: termsDocument.version,
-          })
-        }}
-      </p>
-      <div class="ca-field">
-        <label class="ca-field__label" for="terms-document-name">{{ $t('common.name') }}</label>
-        <el-input
-          id="terms-document-name"
-          v-model="draft.name"
-          data-testid="terms-document-form-name"
-          :maxlength="CATALOG_NAME_MAX_LENGTH"
-          :class="{ 'ca-invalid': invalid('name') }"
-          :aria-invalid="invalid('name')"
-        />
-      </div>
-      <div class="ca-field">
-        <div class="ca-field__label">
-          {{ $t('pages.admin.catalogs.termsDocuments.form.content') }}
-        </div>
-        <RichTextEditor
-          v-model="draft.description"
-          data-testid="terms-document-form-content"
-          :label="$t('pages.admin.catalogs.termsDocuments.form.content')"
-          :invalid="invalid('description')"
-        />
-        <small
-          v-if="errors.description"
-          data-testid="terms-document-form-content-error"
-          class="ca-field__error"
-          >{{ errors.description }}</small
-        >
-      </div>
-      <div class="ca-field">
-        <div id="terms-document-kind-label" class="ca-field__label">
-          {{ $t('pages.admin.catalogs.termsDocuments.form.kind') }}
-        </div>
-        <el-radio-group v-model="draft.kind" aria-labelledby="terms-document-kind-label">
-          <el-radio value="Conditions" data-testid="terms-document-form-conditions">
-            {{ $t('pages.admin.catalogs.termsDocuments.kinds.Conditions') }}
-          </el-radio>
-          <el-radio value="Consent" data-testid="terms-document-form-consent">
-            {{ $t('pages.admin.catalogs.termsDocuments.kinds.Consent') }}
-          </el-radio>
-        </el-radio-group>
-        <small class="ca-field__hint">
-          {{
-            draft.kind === 'Consent'
-              ? $t('pages.admin.catalogs.termsDocuments.form.kindHints.Consent')
-              : $t('pages.admin.catalogs.termsDocuments.form.kindHints.Conditions')
-          }}
-        </small>
-      </div>
-      <div class="ca-field">
-        <el-switch
-          id="terms-document-requires-signature"
-          v-model="draft.requiresSignature"
-          data-testid="terms-document-form-requires-signature"
-          :active-text="$t('pages.admin.catalogs.termsDocuments.form.requiresSignature')"
-        />
-        <small class="ca-field__hint">
-          {{ $t('pages.admin.catalogs.termsDocuments.form.requiresSignatureHint') }}
-        </small>
-      </div>
-    </form>
-    <template #footer>
-      <ActionButton :label="$t('common.cancel')" text :disabled="saving" @click="visible = false" />
-      <ActionButton
-        data-testid="terms-document-form-dialog-save"
-        :label="$t('common.save')"
-        type="primary"
-        :loading="saving"
-        @click="save"
+    <p v-if="termsDocument" class="ca-field__hint" data-testid="terms-document-form-version-hint">
+      {{
+        $t('pages.admin.catalogs.termsDocuments.form.versionHint', {
+          version: termsDocument.version,
+        })
+      }}
+    </p>
+    <FormField
+      v-slot="{ control }"
+      for="terms-document-name"
+      :label="$t('common.name')"
+      :invalid="invalid('name')"
+    >
+      <el-input
+        v-model="draft.name"
+        v-bind="control"
+        data-testid="terms-document-form-name"
+        :maxlength="CATALOG_NAME_MAX_LENGTH"
       />
-    </template>
-  </el-dialog>
+    </FormField>
+    <FormField
+      v-slot="{ invalid: refused }"
+      :label="$t('pages.admin.catalogs.termsDocuments.form.content')"
+      :invalid="invalid('description')"
+      :error="errors.description"
+      error-testid="terms-document-form-content-error"
+    >
+      <RichTextEditor
+        v-model="draft.description"
+        data-testid="terms-document-form-content"
+        :label="$t('pages.admin.catalogs.termsDocuments.form.content')"
+        :invalid="refused"
+      />
+    </FormField>
+    <div class="ca-field">
+      <div id="terms-document-kind-label" class="ca-field__label">
+        {{ $t('pages.admin.catalogs.termsDocuments.form.kind') }}
+      </div>
+      <el-radio-group v-model="draft.kind" aria-labelledby="terms-document-kind-label">
+        <el-radio value="Conditions" data-testid="terms-document-form-conditions">
+          {{ $t('pages.admin.catalogs.termsDocuments.kinds.Conditions') }}
+        </el-radio>
+        <el-radio value="Consent" data-testid="terms-document-form-consent">
+          {{ $t('pages.admin.catalogs.termsDocuments.kinds.Consent') }}
+        </el-radio>
+      </el-radio-group>
+      <small class="ca-field__hint">
+        {{
+          draft.kind === 'Consent'
+            ? $t('pages.admin.catalogs.termsDocuments.form.kindHints.Consent')
+            : $t('pages.admin.catalogs.termsDocuments.form.kindHints.Conditions')
+        }}
+      </small>
+    </div>
+    <div class="ca-field">
+      <el-switch
+        id="terms-document-requires-signature"
+        v-model="draft.requiresSignature"
+        data-testid="terms-document-form-requires-signature"
+        :active-text="$t('pages.admin.catalogs.termsDocuments.form.requiresSignature')"
+      />
+      <small class="ca-field__hint">
+        {{ $t('pages.admin.catalogs.termsDocuments.form.requiresSignatureHint') }}
+      </small>
+    </div>
+  </FormDialog>
 </template>
-
-<style scoped>
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding-top: 6px;
-  max-height: 68vh;
-  overflow-y: auto;
-}
-
-@media (max-width: 640px) {
-  .form {
-    max-height: none;
-    overflow-y: visible;
-  }
-}
-</style>

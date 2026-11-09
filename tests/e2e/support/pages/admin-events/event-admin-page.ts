@@ -126,7 +126,7 @@ export class ActivityFormDialog {
     this.location = this.root.getByTestId('activity-form-location')
     this.startsAt = this.root.getByTestId('activity-form-start')
     this.endsAt = this.root.getByTestId('activity-form-end')
-    this.save = this.root.getByTestId('activity-form-save')
+    this.save = this.root.getByTestId('form-dialog-save')
   }
 
   /** The number box with the number of people wanted in `role`. */

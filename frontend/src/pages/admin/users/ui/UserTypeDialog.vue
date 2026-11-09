@@ -4,6 +4,7 @@ import { ref, watch } from 'vue'
 import { fullName, type User } from '@/entities/user'
 import { ActionButton } from '@/shared/ui/action-button'
 import type { SelectOption } from '@/shared/ui/column-filter'
+import { FormField } from '@/shared/ui/form-field'
 
 /** Opens the dialog; each time it opens the user's current type is preselected. */
 const visible = defineModel<boolean>('visible', { required: true })
@@ -43,10 +44,7 @@ function apply(): void {
     <p class="form__lead">
       {{ $t('pages.admin.users.typeDialog.lead', { fullName: fullName(user ?? {}) }) }}
     </p>
-    <div class="ca-field">
-      <label class="ca-field__label" for="user-type">{{
-        $t('pages.admin.users.typeDialog.typeLabel')
-      }}</label>
+    <FormField for="user-type" :label="$t('pages.admin.users.typeDialog.typeLabel')">
       <el-select
         id="user-type"
         v-model="userTypeId"
@@ -61,7 +59,7 @@ function apply(): void {
           :data-testid="`option-${option.value}`"
         />
       </el-select>
-    </div>
+    </FormField>
     <template #footer>
       <ActionButton :label="$t('common.cancel')" text :disabled="saving" @click="visible = false" />
       <ActionButton

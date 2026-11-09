@@ -158,3 +158,125 @@ const tab = computed<AccountTab>({
   }
 }
 </style>
+
+<style>
+.acc-pane__state {
+  color: var(--ca-text-dim);
+  font-family: var(--ca-font-mono);
+}
+
+.acc-pane__actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.acc-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.acc-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--ca-surface);
+  border: 1px solid var(--ca-border-soft);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.acc-item__info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.acc-item__name {
+  font-weight: 600;
+  color: var(--ca-text-bright);
+}
+
+.acc-item__meta {
+  font-size: 13px;
+  color: var(--ca-text-muted);
+}
+
+.acc-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px 24px;
+}
+
+.acc-info__row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.acc-info__row dt {
+  font-size: 12px;
+  color: var(--ca-text-dim);
+}
+
+.acc-info__row dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ca-text);
+  overflow-wrap: anywhere;
+}
+
+.acc-form__grid {
+  row-gap: 28px;
+  margin-bottom: 14px;
+}
+
+.acc-form__intro {
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ca-text-muted);
+}
+
+.acc-form__field {
+  margin-bottom: 14px;
+}
+
+.acc-form__alert {
+  margin-bottom: 10px;
+}
+
+.acc-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+@media (max-width: 640px) {
+  .acc-pane__actions {
+    width: 100%;
+  }
+
+  .acc-pane__actions > * {
+    flex: 1 1 100%;
+  }
+
+  .acc-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .acc-info {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

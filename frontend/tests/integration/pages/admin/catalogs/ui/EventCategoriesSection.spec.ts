@@ -95,7 +95,7 @@ describe('EventCategoriesSection', () => {
 
     expect(wrapper.findAllComponents(ColumnSearch)).toHaveLength(0)
     const search = wrapper.findComponent(SearchInput)
-    expect(search.props('label')).toBe(t('pages.admin.catalogs.eventCategories.search.name'))
+    expect(search.props('label')).toBe(t('common.searchByName'))
     search.vm.$emit('update:modelValue', 'work')
 
     await vi.waitFor(() =>

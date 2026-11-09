@@ -5,7 +5,9 @@ import { findDirective, sourceFiles, templateElements, type TemplateElement } fr
 const CLOSING_OPTIONS = ['close-on-click-modal', 'close-on-press-escape']
 
 const dialogs = sourceFiles
-  .filter(({ path }) => /^src\/(?:pages\/admin|features)\/.+\.vue$/.test(path))
+  .filter(({ path }) =>
+    /^src\/(?:pages\/admin|features|shared\/ui\/form-dialog)\/.+\.vue$/.test(path),
+  )
   .flatMap((file) =>
     templateElements(file)
       .filter(({ element }) => element.tag === 'el-dialog')

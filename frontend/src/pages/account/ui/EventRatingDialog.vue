@@ -5,6 +5,7 @@ import { isEventRatingEmpty } from '@/entities/account'
 import type { EventRatingInput } from '@/entities/account'
 import { RATING_ANSWER_MAX_LENGTH, RATING_MAX_SCORE } from '@/shared/config'
 import { BrandButton } from '@/shared/ui/brand-button'
+import { FormField } from '@/shared/ui/form-field'
 
 const props = defineProps<{
   /** Opens the dialog; each time it opens the form is reset to `rating`. */
@@ -80,10 +81,11 @@ function onSubmit(): void {
     <p class="acc-rating__notice">{{ $t('pages.account.history.dialog.notice') }}</p>
 
     <form class="acc-form" @submit.prevent="onSubmit">
-      <div class="ca-field acc-form__field">
-        <label class="ca-field__label" for="rating-score">{{
-          $t('pages.account.history.dialog.score')
-        }}</label>
+      <FormField
+        for="rating-score"
+        :label="$t('pages.account.history.dialog.score')"
+        class="acc-form__field"
+      >
         <div class="acc-rating__stars">
           <el-rate
             id="rating-score"
@@ -95,12 +97,13 @@ function onSubmit(): void {
             $t('pages.account.history.dialog.clearScore')
           }}</BrandButton>
         </div>
-      </div>
+      </FormField>
 
-      <div class="ca-field acc-form__field">
-        <label class="ca-field__label" for="rating-most">{{
-          $t('entities.event.ratingQuestions.mostLiked')
-        }}</label>
+      <FormField
+        for="rating-most"
+        :label="$t('entities.event.ratingQuestions.mostLiked')"
+        class="acc-form__field"
+      >
         <el-input
           id="rating-most"
           v-model="form.mostLiked"
@@ -109,12 +112,13 @@ function onSubmit(): void {
           :maxlength="RATING_ANSWER_MAX_LENGTH"
           :autosize="{ minRows: 3, maxRows: 6 }"
         />
-      </div>
+      </FormField>
 
-      <div class="ca-field acc-form__field">
-        <label class="ca-field__label" for="rating-least">{{
-          $t('entities.event.ratingQuestions.leastLiked')
-        }}</label>
+      <FormField
+        for="rating-least"
+        :label="$t('entities.event.ratingQuestions.leastLiked')"
+        class="acc-form__field"
+      >
         <el-input
           id="rating-least"
           v-model="form.leastLiked"
@@ -123,12 +127,13 @@ function onSubmit(): void {
           :maxlength="RATING_ANSWER_MAX_LENGTH"
           :autosize="{ minRows: 3, maxRows: 6 }"
         />
-      </div>
+      </FormField>
 
-      <div class="ca-field acc-form__field">
-        <label class="ca-field__label" for="rating-suggestions">{{
-          $t('entities.event.ratingQuestions.suggestions')
-        }}</label>
+      <FormField
+        for="rating-suggestions"
+        :label="$t('entities.event.ratingQuestions.suggestions')"
+        class="acc-form__field"
+      >
         <el-input
           id="rating-suggestions"
           v-model="form.suggestions"
@@ -137,7 +142,7 @@ function onSubmit(): void {
           :maxlength="RATING_ANSWER_MAX_LENGTH"
           :autosize="{ minRows: 3, maxRows: 6 }"
         />
-      </div>
+      </FormField>
 
       <p v-if="empty" class="acc-rating__hint">
         {{ $t('pages.account.history.dialog.emptyHint') }}
@@ -219,11 +224,7 @@ function onSubmit(): void {
 }
 
 .acc-form__actions {
-  display: flex;
-  justify-content: flex-end;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 8px;
 }
 
 .acc-rating__delete {

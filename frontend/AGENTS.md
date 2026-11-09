@@ -16,15 +16,17 @@ conventions that this file leaves out, and each failure names the rule it guards
 - User-facing text must use Vue I18n keys in `src/shared/i18n/locales/es.json`. Keys referenced only through
   `TranslationKey`-typed config need an `ignores` entry in the `no-unused-keys` rule.
 - Theme values use `--ca-*` variables; map Element Plus values to them instead of adding isolated colors.
-- Form fields use the global `ca-field*`, `ca-form-alert` and `ca-form-grid` classes from
-  `app/styles/main.css` instead of scoped copies. Link each field error to its control with
-  `aria-describedby` and `aria-invalid` when the control forwards them.
+- Build labelled fields with `FormField` (`shared/ui/form-field`), which renders the global `ca-field*`
+  classes and links the field's message: bind its `control` with `v-bind` when the control forwards ARIA
+  attributes to its input, otherwise only its `id` and `class`, and pass the message's test id as
+  `error-testid`. Use `ca-form-alert` and `ca-form-grid` from `app/styles/main.css` instead of scoped copies.
 - `shared/config` is the one home of the association's public identity (`ORGANIZATION`), the interface
   `LOCALE` and the API limits the SPA repeats (`api-policy.ts`); never write those values as literals. The
   legal identity and contact details come from the API (`legalEntityQueries`), never from code.
 - Admin tables: bind each `useServerTable` column filter to the `DataTable` `search` box or to a
   `ColumnSearch`, `ColumnFilterSelect` or `ColumnFilterDate` inside it, and pass page-owned filters as
-  `extraFilters`; build row actions with `RowActions` (no per-action colours).
+  `extraFilters`; build row actions with `RowActions` (no per-action colours), the inline edit and delete
+  with `editAction` and `deleteAction`.
 - Elements the end-to-end suite drives carry a literal kebab-case `data-testid` named after their component
   (`login-submit`), the same on every item of a list. Keyed ones: `page-<route>` (set on `main` by the
   layouts), `nav-<route>` on navigation links, `option-<value>` on `el-option`, `row-action-<key>` from

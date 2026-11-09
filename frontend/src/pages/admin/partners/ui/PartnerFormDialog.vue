@@ -11,7 +11,8 @@ import {
 } from '@/shared/config'
 import { isDayAfter } from '@/shared/lib/date'
 import { useForm } from '@/shared/lib/form'
-import { ActionButton } from '@/shared/ui/action-button'
+import { FormDialog } from '@/shared/ui/form-dialog'
+import { FormField } from '@/shared/ui/form-field'
 
 import { readPartnerDraft, toPartnerDraft } from '../model/partner-form'
 
@@ -53,10 +54,8 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-  <el-dialog
-    v-model="visible"
-    :close-on-click-modal="false"
-    :close-on-press-escape="false"
+  <FormDialog
+    v-model:visible="visible"
     data-testid="partner-form-dialog"
     :title="
       partner
@@ -64,123 +63,81 @@ async function save(): Promise<void> {
         : $t('pages.admin.partners.form.newHeader')
     "
     width="min(460px, 92vw)"
+    :saving="saving || uploading"
+    @submit="save"
   >
-    <form class="form" @submit.prevent="save">
-      <div class="ca-field">
-        <label class="ca-field__label" for="partner-name">{{ $t('common.name') }}</label>
-        <el-input
-          id="partner-name"
-          v-model="draft.name"
-          data-testid="partner-form-name"
-          :maxlength="PARTNER_NAME_MAX_LENGTH"
-          :class="{ 'ca-invalid': errors.name }"
-          :aria-invalid="!!errors.name"
-          :aria-describedby="errors.name ? 'partner-name-error' : undefined"
-        />
-        <small
-          v-if="errors.name"
-          id="partner-name-error"
-          data-testid="partner-form-name-error"
-          class="ca-field__error"
-          >{{ errors.name }}</small
-        >
-      </div>
-
-      <div class="ca-field" data-testid="partner-form-from-date">
-        <label class="ca-field__label" for="partner-from">{{
-          $t('pages.admin.partners.form.fromDate')
-        }}</label>
-        <el-date-picker
-          id="partner-from"
-          v-model="draft.fromDate"
-          type="date"
-          :format="DATE_FORMAT"
-          :disabled-date="(date: Date) => isDayAfter(date, new Date())"
-          :class="{ 'ca-invalid': errors.fromDate }"
-        />
-        <small
-          v-if="errors.fromDate"
-          data-testid="partner-form-from-date-error"
-          class="ca-field__error"
-          >{{ errors.fromDate }}</small
-        >
-      </div>
-
-      <div class="ca-field">
-        <label class="ca-field__label" for="partner-tier">{{
-          $t('pages.admin.partners.form.tier')
-        }}</label>
-        <el-input-number
-          id="partner-tier"
-          v-model="draft.tier"
-          data-testid="partner-form-tier"
-          :min="PARTNER_MIN_TIER"
-          :max="PARTNER_MAX_TIER"
-          :precision="0"
-          controls-position="right"
-        />
-      </div>
-
-      <div class="ca-field">
-        <label class="ca-field__label" for="partner-website">{{
-          $t('pages.admin.partners.form.website')
-        }}</label>
-        <el-input
-          id="partner-website"
-          v-model="draft.website"
-          data-testid="partner-form-website"
-          type="url"
-          :maxlength="URL_MAX_LENGTH"
-          :placeholder="$t('pages.admin.partners.form.urlPlaceholder')"
-          :class="{ 'ca-invalid': errors.website }"
-          :aria-invalid="!!errors.website"
-          :aria-describedby="errors.website ? 'partner-website-error' : undefined"
-        />
-        <small
-          v-if="errors.website"
-          id="partner-website-error"
-          data-testid="partner-form-website-error"
-          class="ca-field__error"
-          >{{ errors.website }}</small
-        >
-      </div>
-
-      <div class="ca-field">
-        <div id="partner-image-label" class="ca-field__label">{{ $t('common.image') }}</div>
-        <ThumbnailField
-          role="group"
-          aria-labelledby="partner-image-label"
-          :existing-thumbnail-id="partner?.thumbnailId"
-          :invalid="submitted && missingThumbnail"
-          :upload-error="uploadError"
-          @update:file="pickedFile = $event"
-        />
-      </div>
-    </form>
-
-    <template #footer>
-      <ActionButton
-        :label="$t('common.cancel')"
-        text
-        :disabled="saving || uploading"
-        @click="visible = false"
+    <FormField
+      v-slot="{ control }"
+      for="partner-name"
+      :label="$t('common.name')"
+      :error="errors.name"
+      error-testid="partner-form-name-error"
+    >
+      <el-input
+        v-model="draft.name"
+        v-bind="control"
+        data-testid="partner-form-name"
+        :maxlength="PARTNER_NAME_MAX_LENGTH"
       />
-      <ActionButton
-        data-testid="partner-form-dialog-save"
-        :label="$t('common.save')"
-        type="primary"
-        :loading="saving || uploading"
-        @click="save"
+    </FormField>
+
+    <FormField
+      v-slot="{ control }"
+      for="partner-from"
+      :label="$t('pages.admin.partners.form.fromDate')"
+      :error="errors.fromDate"
+      error-testid="partner-form-from-date-error"
+      data-testid="partner-form-from-date"
+    >
+      <el-date-picker
+        :id="control.id"
+        v-model="draft.fromDate"
+        type="date"
+        :format="DATE_FORMAT"
+        :disabled-date="(date: Date) => isDayAfter(date, new Date())"
+        :class="control.class"
       />
-    </template>
-  </el-dialog>
+    </FormField>
+
+    <FormField for="partner-tier" :label="$t('pages.admin.partners.form.tier')">
+      <el-input-number
+        id="partner-tier"
+        v-model="draft.tier"
+        data-testid="partner-form-tier"
+        :min="PARTNER_MIN_TIER"
+        :max="PARTNER_MAX_TIER"
+        :precision="0"
+        controls-position="right"
+      />
+    </FormField>
+
+    <FormField
+      v-slot="{ control }"
+      for="partner-website"
+      :label="$t('pages.admin.partners.form.website')"
+      :error="errors.website"
+      error-testid="partner-form-website-error"
+    >
+      <el-input
+        v-model="draft.website"
+        v-bind="control"
+        data-testid="partner-form-website"
+        type="url"
+        :maxlength="URL_MAX_LENGTH"
+        :placeholder="$t('pages.admin.partners.form.urlPlaceholder')"
+      />
+    </FormField>
+
+    <div class="ca-field">
+      <div id="partner-image-label" class="ca-field__label">{{ $t('common.image') }}</div>
+      <ThumbnailField
+        role="group"
+        aria-labelledby="partner-image-label"
+        :existing-thumbnail-id="partner?.thumbnailId"
+        :invalid="submitted && missingThumbnail"
+        :upload-error="uploadError"
+        @update:file="pickedFile = $event"
+      />
+    </div>
+  </FormDialog>
 </template>
-
-<style scoped>
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding-top: 6px;
-}
-</style>

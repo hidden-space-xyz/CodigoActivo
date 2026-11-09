@@ -3,7 +3,8 @@ import { watch } from 'vue'
 
 import { PASSWORD_MAX_LENGTH } from '@/shared/config'
 import { useForm } from '@/shared/lib/form'
-import { ActionButton } from '@/shared/ui/action-button'
+import { FormDialog } from '@/shared/ui/form-dialog'
+import { FormField } from '@/shared/ui/form-field'
 
 import { readAdminPasswordDraft, toAdminPasswordDraft } from '../model/admin-password-form'
 
@@ -57,70 +58,39 @@ function confirm(): void {
 </script>
 
 <template>
-  <el-dialog
-    v-model="visible"
+  <FormDialog
+    v-model:visible="visible"
     :title="title"
     :width="width"
-    :close-on-click-modal="false"
-    :close-on-press-escape="false"
+    :saving="saving"
+    :confirm-label="confirmLabel"
+    @submit="confirm"
   >
-    <form class="form" @submit.prevent="confirm">
-      <p class="form__message">{{ message }}</p>
-      <slot />
-      <div v-if="!passwordless" class="ca-field">
-        <label class="ca-field__label" :for="inputId">{{
-          $t('pages.admin.users.adminPassword.label')
-        }}</label>
-        <el-input
-          :id="inputId"
-          v-model="draft.password"
-          data-testid="admin-password-input"
-          type="password"
-          show-password
-          autocomplete="current-password"
-          :maxlength="PASSWORD_MAX_LENGTH"
-          :class="{ 'ca-invalid': invalid('password') || error }"
-          :aria-invalid="invalid('password') || !!error"
-          :aria-describedby="errors.password || error ? `${inputId}-error` : undefined"
-        />
-        <small
-          v-if="errors.password"
-          :id="`${inputId}-error`"
-          class="ca-field__error"
-          data-testid="admin-password-error"
-          >{{ errors.password }}</small
-        >
-        <small
-          v-else-if="error"
-          :id="`${inputId}-error`"
-          class="ca-field__error"
-          data-testid="admin-password-error"
-          >{{ error }}</small
-        >
-      </div>
-    </form>
-
-    <template #footer>
-      <ActionButton :label="$t('common.cancel')" text :disabled="saving" @click="visible = false" />
-      <ActionButton
-        :label="confirmLabel"
-        data-testid="admin-password-confirm"
-        type="primary"
-        :loading="saving"
-        @click="confirm"
+    <p class="form__message">{{ message }}</p>
+    <slot />
+    <FormField
+      v-if="!passwordless"
+      v-slot="{ control }"
+      :for="inputId"
+      :label="$t('common.yourPassword')"
+      :invalid="invalid('password')"
+      :error="errors.password || error"
+      error-testid="admin-password-error"
+    >
+      <el-input
+        v-model="draft.password"
+        v-bind="control"
+        data-testid="admin-password-input"
+        type="password"
+        show-password
+        autocomplete="current-password"
+        :maxlength="PASSWORD_MAX_LENGTH"
       />
-    </template>
-  </el-dialog>
+    </FormField>
+  </FormDialog>
 </template>
 
 <style scoped>
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding-top: 6px;
-}
-
 .form__message {
   margin: 0;
   line-height: 1.5;

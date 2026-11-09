@@ -169,7 +169,6 @@ export default withVueTs(
             '/.+/': ['aria-label', 'alt', 'placeholder', 'title'],
           },
           ignorePattern: '^[\\p{P}\\p{S}\\p{N}\\s]*$',
-          ignoreText: ['A', 'B', 'H1', 'H2', 'H3', 'I', 'S', 'U'],
         },
       ],
       '@intlify/vue-i18n/no-v-html': 'error',

@@ -152,7 +152,7 @@ describe('admin partners page', () => {
     const { wrapper } = await renderPage()
 
     const search = wrapper.findComponent(SearchInput)
-    expect(search.props('label')).toBe(t('pages.admin.partners.search.name'))
+    expect(search.props('label')).toBe(t('common.searchByName'))
     search.vm.$emit('update:modelValue', 'acme')
     const searches = wrapper.findAllComponents(ColumnSearch)
     expect(searches.map((columnSearch) => columnSearch.props('label'))).toEqual([

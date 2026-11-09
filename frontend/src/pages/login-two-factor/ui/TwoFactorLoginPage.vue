@@ -2,6 +2,7 @@
 import { useTwoFactorLogin } from '../model/use-two-factor-login'
 import { TWO_FACTOR_CODE_MAX_LENGTH } from '@/shared/config'
 import { BrandButton } from '@/shared/ui/brand-button'
+import { FormField } from '@/shared/ui/form-field'
 import { PageHead } from '@/shared/ui/page-head'
 import { StatusPanel } from '@/shared/ui/status-panel'
 
@@ -61,10 +62,7 @@ const {
             </template>
           </p>
 
-          <div class="ca-field">
-            <label class="ca-field__label" for="two-factor-code">{{
-              $t('pages.loginTwoFactor.codeLabel')
-            }}</label>
+          <FormField for="two-factor-code" :label="$t('common.verificationCode')">
             <el-input
               id="two-factor-code"
               v-model="form.code"
@@ -78,7 +76,7 @@ const {
               :maxlength="TWO_FACTOR_CODE_MAX_LENGTH"
               required
             />
-          </div>
+          </FormField>
 
           <p
             v-if="errorMessage"

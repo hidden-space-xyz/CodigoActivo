@@ -219,12 +219,7 @@ describe('BlockedDataPage', () => {
     const { wrapper } = await renderPage('Email')
 
     await click(findButton(t('pages.admin.blockedData.open.action')))
-    await fillDialog(
-      COURT,
-      'Diligencias 123/2026',
-      '123456',
-      t('pages.admin.blockedData.open.sendCode'),
-    )
+    await fillDialog(COURT, 'Diligencias 123/2026', '123456', t('common.sendCode'))
     await vi.waitFor(() => expect(bodies.open).toHaveLength(1))
 
     expect(bodies.code).toEqual([{ currentPassword: 'secret' }])
@@ -253,7 +248,7 @@ describe('BlockedDataPage', () => {
     await typeInto('#blocked-requester', CLAIMANT)
     await typeInto('#blocked-reference', 'Ref')
     await typeInto('#blocked-password', 'wrong')
-    await click(findButton(t('pages.admin.blockedData.open.sendCode')))
+    await click(findButton(t('common.sendCode')))
     await vi.waitFor(() => expect(dialog.props('error')).not.toBe(''))
 
     expect(dialog.props('error')).toBe(t('errors.UserCurrentPasswordIncorrect'))
@@ -313,10 +308,10 @@ describe('BlockedDataPage', () => {
     const dialog = wrapper.findComponent(OpenConsultationDialog)
 
     await click(findButton(t('pages.admin.blockedData.open.action')))
-    await fillDialog(COURT, 'Ref', '000000', t('pages.admin.blockedData.open.sendCode'))
+    await fillDialog(COURT, 'Ref', '000000', t('common.sendCode'))
     await vi.waitFor(() => expect(dialog.props('error')).toBe(t('errors.TwoFactorCodeInvalid')))
 
-    await click(findButton(t('pages.admin.blockedData.open.resend')))
+    await click(findButton(t('common.resendCode')))
 
     await vi.waitFor(() => expect(bodies.code).toHaveLength(2))
     expect(bodies.code).toEqual([{ currentPassword: 'secret' }, { currentPassword: 'secret' }])

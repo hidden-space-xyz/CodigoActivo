@@ -1,4 +1,3 @@
-import { computed } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 
@@ -8,10 +7,9 @@ import {
   resourceQueries,
   type LearningResource,
   type LearningResourceSummary,
-  type ResourceInput,
 } from '@/entities/resource'
-import { useCrudDialog } from '@/shared/lib/crud'
-import { useCrudFeedback, useDeleteConfirm } from '@/shared/lib/feedback'
+import { useCrudActions, useCrudDialog } from '@/shared/lib/crud'
+import { useCrudFeedback } from '@/shared/lib/feedback'
 import { useServerTable } from '@/shared/lib/paging'
 
 /**
@@ -24,7 +22,6 @@ export function useResourcesAdmin() {
   const { t } = useI18n()
   const queryClient = useQueryClient()
   const feedback = useCrudFeedback()
-  const { confirmDelete } = useDeleteConfirm()
 
   const table = useServerTable({
     ...resourceList,
@@ -46,32 +43,20 @@ export function useResourcesAdmin() {
       feedback.error(error)
     },
   })
-  const create = useMutation(resourceMutations.create())
-  const update = useMutation(resourceMutations.update())
-  const remove = useMutation(resourceMutations.remove())
-  const saving = computed(() => create.isPending.value || update.isPending.value)
+  const actions = useCrudActions({
+    dialog,
+    create: useMutation(resourceMutations.create()),
+    update: useMutation(resourceMutations.update()),
+    remove: useMutation(resourceMutations.remove()),
+    messages: {
+      created: t('pages.admin.resources.toasts.created'),
+      updated: t('pages.admin.resources.toasts.updated'),
+      deleted: t('pages.admin.resources.toasts.deleted'),
+      deleteHeader: t('pages.admin.resources.delete.header'),
+      deleteMessage: (resource: LearningResourceSummary) =>
+        t('pages.admin.resources.delete.message', { title: resource.title }),
+    },
+  })
 
-  function save(input: ResourceInput): void {
-    const resource = dialog.editing.value
-    if (resource) {
-      update.mutate(
-        { id: resource.id, input },
-        feedback.outcome(t('pages.admin.resources.toasts.updated'), dialog.close),
-      )
-      return
-    }
-    create.mutate(input, feedback.outcome(t('pages.admin.resources.toasts.created'), dialog.close))
-  }
-
-  function confirmRemove(resource: LearningResourceSummary): void {
-    confirmDelete({
-      header: t('pages.admin.resources.delete.header'),
-      message: t('pages.admin.resources.delete.message', { title: resource.title }),
-      accept: () => {
-        remove.mutate(resource.id, feedback.outcome(t('pages.admin.resources.toasts.deleted')))
-      },
-    })
-  }
-
-  return { table, types, dialog, saving, save, confirmRemove }
+  return { table, types, dialog, ...actions }
 }

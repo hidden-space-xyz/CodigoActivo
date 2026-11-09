@@ -9,7 +9,7 @@ import {
   type EventCategoryInput,
 } from '@/entities/event-category'
 import { useForm } from '@/shared/lib/form'
-import { ActionButton } from '@/shared/ui/action-button'
+import { FormDialog } from '@/shared/ui/form-dialog'
 
 /** Opens the dialog; each time it opens the form is refilled from `category`. */
 const visible = defineModel<boolean>('visible', { required: true })
@@ -40,10 +40,8 @@ function save(): void {
 </script>
 
 <template>
-  <el-dialog
-    v-model="visible"
-    :close-on-click-modal="false"
-    :close-on-press-escape="false"
+  <FormDialog
+    v-model:visible="visible"
     data-testid="event-category-form-dialog"
     :title="
       category
@@ -52,29 +50,13 @@ function save(): void {
     "
     width="min(440px, 92vw)"
     append-to-body
+    :saving="saving"
+    @submit="save"
   >
-    <form class="form" @submit.prevent="save">
-      <EventCategoryFields
-        v-model:name="draft.name"
-        v-model:color="draft.color"
-        :invalid="invalid('name')"
-      />
-    </form>
-    <template #footer>
-      <ActionButton :label="$t('common.cancel')" text :disabled="saving" @click="visible = false" />
-      <ActionButton
-        data-testid="event-category-form-dialog-save"
-        :label="$t('common.save')"
-        type="primary"
-        :loading="saving"
-        @click="save"
-      />
-    </template>
-  </el-dialog>
+    <EventCategoryFields
+      v-model:name="draft.name"
+      v-model:color="draft.color"
+      :invalid="invalid('name')"
+    />
+  </FormDialog>
 </template>
-
-<style scoped>
-.form {
-  padding-top: 6px;
-}
-</style>

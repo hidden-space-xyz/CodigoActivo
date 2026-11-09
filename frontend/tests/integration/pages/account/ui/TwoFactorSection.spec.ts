@@ -46,7 +46,7 @@ function serveCode(response: () => Response = () => new HttpResponse(null, { sta
 
 async function reachEmailCodeStep(dialog: HTMLElement): Promise<void> {
   await typeInto('#tf-setup-password', 'secret', dialog)
-  await click(findButton(t('pages.account.twoFactor.sendCode'), dialog))
+  await click(findButton(t('common.sendCode'), dialog))
   await vi.waitFor(() => expect(dialog.querySelector('#tf-setup-email-code')).not.toBeNull())
 }
 
@@ -109,7 +109,7 @@ describe('TwoFactorSection', () => {
 
     await click(findButton(t('pages.account.twoFactor.useAuthenticator'), document.body))
     const dialog = openDialog(t(SETUP_TITLE))
-    await click(findButton(t('pages.account.twoFactor.sendCode'), dialog))
+    await click(findButton(t('common.sendCode'), dialog))
     expect(dialog.textContent).toContain(
       t('pages.account.twoFactor.form.problems.passwordRequired'),
     )
@@ -158,7 +158,7 @@ describe('TwoFactorSection', () => {
     await click(findButton(t('pages.account.twoFactor.useAuthenticator'), document.body))
     const dialog = openDialog(t(SETUP_TITLE))
     await typeInto('#tf-setup-password', 'wrong', dialog)
-    await click(findButton(t('pages.account.twoFactor.sendCode'), dialog))
+    await click(findButton(t('common.sendCode'), dialog))
 
     await vi.waitFor(() =>
       expect(dialog.querySelector('[role="alert"]')?.textContent).toBe(
@@ -196,7 +196,7 @@ describe('TwoFactorSection', () => {
     expect(dialog.querySelector('#tf-setup-code')).toBeNull()
     expect(dialog.querySelector('#tf-setup-email-code')).not.toBeNull()
 
-    await click(findButton(t('pages.account.twoFactor.resend'), dialog))
+    await click(findButton(t('common.resendCode'), dialog))
     await vi.waitFor(() => expect(codes).toHaveLength(2))
     expect(codes).toEqual([
       { currentPassword: 'secret', purpose: 'AuthenticatorSetup' },

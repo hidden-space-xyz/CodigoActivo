@@ -8,6 +8,7 @@ import {
   type StaffRole,
   type User,
 } from '@/entities/user'
+import { FormField } from '@/shared/ui/form-field'
 
 import AdminPasswordDialog from './AdminPasswordDialog.vue'
 
@@ -53,10 +54,7 @@ function confirm(currentPassword: string): void {
     :passwordless="staffRole === 'None'"
     @submit="confirm"
   >
-    <div class="ca-field">
-      <label class="ca-field__label" for="staff-role">{{
-        $t('pages.admin.users.staffRole.label')
-      }}</label>
+    <FormField for="staff-role" :label="$t('pages.admin.users.staffRole.label')">
       <el-select id="staff-role" v-model="staffRole" data-testid="staff-role-dialog-role">
         <el-option
           v-for="role in STAFF_ROLES"
@@ -66,6 +64,6 @@ function confirm(currentPassword: string): void {
           :data-testid="`option-${role}`"
         />
       </el-select>
-    </div>
+    </FormField>
   </AdminPasswordDialog>
 </template>

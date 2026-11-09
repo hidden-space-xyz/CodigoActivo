@@ -13,7 +13,7 @@ import { ColorTag } from '@/shared/ui/color-tag'
 import { ColumnFilterDate, ColumnFilterSelect, toSelectOptions } from '@/shared/ui/column-filter'
 import { DataTable } from '@/shared/ui/data-table'
 import { ListThumbnail } from '@/shared/ui/list-thumbnail'
-import { RowActions, type RowAction } from '@/shared/ui/row-actions'
+import { editAction, RowActions, type RowAction } from '@/shared/ui/row-actions'
 import { TablePrimaryCell } from '@/shared/ui/table-primary-cell'
 
 import { stageTagType } from '../lib/stage-tag-type'
@@ -60,16 +60,7 @@ function signupTitle(event: EventListing): string {
 
 function eventActions(event: EventListing): RowAction[] {
   return [
-    {
-      key: 'edit',
-      label: t('common.edit'),
-      icon: 'pencil',
-      inline: true,
-      disabled: loading.value,
-      run: () => {
-        void openEdit(event)
-      },
-    },
+    editAction(() => void openEdit(event), loading.value),
     {
       key: 'manage',
       label: t('pages.admin.events.actions.manage'),

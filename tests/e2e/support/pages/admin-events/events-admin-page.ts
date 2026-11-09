@@ -102,7 +102,7 @@ export class EventFormDialog {
     this.earlySignupFrom = this.root.getByTestId('event-form-early-signup-from')
     this.signupFrom = this.root.getByTestId('event-form-signup-from')
     this.signupUntil = this.root.getByTestId('event-form-signup-until')
-    this.save = this.root.getByTestId('event-form-save')
+    this.save = this.root.getByTestId('form-dialog-save')
   }
 
   /** Adds the category whose id is `id` to the event and closes the list of options. */
@@ -118,7 +118,7 @@ export class EventFormDialog {
     await this.root.getByTestId('event-form-new-category').click()
     const dialog = this.page.getByTestId('new-category-dialog')
     await dialog.getByTestId('event-category-fields-name').fill(name)
-    await dialog.getByTestId('new-category-dialog-create').click()
+    await dialog.getByTestId('form-dialog-save').click()
     await expect(dialog).toBeHidden()
   }
 

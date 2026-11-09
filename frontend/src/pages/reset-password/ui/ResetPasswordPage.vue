@@ -3,6 +3,7 @@ import { useResetPassword } from '../model/use-reset-password'
 import { PASSWORD_MAX_LENGTH } from '@/shared/config'
 import { useLinkFragment } from '@/shared/lib/navigation'
 import { BrandButton } from '@/shared/ui/brand-button'
+import { FormField } from '@/shared/ui/form-field'
 import { PageHead } from '@/shared/ui/page-head'
 import { StatusPanel } from '@/shared/ui/status-panel'
 
@@ -57,10 +58,7 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
         </StatusPanel>
 
         <form v-else class="reset-form" @submit.prevent="submit">
-          <div class="ca-field">
-            <label class="ca-field__label" for="reset-password">{{
-              $t('pages.resetPassword.newPasswordLabel')
-            }}</label>
+          <FormField for="reset-password" :label="$t('pages.resetPassword.newPasswordLabel')">
             <el-input
               id="reset-password"
               v-model="form.password"
@@ -71,11 +69,11 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
               :maxlength="PASSWORD_MAX_LENGTH"
               required
             />
-          </div>
-          <div class="ca-field">
-            <label class="ca-field__label" for="reset-password-confirm">{{
-              $t('pages.resetPassword.confirmPasswordLabel')
-            }}</label>
+          </FormField>
+          <FormField
+            for="reset-password-confirm"
+            :label="$t('pages.resetPassword.confirmPasswordLabel')"
+          >
             <el-input
               id="reset-password-confirm"
               v-model="form.confirmPassword"
@@ -86,7 +84,7 @@ const { form, state, errorMessage, canRequestNewLink, submit, hasValidLink, isSu
               :maxlength="PASSWORD_MAX_LENGTH"
               required
             />
-          </div>
+          </FormField>
 
           <p
             v-if="errorMessage"

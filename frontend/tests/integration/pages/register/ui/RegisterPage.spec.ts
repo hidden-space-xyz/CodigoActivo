@@ -81,9 +81,9 @@ describe('register page', () => {
     await clickButton(wrapper, t('pages.register.ageGate.confirm'))
     await fillAdult(wrapper)
     await clickButton(wrapper, t('pages.register.form.addMinor'))
-    await wrapper.find('#minor-firstname-0').setValue(' Byron ')
-    await wrapper.find('#minor-lastname-0').setValue('King')
-    await wrapper.find('#minor-dob-0').setValue('2016-02-03')
+    await wrapper.find('#minor-0-firstname').setValue(' Byron ')
+    await wrapper.find('#minor-0-lastname').setValue('King')
+    await wrapper.find('#minor-0-dob').setValue('2016-02-03')
     await selectGender(wrapper, 1, 'Male')
     await wrapper.find('form').trigger('submit')
 

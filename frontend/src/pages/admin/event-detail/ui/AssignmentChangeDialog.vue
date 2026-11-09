@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { SelectOption } from '@/shared/ui/column-filter'
 import { ActionButton } from '@/shared/ui/action-button'
+import { FormField } from '@/shared/ui/form-field'
 
 /** Opens the dialog. */
 const visible = defineModel<boolean>('visible', { required: true })
@@ -45,8 +46,7 @@ const emit = defineEmits<{
         })
       }}
     </p>
-    <div class="ca-field">
-      <label class="ca-field__label" :for="inputId">{{ label }}</label>
+    <FormField :for="inputId" :label="label">
       <el-select
         :id="inputId"
         v-model="selected"
@@ -64,7 +64,7 @@ const emit = defineEmits<{
       <small v-if="unavailableText && options.length === 0" class="ca-field__error">
         {{ unavailableText }}
       </small>
-    </div>
+    </FormField>
     <template #footer>
       <ActionButton
         :label="$t('common.cancel')"

@@ -52,7 +52,7 @@ test.describe('admin user actions', () => {
     await chooseOption(dialog.getByTestId('staff-role-dialog-role'), 'Administrator')
     const password = dialog.getByTestId('admin-password-input')
     await password.fill(`${PASSWORD}-wrong`)
-    await dialog.getByTestId('admin-password-confirm').click()
+    await dialog.getByTestId('form-dialog-save').click()
 
     await expect(dialog.getByTestId('admin-password-error')).toHaveText(
       t('errors.UserCurrentPasswordIncorrect'),
@@ -60,7 +60,7 @@ test.describe('admin user actions', () => {
     await expect(password).toHaveAttribute('aria-invalid', 'true')
 
     await password.fill(PASSWORD)
-    await dialog.getByTestId('admin-password-confirm').click()
+    await dialog.getByTestId('form-dialog-save').click()
 
     await expect(notification(page, t('pages.admin.users.toasts.staffRoleChanged'))).toBeVisible()
     await expect(dialog).toBeHidden()
@@ -83,7 +83,7 @@ test.describe('admin user actions', () => {
     const dialog = page.getByTestId('staff-role-dialog')
     await chooseOption(dialog.getByTestId('staff-role-dialog-role'), 'Editor')
     await dialog.getByTestId('admin-password-input').fill(PASSWORD)
-    await dialog.getByTestId('admin-password-confirm').click()
+    await dialog.getByTestId('form-dialog-save').click()
 
     await expect(notification(page, t('errors.UserStaffRoleRequiresMember'))).toBeVisible()
     await expect(users.row(account).getByTestId('users-staff-role')).not.toHaveText(
@@ -108,7 +108,7 @@ test.describe('admin user actions', () => {
     const dialog = page.getByTestId('staff-role-dialog')
     await chooseOption(dialog.getByTestId('staff-role-dialog-role'), 'None')
     await expect(dialog.getByTestId('admin-password-input')).toBeHidden()
-    await dialog.getByTestId('admin-password-confirm').click()
+    await dialog.getByTestId('form-dialog-save').click()
 
     await expect(notification(page, t('pages.admin.users.toasts.staffRoleChanged'))).toBeVisible()
     await expect(users.row(person.account).getByTestId('users-staff-role')).not.toHaveText(editor)
@@ -154,14 +154,14 @@ test.describe('admin user actions', () => {
     await expect(dialog).toContainText(
       t('pages.admin.users.resetTwoFactor.message', { fullName: fullName(account) }),
     )
-    await dialog.getByTestId('admin-password-confirm').click()
+    await dialog.getByTestId('form-dialog-save').click()
     await expect(dialog.getByTestId('admin-password-error')).toHaveText(
       t('pages.admin.users.adminPassword.form.problems.passwordRequired'),
     )
 
     await dialog.getByTestId('admin-password-input').fill(PASSWORD)
     const sentAfter = new Date()
-    await dialog.getByTestId('admin-password-confirm').click()
+    await dialog.getByTestId('form-dialog-save').click()
 
     await expect(notification(page, t('pages.admin.users.toasts.twoFactorReset'))).toBeVisible()
     await expect(dialog).toBeHidden()

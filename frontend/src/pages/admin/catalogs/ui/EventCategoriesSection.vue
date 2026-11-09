@@ -1,37 +1,18 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-
 import type { EventCategory } from '@/entities/event-category'
 import { ColorTag } from '@/shared/ui/color-tag'
 import { DataTable } from '@/shared/ui/data-table'
-import { RowActions, type RowAction } from '@/shared/ui/row-actions'
+import { deleteAction, editAction, RowActions, type RowAction } from '@/shared/ui/row-actions'
 
 import { useEventCategoriesAdmin } from '../model/use-event-categories-admin'
 import CatalogSection from './CatalogSection.vue'
 import EventCategoryFormDialog from './EventCategoryFormDialog.vue'
 
-const { t } = useI18n()
 const { table, dialog, saving, save, confirmRemove } = useEventCategoriesAdmin()
 const { visible, editing, openCreate, openEdit } = dialog
 
 function rowActions(category: EventCategory): RowAction[] {
-  return [
-    {
-      key: 'edit',
-      label: t('common.edit'),
-      icon: 'pencil',
-      inline: true,
-      run: () => void openEdit(category),
-    },
-    {
-      key: 'delete',
-      label: t('common.delete'),
-      icon: 'trash',
-      inline: true,
-      danger: true,
-      run: () => confirmRemove(category),
-    },
-  ]
+  return [editAction(() => void openEdit(category)), deleteAction(() => confirmRemove(category))]
 }
 </script>
 
@@ -47,7 +28,7 @@ function rowActions(category: EventCategory): RowAction[] {
       variant="flush"
       :empty-text="$t('pages.admin.catalogs.eventCategories.empty.none')"
       :error-text="$t('pages.admin.catalogs.eventCategories.empty.error')"
-      :search="{ key: 'name', label: $t('pages.admin.catalogs.eventCategories.search.name') }"
+      :search="{ key: 'name', label: $t('common.searchByName') }"
     >
       <el-table-column
         prop="name"

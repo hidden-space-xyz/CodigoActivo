@@ -140,6 +140,201 @@ function insertTable(): void {
   editor.value?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
 }
 
+/** A command of a toolbar: a button, or a color picker when it has `pick`. */
+interface Tool {
+  readonly title: string
+  readonly run?: () => void
+  readonly pick?: (value: string) => void
+  readonly icon?: string
+  readonly spin?: boolean
+  readonly text?: string
+  readonly tag?: 'strong' | 'em' | 'u' | 's'
+  readonly active?: boolean
+  readonly disabled?: boolean
+  readonly danger?: boolean
+}
+
+/** Groups of the main toolbar, separated by a rule; the last one is pushed to the far end. */
+const toolbar = computed<Tool[][]>(() => {
+  const instance = editor.value
+  if (!instance) return []
+  const chain = () => instance.chain().focus()
+  const media: Tool[] = [
+    {
+      title: t('editor.link'),
+      icon: 'link',
+      active: instance.isActive('link'),
+      run: toggleLink,
+    },
+  ]
+  if (upload) {
+    media.push({
+      title: t('editor.insertImage'),
+      icon: uploading.value ? 'spinner' : 'image',
+      spin: uploading.value,
+      disabled: uploading.value,
+      run: pickImage,
+    })
+  }
+  media.push({ title: t('editor.insertTable'), icon: 'table', run: insertTable })
+  return [
+    [
+      {
+        title: t('editor.bold'),
+        text: 'B',
+        tag: 'strong',
+        active: instance.isActive('bold'),
+        run: () => chain().toggleBold().run(),
+      },
+      {
+        title: t('editor.italic'),
+        text: 'I',
+        tag: 'em',
+        active: instance.isActive('italic'),
+        run: () => chain().toggleItalic().run(),
+      },
+      {
+        title: t('editor.underline'),
+        text: 'U',
+        tag: 'u',
+        active: instance.isActive('underline'),
+        run: () => chain().toggleUnderline().run(),
+      },
+      {
+        title: t('editor.strike'),
+        text: 'S',
+        tag: 's',
+        active: instance.isActive('strike'),
+        run: () => chain().toggleStrike().run(),
+      },
+    ],
+    [
+      {
+        title: t('editor.heading1'),
+        text: 'H1',
+        active: instance.isActive('heading', { level: 1 }),
+        run: () => chain().toggleHeading({ level: 1 }).run(),
+      },
+      {
+        title: t('editor.heading2'),
+        text: 'H2',
+        active: instance.isActive('heading', { level: 2 }),
+        run: () => chain().toggleHeading({ level: 2 }).run(),
+      },
+      {
+        title: t('editor.subtitle'),
+        text: 'H3',
+        active: instance.isActive('heading', { level: 3 }),
+        run: () => chain().toggleHeading({ level: 3 }).run(),
+      },
+    ],
+    [
+      { title: t('editor.textColor'), text: 'A', pick: setColor },
+      { title: t('editor.highlight'), icon: 'palette', pick: setHighlight },
+      { title: t('editor.clearFormatting'), icon: 'ban', run: clearColors },
+    ],
+    [
+      {
+        title: t('editor.alignLeft'),
+        icon: 'align-left',
+        active: instance.isActive({ textAlign: 'left' }),
+        run: () => setAlign('left'),
+      },
+      {
+        title: t('editor.alignCenter'),
+        icon: 'align-center',
+        active: instance.isActive({ textAlign: 'center' }),
+        run: () => setAlign('center'),
+      },
+      {
+        title: t('editor.alignRight'),
+        icon: 'align-right',
+        active: instance.isActive({ textAlign: 'right' }),
+        run: () => setAlign('right'),
+      },
+    ],
+    [
+      {
+        title: t('editor.bulletList'),
+        icon: 'list',
+        active: instance.isActive('bulletList'),
+        run: () => chain().toggleBulletList().run(),
+      },
+      {
+        title: t('editor.orderedList'),
+        text: '1.',
+        active: instance.isActive('orderedList'),
+        run: () => chain().toggleOrderedList().run(),
+      },
+      {
+        title: t('editor.blockquote'),
+        icon: 'comment',
+        active: instance.isActive('blockquote'),
+        run: () => chain().toggleBlockquote().run(),
+      },
+    ],
+    media,
+    [
+      {
+        title: t('editor.undo'),
+        icon: 'undo',
+        disabled: !instance.can().undo(),
+        run: () => chain().undo().run(),
+      },
+      {
+        title: t('editor.redo'),
+        icon: 'refresh',
+        disabled: !instance.can().redo(),
+        run: () => chain().redo().run(),
+      },
+    ],
+  ]
+})
+
+/** Commands of the table the cursor is in, or none outside a table. */
+const tableTools = computed<Tool[]>(() => {
+  const instance = editor.value
+  if (!instance?.isActive('table')) return []
+  const chain = () => instance.chain().focus()
+  return [
+    {
+      title: t('editor.addColumn'),
+      text: t('editor.columnAdd'),
+      run: () => chain().addColumnAfter().run(),
+    },
+    {
+      title: t('editor.deleteColumn'),
+      text: t('editor.columnRemove'),
+      run: () => chain().deleteColumn().run(),
+    },
+    { title: t('editor.addRow'), text: t('editor.rowAdd'), run: () => chain().addRowAfter().run() },
+    {
+      title: t('editor.deleteRow'),
+      text: t('editor.rowRemove'),
+      run: () => chain().deleteRow().run(),
+    },
+    {
+      title: t('editor.toggleHeaderRow'),
+      text: t('editor.headerCell'),
+      run: () => chain().toggleHeaderRow().run(),
+    },
+    {
+      title: t('editor.deleteTable'),
+      icon: 'trash',
+      danger: true,
+      run: () => chain().deleteTable().run(),
+    },
+  ]
+})
+
+/** The main toolbar and, while the cursor is in a table, the table toolbar under it. */
+const toolbars = computed(() =>
+  [
+    { table: false, groups: toolbar.value },
+    { table: true, groups: [tableTools.value] },
+  ].filter(({ groups }) => groups.some((group) => group.length > 0)),
+)
+
 onBeforeUnmount(() => editor.value?.destroy())
 </script>
 
@@ -149,259 +344,42 @@ onBeforeUnmount(() => editor.value?.destroy())
     :class="{ 'rt--invalid': invalid }"
     :style="{ '--rt-placeholder': placeholderVar }"
   >
-    <div v-if="editor" class="rt__toolbar">
-      <button
-        type="button"
-        class="rt__btn"
-        :class="{ 'rt__btn--active': editor.isActive('bold') }"
-        :title="$t('editor.bold')"
-        @click="editor.chain().focus().toggleBold().run()"
-      >
-        <strong>B</strong>
-      </button>
-      <button
-        type="button"
-        class="rt__btn"
-        :class="{ 'rt__btn--active': editor.isActive('italic') }"
-        :title="$t('editor.italic')"
-        @click="editor.chain().focus().toggleItalic().run()"
-      >
-        <em>I</em>
-      </button>
-      <button
-        type="button"
-        class="rt__btn"
-        :class="{ 'rt__btn--active': editor.isActive('underline') }"
-        :title="$t('editor.underline')"
-        @click="editor.chain().focus().toggleUnderline().run()"
-      >
-        <span style="text-decoration: underline">U</span>
-      </button>
-      <button
-        type="button"
-        class="rt__btn"
-        :class="{ 'rt__btn--active': editor.isActive('strike') }"
-        :title="$t('editor.strike')"
-        @click="editor.chain().focus().toggleStrike().run()"
-      >
-        <s>S</s>
-      </button>
-
-      <span class="rt__sep" />
-
-      <button
-        type="button"
-        class="rt__btn"
-        :class="{ 'rt__btn--active': editor.isActive('heading', { level: 1 }) }"
-        :title="$t('editor.heading1')"
-        @click="editor.chain().focus().toggleHeading({ level: 1 }).run()"
-      >
-        H1
-      </button>
-      <button
-        type="button"
-        class="rt__btn"
-        :class="{ 'rt__btn--active': editor.isActive('heading', { level: 2 }) }"
-        :title="$t('editor.heading2')"
-        @click="editor.chain().focus().toggleHeading({ level: 2 }).run()"
-      >
-        H2
-      </button>
-      <button
-        type="button"
-        class="rt__btn"
-        :class="{ 'rt__btn--active': editor.isActive('heading', { level: 3 }) }"
-        :title="$t('editor.subtitle')"
-        @click="editor.chain().focus().toggleHeading({ level: 3 }).run()"
-      >
-        H3
-      </button>
-
-      <span class="rt__sep" />
-
-      <label class="rt__btn rt__color" :title="$t('editor.textColor')">
-        <span class="rt__color-letter">A</span>
-        <input
-          type="color"
-          class="rt__color-input"
-          @input="setColor(($event.target as HTMLInputElement).value)"
+    <div
+      v-for="bar in toolbars"
+      :key="bar.table ? 'table' : 'main'"
+      class="rt__toolbar"
+      :class="{ 'rt__toolbar--table': bar.table }"
+    >
+      <span v-if="bar.table" class="rt__table-label">{{ $t('editor.tableLabel') }}</span>
+      <template v-for="(group, index) in bar.groups" :key="index">
+        <span
+          v-if="index > 0"
+          :class="index === bar.groups.length - 1 ? 'rt__spacer' : 'rt__sep'"
         />
-      </label>
-      <label class="rt__btn rt__color" :title="$t('editor.highlight')">
-        <AppIcon name="palette" />
-        <input
-          type="color"
-          class="rt__color-input"
-          @input="setHighlight(($event.target as HTMLInputElement).value)"
-        />
-      </label>
-      <button
-        type="button"
-        class="rt__btn"
-        :title="$t('editor.clearFormatting')"
-        @click="clearColors"
-      >
-        <AppIcon name="ban" />
-      </button>
-
-      <span class="rt__sep" />
-
-      <button
-        type="button"
-        class="rt__btn"
-        :class="{ 'rt__btn--active': editor.isActive({ textAlign: 'left' }) }"
-        :title="$t('editor.alignLeft')"
-        @click="setAlign('left')"
-      >
-        <AppIcon name="align-left" />
-      </button>
-      <button
-        type="button"
-        class="rt__btn"
-        :class="{ 'rt__btn--active': editor.isActive({ textAlign: 'center' }) }"
-        :title="$t('editor.alignCenter')"
-        @click="setAlign('center')"
-      >
-        <AppIcon name="align-center" />
-      </button>
-      <button
-        type="button"
-        class="rt__btn"
-        :class="{ 'rt__btn--active': editor.isActive({ textAlign: 'right' }) }"
-        :title="$t('editor.alignRight')"
-        @click="setAlign('right')"
-      >
-        <AppIcon name="align-right" />
-      </button>
-
-      <span class="rt__sep" />
-
-      <button
-        type="button"
-        class="rt__btn"
-        :class="{ 'rt__btn--active': editor.isActive('bulletList') }"
-        :title="$t('editor.bulletList')"
-        @click="editor.chain().focus().toggleBulletList().run()"
-      >
-        <AppIcon name="list" />
-      </button>
-      <button
-        type="button"
-        class="rt__btn"
-        :class="{ 'rt__btn--active': editor.isActive('orderedList') }"
-        :title="$t('editor.orderedList')"
-        @click="editor.chain().focus().toggleOrderedList().run()"
-      >
-        1.
-      </button>
-      <button
-        type="button"
-        class="rt__btn"
-        :class="{ 'rt__btn--active': editor.isActive('blockquote') }"
-        :title="$t('editor.blockquote')"
-        @click="editor.chain().focus().toggleBlockquote().run()"
-      >
-        <AppIcon name="comment" />
-      </button>
-
-      <span class="rt__sep" />
-
-      <button
-        type="button"
-        class="rt__btn"
-        :class="{ 'rt__btn--active': editor.isActive('link') }"
-        :title="$t('editor.link')"
-        @click="toggleLink"
-      >
-        <AppIcon name="link" />
-      </button>
-      <button
-        v-if="upload"
-        type="button"
-        class="rt__btn"
-        :title="$t('editor.insertImage')"
-        :disabled="uploading"
-        @click="pickImage"
-      >
-        <AppIcon v-if="uploading" name="spinner" spin />
-        <AppIcon v-else name="image" />
-      </button>
-      <button type="button" class="rt__btn" :title="$t('editor.insertTable')" @click="insertTable">
-        <AppIcon name="table" />
-      </button>
-
-      <span class="rt__spacer" />
-
-      <button
-        type="button"
-        class="rt__btn"
-        :title="$t('editor.undo')"
-        :disabled="!editor.can().undo()"
-        @click="editor.chain().focus().undo().run()"
-      >
-        <AppIcon name="undo" />
-      </button>
-      <button
-        type="button"
-        class="rt__btn"
-        :title="$t('editor.redo')"
-        :disabled="!editor.can().redo()"
-        @click="editor.chain().focus().redo().run()"
-      >
-        <AppIcon name="refresh" />
-      </button>
-    </div>
-
-    <div v-if="editor && editor.isActive('table')" class="rt__toolbar rt__toolbar--table">
-      <span class="rt__table-label">{{ $t('editor.tableLabel') }}</span>
-      <button
-        type="button"
-        class="rt__btn"
-        :title="$t('editor.addColumn')"
-        @click="editor.chain().focus().addColumnAfter().run()"
-      >
-        {{ $t('editor.columnAdd') }}
-      </button>
-      <button
-        type="button"
-        class="rt__btn"
-        :title="$t('editor.deleteColumn')"
-        @click="editor.chain().focus().deleteColumn().run()"
-      >
-        {{ $t('editor.columnRemove') }}
-      </button>
-      <button
-        type="button"
-        class="rt__btn"
-        :title="$t('editor.addRow')"
-        @click="editor.chain().focus().addRowAfter().run()"
-      >
-        {{ $t('editor.rowAdd') }}
-      </button>
-      <button
-        type="button"
-        class="rt__btn"
-        :title="$t('editor.deleteRow')"
-        @click="editor.chain().focus().deleteRow().run()"
-      >
-        {{ $t('editor.rowRemove') }}
-      </button>
-      <button
-        type="button"
-        class="rt__btn"
-        :title="$t('editor.toggleHeaderRow')"
-        @click="editor.chain().focus().toggleHeaderRow().run()"
-      >
-        {{ $t('editor.headerCell') }}
-      </button>
-      <button
-        type="button"
-        class="rt__btn rt__btn--danger"
-        :title="$t('editor.deleteTable')"
-        @click="editor.chain().focus().deleteTable().run()"
-      >
-        <AppIcon name="trash" />
-      </button>
+        <template v-for="tool in group" :key="tool.title">
+          <label v-if="tool.pick" class="rt__btn rt__color" :title="tool.title">
+            <span v-if="tool.text" class="rt__color-letter">{{ tool.text }}</span>
+            <AppIcon v-else-if="tool.icon" :name="tool.icon" />
+            <input
+              type="color"
+              class="rt__color-input"
+              @input="tool.pick?.(($event.target as HTMLInputElement).value)"
+            />
+          </label>
+          <button
+            v-else
+            type="button"
+            class="rt__btn"
+            :class="{ 'rt__btn--active': tool.active, 'rt__btn--danger': tool.danger }"
+            :title="tool.title"
+            :disabled="tool.disabled"
+            @click="tool.run?.()"
+          >
+            <AppIcon v-if="tool.icon" :name="tool.icon" :spin="tool.spin ?? false" />
+            <component :is="tool.tag ?? 'span'" v-else>{{ tool.text }}</component>
+          </button>
+        </template>
+      </template>
     </div>
 
     <EditorContent v-if="editor" :editor="editor" class="rt__content rich-text" />

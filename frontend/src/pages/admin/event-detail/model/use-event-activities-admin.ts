@@ -1,4 +1,3 @@
-import { computed } from 'vue'
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useI18n } from 'vue-i18n'
 
@@ -7,12 +6,11 @@ import {
   activityMutations,
   activityQueries,
   type ActivityDetail,
-  type ActivityInput,
   type ActivityListing,
 } from '@/entities/activity'
 import { alsoInvalidates } from '@/shared/api'
-import { useCrudDialog } from '@/shared/lib/crud'
-import { useCrudFeedback, useDeleteConfirm } from '@/shared/lib/feedback'
+import { useCrudActions, useCrudDialog } from '@/shared/lib/crud'
+import { useCrudFeedback } from '@/shared/lib/feedback'
 import { useServerTable } from '@/shared/lib/paging'
 
 import { eventReportKeys } from '../api/queries'
@@ -29,7 +27,6 @@ export function useEventActivitiesAdmin(eventId: () => string) {
   const { t } = useI18n()
   const queryClient = useQueryClient()
   const feedback = useCrudFeedback()
-  const { confirmDelete } = useDeleteConfirm()
 
   const table = useServerTable({
     ...activityList,
@@ -52,40 +49,20 @@ export function useEventActivitiesAdmin(eventId: () => string) {
   })
 
   const reports = () => [eventReportKeys.stats(eventId()), eventReportKeys.attendees()] as const
-  const create = useMutation(() =>
-    alsoInvalidates(activityMutations.create(eventId()), ...reports()),
-  )
-  const update = useMutation(() => alsoInvalidates(activityMutations.update(), ...reports()))
-  const remove = useMutation(() => alsoInvalidates(activityMutations.remove(), ...reports()))
-  const saving = computed(() => create.isPending.value || update.isPending.value)
+  const actions = useCrudActions({
+    dialog,
+    create: useMutation(() => alsoInvalidates(activityMutations.create(eventId()), ...reports())),
+    update: useMutation(() => alsoInvalidates(activityMutations.update(), ...reports())),
+    remove: useMutation(() => alsoInvalidates(activityMutations.remove(), ...reports())),
+    messages: {
+      created: t('pages.admin.eventDetail.toast.activityCreated'),
+      updated: t('pages.admin.eventDetail.toast.activityUpdated'),
+      deleted: t('pages.admin.eventDetail.toast.activityDeleted'),
+      deleteHeader: t('pages.admin.eventDetail.deleteConfirm.header'),
+      deleteMessage: (activity: ActivityListing) =>
+        t('pages.admin.eventDetail.deleteConfirm.message', { title: activity.title }),
+    },
+  })
 
-  function save(input: ActivityInput): void {
-    const activity = dialog.editing.value
-    if (activity) {
-      update.mutate(
-        { id: activity.id, input },
-        feedback.outcome(t('pages.admin.eventDetail.toast.activityUpdated'), dialog.close),
-      )
-      return
-    }
-    create.mutate(
-      input,
-      feedback.outcome(t('pages.admin.eventDetail.toast.activityCreated'), dialog.close),
-    )
-  }
-
-  function confirmRemove(activity: ActivityListing): void {
-    confirmDelete({
-      header: t('pages.admin.eventDetail.deleteConfirm.header'),
-      message: t('pages.admin.eventDetail.deleteConfirm.message', { title: activity.title }),
-      accept: () => {
-        remove.mutate(
-          activity.id,
-          feedback.outcome(t('pages.admin.eventDetail.toast.activityDeleted')),
-        )
-      },
-    })
-  }
-
-  return { table, dialog, saving, save, confirmRemove }
+  return { table, dialog, ...actions }
 }
