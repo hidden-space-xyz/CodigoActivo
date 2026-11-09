@@ -1,5 +1,6 @@
 using System.Net;
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 using AwesomeAssertions;
 using CodigoActivo.API.Security;
 using Microsoft.AspNetCore.Http;
@@ -110,6 +111,37 @@ public sealed class ClientRequestRateLimiterTests
         first.IsAcquired.Should().BeTrue();
         second.IsAcquired.Should().BeTrue();
         rejected.IsAcquired.Should().BeFalse();
+    }
+
+    [Fact]
+    public void BudgetRefusalsAskToWaitOneWindowSegment()
+    {
+        using var global = ClientRequestRateLimiter.CreateGlobal(1, 1);
+        using var policy = ClientRequestRateLimiter.CreateAuthenticatedPolicy(
+            SecurityPolicies.Reports,
+            1
+        );
+        using var concurrency = ClientRequestRateLimiter.CreateConcurrency(1, 0);
+        var request = NewContext(IPAddress.Loopback, Guid.NewGuid(), SecurityPolicies.Reports);
+
+        using var globalAccepted = global.AttemptAcquire(request);
+        using var globalRefused = global.AttemptAcquire(request);
+        using var policyAccepted = policy.AttemptAcquire(request);
+        using var policyRefused = policy.AttemptAcquire(request);
+        using var running = concurrency.AttemptAcquire(request);
+        using var concurrencyRefused = concurrency.AttemptAcquire(request);
+
+        RetryAfter(globalRefused).Should().Be(TimeSpan.FromSeconds(10));
+        RetryAfter(policyRefused).Should().Be(TimeSpan.FromSeconds(10));
+        concurrencyRefused.IsAcquired.Should().BeFalse();
+        RetryAfter(concurrencyRefused).Should().BeNull();
+    }
+
+    private static TimeSpan? RetryAfter(RateLimitLease lease)
+    {
+        return lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter)
+            ? retryAfter
+            : null;
     }
 
     private static DefaultHttpContext NewContext(

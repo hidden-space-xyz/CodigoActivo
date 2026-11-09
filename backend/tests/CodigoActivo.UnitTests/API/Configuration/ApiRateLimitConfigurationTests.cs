@@ -1,4 +1,5 @@
 using System.Net;
+using System.Reflection;
 using System.Threading.RateLimiting;
 using AwesomeAssertions;
 using CodigoActivo.API.Configuration;
@@ -26,6 +27,8 @@ public sealed class ApiRateLimitConfigurationTests
         using (var refused = await overBudget)
         {
             refused.IsAcquired.Should().BeFalse();
+            refused.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter).Should().BeTrue();
+            retryAfter.Should().Be(TimeSpan.FromSeconds(10));
         }
 
         Release(executing);
@@ -66,6 +69,41 @@ public sealed class ApiRateLimitConfigurationTests
         {
             using var admitted = await request;
             admitted.IsAcquired.Should().BeTrue();
+        }
+    }
+
+    [Fact]
+    public async Task GlobalLimiterEnforcesEveryPolicyBudget()
+    {
+        using var sut = ApiRateLimitConfiguration.CreateGlobalLimiter(
+            new ApiRateLimitOptions
+            {
+                CredentialRequestsPerMinutePerIp = 1,
+                ReportRequestsPerMinutePerUser = 1,
+                SingleRecipientEmailRequestsPerMinutePerUser = 1,
+                BulkEmailRequestsPerMinutePerUser = 1,
+                FileUploadRequestsPerMinutePerUser = 1,
+            }
+        );
+        var policies = typeof(SecurityPolicies)
+            .GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Select(field => (string)field.GetRawConstantValue()!)
+            .ToList();
+
+        policies.Should().NotBeEmpty();
+        foreach (var policy in policies)
+        {
+            using var accepted = await Acquire(
+                sut,
+                Request(IPAddress.Loopback, new EnableRateLimitingAttribute(policy))
+            );
+            using var refused = await Acquire(
+                sut,
+                Request(IPAddress.Loopback, new EnableRateLimitingAttribute(policy))
+            );
+
+            accepted.IsAcquired.Should().BeTrue(policy);
+            refused.IsAcquired.Should().BeFalse(policy);
         }
     }
 

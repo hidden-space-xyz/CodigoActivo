@@ -364,12 +364,13 @@ rate; the API applies a sliding one-minute budget of 600 requests per authentica
 administrator paging through tables of thumbnails sends, or 10,000 per IP for anonymous traffic. Report routes
 add a 60-request/minute budget per user (8 executing, 40 waiting); multipart file writes allow 30
 requests/minute per user (4 executing, since only two uploads are decoded at a time, and 20 waiting). Each
-request counts once against every budget, whether it executes, waits or is refused, and before it waits for a
+request counts at most once against each budget, whether it executes, waits or is refused, and before it waits for a
 concurrency permit (`SinglePassChainedRateLimiter`). Process-wide, 64 requests execute and 2,048 wait in FIFO
 order, enough for the refetch that 1,000 open event pages send together when signups open; a request waiting
 for a route's own limit holds none of those 64. Rejected requests, by nginx or the API, answer 429
-`TooManyRequests` with `Retry-After`. These are per-instance controls; scaling API replicas multiplies aggregate
-capacity.
+`TooManyRequests` with `Retry-After`: 10 seconds, the soonest a sliding window returns a permit, when an API
+budget refuses them (`RetryAfterRateLimiter`), and 1 second otherwise. These are per-instance controls; scaling
+API replicas multiplies aggregate capacity.
 
 ### Input, output and error handling
 

@@ -401,7 +401,7 @@ public sealed class EmailsControllerTests(CodigoActivoWebAppFactory factory)
         using var response = await client.SendEmailFormAsync(UsersUrl);
 
         await response.ShouldBeTooManyRequestsAsync();
-        response.Headers.RetryAfter.Should().NotBeNull();
+        (response.Headers.RetryAfter?.Delta).Should().Be(TimeSpan.FromSeconds(10));
         Factory.EmailSender.Sent.Should().BeEmpty();
     }
 

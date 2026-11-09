@@ -6,8 +6,9 @@ namespace CodigoActivo.API.Security;
 /// Chains limiters so the rate-limiting middleware acquires them in a single pass. The middleware
 /// first attempts without waiting and, when that fails, acquires again waiting, so a chain that
 /// spent a per-minute permit before a concurrency limiter refused the attempt would count the
-/// request twice. Here the attempt never acquires, and every request is counted once by each
-/// limiter, whether it executes, waits or is refused. Disposing it disposes the chained limiters.
+/// request twice. Here the attempt never acquires, and every request is counted at most once by
+/// each limiter, whether it executes, waits or is refused. Disposing it disposes the chained
+/// limiters.
 /// </summary>
 internal sealed class SinglePassChainedRateLimiter : PartitionedRateLimiter<HttpContext>
 {

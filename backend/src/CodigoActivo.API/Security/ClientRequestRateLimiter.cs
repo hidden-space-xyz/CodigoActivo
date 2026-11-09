@@ -5,11 +5,15 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace CodigoActivo.API.Security;
 
 /// <summary>
-/// Creates application-aware request limiters partitioned by authenticated user or client IP.
+/// Creates application-aware request limiters partitioned by authenticated user or client IP. A
+/// budget that refuses a request asks the client to wait one segment of its sliding window, the
+/// soonest a permit can return.
 /// </summary>
 public static class ClientRequestRateLimiter
 {
+    private const int SegmentsPerWindow = 6;
     private static readonly TimeSpan Window = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan Segment = Window / SegmentsPerWindow;
 
     /// <summary>
     /// Creates the global per-client limiter used by all API endpoints.
@@ -27,14 +31,17 @@ public static class ClientRequestRateLimiter
         ArgumentOutOfRangeException.ThrowIfLessThan(authenticatedPermitLimit, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(anonymousPermitLimit, 1);
 
-        return PartitionedRateLimiter.Create<HttpContext, string>(context =>
-        {
-            var userId = context.User.GetUserId();
-            var key = userId is null ? IpKey(context) : $"user:{userId.Value:N}";
-            var permitLimit = userId is null ? anonymousPermitLimit : authenticatedPermitLimit;
+        return new RetryAfterRateLimiter(
+            PartitionedRateLimiter.Create<HttpContext, string>(context =>
+            {
+                var userId = context.User.GetUserId();
+                var key = userId is null ? IpKey(context) : $"user:{userId.Value:N}";
+                var permitLimit = userId is null ? anonymousPermitLimit : authenticatedPermitLimit;
 
-            return SlidingWindow(key, permitLimit);
-        });
+                return SlidingWindow(key, permitLimit);
+            }),
+            Segment
+        );
     }
 
     /// <summary>
@@ -114,17 +121,20 @@ public static class ClientRequestRateLimiter
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(policyName);
 
-        return PartitionedRateLimiter.Create<HttpContext, string>(context =>
-            string.Equals(
-                context
-                    .GetEndpoint()
-                    ?.Metadata.GetMetadata<EnableRateLimitingAttribute>()
-                    ?.PolicyName,
-                policyName,
-                StringComparison.Ordinal
-            )
-                ? partition(context)
-                : RateLimitPartition.GetNoLimiter("unlimited")
+        return new RetryAfterRateLimiter(
+            PartitionedRateLimiter.Create<HttpContext, string>(context =>
+                string.Equals(
+                    context
+                        .GetEndpoint()
+                        ?.Metadata.GetMetadata<EnableRateLimitingAttribute>()
+                        ?.PolicyName,
+                    policyName,
+                    StringComparison.Ordinal
+                )
+                    ? partition(context)
+                    : RateLimitPartition.GetNoLimiter("unlimited")
+            ),
+            Segment
         );
     }
 
@@ -141,7 +151,7 @@ public static class ClientRequestRateLimiter
             {
                 PermitLimit = permitLimit,
                 Window = Window,
-                SegmentsPerWindow = 6,
+                SegmentsPerWindow = SegmentsPerWindow,
                 QueueLimit = 0,
                 AutoReplenishment = true,
             }

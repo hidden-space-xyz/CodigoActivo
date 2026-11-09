@@ -80,7 +80,7 @@ describe('queryClient', () => {
       failureCount: number,
       error: unknown,
     ) => number
-    const random = vi.spyOn(Math, 'random').mockReturnValue(0.5)
+    vi.spyOn(Math, 'random').mockReturnValue(0.5)
 
     expect(retryDelay(0, new ApiError(500, 'Error 500'))).toBe(1_000)
     expect(retryDelay(0, new ApiError(429, 'Error 429'))).toBe(1_000)
@@ -91,7 +91,5 @@ describe('queryClient', () => {
       1_500,
     )
     expect(retryDelay(0, new ApiError(503, 'Error 503', undefined, undefined, 4_000))).toBe(1_000)
-
-    random.mockRestore()
   })
 })
