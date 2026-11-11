@@ -53,12 +53,10 @@ public sealed class GetEventBadgesQueryHandler(IReadStore readStore, IQueryExecu
                     a.User.LastName,
                     UserTypeName = a.User.UserType.Name,
                     UserTypeColor = a.User.UserType.Color,
-                    a.User.CreatedAt,
                     Guardian = a.User.Parent == null
                         ? null
                         : new EventBadgeGuardianResponse(
                             a.User.Parent.FirstName,
-                            a.User.Parent.LastName,
                             a.User.Parent.Phone
                         ),
                     a.ActivityId,
@@ -79,7 +77,6 @@ public sealed class GetEventBadgesQueryHandler(IReadStore readStore, IQueryExecu
                     user.LastName,
                     user.UserTypeName,
                     user.UserTypeColor,
-                    user.CreatedAt,
                     user.Guardian,
                     [
                         .. g.OrderBy(r => r.ActivityStartsAt)

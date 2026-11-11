@@ -685,7 +685,6 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         child.UserTypeName.Should().Be("Participante");
         child.Guardian.Should().NotBeNull();
         child.Guardian.FirstName.Should().Be("Marta");
-        child.Guardian.LastName.Should().Be("Miembro");
         child.Guardian.Phone.Should().Be("+34600000002");
         child
             .Activities.Should()

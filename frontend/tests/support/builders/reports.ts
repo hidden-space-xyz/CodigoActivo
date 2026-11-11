@@ -77,7 +77,6 @@ export function buildBadge(overrides: Partial<EventBadgeResponse> = {}): EventBa
     lastName: 'Lovelace',
     userTypeName: 'Member',
     userTypeColor: '#123456',
-    createdAt: '2025-01-01T10:00:00Z',
     activities: [{ title: 'Robotics', location: 'Lab 1' }],
     ...overrides,
   }

@@ -39,8 +39,8 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                 Id = UserStatus.Pending,
                 Name = "Pendiente",
                 Description =
-                    "Cuenta registrada que aún no ha completado el proceso de verificación. "
-                    + "No puede acceder a las funciones de la plataforma hasta que un administrador la apruebe.",
+                    "Cuenta registrada que aún no ha confirmado su correo electrónico. "
+                    + "No puede iniciar sesión hasta abrir el enlace de verificación que recibió al registrarse.",
                 Color = "#6B7280",
             },
             new UserStatusEntry
@@ -75,7 +75,7 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                 Name = "Socio",
                 Description =
                     "Integrante registrado de la organización. Apoya a la asociación de forma "
-                    + "continua, participa en sus actividades y accede a las secciones reservadas a socios.",
+                    + "continua, participa en sus actividades y puede liderarlas.",
                 Color = "#EF4444",
             },
             new UserTypeEntry

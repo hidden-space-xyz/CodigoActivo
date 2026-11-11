@@ -130,12 +130,11 @@ public record EventAttendeeResponse(
 );
 
 /// <summary>
-/// Contains the guardian printed on the badge of a dependent: names and phone only.
+/// Contains the guardian printed on the badge of a dependent: given name and phone only.
 /// </summary>
 /// <param name="FirstName">Guardian's given name.</param>
-/// <param name="LastName">Guardian's family name.</param>
 /// <param name="Phone">Guardian's primary phone.</param>
-public record EventBadgeGuardianResponse(string FirstName, string LastName, string? Phone);
+public record EventBadgeGuardianResponse(string FirstName, string? Phone);
 
 /// <summary>
 /// Contains one confirmed activity printed on an event badge, without its modality.
@@ -152,7 +151,6 @@ public record EventBadgeActivityResponse(string Title, string Location);
 /// <param name="LastName">Person's family name.</param>
 /// <param name="UserTypeName">Display name of the membership type.</param>
 /// <param name="UserTypeColor">Color the membership type is shown with.</param>
-/// <param name="CreatedAt">UTC timestamp when the person's account was created.</param>
 /// <param name="Guardian">Guardian of a dependent; <see langword="null"/> for anyone else.</param>
 /// <param name="Activities">Confirmed activities in chronological order.</param>
 public record EventBadgeResponse(
@@ -161,7 +159,6 @@ public record EventBadgeResponse(
     string LastName,
     string UserTypeName,
     string UserTypeColor,
-    DateTimeOffset CreatedAt,
     EventBadgeGuardianResponse? Guardian,
     IReadOnlyList<EventBadgeActivityResponse> Activities
 );

@@ -17,7 +17,7 @@ describe('badgeQueries', () => {
             buildBadge(),
             buildBadge({
               userId: 'user-2',
-              guardian: { firstName: 'Mary', lastName: 'Lovelace', phone: null },
+              guardian: { firstName: 'Mary', phone: null },
             }),
           ],
         }),

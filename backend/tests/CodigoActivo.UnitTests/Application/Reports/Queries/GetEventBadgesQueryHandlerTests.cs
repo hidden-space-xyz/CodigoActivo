@@ -26,7 +26,6 @@ public sealed class GetEventBadgesQueryHandlerTests
         string last,
         string typeName,
         string typeColor,
-        DateTimeOffset createdAt,
         UserRow? parent = null
     )
     {
@@ -36,7 +35,6 @@ public sealed class GetEventBadgesQueryHandlerTests
             FirstName = first,
             LastName = last,
             Phone = "600-" + first,
-            CreatedAt = createdAt,
             Parent = parent,
             ParentId = parent?.Id,
             UserType = new UserTypeRow
@@ -90,11 +88,9 @@ public sealed class GetEventBadgesQueryHandlerTests
     [Fact]
     public async Task HandleAsyncConfirmedAssignmentsWithGuardianGroupsPerUser()
     {
-        var createdAt = new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero);
-
-        var parent = BadgeUser("Marta", "Miembro", "Socio", "#EF4444", createdAt);
-        var child = BadgeUser("Mateo", "Miembro", "Participante", "#FFFFFF", createdAt, parent);
-        var adult = BadgeUser("Ada", "Admin", "Socio", "#EF4444", createdAt);
+        var parent = BadgeUser("Marta", "Miembro", "Socio", "#EF4444");
+        var child = BadgeUser("Mateo", "Miembro", "Participante", "#FFFFFF", parent);
+        var adult = BadgeUser("Ada", "Admin", "Socio", "#EF4444");
 
         store.Events.Add(
             new EventRow
@@ -131,7 +127,6 @@ public sealed class GetEventBadgesQueryHandlerTests
         adultBadge.LastName.Should().Be("Admin");
         adultBadge.UserTypeName.Should().Be("Socio");
         adultBadge.UserTypeColor.Should().Be("#EF4444");
-        adultBadge.CreatedAt.Should().Be(createdAt);
         adultBadge.Guardian.Should().BeNull();
         adultBadge
             .Activities.Should()
@@ -146,7 +141,6 @@ public sealed class GetEventBadgesQueryHandlerTests
         childBadge.UserTypeName.Should().Be("Participante");
         childBadge.Guardian.Should().NotBeNull();
         childBadge.Guardian.FirstName.Should().Be("Marta");
-        childBadge.Guardian.LastName.Should().Be("Miembro");
         childBadge.Guardian.Phone.Should().Be("600-Marta");
         childBadge
             .Activities.Should()

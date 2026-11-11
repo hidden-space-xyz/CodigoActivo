@@ -7,7 +7,6 @@
 
 export interface EventBadgeGuardianResponse {
   firstName: string;
-  lastName: string;
   /** @nullable */
   phone?: string | null;
 }

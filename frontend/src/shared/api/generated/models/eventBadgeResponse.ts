@@ -13,7 +13,6 @@ export interface EventBadgeResponse {
   lastName: string;
   userTypeName: string;
   userTypeColor: string;
-  createdAt: string;
   guardian?: EventBadgeGuardianResponse;
   activities: EventBadgeActivityResponse[];
 }

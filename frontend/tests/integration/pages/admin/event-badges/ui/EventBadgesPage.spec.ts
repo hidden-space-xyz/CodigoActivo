@@ -43,7 +43,7 @@ describe('EventBadgesPage', () => {
   it('renders one badge per attendee with brand, event, type, guardian and activities', async () => {
     const { wrapper } = await renderBadges([
       buildBadge({
-        guardian: { firstName: 'Mary', lastName: 'Lovelace', phone: '600111222' },
+        guardian: { firstName: 'Mary', phone: '600111222' },
         activities: ['A1', 'A2', 'A3', 'A4', 'A5', 'A6', 'A7', 'A8'].map((title, index) => ({
           title,
           location: `Aula ${index + 1}`,
@@ -55,7 +55,7 @@ describe('EventBadgesPage', () => {
         lastName: '',
         userTypeName: 'Participant',
         userTypeColor: '#fafafa',
-        guardian: { firstName: 'Mary', lastName: 'Berners', phone: null },
+        guardian: { firstName: 'Mary', phone: null },
         activities: [],
       }),
       buildBadge({ userId: 'user-3', firstName: 'Grace', userTypeColor: 'not-a-color' }),

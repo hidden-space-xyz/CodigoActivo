@@ -7413,15 +7413,11 @@
       },
       "EventBadgeGuardianResponse": {
         "required": [
-          "firstName",
-          "lastName"
+          "firstName"
         ],
         "type": "object",
         "properties": {
           "firstName": {
-            "type": "string"
-          },
-          "lastName": {
             "type": "string"
           },
           "phone": {
@@ -7434,7 +7430,6 @@
       "EventBadgeResponse": {
         "required": [
           "activities",
-          "createdAt",
           "firstName",
           "lastName",
           "userId",
@@ -7458,10 +7453,6 @@
           },
           "userTypeColor": {
             "type": "string"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
           },
           "guardian": {
             "$ref": "#/components/schemas/EventBadgeGuardianResponse"
