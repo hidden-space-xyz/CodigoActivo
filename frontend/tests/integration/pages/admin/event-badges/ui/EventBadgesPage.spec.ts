@@ -107,7 +107,7 @@ describe('EventBadgesPage', () => {
     expect(grace?.findAll('.badge__activity')).toHaveLength(1)
   })
 
-  it('splits badges into APLI 01288 sheets of twelve', async () => {
+  it('splits badges into A4 sheets of twelve', async () => {
     const badges = Array.from({ length: 13 }, (_, index) =>
       buildBadge({ userId: `user-${index}`, firstName: `Person ${index}` }),
     )

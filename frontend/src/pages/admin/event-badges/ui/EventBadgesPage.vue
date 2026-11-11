@@ -133,12 +133,12 @@ watch(
   width: 210mm;
   min-height: 297mm;
   margin: 0 auto 24px;
-  padding: 21.3mm 8mm;
+  padding: 4.5mm 0;
   background: var(--ca-paper);
   box-shadow: var(--ca-paper-shadow);
   display: grid;
-  grid-template-columns: repeat(2, 97mm);
-  grid-auto-rows: 42.4mm;
+  grid-template-columns: repeat(2, 105mm);
+  grid-auto-rows: 48mm;
   align-content: start;
 }
 

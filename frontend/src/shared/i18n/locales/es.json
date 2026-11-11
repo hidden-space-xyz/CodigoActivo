@@ -764,7 +764,7 @@
         "back": "Volver al evento",
         "emptyText": "Este evento no tiene asignaciones confirmadas, así que no hay etiquetas que imprimir.",
         "print": "Imprimir",
-        "printHint": "Formato APLI 01288: 12 etiquetas de 97 × 42,4 mm por hoja A4. Imprime a tamaño real (100 %).",
+        "printHint": "Hoja A4 de 12 etiquetas de 105 × 48 mm. Imprime a tamaño real (100 %).",
         "moreActivities": "+{n} más",
         "guardianAria": "Responsable",
         "locationAria": "Ubicación"
