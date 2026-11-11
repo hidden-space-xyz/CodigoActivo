@@ -1,4 +1,3 @@
-using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Application.BlockedData.Contracts;
 using CodigoActivo.Domain.BlockedData;
 
@@ -21,7 +20,9 @@ public sealed record BlockedDataSearch(IReadOnlyList<BlockedDataCandidateRespons
 /// <param name="To">Last day covered, or <see langword="null"/> for no limit.</param>
 /// <param name="Entities">Kinds of data covered; empty for every kind.</param>
 /// <param name="Entries">History entries, oldest first.</param>
-/// <param name="CurrentData">Current personal data, while the account exists.</param>
+/// <param name="CurrentData">
+/// Current personal data of the kinds covered, while the account exists and they cover any.
+/// </param>
 public sealed record BlockedDataExport(
     DateTimeOffset GeneratedAt,
     string Requester,
@@ -31,5 +32,5 @@ public sealed record BlockedDataExport(
     DateOnly? To,
     IReadOnlyList<string> Entities,
     IReadOnlyList<BlockedDataEntryResponse> Entries,
-    PersonalDataResponse? CurrentData
+    BlockedDataCurrentDataResponse? CurrentData
 );

@@ -5841,6 +5841,50 @@
         },
         "additionalProperties": false
       },
+      "BlockedDataCurrentDataResponse": {
+        "type": "object",
+        "properties": {
+          "account": {
+            "$ref": "#/components/schemas/PersonalDataAccountResponse"
+          },
+          "newsConsentChanges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalDataConsentChangeResponse"
+            },
+            "nullable": true
+          },
+          "dependents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalDataDependentResponse"
+            },
+            "nullable": true
+          },
+          "signups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalDataSignupResponse"
+            },
+            "nullable": true
+          },
+          "termsDecisions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalDataTermsDecisionResponse"
+            },
+            "nullable": true
+          },
+          "ratings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonalDataRatingResponse"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "BlockedDataEntryCountResponse": {
         "required": [
           "count",
@@ -5960,7 +6004,7 @@
             }
           },
           "currentData": {
-            "$ref": "#/components/schemas/PersonalDataResponse"
+            "$ref": "#/components/schemas/BlockedDataCurrentDataResponse"
           }
         },
         "additionalProperties": false

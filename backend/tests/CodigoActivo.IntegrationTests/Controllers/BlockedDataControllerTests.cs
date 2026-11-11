@@ -7,7 +7,9 @@ using CodigoActivo.Application.Abstractions.Querying;
 using CodigoActivo.Application.BlockedData;
 using CodigoActivo.Application.BlockedData.Commands;
 using CodigoActivo.Application.BlockedData.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.BlockedData;
+using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.DataHistory;
 using CodigoActivo.Infrastructure.Security;
@@ -416,6 +418,73 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
             .Entries.Should()
             .NotBeEmpty()
             .And.OnlyContain(entry => entry.Entity == nameof(User));
+    }
+
+    [Fact]
+    public async Task ExportExistingAccountHoldsItsCurrentDataOfEveryKind()
+    {
+        var officer = await OfficerAsync();
+        var consultationId = await OpenedAsync(officer);
+        using var _ = await SearchAsync(officer, consultationId, TestSeedData.MemberEmail);
+
+        using var extracted = await ExportAsync(
+            officer,
+            consultationId,
+            TestSeedData.Users.MemberId
+        );
+
+        var current = (await extracted.ReadJsonAsync<BlockedDataExport>(Ct))!.CurrentData!;
+        current.Account!.Id.Should().Be(TestSeedData.Users.MemberId);
+        current
+            .Dependents!.Select(dependent => dependent.Id)
+            .Should()
+            .Equal(TestSeedData.Users.MemberChildId);
+        current.NewsConsentChanges.Should().NotBeNull();
+        current.Signups.Should().NotBeNull();
+        current.TermsDecisions.Should().NotBeNull();
+        current.Ratings.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task ExportExistingAccountNarrowedToSignupsHoldsOnlyItsCurrentSignups()
+    {
+        var officer = await OfficerAsync();
+        var consultationId = await OpenedAsync(officer);
+        using var _ = await SearchAsync(officer, consultationId, TestSeedData.MemberEmail);
+
+        using var extracted = await ExportAsync(
+            officer,
+            consultationId,
+            TestSeedData.Users.MemberId,
+            [nameof(Assignment)]
+        );
+
+        var current = (await extracted.ReadJsonAsync<BlockedDataExport>(Ct))!.CurrentData!;
+        current.Signups.Should().NotBeNull();
+        current.Account.Should().BeNull("the extract leaves the accounts out");
+        current.Dependents.Should().BeNull();
+        current.NewsConsentChanges.Should().BeNull();
+        current.TermsDecisions.Should().BeNull();
+        current.Ratings.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ExportExistingAccountNarrowedToContentHoldsNoCurrentData()
+    {
+        var officer = await OfficerAsync();
+        var consultationId = await OpenedAsync(officer);
+        using var _ = await SearchAsync(officer, consultationId, TestSeedData.MemberEmail);
+
+        using var extracted = await ExportAsync(
+            officer,
+            consultationId,
+            TestSeedData.Users.MemberId,
+            [nameof(Event)]
+        );
+
+        (await extracted.ReadJsonAsync<BlockedDataExport>(Ct))!
+            .CurrentData.Should()
+            .BeNull("the current personal data of an account holds no events");
     }
 
     [Fact]

@@ -244,9 +244,10 @@ since the row itself is the record, and neither does a change of excluded proper
   none escapes the history; the model and `DataHistoryConventionTests` enforce it, as
   [ARCHITECTURE.md](ARCHITECTURE.md#domain-and-persistence) describes.
 - **Entry**: `id` (UUID v7), `entity`, `occurred_at`, `subject_ids` (every `UserId` the row holds, as GUIDs:
-  the account it is, its guardian, the person a signup or decision is for, whoever decided, recorded, authored
-  or last updated it; never the signed-in account that changed it, so an extract about an administrator does
-  not carry every row they changed about others) and `payload`: the operation, the actor, the
+  the account it is, its guardian, the person a signup or decision is for, whoever decided, authored or last
+  updated it; never the signed-in account that changed it nor the one that recorded a decision
+  (`NotHistorySubject()`), so an extract about an administrator does not carry every row they changed about
+  others) and `payload`: the operation, the actor, the
   command (`ICommandScope`, set by the audit decorator) and the previous values, encrypted with the Data
   Protection key ring under `CodigoActivo.DataHistory.v1` and the entry id, so a payload moved to another row
   does not decrypt. A copy of the database without `DATA_PROTECTION_KEY` and the key ring reveals nothing.
@@ -283,9 +284,10 @@ administrator reaches the list of consultations, and only that person opens them
   exists or when it was erased and how many entries of each kind concern it, counted without decrypting. The
   consultation records the accounts found, never the text.
 - `POST .../{id}/extracts` decrypts the entries about an account the consultation found and its dependents,
-  narrowed to days and kinds of data, adds the current personal data of an existing account and records the
-  extract (account, filters, moment and number of entries, enough to find the same entries again). An entry that
-  no longer decrypts is returned without content and logged (`DataHistoryEntryUnreadable`).
+  narrowed to days and kinds of data; adds the current personal data of an existing account, of those kinds
+  alone (the days only narrow the history) and without its sessions or audit entries; and records the extract
+  (account, filters, moment and number of entries, enough to find the same entries again). An entry that no
+  longer decrypts is returned without content and logged (`DataHistoryEntryUnreadable`).
 - `POST .../{id}/holds` places a hold for an open claim on an account the consultation found: it names that
   account and its dependents, existing and erased, without a foreign key, and copies the requester and the
   reference of the consultation. `POST .../{id}/holds/{holdId}/lift`, from any open consultation, lifts it once

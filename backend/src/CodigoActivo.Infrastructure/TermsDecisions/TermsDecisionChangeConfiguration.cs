@@ -29,6 +29,7 @@ public sealed class TermsDecisionChangeConfiguration : IEntityTypeConfiguration<
 
         builder.Property(x => x.Accepted).IsRequired();
         builder.Property(x => x.ChangedAt).IsRequired();
+        builder.Property(x => x.RecordedById).NotHistorySubject();
 
         builder
             .HasOne<EventTermsAcceptance>()

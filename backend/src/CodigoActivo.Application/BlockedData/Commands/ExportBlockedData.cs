@@ -1,6 +1,9 @@
 using CodigoActivo.Application.Accounts;
 using CodigoActivo.Application.BlockedData.Contracts;
+using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.BlockedData;
+using CodigoActivo.Domain.Events;
+using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.Users;
 
 namespace CodigoActivo.Application.BlockedData.Commands;
@@ -27,8 +30,9 @@ public sealed record ExportBlockedDataCommand(
 /// <summary>
 /// Executes the command that decrypts the history entries about an account a search of the
 /// consultation found and its minors, narrowed to the days and kinds of data asked for, adds the
-/// current personal data while the account exists, and records the extract in the consultation.
-/// The days are local days of the clock's time zone, and only entries recorded up to now are read.
+/// current personal data of those kinds while the account exists, and records the extract in the
+/// consultation. The days are local days of the clock's time zone, and only entries recorded up to
+/// now are read; they never narrow the current data, which holds no reliable date for every row.
 /// </summary>
 /// <param name="officer">Policy that tells who may consult the blocked data.</param>
 /// <param name="consultations">Repository of the consultations.</param>
@@ -113,13 +117,13 @@ public sealed class ExportBlockedDataCommandHandler(
             ),
             ct
         );
-        var current = await personalData.ReadAsync(accountId, ct);
+        var current = await CurrentDataAsync(accountId, command.Entities, ct);
         var filter = new BlockedDataFilter(command.From, command.To, command.Entities);
         var recorded = consultation.RecordExtract(
             command.AccountId,
             filter,
             entries.Count,
-            current.IsSuccess,
+            current is not null,
             now
         );
         if (recorded.IsFailure)
@@ -136,8 +140,42 @@ public sealed class ExportBlockedDataCommandHandler(
             command.To,
             command.Entities,
             [.. entries.Select(Entry)],
-            current.IsSuccess ? current.Value : null
+            current
         );
+    }
+
+    private async Task<BlockedDataCurrentDataResponse?> CurrentDataAsync(
+        Guid accountId,
+        IReadOnlyList<string> entities,
+        CancellationToken ct
+    )
+    {
+        var accounts = Covers(entities, nameof(User));
+        var consents = Covers(entities, nameof(NewsConsentChange));
+        var signups = Covers(entities, nameof(Assignment));
+        var decisions = Covers(entities, nameof(EventTermsAcceptance), nameof(TermsDecisionChange));
+        var ratings = Covers(entities, nameof(EventRating));
+        if (
+            !(accounts || consents || signups || decisions || ratings)
+            || await personalData.AccountAsync(accountId, ct) is not { } account
+        )
+        {
+            return null;
+        }
+
+        return new BlockedDataCurrentDataResponse(
+            accounts ? account : null,
+            consents ? await personalData.NewsConsentChangesAsync(accountId, ct) : null,
+            accounts ? await personalData.DependentsAsync(accountId, ct) : null,
+            signups ? await personalData.SignupsAsync(accountId, ct) : null,
+            decisions ? await personalData.TermsDecisionsAsync(accountId, ct) : null,
+            ratings ? await personalData.RatingsAsync(accountId, ct) : null
+        );
+    }
+
+    private static bool Covers(IReadOnlyList<string> entities, params string[] kinds)
+    {
+        return entities.Count == 0 || kinds.Any(entities.Contains);
     }
 
     private static BlockedDataEntryResponse Entry(DataHistoryItem item)

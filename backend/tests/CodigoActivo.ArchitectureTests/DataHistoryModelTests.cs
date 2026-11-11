@@ -127,6 +127,29 @@ public sealed class DataHistoryModelTests : IDisposable
             );
     }
 
+    [Fact]
+    public void ModelAccountsAHistoryEntryIsNotAboutAreTheRecordersOfDecisions()
+    {
+        var notSubjects = context
+            .Model.GetEntityTypes()
+            .Where(type => type.IsHistorized())
+            .SelectMany(type => type.GetProperties())
+            .Where(property =>
+                (property.ClrType == typeof(UserId) || property.ClrType == typeof(UserId?))
+                && !property.IsHistorySubject()
+            )
+            .Select(property => $"{property.DeclaringType.ClrType.Name}.{property.Name}");
+
+        notSubjects
+            .Should()
+            .BeEquivalentTo(
+                [$"{nameof(TermsDecisionChange)}.{nameof(TermsDecisionChange.RecordedById)}"],
+                "every account a historized row holds is what its entries are about, so extracts and "
+                    + "holds find them, except the account that only recorded a decision about "
+                    + "someone else"
+            );
+    }
+
     private static IEnumerable<string> ExcludedMembers(IReadOnlyTypeBase type, string prefix)
     {
         var complex = type.GetComplexProperties().ToList();

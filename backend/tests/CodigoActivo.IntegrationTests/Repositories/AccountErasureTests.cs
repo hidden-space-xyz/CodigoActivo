@@ -553,6 +553,29 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task EraseAsyncWithdrawalAnAdministratorRecordedIsKeptUnderThePersonAlone()
+    {
+        await SeedHouseholdAsync();
+        var member = TestSeedData.Users.MemberId;
+
+        (await EraseAsync(member)).Should().BeTrue();
+
+        (await HistoryAsync())
+            .Where(item =>
+                item.Entry.Entity == nameof(TermsDecisionChange)
+                && GuidValue(item.Record, nameof(TermsDecisionChange.RecordedById))
+                    == TestSeedData.Users.AdminId
+            )
+            .Should()
+            .ContainSingle()
+            .Which.Entry.SubjectIds.Should()
+            .BeEquivalentTo(
+                [member],
+                "the administrator only recorded the withdrawal the member asked for by email"
+            );
+    }
+
+    [Fact]
     public async Task EraseAsyncMemberDeletesTheHouseholdAndKeepsEachRowInTheDataHistory()
     {
         await SeedHouseholdAsync();
@@ -926,11 +949,18 @@ public sealed class AccountErasureTests(CodigoActivoWebAppFactory factory)
             .Single(item => item.Entry.Entity == nameof(StoredFile))
             .Record;
         GuidValue(originalUpload, "UploadedBy").Should().Be(child);
-        var originalChange = handedOver
-            .Single(item => item.Entry.Entity == nameof(TermsDecisionChange))
-            .Record;
-        GuidValue(originalChange, "RecordedById").Should().Be(member);
+        var originalChange = handedOver.Single(item =>
+            item.Entry.Entity == nameof(TermsDecisionChange)
+        );
+        GuidValue(originalChange.Record, "RecordedById").Should().Be(member);
+        originalChange
+            .Entry.SubjectIds.Should()
+            .BeEquivalentTo(
+                [other],
+                "recording a decision about someone else is not about the recorder"
+            );
         handedOver
+            .Where(item => item.Entry.Entity != nameof(TermsDecisionChange))
             .Should()
             .OnlyContain(item =>
                 item.Entry.SubjectIds.Contains(member) || item.Entry.SubjectIds.Contains(child)

@@ -978,7 +978,8 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
                     b.Property<Guid>("RecordedById")
                         .HasColumnType("uuid")
-                        .HasColumnName("recorded_by_id");
+                        .HasColumnName("recorded_by_id")
+                        .HasAnnotation("CodigoActivo:DataHistoryNotSubject", true);
 
                     b.Property<byte[]>("Signature")
                         .HasColumnType("bytea")

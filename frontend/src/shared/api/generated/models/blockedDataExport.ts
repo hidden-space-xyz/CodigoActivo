@@ -4,8 +4,8 @@
  * CodigoActivo.API
  * OpenAPI spec version: 1.0
  */
+import type { BlockedDataCurrentDataResponse } from './blockedDataCurrentDataResponse';
 import type { BlockedDataEntryResponse } from './blockedDataEntryResponse';
-import type { PersonalDataResponse } from './personalDataResponse';
 
 export interface BlockedDataExport {
   generatedAt: string;
@@ -18,5 +18,5 @@ export interface BlockedDataExport {
   to?: string | null;
   entities: string[];
   entries: BlockedDataEntryResponse[];
-  currentData?: PersonalDataResponse;
+  currentData?: BlockedDataCurrentDataResponse;
 }

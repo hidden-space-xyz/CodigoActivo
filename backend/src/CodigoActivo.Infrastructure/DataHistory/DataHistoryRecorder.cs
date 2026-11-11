@@ -1,7 +1,6 @@
 using CodigoActivo.Application.Abstractions.Messaging;
 using CodigoActivo.Application.Abstractions.Security;
 using CodigoActivo.Application.Abstractions.Time;
-using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -164,9 +163,7 @@ public sealed class DataHistoryRecorder(
     {
         return entry
             .Metadata.GetProperties()
-            .Where(property =>
-                property.ClrType == typeof(UserId) || property.ClrType == typeof(UserId?)
-            )
+            .Where(property => property.IsHistorySubject())
             .Select(property =>
                 StoredValue(property, entry.Property(property.Name).OriginalValue) as Guid?
             );

@@ -1,3 +1,4 @@
+using CodigoActivo.Domain.Users;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -5,14 +6,15 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace CodigoActivo.Infrastructure.Database.Configurations;
 
 /// <summary>
-/// Declares in the model which entities keep a data history and which of their properties stay out
-/// of it. Every entity type declares one or the other, so a new table is never left out by
-/// omission.
+/// Declares in the model which entities keep a data history, which of their properties stay out
+/// of it and which accounts a row holds are not what its entries are about. Every entity type
+/// declares its history, so a new table is never left out by omission.
 /// </summary>
 public static class DataHistoryModel
 {
     private const string HistoryAnnotation = "CodigoActivo:DataHistory";
     private const string ExcludedAnnotation = "CodigoActivo:DataHistoryExcluded";
+    private const string NotSubjectAnnotation = "CodigoActivo:DataHistoryNotSubject";
 
     /// <summary>
     /// Keeps the previous state of every row of the entity that a save changes or deletes.
@@ -96,6 +98,24 @@ public static class DataHistoryModel
     }
 
     /// <summary>
+    /// Keeps an account a row holds out of what its history entries are about: its value is still
+    /// kept, but an extract of the blocked data about that account or a hold on it never takes the
+    /// entry. It is for an account that only recorded a change about someone else, which is no
+    /// more what the row is about than the signed-in account that made the change.
+    /// </summary>
+    /// <typeparam name="TProperty">Property type.</typeparam>
+    /// <param name="builder">Builder of the property.</param>
+    /// <returns>The same builder.</returns>
+    public static PropertyBuilder<TProperty> NotHistorySubject<TProperty>(
+        this PropertyBuilder<TProperty> builder
+    )
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        return builder.HasAnnotation(NotSubjectAnnotation, true);
+    }
+
+    /// <summary>
     /// Tells whether the entity type declared its history.
     /// </summary>
     /// <param name="entityType">Entity type.</param>
@@ -130,5 +150,21 @@ public static class DataHistoryModel
         ArgumentNullException.ThrowIfNull(property);
 
         return property.FindAnnotation(ExcludedAnnotation)?.Value is true;
+    }
+
+    /// <summary>
+    /// Tells whether a property names an account its row's history entries are about.
+    /// </summary>
+    /// <param name="property">Property.</param>
+    /// <returns>
+    /// <see langword="true"/> for an account property not declared
+    /// <see cref="NotHistorySubject{TProperty}(PropertyBuilder{TProperty})"/>.
+    /// </returns>
+    public static bool IsHistorySubject(this IReadOnlyProperty property)
+    {
+        ArgumentNullException.ThrowIfNull(property);
+
+        return (property.ClrType == typeof(UserId) || property.ClrType == typeof(UserId?))
+            && property.FindAnnotation(NotSubjectAnnotation)?.Value is not true;
     }
 }

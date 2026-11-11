@@ -35,6 +35,7 @@ export * from './blockedDataCandidateResponse';
 export * from './blockedDataConsultationCodeRequest';
 export * from './blockedDataConsultationResponse';
 export * from './blockedDataConsultationResponsePagedResult';
+export * from './blockedDataCurrentDataResponse';
 export * from './blockedDataEntryCountResponse';
 export * from './blockedDataEntryResponse';
 export * from './blockedDataEntryResponseValues';

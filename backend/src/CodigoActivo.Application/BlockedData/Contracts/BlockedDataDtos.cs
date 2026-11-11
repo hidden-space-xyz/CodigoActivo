@@ -1,4 +1,5 @@
 using System.Text.Json;
+using CodigoActivo.Application.Accounts.Contracts;
 using CodigoActivo.Domain.BlockedData;
 
 namespace CodigoActivo.Application.BlockedData.Contracts;
@@ -95,6 +96,34 @@ public sealed record BlockedDataEntryResponse(
     Guid? ActorId,
     string? Command,
     IReadOnlyDictionary<string, JsonElement> Values
+);
+
+/// <summary>
+/// Current personal data of an account that an extract hands over: only the parts of the kinds of
+/// data it covers, each <see langword="null"/> when the extract leaves its kind out, and never the
+/// open sessions or the audit entries, which no claim needs.
+/// </summary>
+/// <param name="Account">The account, for the kind <c>User</c>.</param>
+/// <param name="NewsConsentChanges">
+/// Every change of the news consent, oldest first, for the kind <c>NewsConsentChange</c>.
+/// </param>
+/// <param name="Dependents">The minors in its care, for the kind <c>User</c>.</param>
+/// <param name="Signups">
+/// The signups of the account and its minors, for the kind <c>Assignment</c>.
+/// </param>
+/// <param name="TermsDecisions">
+/// The decisions on event documents about the account and its minors, each with every change and
+/// signature that proves it, for the kinds <c>EventTermsAcceptance</c> and
+/// <c>TermsDecisionChange</c>.
+/// </param>
+/// <param name="Ratings">The ratings of events the account wrote, for the kind <c>EventRating</c>.</param>
+public sealed record BlockedDataCurrentDataResponse(
+    PersonalDataAccountResponse? Account,
+    IReadOnlyList<PersonalDataConsentChangeResponse>? NewsConsentChanges,
+    IReadOnlyList<PersonalDataDependentResponse>? Dependents,
+    IReadOnlyList<PersonalDataSignupResponse>? Signups,
+    IReadOnlyList<PersonalDataTermsDecisionResponse>? TermsDecisions,
+    IReadOnlyList<PersonalDataRatingResponse>? Ratings
 );
 
 /// <summary>
