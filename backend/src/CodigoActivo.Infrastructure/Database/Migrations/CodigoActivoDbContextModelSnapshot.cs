@@ -619,6 +619,137 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.HasAnnotation("CodigoActivo:DataHistory", true);
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.Inventory.InventoryCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inventory_categories");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_inventory_categories_name");
+
+                    NpgsqlIndexBuilderExtensions.UseCollation(b.HasIndex("Name"), new[] { "case_insensitive" });
+
+                    b.ToTable("inventory_categories", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Inventory.InventoryColumn", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.Property<bool>("Required")
+                        .HasColumnType("boolean")
+                        .HasColumnName("required");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("type");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inventory_columns");
+
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("ix_inventory_columns_category_id");
+
+                    b.ToTable("inventory_columns", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Inventory.InventoryColumnOption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Color")
+                        .IsRequired()
+                        .HasMaxLength(9)
+                        .HasColumnType("character varying(9)")
+                        .HasColumnName("color");
+
+                    b.Property<Guid>("ColumnId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("column_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inventory_column_options");
+
+                    b.HasIndex("ColumnId")
+                        .HasDatabaseName("ix_inventory_column_options_column_id");
+
+                    b.ToTable("inventory_column_options", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Inventory.InventoryEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<int?>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.Property<string>("Values")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("values");
+
+                    b.HasKey("Id")
+                        .HasName("pk_inventory_entries");
+
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("ix_inventory_entries_category_id");
+
+                    b.ToTable("inventory_entries", (string)null);
+
+                    b.HasAnnotation("CodigoActivo:DataHistory", false);
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Legal.LegalPolicy", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2238,6 +2369,36 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         .HasConstraintName("fk_files_users_uploaded_by");
                 });
 
+            modelBuilder.Entity("CodigoActivo.Domain.Inventory.InventoryColumn", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Inventory.InventoryCategory", null)
+                        .WithMany("Columns")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_columns_inventory_categories_category_id");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Inventory.InventoryColumnOption", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Inventory.InventoryColumn", null)
+                        .WithMany("Options")
+                        .HasForeignKey("ColumnId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_column_options_inventory_columns_column_id");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Inventory.InventoryEntry", b =>
+                {
+                    b.HasOne("CodigoActivo.Domain.Inventory.InventoryCategory", null)
+                        .WithMany("Entries")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_inventory_entries_inventory_categories_category_id");
+                });
+
             modelBuilder.Entity("CodigoActivo.Domain.Legal.LegalPolicyVersion", b =>
                 {
                     b.HasOne("CodigoActivo.Domain.Legal.LegalPolicy", null)
@@ -2480,6 +2641,18 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                     b.Navigation("Categories");
 
                     b.Navigation("TermsDocuments");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Inventory.InventoryCategory", b =>
+                {
+                    b.Navigation("Columns");
+
+                    b.Navigation("Entries");
+                });
+
+            modelBuilder.Entity("CodigoActivo.Domain.Inventory.InventoryColumn", b =>
+                {
+                    b.Navigation("Options");
                 });
 
             modelBuilder.Entity("CodigoActivo.Domain.Legal.LegalPolicy", b =>

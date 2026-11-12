@@ -193,6 +193,18 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "inventory_categories",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    name = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_inventory_categories", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "legal_policies",
                 columns: table => new
                 {
@@ -384,6 +396,48 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "inventory_columns",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    category_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    name = table.Column<string>(type: "text", nullable: false),
+                    type = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
+                    required = table.Column<bool>(type: "boolean", nullable: false),
+                    position = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_inventory_columns", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_inventory_columns_inventory_categories_category_id",
+                        column: x => x.category_id,
+                        principalTable: "inventory_categories",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "inventory_entries",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    category_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    quantity = table.Column<int>(type: "integer", nullable: true),
+                    values = table.Column<string>(type: "jsonb", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_inventory_entries", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_inventory_entries_inventory_categories_category_id",
+                        column: x => x.category_id,
+                        principalTable: "inventory_categories",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "legal_policy_versions",
                 columns: table => new
                 {
@@ -495,6 +549,27 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                         column: x => x.parent_id,
                         principalTable: "users",
                         principalColumn: "id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "inventory_column_options",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    column_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    name = table.Column<string>(type: "text", nullable: false),
+                    color = table.Column<string>(type: "character varying(9)", maxLength: 9, nullable: false),
+                    position = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_inventory_column_options", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_inventory_column_options_inventory_columns_column_id",
+                        column: x => x.column_id,
+                        principalTable: "inventory_columns",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -1263,6 +1338,28 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 column: "uploaded_by");
 
             migrationBuilder.CreateIndex(
+                name: "ix_inventory_categories_name",
+                table: "inventory_categories",
+                column: "name",
+                unique: true)
+                .Annotation("Relational:Collation", new[] { "case_insensitive" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_inventory_column_options_column_id",
+                table: "inventory_column_options",
+                column: "column_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_inventory_columns_category_id",
+                table: "inventory_columns",
+                column: "category_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_inventory_entries_category_id",
+                table: "inventory_entries",
+                column: "category_id");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_legal_policies_kind",
                 table: "legal_policies",
                 column: "kind",
@@ -1473,6 +1570,12 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "event_terms_documents");
 
             migrationBuilder.DropTable(
+                name: "inventory_column_options");
+
+            migrationBuilder.DropTable(
+                name: "inventory_entries");
+
+            migrationBuilder.DropTable(
                 name: "legal_policy_versions");
 
             migrationBuilder.DropTable(
@@ -1518,6 +1621,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
                 name: "event_category_types");
 
             migrationBuilder.DropTable(
+                name: "inventory_columns");
+
+            migrationBuilder.DropTable(
                 name: "legal_policies");
 
             migrationBuilder.DropTable(
@@ -1528,6 +1634,9 @@ namespace CodigoActivo.Infrastructure.Database.Migrations
 
             migrationBuilder.DropTable(
                 name: "activity_modality_types");
+
+            migrationBuilder.DropTable(
+                name: "inventory_categories");
 
             migrationBuilder.DropTable(
                 name: "events");

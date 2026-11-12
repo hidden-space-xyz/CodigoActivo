@@ -3,6 +3,8 @@
 \set attendees_per_activity 40
 \set audit_entries 100000
 \set diagnostic_entries 20000
+\set inventory_categories 30
+\set inventory_entries_step 30
 
 begin;
 
@@ -197,6 +199,80 @@ from (
     from pg_temp.past_log_days('diagnostic_log_entries') as days
     cross join generate_series(1, :diagnostic_entries) as n
 ) log;
+
+create temporary table inventory_category on commit drop as
+select n, gen_random_uuid() as id
+from generate_series(1, :inventory_categories) as n;
+
+insert into inventory_categories (id, name)
+select id, format('Almacén %s', lpad(n::text, 2, '0'))
+from inventory_category;
+
+create temporary table inventory_column on commit drop as
+select gen_random_uuid() as id, c.id as category_id, c.n, col.position, col.name, col.type, col.required
+from inventory_category c
+cross join (values
+    (0, 'Nombre', 'Text', true),
+    (1, 'Estado', 'List', true),
+    (2, 'Adquirido', 'Date', false),
+    (3, 'Precio', 'Number', false),
+    (4, 'Revisado', 'Boolean', false),
+    (5, 'Notas', 'LongText', false),
+    (6, 'Unidades', 'Quantity', true)
+) as col(position, name, type, required);
+
+insert into inventory_columns (id, category_id, name, type, required, position)
+select id, category_id, name, type, required, position
+from inventory_column;
+
+create temporary table inventory_option on commit drop as
+select gen_random_uuid() as id, c.id as column_id, c.category_id, o.position, o.name, o.color
+from inventory_column c
+cross join (values
+    (0, 'Disponible', '#16A34A'),
+    (1, 'Prestado', '#F59E0B'),
+    (2, 'Averiado', '#DC2626')
+) as o(position, name, color)
+where c.type = 'List';
+
+insert into inventory_column_options (id, column_id, name, color, position)
+select id, column_id, name, color, position
+from inventory_option;
+
+create temporary table inventory_layout on commit drop as
+select
+    c.category_id as id,
+    c.n,
+    max(c.id::text) filter (where c.position = 0) as name_column,
+    max(c.id::text) filter (where c.position = 1) as state_column,
+    max(c.id::text) filter (where c.position = 2) as acquired_column,
+    max(c.id::text) filter (where c.position = 3) as price_column,
+    max(c.id::text) filter (where c.position = 4) as checked_column,
+    max(c.id::text) filter (where c.position = 5) as notes_column,
+    s.states
+from inventory_column c
+join (
+    select category_id, array_agg(id::text order by position) as states
+    from inventory_option
+    group by category_id
+) s on s.category_id = c.category_id
+group by c.category_id, c.n, s.states;
+
+insert into inventory_entries (id, category_id, quantity, values)
+select
+    gen_random_uuid(),
+    l.id,
+    1 + e % 12,
+    jsonb_strip_nulls(jsonb_build_object(
+        l.name_column, format('Equipo %s-%s', l.n, e),
+        l.state_column, l.states[1 + e % 3],
+        l.acquired_column, to_char(current_date - (e * 3) % 2000, 'YYYY-MM-DD'),
+        l.price_column, round((e * 37) % 50000 / 100.0, 2)::text,
+        l.checked_column, (e % 2 = 0)::text,
+        l.notes_column, case when e % 4 = 0 then format('Revisión %s: cable y cargador en la caja.', e) end
+    ))
+from inventory_layout l
+cross join lateral generate_series(1, (:inventory_categories + 1 - l.n) * :inventory_entries_step) as e;
 
 commit;
 

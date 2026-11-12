@@ -4,6 +4,7 @@ using CodigoActivo.Composition.Configuration;
 using CodigoActivo.Composition.Content;
 using CodigoActivo.Composition.Emails;
 using CodigoActivo.Composition.Events;
+using CodigoActivo.Composition.Inventory;
 using CodigoActivo.Composition.Legal;
 using CodigoActivo.Composition.Logs;
 using CodigoActivo.Composition.Persistence;
@@ -53,6 +54,7 @@ public static class DependencyInjection
             .AddEvents()
             .AddContent()
             .AddBlockedData()
+            .AddInventory()
             .AddEmails(configuration)
             .AddUseCases();
     }

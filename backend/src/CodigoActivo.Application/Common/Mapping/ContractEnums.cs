@@ -1,4 +1,5 @@
 using GenderContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
+using InventoryColumnTypeContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.InventoryColumnType;
 using LegalPolicyKindContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.LegalPolicyKind;
 using StaffRoleContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.StaffRole;
 using TermsDocumentKindContract = CodigoActivo.Application.Abstractions.Querying.ReadModel.TermsDocumentKind;
@@ -41,6 +42,18 @@ public static class ContractEnums
     public static Domain.Legal.LegalPolicyKind ToDomain(this LegalPolicyKindContract kind)
     {
         return (Domain.Legal.LegalPolicyKind)(int)kind;
+    }
+
+    /// <summary>
+    /// Gets the domain type of an inventory column type sent by a client.
+    /// </summary>
+    /// <param name="type">Type as clients send it.</param>
+    /// <returns>The domain type.</returns>
+    public static Domain.Inventory.InventoryColumnType ToDomain(
+        this InventoryColumnTypeContract type
+    )
+    {
+        return (Domain.Inventory.InventoryColumnType)(int)type;
     }
 
     /// <summary>

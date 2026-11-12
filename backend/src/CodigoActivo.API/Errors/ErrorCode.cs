@@ -114,6 +114,41 @@ public enum ErrorCode
     EventCategoryTypeOnlyCategoryOfEvent,
 
     /// <summary>
+    /// No inventory category has the requested identifier.
+    /// </summary>
+    InventoryCategoryNotFound,
+
+    /// <summary>
+    /// Another inventory category already has that name.
+    /// </summary>
+    InventoryCategoryNameAlreadyExists,
+
+    /// <summary>
+    /// The type of an inventory column cannot change while an entry has a value in it.
+    /// </summary>
+    InventoryColumnTypeInUse,
+
+    /// <summary>
+    /// An inventory column cannot become required while an entry has no value in it.
+    /// </summary>
+    InventoryColumnRequiredWithEmptyEntries,
+
+    /// <summary>
+    /// An option of a list column cannot be removed while an entry has chosen it.
+    /// </summary>
+    InventoryColumnOptionInUse,
+
+    /// <summary>
+    /// The inventory category already holds as many entries as it may.
+    /// </summary>
+    InventoryEntryLimitReached,
+
+    /// <summary>
+    /// The inventory category has no entry with the requested identifier.
+    /// </summary>
+    InventoryEntryNotFound,
+
+    /// <summary>
     /// The thumbnail file chosen for an event does not exist.
     /// </summary>
     EventThumbnailNotFound,

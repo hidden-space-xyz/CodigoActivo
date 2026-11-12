@@ -237,6 +237,12 @@ export const routes: readonly RouteRecordRaw[] = [
   adminRoute('/admin/users', 'admin-users', () =>
     import('@/pages/admin/users').then((m) => m.UsersPage),
   ),
+  adminRoute('/admin/inventory', 'admin-inventory', () =>
+    import('@/pages/admin/inventory').then((m) => m.InventoryPage),
+  ),
+  adminRoute(`/admin/inventory/:categoryId(${GUID_PARAM})`, 'admin-inventory-category', () =>
+    import('@/pages/admin/inventory-category').then((m) => m.InventoryCategoryPage),
+  ),
   adminRoute('/admin/diagnostics', 'admin-diagnostics', () =>
     import('@/pages/admin/diagnostics').then((m) => m.DiagnosticsPage),
   ),

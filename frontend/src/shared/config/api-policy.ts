@@ -138,3 +138,39 @@ export const UNVERIFIED_ACCOUNT_RETENTION_HOURS = 24
 
 /** Seconds the API makes a person wait before it emails another code to the same account. */
 export const RESEND_COOLDOWN_SECONDS = 60
+
+/** Longest name of an inventory category (`InventoryCategory.NameMaxLength`). */
+export const INVENTORY_CATEGORY_NAME_MAX_LENGTH = 120
+
+/** Most columns an inventory category has (`InventoryCategory.MaxColumns`). */
+export const INVENTORY_MAX_COLUMNS = 20
+
+/** Most entries an inventory category holds (`InventoryCategory.MaxEntries`). */
+export const INVENTORY_MAX_ENTRIES = 1000
+
+/** Longest name of an inventory column or option (`InventoryColumn.NameMaxLength`). */
+export const INVENTORY_COLUMN_NAME_MAX_LENGTH = 60
+
+/** Most options a list column of the inventory has (`InventoryColumn.MaxOptions`). */
+export const INVENTORY_MAX_OPTIONS = 50
+
+/** Longest value of a text column of the inventory (`InventoryColumn.TextMaxLength`). */
+export const INVENTORY_TEXT_MAX_LENGTH = 200
+
+/** Longest value of a long text column of the inventory (`InventoryColumn.LongTextMaxLength`). */
+export const INVENTORY_LONG_TEXT_MAX_LENGTH = 2000
+
+/** Longest number of a number column of the inventory as typed (`InventoryColumn.NumberMaxLength`). */
+export const INVENTORY_NUMBER_MAX_LENGTH = 30
+
+/** Most decimals of a number column of the inventory (`InventoryColumn.NumberMaxDecimals`). */
+export const INVENTORY_NUMBER_MAX_DECIMALS = 2
+
+/** Largest absolute value of a number column of the inventory (`InventoryColumn.NumberMaxValue`). */
+export const INVENTORY_NUMBER_MAX_VALUE = 9_999_999_999_999.99
+
+/** Smallest quantity of an inventory entry (`[Range(0, …)] Quantity`). */
+export const INVENTORY_MIN_QUANTITY = 0
+
+/** Largest quantity of an inventory entry (`InventoryEntry.MaxQuantity`). */
+export const INVENTORY_MAX_QUANTITY = 1_000_000

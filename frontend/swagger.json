@@ -2997,6 +2997,321 @@
         }
       }
     },
+    "/api/inventory/categories": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "maxLength": 200,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryCategorySummaryResponsePagedResult"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInventoryCategoryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryCategoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/categories/{categoryId}": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryCategoryResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Inventory"
+        ],
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInventoryCategoryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryCategoryResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Inventory"
+        ],
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/inventory/categories/{categoryId}/entries": {
+      "get": {
+        "tags": [
+          "Inventory"
+        ],
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InventoryEntryResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Inventory"
+        ],
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddInventoryEntryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEntryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/categories/{categoryId}/entries/{entryId}": {
+      "put": {
+        "tags": [
+          "Inventory"
+        ],
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInventoryEntryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryEntryResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Inventory"
+        ],
+        "parameters": [
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "entryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/legal-entity": {
       "get": {
         "tags": [
@@ -5208,6 +5523,26 @@
         },
         "additionalProperties": false
       },
+      "AddInventoryEntryRequest": {
+        "required": [
+          "values"
+        ],
+        "type": "object",
+        "properties": {
+          "quantity": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "values": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "ApiErrorResponse": {
         "required": [
           "code",
@@ -5451,6 +5786,12 @@
           "CreateEventCategoryType",
           "DeleteEventCategoryType",
           "UpdateEventCategoryType",
+          "CreateInventoryCategory",
+          "UpdateInventoryCategory",
+          "DeleteInventoryCategory",
+          "AddInventoryEntry",
+          "UpdateInventoryEntry",
+          "DeleteInventoryEntry",
           "CreateEvent",
           "DeleteEvent",
           "UpdateEvent",
@@ -5513,6 +5854,10 @@
           "BlockedDataHold",
           "Event",
           "EventCategoryType",
+          "InventoryCategory",
+          "InventoryColumn",
+          "InventoryColumnOption",
+          "InventoryEntry",
           "LegalPolicy",
           "NewsItem",
           "Partner",
@@ -6300,6 +6645,25 @@
               "$ref": "#/components/schemas/EventTermsDocumentRequest"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "CreateInventoryCategoryRequest": {
+        "required": [
+          "columns",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InventoryColumnRequest"
+            }
           }
         },
         "additionalProperties": false
@@ -7133,6 +7497,13 @@
           "EventCategoryTypeNotFound",
           "EventCategoryTypeNameAlreadyExists",
           "EventCategoryTypeOnlyCategoryOfEvent",
+          "InventoryCategoryNotFound",
+          "InventoryCategoryNameAlreadyExists",
+          "InventoryColumnTypeInUse",
+          "InventoryColumnRequiredWithEmptyEntries",
+          "InventoryColumnOptionInUse",
+          "InventoryEntryLimitReached",
+          "InventoryEntryNotFound",
           "EventThumbnailNotFound",
           "RichTextFileNotFound",
           "EventCategoriesRequired",
@@ -8669,6 +9040,240 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SignupRoleResponse"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "InventoryCategoryResponse": {
+        "required": [
+          "columns",
+          "entryCount",
+          "id",
+          "name",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InventoryColumnResponse"
+            }
+          },
+          "entryCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "InventoryCategorySummaryResponse": {
+        "required": [
+          "entryCount",
+          "id",
+          "name",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "entryCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "InventoryCategorySummaryResponsePagedResult": {
+        "required": [
+          "items",
+          "page",
+          "pageSize",
+          "total"
+        ],
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InventoryCategorySummaryResponse"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "InventoryColumnOptionRequest": {
+        "required": [
+          "color",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "InventoryColumnOptionResponse": {
+        "required": [
+          "color",
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "InventoryColumnRequest": {
+        "required": [
+          "name",
+          "options",
+          "required",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/InventoryColumnType"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InventoryColumnOptionRequest"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "InventoryColumnResponse": {
+        "required": [
+          "id",
+          "name",
+          "options",
+          "required",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/InventoryColumnType"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InventoryColumnOptionResponse"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "InventoryColumnType": {
+        "enum": [
+          "Text",
+          "LongText",
+          "Number",
+          "Date",
+          "Boolean",
+          "List",
+          "Quantity"
+        ],
+        "type": "string"
+      },
+      "InventoryEntryResponse": {
+        "required": [
+          "id",
+          "values"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "values": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
             }
           }
         },
@@ -10324,6 +10929,45 @@
         },
         "additionalProperties": false
       },
+      "UpdateInventoryCategoryRequest": {
+        "required": [
+          "columns",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InventoryColumnRequest"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpdateInventoryEntryRequest": {
+        "required": [
+          "values"
+        ],
+        "type": "object",
+        "properties": {
+          "quantity": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "values": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "UpdateNewsItemRequest": {
         "required": [
           "description",
@@ -10763,6 +11407,9 @@
     },
     {
       "name": "Files"
+    },
+    {
+      "name": "Inventory"
     },
     {
       "name": "Legal"

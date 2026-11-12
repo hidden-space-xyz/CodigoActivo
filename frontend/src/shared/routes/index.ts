@@ -44,6 +44,12 @@ interface RouteNamedMap {
   'admin-partners': NamedRoute<'admin-partners', '/admin/partners'>
   'admin-resources': NamedRoute<'admin-resources', '/admin/resources'>
   'admin-users': NamedRoute<'admin-users', '/admin/users'>
+  'admin-inventory': NamedRoute<'admin-inventory', '/admin/inventory'>
+  'admin-inventory-category': NamedRoute<
+    'admin-inventory-category',
+    '/admin/inventory/:categoryId',
+    'categoryId'
+  >
   'admin-diagnostics': NamedRoute<'admin-diagnostics', '/admin/diagnostics'>
   'admin-audit': NamedRoute<'admin-audit', '/admin/audit'>
   'admin-blocked-data': NamedRoute<'admin-blocked-data', '/admin/blocked-data'>

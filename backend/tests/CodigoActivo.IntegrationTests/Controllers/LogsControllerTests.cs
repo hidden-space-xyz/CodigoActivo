@@ -7,6 +7,7 @@ using CodigoActivo.Application.Logs.Contracts;
 using CodigoActivo.Domain.BlockedData;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
+using CodigoActivo.Domain.Inventory;
 using CodigoActivo.Domain.Legal;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Logs;
@@ -372,6 +373,52 @@ public sealed class LogsControllerTests(CodigoActivoWebAppFactory factory)
                 ),
                 new AuditRelatedEntityResponse(AuditEntityType.Event, removedEvent, null)
             );
+    }
+
+    [Fact]
+    public async Task ListAuditNamesTheInventoryByItsCategoryColumnsAndOptions()
+    {
+        var category = InventoryCategory
+            .Create(
+                "Camisetas",
+                [
+                    new InventoryColumnDefinition(
+                        null,
+                        "Talla",
+                        InventoryColumnType.List,
+                        false,
+                        [new InventoryColumnOptionDefinition(null, "M", "#112233")]
+                    ),
+                ]
+            )
+            .Value;
+        var column = category.Columns.Single();
+        var option = column.Options.Single();
+        var entry = category.AddEntry(null, new Dictionary<InventoryColumnId, string>()).Value;
+        await SeedAsync(
+            category,
+            Audit(
+                Morning,
+                AuditAction.UpdateInventoryCategory,
+                TestSeedData.Users.AdminId,
+                category.Id.Value,
+                entityType: "InventoryCategory",
+                related: $$"""[{"type": "InventoryColumn", "id": "{{column.Id}}"}, {"type": "InventoryColumnOption", "id": "{{option.Id}}"}]"""
+            ),
+            Audit(
+                Morning.AddMinutes(1),
+                AuditAction.AddInventoryEntry,
+                TestSeedData.Users.AdminId,
+                entry.Value,
+                entityType: "InventoryEntry"
+            )
+        );
+        var admin = await LoginAsAdminAsync();
+
+        var page = await GetPageAsync<AuditLogEntryResponse>(admin, "/api/logs/audit");
+
+        page.Items.Select(item => item.EntityName).Should().Equal("Camisetas", "Camisetas");
+        page.Items[1].Related.Select(related => related.Name).Should().Equal("Talla", "M");
     }
 
     [Fact]

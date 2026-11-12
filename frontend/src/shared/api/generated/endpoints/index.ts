@@ -4,6 +4,7 @@ export * from './blocked-data/blocked-data';
 export * from './emails/emails';
 export * from './events/events';
 export * from './files/files';
+export * from './inventory/inventory';
 export * from './legal/legal';
 export * from './logs/logs';
 export * from './me/me';

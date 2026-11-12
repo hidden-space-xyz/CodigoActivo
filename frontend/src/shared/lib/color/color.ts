@@ -22,3 +22,11 @@ export function normalizeHexColor(input?: string | null): string | null {
   }
   return value
 }
+
+/** Color a tag starts with until another one is chosen. */
+export const DEFAULT_TAG_COLOR = '#6366F1'
+
+/** Writes a color as `#` followed by its hex digits. */
+export function toHexColor(color: string): string {
+  return `#${color.replace(/^#/, '')}`
+}

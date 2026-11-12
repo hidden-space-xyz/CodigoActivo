@@ -1,10 +1,21 @@
 import { body } from '../lib/http.js'
 import { think } from '../lib/profiles.js'
 import { nextAccount, sessionFor } from '../lib/pool.js'
-import { activityBody, DRAFT, eventBody, LOOKUPS, pick, richText, word } from '../lib/data.js'
+import {
+  activityBody,
+  day,
+  DRAFT,
+  eventBody,
+  LOOKUPS,
+  pick,
+  randomInt,
+  richText,
+  word,
+} from '../lib/data.js'
 import { MAX_PAGE_SIZE, poster } from '../lib/pages.js'
 
 const PAGE = { page: 1, pageSize: 25 }
+const INVENTORY_PAGE = { ...PAGE, sort: 'name' }
 
 function usersPage(session) {
   const list = { scope: 'Independent', sort: 'firstName', ...PAGE }
@@ -172,8 +183,127 @@ function newsItem(session, fixtures, round) {
   session.delete('/api/news/{newsItemId}', { route: news, expect: [204] })
 }
 
+function inventoryList(session) {
+  return body(session.get('/api/inventory/categories', { query: INVENTORY_PAGE }))?.items ?? []
+}
+
+function inventoryCategoryWithEntries(session, route) {
+  session.get('/api/inventory/categories/{categoryId}', { route })
+  session.get('/api/inventory/categories/{categoryId}/entries', { route })
+}
+
+function draftInventoryCategory(session) {
+  const draft = {
+    name: `${DRAFT} ${word()} ${Date.now().toString(36)}${randomInt(0, 9999)}`,
+    columns: [
+      { id: null, name: 'Nombre', type: 'Text', required: true, options: [] },
+      {
+        id: null,
+        name: 'Estado',
+        type: 'List',
+        required: false,
+        options: [{ id: null, name: 'Disponible', color: '#16A34A' }],
+      },
+    ],
+  }
+  const created = body(session.post('/api/inventory/categories', { json: draft, expect: [201] }))
+  inventoryList(session)
+  if (!created) {
+    return
+  }
+  const route = { categoryId: created.id }
+  think()
+  inventoryCategoryWithEntries(session, route)
+  session.put('/api/inventory/categories/{categoryId}', {
+    route,
+    json: {
+      name: created.name,
+      columns: [
+        ...created.columns.map(({ id, name, type, required, options }) => ({
+          id,
+          name,
+          type,
+          required,
+          options,
+        })),
+        { id: null, name: 'Unidades', type: 'Quantity', required: false, options: [] },
+      ],
+    },
+  })
+  inventoryList(session)
+  think()
+  session.delete('/api/inventory/categories/{categoryId}', { route, expect: [204] })
+  inventoryList(session)
+}
+
+function entryValues(columns) {
+  const byType = {
+    Text: () => `${DRAFT} ${word()}`,
+    LongText: () => `Revisión de ${word()} antes del taller.`,
+    Number: () => '12.5',
+    Date: () => day(0),
+    Boolean: () => 'true',
+    List: (column) => column.options[0]?.id,
+  }
+  return Object.fromEntries(
+    columns
+      .filter(({ type }) => byType[type])
+      .map((column) => [column.id, byType[column.type](column)]),
+  )
+}
+
+function inventoryCategory(session, categoryId) {
+  const route = { categoryId }
+  const category = body(session.get('/api/inventory/categories/{categoryId}', { route }))
+  session.get('/api/inventory/categories/{categoryId}/entries', { route })
+  if (!category) {
+    return
+  }
+  think()
+  session.get('/api/inventory/categories/{categoryId}/entries', { route })
+  const counted = category.columns.some(({ type }) => type === 'Quantity')
+  const created = body(
+    session.post('/api/inventory/categories/{categoryId}/entries', {
+      route,
+      json: { quantity: counted ? 1 : null, values: entryValues(category.columns) },
+      expect: [201],
+    }),
+  )
+  inventoryCategoryWithEntries(session, route)
+  if (!created) {
+    return
+  }
+  const entry = { ...route, entryId: created.id }
+  think()
+  if (counted) {
+    session.put('/api/inventory/categories/{categoryId}/entries/{entryId}', {
+      route: entry,
+      json: { quantity: created.quantity + 1, values: created.values },
+    })
+    inventoryCategoryWithEntries(session, route)
+  }
+  think()
+  session.delete('/api/inventory/categories/{categoryId}/entries/{entryId}', {
+    route: entry,
+    expect: [204],
+  })
+  inventoryCategoryWithEntries(session, route)
+}
+
+function inventory(session) {
+  const categories = inventoryList(session)
+  think()
+  draftInventoryCategory(session)
+  think()
+  const [largest] = [...categories].sort((a, b) => b.entryCount - a.entryCount)
+  if (largest) {
+    inventoryCategory(session, largest.id)
+  }
+}
+
 /**
- * An administrator reviews users, runs a draft event to its deletion, decides signups, edits news.
+ * An administrator reviews users, runs a draft event to its deletion, decides signups, edits news
+ * and keeps the inventory.
  */
 export function backoffice(data) {
   const { account, round } = nextAccount(data.admins.backoffice)
@@ -187,5 +317,7 @@ export function backoffice(data) {
   signupDecisions(session, data.fixtures, round)
   think()
   newsItem(session, data.fixtures, round)
+  think()
+  inventory(session)
   think()
 }

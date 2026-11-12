@@ -2,10 +2,12 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Common.Mapping;
 using Xunit;
 using DomainGender = CodigoActivo.Domain.Users.Gender;
+using DomainInventoryColumnType = CodigoActivo.Domain.Inventory.InventoryColumnType;
 using DomainLegalPolicyKind = CodigoActivo.Domain.Legal.LegalPolicyKind;
 using DomainTermsDocumentKind = CodigoActivo.Domain.TermsDocuments.TermsDocumentKind;
 using DomainTwoFactorMethod = CodigoActivo.Domain.Users.TwoFactorMethod;
 using Gender = CodigoActivo.Application.Abstractions.Querying.ReadModel.Gender;
+using InventoryColumnType = CodigoActivo.Application.Abstractions.Querying.ReadModel.InventoryColumnType;
 using LegalPolicyKind = CodigoActivo.Application.Abstractions.Querying.ReadModel.LegalPolicyKind;
 using TermsDocumentKind = CodigoActivo.Application.Abstractions.Querying.ReadModel.TermsDocumentKind;
 using TwoFactorMethod = CodigoActivo.Application.Abstractions.Querying.ReadModel.TwoFactorMethod;
@@ -58,6 +60,29 @@ public sealed class ContractEnumsTests
                 Enum.GetValues<DomainTermsDocumentKind>()
                     .Select(kind => (kind.ToString(), (int)kind))
             );
+    }
+
+    [Fact]
+    public void InventoryColumnTypeContractMirrorsTheDomainNamesAndValues()
+    {
+        Enum.GetValues<InventoryColumnType>()
+            .Select(type => (type.ToString(), (int)type))
+            .Should()
+            .Equal(
+                Enum.GetValues<DomainInventoryColumnType>()
+                    .Select(type => (type.ToString(), (int)type))
+            );
+    }
+
+    [Theory]
+    [InlineData(InventoryColumnType.Text, DomainInventoryColumnType.Text)]
+    [InlineData(InventoryColumnType.Quantity, DomainInventoryColumnType.Quantity)]
+    public void InventoryColumnTypeTranslatesToTheDomain(
+        InventoryColumnType contract,
+        DomainInventoryColumnType domain
+    )
+    {
+        contract.ToDomain().Should().Be(domain);
     }
 
     [Theory]

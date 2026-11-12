@@ -34,6 +34,26 @@ public enum AuditEntityType
     EventCategoryType,
 
     /// <summary>
+    /// An inventory category.
+    /// </summary>
+    InventoryCategory,
+
+    /// <summary>
+    /// A column of an inventory category.
+    /// </summary>
+    InventoryColumn,
+
+    /// <summary>
+    /// An option of a list column of an inventory category.
+    /// </summary>
+    InventoryColumnOption,
+
+    /// <summary>
+    /// An entry of an inventory category.
+    /// </summary>
+    InventoryEntry,
+
+    /// <summary>
     /// A legal policy.
     /// </summary>
     LegalPolicy,

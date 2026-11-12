@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { hexLuminance, normalizeHexColor } from '@/shared/lib/color'
+import { hexLuminance, normalizeHexColor, toHexColor } from '@/shared/lib/color'
 
 describe('hexLuminance', () => {
   it('returns 0 for black, 1 for white and weights green highest', () => {
@@ -26,5 +26,12 @@ describe('normalizeHexColor', () => {
     expect(normalizeHexColor('red')).toBeNull()
     expect(normalizeHexColor('#12345')).toBeNull()
     expect(normalizeHexColor('#ggg')).toBeNull()
+  })
+})
+
+describe('toHexColor', () => {
+  it('writes a color with a single leading hash', () => {
+    expect(toHexColor('00FF00')).toBe('#00FF00')
+    expect(toHexColor('#00FF00')).toBe('#00FF00')
   })
 })

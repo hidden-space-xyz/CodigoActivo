@@ -13,7 +13,7 @@ describe('EventCategoryFields', () => {
   it('previews the category with its name and hex color', async () => {
     const { wrapper } = await renderFields({ name: 'Talk', color: '00FF00' })
 
-    expect(wrapper.find('.category-fields__hex').text()).toBe('#00FF00')
+    expect(wrapper.find('.color-field__hex').text()).toBe('#00FF00')
     expect(wrapper.text()).toContain('Talk')
   })
 

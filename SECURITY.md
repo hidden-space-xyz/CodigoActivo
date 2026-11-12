@@ -46,8 +46,8 @@ authentication are not supported.
   activity erases its signups, terms decisions and ratings, so that use case refuses an editor while it has any
   (`ParticipationDeletionRequiresAdministrator`).
   `[AllowOnlyStaff(StaffRole.Administrator)]` protects everything about people beyond the caller's own
-  household: other users, signups, terms decisions, ratings, reports, every manual email, the diagnostic log
-  and the legal policies; the audit log is [read](#audit-log) only by the initial administrator and the account
+  household: other users, signups, terms decisions, ratings, reports, every manual email, the diagnostic log,
+  the legal policies and the inventory; the audit log is [read](#audit-log) only by the initial administrator and the account
   designated for data protection. The initial administrator is the superadministrator: only it changes staff
   roles and designates the account for data protection, whose endpoints admit administrators and whose use
   cases refuse anyone else (`SuperAdministratorOnly`, answered as `AccessDenied`), and only it deletes accounts

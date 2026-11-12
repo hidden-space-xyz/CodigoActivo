@@ -160,6 +160,36 @@ public enum AuditAction
     UpdateEventCategoryType,
 
     /// <summary>
+    /// Created an inventory category with its columns.
+    /// </summary>
+    CreateInventoryCategory,
+
+    /// <summary>
+    /// Renamed an inventory category or changed its columns.
+    /// </summary>
+    UpdateInventoryCategory,
+
+    /// <summary>
+    /// Deleted an inventory category with its entries.
+    /// </summary>
+    DeleteInventoryCategory,
+
+    /// <summary>
+    /// Added an entry to an inventory category.
+    /// </summary>
+    AddInventoryEntry,
+
+    /// <summary>
+    /// Changed an entry of an inventory category.
+    /// </summary>
+    UpdateInventoryEntry,
+
+    /// <summary>
+    /// Deleted an entry of an inventory category.
+    /// </summary>
+    DeleteInventoryEntry,
+
+    /// <summary>
     /// Created an event.
     /// </summary>
     CreateEvent,

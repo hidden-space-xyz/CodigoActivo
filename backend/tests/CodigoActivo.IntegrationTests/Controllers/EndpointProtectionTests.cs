@@ -49,6 +49,9 @@ public sealed class EndpointProtectionTests(CodigoActivoWebAppFactory factory)
             { "GET", $"/api/reports/events/{Unknown}/roster" },
             { "PUT", "/api/legal-policies/Privacy" },
             { "GET", "/api/blocked-data/consultations" },
+            { "GET", "/api/inventory/categories" },
+            { "POST", "/api/inventory/categories" },
+            { "GET", $"/api/inventory/categories/{Unknown}/entries" },
         };
 
     public static TheoryData<string, string, string, ErrorCode> UnknownTargets =>
@@ -87,6 +90,18 @@ public sealed class EndpointProtectionTests(CodigoActivoWebAppFactory factory)
             { "admin", "GET", $"/api/reports/events/{Unknown}/badges", ErrorCode.EventNotFound },
             { "admin", "GET", $"/api/reports/events/{Unknown}/roster", ErrorCode.EventNotFound },
             { "admin", "GET", $"/api/reports/events/{Unknown}/summary", ErrorCode.EventNotFound },
+            {
+                "admin",
+                "GET",
+                $"/api/inventory/categories/{Unknown}",
+                ErrorCode.InventoryCategoryNotFound
+            },
+            {
+                "admin",
+                "DELETE",
+                $"/api/inventory/categories/{Unknown}/entries/{Unknown}",
+                ErrorCode.InventoryCategoryNotFound
+            },
         };
 
     public static TheoryData<string> CsrfGuarded =>

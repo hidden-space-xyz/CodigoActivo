@@ -340,4 +340,51 @@ public enum DomainErrorCode
     /// The hold on the blocked data was already lifted.
     /// </summary>
     BlockedDataHoldLifted,
+
+    /// <summary>
+    /// The columns of an inventory category are empty, too many, repeat a name, name a column or
+    /// option the category does not have, or give a list column no options or too many, or
+    /// another type some.
+    /// </summary>
+    InventoryColumnsInvalid,
+
+    /// <summary>
+    /// An inventory category was to have more than one quantity column.
+    /// </summary>
+    InventoryQuantityColumnsExceeded,
+
+    /// <summary>
+    /// The type of an inventory column cannot change while an entry has a value in it.
+    /// </summary>
+    InventoryColumnTypeInUse,
+
+    /// <summary>
+    /// An inventory column cannot become required while an entry has no value in it.
+    /// </summary>
+    InventoryColumnRequiredWithEmptyEntries,
+
+    /// <summary>
+    /// An option of a list column cannot be removed while an entry has chosen it.
+    /// </summary>
+    InventoryColumnOptionInUse,
+
+    /// <summary>
+    /// A value of an inventory entry does not suit its column or names no column of the category.
+    /// </summary>
+    InventoryEntryValueInvalid,
+
+    /// <summary>
+    /// An inventory entry leaves a required column empty.
+    /// </summary>
+    InventoryEntryValueRequired,
+
+    /// <summary>
+    /// The inventory category already holds as many entries as it may.
+    /// </summary>
+    InventoryEntryLimitReached,
+
+    /// <summary>
+    /// The inventory category has no entry with the requested identifier.
+    /// </summary>
+    InventoryEntryNotFound,
 }

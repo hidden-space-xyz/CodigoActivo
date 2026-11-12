@@ -132,4 +132,14 @@ public interface IReadStore
     /// Gets the holds on the blocked data.
     /// </summary>
     public IQueryable<BlockedDataHoldRow> BlockedDataHolds { get; }
+
+    /// <summary>
+    /// Gets the inventory categories.
+    /// </summary>
+    public IQueryable<InventoryCategoryRow> InventoryCategories { get; }
+
+    /// <summary>
+    /// Gets the entries of the inventory categories.
+    /// </summary>
+    public IQueryable<InventoryEntryRow> InventoryEntries { get; }
 }

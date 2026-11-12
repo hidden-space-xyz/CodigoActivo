@@ -239,6 +239,13 @@
     "EventCategoryTypeNotFound": "La categoría del evento no es válida.",
     "EventCategoryTypeNameAlreadyExists": "Ya existe una categoría con ese nombre.",
     "EventCategoryTypeOnlyCategoryOfEvent": "No se puede eliminar: hay eventos cuya única categoría es esta. Asígnales otra categoría antes de eliminarla.",
+    "InventoryCategoryNotFound": "La categoría de inventario no existe o se ha eliminado.",
+    "InventoryCategoryNameAlreadyExists": "Ya existe una categoría de inventario con ese nombre.",
+    "InventoryColumnTypeInUse": "No se puede cambiar el tipo de una columna que ya tiene valores. Crea otra columna en su lugar.",
+    "InventoryColumnRequiredWithEmptyEntries": "No se puede hacer obligatoria una columna mientras haya filas sin valor en ella. Rellénalas antes.",
+    "InventoryColumnOptionInUse": "No se puede quitar una opción que usa alguna fila. Cambia esas filas antes.",
+    "InventoryEntryLimitReached": "La categoría ya tiene el máximo de filas.",
+    "InventoryEntryNotFound": "La fila no existe o se ha eliminado.",
     "RichTextFileNotFound": "Una de las imágenes del texto ya no existe. Quítala y vuelve a insertarla antes de guardar.",
     "EventThumbnailNotFound": "No se encontró la imagen del evento.",
     "EventCategoriesRequired": "Debes seleccionar al menos una categoría para el evento.",
@@ -757,6 +764,109 @@
             "fromDateRequired": "La fecha de alta es obligatoria.",
             "fromDateFuture": "La fecha de alta no puede ser posterior a hoy.",
             "websiteInvalid": "El sitio web debe ser una URL válida que empiece por http:// o https://."
+          }
+        }
+      },
+      "inventory": {
+        "header": {
+          "title": "Inventariado",
+          "subtitle": "Recuento de los bienes de la asociación por categorías"
+        },
+        "newCategory": "Nueva categoría",
+        "empty": {
+          "error": "No se pudo cargar el inventario.",
+          "none": "Aún no hay categorías de inventario."
+        },
+        "columns": {
+          "entryCount": "Filas",
+          "total": "Total"
+        },
+        "open": "Ver filas",
+        "toasts": {
+          "created": "Categoría creada.",
+          "updated": "Categoría actualizada.",
+          "deleted": "Categoría eliminada."
+        },
+        "delete": {
+          "header": "Eliminar categoría",
+          "message": "¿Seguro que quieres eliminar \"{name}\" con todas sus filas? Esta acción no se puede deshacer."
+        },
+        "form": {
+          "newHeader": "Nueva categoría de inventario",
+          "editHeader": "Editar categoría de inventario",
+          "columns": "Columnas",
+          "columnsHint": "Cada fila de la categoría tendrá estas columnas. Una columna de cantidad hace que el total sume sus valores; sin ella, el total cuenta las filas.",
+          "columnName": "Nombre de la columna",
+          "columnType": "Tipo",
+          "required": "Obligatoria",
+          "options": "Opciones",
+          "optionName": "Nombre de la opción",
+          "optionColor": "Color",
+          "addColumn": "Añadir columna",
+          "addOption": "Añadir opción",
+          "moveUp": "Subir",
+          "moveDown": "Bajar",
+          "removeColumn": "Quitar columna",
+          "removeOption": "Quitar opción",
+          "typeLocked": "Ya tiene valores, así que su tipo no puede cambiar.",
+          "requiredLocked": "Hay filas sin valor en esta columna; rellénalas para hacerla obligatoria.",
+          "optionInUse": "Alguna fila la usa, así que no se puede quitar.",
+          "removeColumnConfirm": {
+            "header": "Quitar columna",
+            "message": "La columna \"{name}\" tiene datos en 1 fila, que se borrarán al guardar. | La columna \"{name}\" tiene datos en {count} filas, que se borrarán al guardar."
+          },
+          "types": {
+            "Text": "Texto",
+            "LongText": "Texto largo",
+            "Number": "Número",
+            "Date": "Fecha",
+            "Boolean": "Sí / No",
+            "List": "Lista",
+            "Quantity": "Cantidad"
+          },
+          "problems": {
+            "nameRequired": "El nombre es obligatorio.",
+            "columnNameRequired": "Pon nombre a la columna.",
+            "columnNameRepeated": "Ya hay otra columna con este nombre.",
+            "optionsRequired": "Añade al menos una opción.",
+            "optionNameRequired": "Pon nombre a la opción.",
+            "optionNameRepeated": "Ya hay otra opción con este nombre.",
+            "quantityRepeated": "Solo puede haber una columna de cantidad."
+          }
+        }
+      },
+      "inventoryCategory": {
+        "back": "Volver al inventario",
+        "notFound": "La categoría no existe o se ha eliminado.",
+        "loadError": "No se pudo cargar la categoría.",
+        "summary": "1 fila · total {total} | {count} filas · total {total}",
+        "newEntry": "Añadir fila",
+        "limitReached": "La categoría ya tiene el máximo de filas.",
+        "empty": {
+          "error": "No se pudieron cargar las filas.",
+          "none": "Aún no hay filas en esta categoría."
+        },
+        "yes": "Sí",
+        "no": "No",
+        "increase": "Sumar uno",
+        "decrease": "Restar uno",
+        "toasts": {
+          "created": "Fila añadida.",
+          "updated": "Fila actualizada.",
+          "deleted": "Fila eliminada."
+        },
+        "delete": {
+          "header": "Eliminar fila",
+          "message": "¿Seguro que quieres eliminar \"{name}\"?",
+          "unnamed": "esta fila"
+        },
+        "form": {
+          "newHeader": "Nueva fila",
+          "editHeader": "Editar fila",
+          "problems": {
+            "required": "Este dato es obligatorio.",
+            "numberInvalid": "Escribe un número de hasta trece cifras enteras y dos decimales; los decimales, con coma o con punto.",
+            "quantityInvalid": "Escribe una cantidad entera, de 0 en adelante."
           }
         }
       },
@@ -1469,6 +1579,10 @@
           "BlockedDataHold": "Retención de datos bloqueados",
           "Event": "Evento",
           "EventCategoryType": "Categoría",
+          "InventoryCategory": "Categoría de inventario",
+          "InventoryColumn": "Columna de inventario",
+          "InventoryColumnOption": "Opción de inventario",
+          "InventoryEntry": "Fila de inventario",
           "LegalPolicy": "Política legal",
           "NewsItem": "Novedad",
           "Partner": "Patrocinador",
@@ -1481,6 +1595,10 @@
           "Activity": "Actividad eliminada",
           "Event": "Evento eliminado",
           "EventCategoryType": "Categoría eliminada",
+          "InventoryCategory": "Categoría de inventario eliminada",
+          "InventoryColumn": "Columna de inventario eliminada",
+          "InventoryColumnOption": "Opción de inventario eliminada",
+          "InventoryEntry": "Fila de inventario eliminada",
           "LegalPolicy": "Política legal eliminada",
           "NewsItem": "Novedad eliminada",
           "Partner": "Patrocinador eliminado",
@@ -1525,6 +1643,12 @@
           "CreateEventCategoryType": "Crear una categoría",
           "DeleteEventCategoryType": "Eliminar una categoría",
           "UpdateEventCategoryType": "Editar una categoría",
+          "CreateInventoryCategory": "Crear una categoría de inventario",
+          "UpdateInventoryCategory": "Editar una categoría de inventario",
+          "DeleteInventoryCategory": "Eliminar una categoría de inventario",
+          "AddInventoryEntry": "Añadir una fila al inventario",
+          "UpdateInventoryEntry": "Editar una fila del inventario",
+          "DeleteInventoryEntry": "Eliminar una fila del inventario",
           "CreateEvent": "Crear un evento",
           "DeleteEvent": "Eliminar un evento",
           "UpdateEvent": "Editar un evento",
@@ -1583,7 +1707,11 @@
           "EventRatingAnswerTooLong": "Una respuesta de la valoración es demasiado larga.",
           "EventTermsSignatureInvalid": "La firma no es válida.",
           "BlockedDataReferenceRequired": "Falta quién pide los datos o la referencia de la consulta.",
-          "BlockedDataEntityUnknown": "Se pidió un tipo de dato que no tiene historial."
+          "BlockedDataEntityUnknown": "Se pidió un tipo de dato que no tiene historial.",
+          "InventoryColumnsInvalid": "Las columnas del inventario no eran válidas.",
+          "InventoryQuantityColumnsExceeded": "Se pidió más de una columna de cantidad.",
+          "InventoryEntryValueInvalid": "Un valor de la fila no encajaba con su columna.",
+          "InventoryEntryValueRequired": "La fila dejaba vacía una columna obligatoria."
         }
       },
       "blockedData": {
@@ -2079,7 +2207,8 @@
         "audit": "Auditoría",
         "blockedData": "Archivo legal",
         "legal": "Políticas",
-        "catalogs": "Catálogos"
+        "catalogs": "Catálogos",
+        "inventory": "Inventariado"
       },
       "menuTitle": "Administración",
       "goToSite": "Ir al sitio"

@@ -49,6 +49,12 @@ export const ADMIN_NAV = [
     access: 'admin',
   },
   {
+    labelKey: 'widgets.adminShell.nav.inventory',
+    routeName: 'admin-inventory',
+    icon: 'box',
+    access: 'admin',
+  },
+  {
     labelKey: 'widgets.adminShell.nav.diagnostics',
     routeName: 'admin-diagnostics',
     icon: 'list',

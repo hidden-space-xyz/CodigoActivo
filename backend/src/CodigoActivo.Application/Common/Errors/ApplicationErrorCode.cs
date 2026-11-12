@@ -57,6 +57,16 @@ public enum ApplicationErrorCode
     EventCategoryTypeNameAlreadyExists,
 
     /// <summary>
+    /// No inventory category has the requested identifier.
+    /// </summary>
+    InventoryCategoryNotFound,
+
+    /// <summary>
+    /// Another inventory category already uses the name, ignoring letter case.
+    /// </summary>
+    InventoryCategoryNameAlreadyExists,
+
+    /// <summary>
     /// The thumbnail chosen for an event no longer exists.
     /// </summary>
     EventThumbnailNotFound,

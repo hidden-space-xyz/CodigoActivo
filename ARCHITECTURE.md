@@ -33,6 +33,7 @@ participant user type.
 | Account   | The credentials, second factor and sessions of a person who signs in                                 | `Accounts` feature                             | cuenta          |
 | Notice    | A manual email about the recipient's account, signups or activities; reaches every confirmed address | `ManualEmailPurpose.Notice`                    | aviso           |
 | News      | A manual email about upcoming events and news; reaches only confirmed addresses with news consent    | `ManualEmailPurpose.News`, `User.NewsConsent`  | novedades       |
+| Inventory | Categories of belongings with the columns administrators define and the entries that fill them       | `InventoryCategory`, `InventoryEntry`          | inventariado    |
 
 ## Backend
 
@@ -59,7 +60,8 @@ neither Infrastructure nor EF Core) and further conventions over the compiled as
 ### Domain and persistence
 
 - `CodigoActivo.Domain` has one folder per feature (`Users/`, `Events/`, `Activities/`, `EventCategories/`,
-  `TermsDocuments/`, `TermsDecisions/`, `News/`, `Resources/`, `Partners/`, `Files/`, `Legal/`, `BlockedData/`)
+  `TermsDocuments/`, `TermsDecisions/`, `News/`, `Resources/`, `Partners/`, `Files/`, `Legal/`, `BlockedData/`,
+  `Inventory/`)
   with its aggregates, typed identifiers, value objects, domain events, policies and repository ports; `Common/`
   holds `Result`, `Error`, `DomainErrorCode`, the base classes (`Entity<TId>`, `AggregateRoot<TId>`,
   `AuditableEntity<TId>`) and the shared value objects.
@@ -67,7 +69,8 @@ neither Infrastructure nor EF Core) and further conventions over the compiled as
   `readonly record struct` over a `Guid` with no implicit conversion, so an identifier of one aggregate can never
   be passed for another; `EventTermsAcceptance` is keyed by event, user and document. Values with rules are value
   objects: `EmailAddress`, `PhoneNumber`, `SpanishNationalId`, `RichText`, `DateRange` (the event calendar),
-  `SignupWindow`, `ActivitySchedule`, `HandwrittenSignature`, and the security state of `User`: `OneTimeCode`
+  `SignupWindow`, `ActivitySchedule`, `HandwrittenSignature`, `InventoryValues` (stored as `jsonb`), and the
+  security state of `User`: `OneTimeCode`
   (verification, password reset and login codes), `EmailChange`, `Authenticator`, `LoginChallenge`,
   `PasswordLockout` and `TwoFactorLockout`. EF Core maps them onto plain columns through conventions and
   converters (`Infrastructure/Database/Conversions`), the `User` ones as complex properties; the read model keeps
@@ -78,7 +81,8 @@ neither Infrastructure nor EF Core) and further conventions over the compiled as
   `BlockedDataConsultation` (with its findings and extracts), `BlockedDataHold` (with the accounts it keeps),
   `Event` (with its categories and terms links), `Activity` (with its role capacities and signups),
   `EventTermsAcceptance`, `EventRating`, `NewsItem`, `Resource`, `Partner`, `TermsDocument`, `LegalPolicy`,
-  `EventCategoryType` and `StoredFile`. Their state has private setters: factories create them, returning
+  `EventCategoryType`, `StoredFile` and `InventoryCategory` (with its columns, their options and its entries).
+  Their state has private setters: factories create them, returning
   `Result<T>` when a rule can fail, and behavior methods own the invariants and the transitions (`User.Verify`,
   `User.RecordPasswordFailure`, `Activity.RequestAssignment`, `Activity.ChangeAssignmentStatus`,
   `Event.Feature`). Child entities change only through their root. For people,
@@ -220,7 +224,8 @@ records live in the API (`API/<Feature>/Contracts/`) with only the standard attr
 describes, plus the catalog membership check (`IValidatableObject` through `CatalogIdentifiers`), and map
 themselves to the command (`request.ToCommand(id)`). Response records and list criteria stay
 in `Application/<Feature>/Contracts/` as the read contracts of the queries. `Gender`, `TwoFactorMethod`, `StaffRole`,
-`TermsDocumentKind` and `LegalPolicyKind` are contract enums that mirror the domain ones (`ContractEnums`); they
+`TermsDocumentKind`, `LegalPolicyKind` and `InventoryColumnType` are contract enums that mirror the domain ones
+(`ContractEnums`); they
 live with the read rows that store them, so the read model depends on no feature.
 
 Queries read the database through `IReadStore`: no-tracking `IQueryable` sources of read rows
@@ -303,6 +308,17 @@ version they replace as a `LegalPolicyVersion` with its publication date, and th
 Anyone reads the version in force from `GET /api/legal-policies/{kind}` (404 `LegalPolicyNotFound` until it is
 published), output cached under the `legal-policies` tag that `LegalPolicyPublished` evicts; administrators
 list every version under `/versions` and read one under `/versions/{version}`.
+
+The inventory («Inventariado», `/admin/inventory`) is a set of `InventoryCategory` aggregates. Administrators
+define the columns of each category: a name, whether it is required and a type among text, long text, number
+(up to two decimals and `InventoryColumn.NumberMaxValue`, which a double holds exactly), date, yes or no, a list
+of options with their colors, and quantity. A category has at most one quantity
+column; its total adds that column up, or counts the entries when there is none. An entry keeps the quantity in
+its own column and the other values in `InventoryValues`, keyed by column id and written in the canonical form
+of their type. `Redefine` changes the columns in one step and refuses what would break the stored entries: a
+new type for a column with values, a removed option an entry chose, or a required column some entry leaves
+empty. `GET /api/inventory/categories/{id}/entries` returns every entry of a category, at most
+`InventoryCategory.MaxEntries`, and the SPA filters, sorts and pages them through its server table source.
 
 ### Caching
 

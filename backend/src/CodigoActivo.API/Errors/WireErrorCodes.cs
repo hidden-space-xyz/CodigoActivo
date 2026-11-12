@@ -30,6 +30,10 @@ public static class WireErrorCodes
         [DomainErrorCode.BlockedDataReferenceRequired] = ErrorCode.RequestValidationFailed,
         [ApplicationErrorCode.BlockedDataEntityUnknown] = ErrorCode.RequestValidationFailed,
         [ApplicationErrorCode.BlockedDataPeriodInvalid] = ErrorCode.RequestValidationFailed,
+        [DomainErrorCode.InventoryColumnsInvalid] = ErrorCode.RequestValidationFailed,
+        [DomainErrorCode.InventoryQuantityColumnsExceeded] = ErrorCode.RequestValidationFailed,
+        [DomainErrorCode.InventoryEntryValueInvalid] = ErrorCode.RequestValidationFailed,
+        [DomainErrorCode.InventoryEntryValueRequired] = ErrorCode.RequestValidationFailed,
     }.ToFrozenDictionary();
 
     private static readonly FrozenDictionary<Enum, ErrorCode> Translations = Build();

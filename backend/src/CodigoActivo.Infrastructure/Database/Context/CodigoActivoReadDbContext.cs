@@ -104,6 +104,14 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
         Set<BlockedDataHoldRow>().AsNoTracking();
 
     /// <inheritdoc />
+    public IQueryable<InventoryCategoryRow> InventoryCategories =>
+        Set<InventoryCategoryRow>().AsNoTracking();
+
+    /// <inheritdoc />
+    public IQueryable<InventoryEntryRow> InventoryEntries =>
+        Set<InventoryEntryRow>().AsNoTracking();
+
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
@@ -115,6 +123,7 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
         ConfigureContent(modelBuilder);
         ConfigureLogs(modelBuilder);
         ConfigureBlockedData(modelBuilder);
+        ConfigureInventory(modelBuilder);
     }
 
     private static EntityTypeBuilder<TRow> Table<TRow>(ModelBuilder modelBuilder, string name)
@@ -313,5 +322,33 @@ public sealed class CodigoActivoReadDbContext(DbContextOptions<CodigoActivoReadD
             .HasOne<BlockedDataHoldRow>()
             .WithMany(h => h.Subjects)
             .HasForeignKey(s => s.HoldId);
+    }
+
+    private static void ConfigureInventory(ModelBuilder modelBuilder)
+    {
+        Table<InventoryCategoryRow>(modelBuilder, "inventory_categories").HasKey(c => c.Id);
+
+        var columns = Table<InventoryColumnRow>(modelBuilder, "inventory_columns");
+        columns.HasKey(c => c.Id);
+        columns.Property(c => c.Type).HasConversion<string>();
+        columns
+            .HasOne<InventoryCategoryRow>()
+            .WithMany(c => c.Columns)
+            .HasForeignKey(c => c.CategoryId);
+
+        var options = Table<InventoryColumnOptionRow>(modelBuilder, "inventory_column_options");
+        options.HasKey(o => o.Id);
+        options
+            .HasOne<InventoryColumnRow>()
+            .WithMany(c => c.Options)
+            .HasForeignKey(o => o.ColumnId);
+
+        var entries = Table<InventoryEntryRow>(modelBuilder, "inventory_entries");
+        entries.HasKey(e => e.Id);
+        entries.Property(e => e.Values).HasColumnType("jsonb");
+        entries
+            .HasOne<InventoryCategoryRow>()
+            .WithMany(c => c.Entries)
+            .HasForeignKey(e => e.CategoryId);
     }
 }

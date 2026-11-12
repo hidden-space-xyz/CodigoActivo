@@ -1,22 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  DEFAULT_CATEGORY_COLOR,
   readEventCategoryDraft,
   toEventCategoryDraft,
-  toHexColor,
 } from '@/entities/event-category/model/category-form'
-
-describe('toHexColor', () => {
-  it('writes a color with a single leading hash', () => {
-    expect(toHexColor('00FF00')).toBe('#00FF00')
-    expect(toHexColor('#00FF00')).toBe('#00FF00')
-  })
-})
+import { DEFAULT_TAG_COLOR } from '@/shared/lib/color'
 
 describe('toEventCategoryDraft', () => {
   it('starts with the default color and fills an edited category', () => {
-    expect(toEventCategoryDraft(null)).toEqual({ name: '', color: DEFAULT_CATEGORY_COLOR })
+    expect(toEventCategoryDraft(null)).toEqual({ name: '', color: DEFAULT_TAG_COLOR })
     expect(toEventCategoryDraft({ id: 'c1', name: 'Workshop', color: '#FF0000' })).toEqual({
       name: 'Workshop',
       color: '#FF0000',

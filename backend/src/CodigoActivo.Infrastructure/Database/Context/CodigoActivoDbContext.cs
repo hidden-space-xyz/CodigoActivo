@@ -3,6 +3,7 @@ using CodigoActivo.Domain.BlockedData;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Inventory;
 using CodigoActivo.Domain.Legal;
 using CodigoActivo.Domain.News;
 using CodigoActivo.Domain.Partners;
@@ -215,6 +216,26 @@ public class CodigoActivoDbContext(
     /// Gets the holds on the blocked data.
     /// </summary>
     public DbSet<BlockedDataHold> BlockedDataHolds => Set<BlockedDataHold>();
+
+    /// <summary>
+    /// Gets the inventory categories.
+    /// </summary>
+    public DbSet<InventoryCategory> InventoryCategories => Set<InventoryCategory>();
+
+    /// <summary>
+    /// Gets the columns of the inventory categories.
+    /// </summary>
+    public DbSet<InventoryColumn> InventoryColumns => Set<InventoryColumn>();
+
+    /// <summary>
+    /// Gets the options of the list columns of the inventory categories.
+    /// </summary>
+    public DbSet<InventoryColumnOption> InventoryColumnOptions => Set<InventoryColumnOption>();
+
+    /// <summary>
+    /// Gets the entries of the inventory categories.
+    /// </summary>
+    public DbSet<InventoryEntry> InventoryEntries => Set<InventoryEntry>();
 
     /// <summary>
     /// Adds <see cref="InitialAdministratorGuard"/> to every instance, whatever registered the

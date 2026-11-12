@@ -358,6 +358,27 @@ public sealed class LogEntryReader(CodigoActivoReadDbContext context, IQueryExec
             AuditEntityType.EventCategoryType => context
                 .EventCategoryTypes.Where(row => ids.Contains(row.Id))
                 .Select(row => new NamedEntity(row.Id, row.Name)),
+            AuditEntityType.InventoryCategory => context
+                .InventoryCategories.Where(row => ids.Contains(row.Id))
+                .Select(row => new NamedEntity(row.Id, row.Name)),
+            AuditEntityType.InventoryColumn => context
+                .Set<InventoryColumnRow>()
+                .AsNoTracking()
+                .Where(row => ids.Contains(row.Id))
+                .Select(row => new NamedEntity(row.Id, row.Name)),
+            AuditEntityType.InventoryColumnOption => context
+                .Set<InventoryColumnOptionRow>()
+                .AsNoTracking()
+                .Where(row => ids.Contains(row.Id))
+                .Select(row => new NamedEntity(row.Id, row.Name)),
+            AuditEntityType.InventoryEntry => context
+                .InventoryEntries.Where(row => ids.Contains(row.Id))
+                .Join(
+                    context.InventoryCategories,
+                    entry => entry.CategoryId,
+                    category => category.Id,
+                    (entry, category) => new NamedEntity(entry.Id, category.Name)
+                ),
             AuditEntityType.LegalPolicy => context
                 .LegalPolicies.Where(row => ids.Contains(row.Id))
                 .Select(row => new NamedEntity(

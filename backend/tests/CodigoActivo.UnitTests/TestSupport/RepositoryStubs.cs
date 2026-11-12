@@ -2,6 +2,7 @@ using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Inventory;
 using CodigoActivo.Domain.News;
 using CodigoActivo.Domain.Partners;
 using CodigoActivo.Domain.Resources;
@@ -18,6 +19,16 @@ public static class RepositoryStubs
         users.GetByIdAsync(Arg.Any<UserId>(), Arg.Any<CancellationToken>()).Returns(user);
         users.GetByEmailAsync(Arg.Any<EmailAddress>(), Arg.Any<CancellationToken>()).Returns(user);
         users.LockAsync(Arg.Any<User>(), Arg.Any<CancellationToken>()).Returns(user is not null);
+    }
+
+    public static void Finds(
+        this IInventoryCategoryRepository categories,
+        InventoryCategory? category
+    )
+    {
+        categories
+            .GetByIdAsync(Arg.Any<InventoryCategoryId>(), Arg.Any<CancellationToken>())
+            .Returns(category);
     }
 
     public static void Finds(this IPartnerRepository partners, Partner? partner)
