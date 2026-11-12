@@ -27,7 +27,8 @@ namespace CodigoActivo.Infrastructure.Database.Seeders;
 /// every type and staff role with their children, a registration waiting for its verification,
 /// events in every stage with activities, signups, terms decisions and ratings, news, resources,
 /// partners, and terms documents and legal policies with an earlier version, illustrated with
-/// images downloaded from picsum.photos. The initial administrator gets signups of their own.
+/// images generated locally by <see cref="DemoImageGenerator"/>, so seeding needs no network. The
+/// initial administrator gets signups of their own.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
 /// <param name="storage">Storage the encoded variants of the demo images are written to.</param>
@@ -42,12 +43,6 @@ public sealed class DemoDataSeeder(
     IClock clock
 )
 {
-    /// <summary>
-    /// Largest demo image accepted from the image service, the same as the default upload limit, so
-    /// an oversized response is refused instead of being buffered in memory.
-    /// </summary>
-    private const int MaxDemoImageBytes = 10 * 1024 * 1024;
-
     private const int AdultCount = 24;
     private const int RegularAdultCount = 20;
     private const int MemberAdultCount = 14;
@@ -156,7 +151,7 @@ public sealed class DemoDataSeeder(
     }
 
     /// <summary>
-    /// Downloads and stores the images first and then adds the rows in one transaction; on any
+    /// Stores the images first and then adds the rows in one transaction; on any
     /// failure the stored images are discarded and the exception is rethrown.
     /// </summary>
     private async Task AddContentAsync(CancellationToken ct)
@@ -170,7 +165,7 @@ public sealed class DemoDataSeeder(
 
         try
         {
-            await DownloadImagesAsync(fileIds, ct);
+            await StoreImagesAsync(fileIds, ct);
 
             await using var transaction = await context.Database.BeginTransactionAsync(ct);
             await AddAsync(context, graph, ct);
@@ -942,52 +937,22 @@ public sealed class DemoDataSeeder(
         return ids.Count > 0 ? ids : [DemoCategory(0)];
     }
 
-    private async Task DownloadImagesAsync(IReadOnlyCollection<Guid> fileIds, CancellationToken ct)
+    private Task StoreImagesAsync(IReadOnlyCollection<Guid> fileIds, CancellationToken ct)
     {
-        using var http = new HttpClient
-        {
-            Timeout = TimeSpan.FromSeconds(20),
-            MaxResponseContentBufferSize = MaxDemoImageBytes,
-        };
-        using var throttle = new SemaphoreSlim(8, 8);
-        await Task.WhenAll(fileIds.Select(id => DownloadImageAsync(http, throttle, id, ct)));
+        return Parallel.ForEachAsync(
+            fileIds,
+            ct,
+            (fileId, token) => new ValueTask(SaveVariantsAsync(fileId, token))
+        );
     }
 
-    private async Task DownloadImageAsync(
-        HttpClient http,
-        SemaphoreSlim throttle,
-        Guid fileId,
-        CancellationToken ct
-    )
+    private async Task SaveVariantsAsync(Guid fileId, CancellationToken ct)
     {
-        await throttle.WaitAsync(ct);
-        try
-        {
-            var url = new Uri($"https://picsum.photos/seed/{fileId:N}/1080/720");
-            for (var attempt = 1; attempt <= 3; attempt++)
-            {
-                try
-                {
-                    var bytes = await http.GetByteArrayAsync(url, ct);
-                    await SaveVariantsAsync(fileId, bytes, ct);
-                    return;
-                }
-                catch (Exception) when (!ct.IsCancellationRequested && attempt < 3)
-                {
-                    await Task.Delay(TimeSpan.FromMilliseconds(400 * attempt), ct);
-                }
-            }
-        }
-        finally
-        {
-            throttle.Release();
-        }
-    }
-
-    private async Task SaveVariantsAsync(Guid fileId, byte[] image, CancellationToken ct)
-    {
-        await using var download = new MemoryStream(image, writable: false);
-        var processed = await processor.ProcessAsync(download, ct);
+        await using var image = new MemoryStream(
+            DemoImageGenerator.Generate(fileId),
+            writable: false
+        );
+        var processed = await processor.ProcessAsync(image, ct);
         if (processed.IsFailure)
         {
             throw new InvalidOperationException("A demo image could not be processed.");

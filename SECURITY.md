@@ -855,6 +855,6 @@ the general API limits of nginx and the API.
 [Demo deployments](DEPLOYMENT.md#demo-mode-and-initial-administrator) are disposable and must never contain
 private data. Their invented accounts have a random, hashed and discarded 32-byte password, fictitious
 addresses and the second factor still required, so only the initial administrator can sign in. Seeding
-downloads its sample images from `picsum.photos`, at most 10 MiB each, in requests that carry no user data, and
-the callers of the invented log history use the IP ranges reserved for documentation (`192.0.2.0/24`,
-`198.51.100.0/24`, `203.0.113.0/24`, `2001:db8::/32`).
+generates its sample images locally, so it sends no request outside the deployment, and the callers of the
+invented log history use the IP ranges reserved for documentation (`192.0.2.0/24`, `198.51.100.0/24`,
+`203.0.113.0/24`, `2001:db8::/32`).

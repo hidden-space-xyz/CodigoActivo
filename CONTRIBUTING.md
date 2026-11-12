@@ -170,12 +170,11 @@ docker compose -f tests/performance/compose.yaml run --rm --build -e PROFILE=loa
 docker compose -f tests/performance/compose.yaml down -v
 ```
 
-Every run needs new volumes, so `down -v` goes between runs. The first start seeds the demo data, which
-downloads images from `picsum.photos`, and `volume.sql` then adds what a grown association would hold: 10,000
-people in 5,000 households, about 430 of them subscribed to the news so one email stays under its 500 recipients,
-100 past events with their signups and ratings, and 100,000 audit and 20,000 diagnostic entries. Without it
-lists and reports would be measured on a few dozen rows. These figures are an assumption, set in the file;
-replace them when real ones exist.
+Every run needs new volumes, so `down -v` goes between runs. The first start seeds the demo data and
+`volume.sql` then adds what a grown association would hold: 10,000 people in 5,000 households, about 430 of
+them subscribed to the news so one email stays under its 500 recipients, 100 past events with their signups and
+ratings, and 100,000 audit and 20,000 diagnostic entries. Without it lists and reports would be measured on a
+few dozen rows. These figures are an assumption, set in the file; replace them when real ones exist.
 
 Each scenario sends the requests the SPA sends when its pages open: anonymous visitors (home, events, an event
 and its activities, news, resources), members (home, an event with their signups, profile, history,

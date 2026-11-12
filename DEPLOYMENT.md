@@ -295,10 +295,9 @@ legal policies. The initial administrator gets signups of their own and invented
 minor as declared by their guardian, here that administrator. One registration waits for its verification: the
 purge erases it after a day and each start brings it back. The demonstrator signs in with the initial
 administrator, the only account that can, whose password reset and login codes arrive at
-`BOOTSTRAP_ADMIN_EMAIL` through the configured SMTP server. Seeding downloads its sample images from
-`picsum.photos` (three attempts each), so `api` needs outbound HTTPS there on the start that seeds; a failed
-download stops that start, and so does demo seeding, logs and data history included, that has not finished
-within five minutes.
+`BOOTSTRAP_ADMIN_EMAIL` through the configured SMTP server. Seeding generates its sample images locally as
+color gradients, so it needs no network. A start stops if demo seeding, logs and data history included, has
+not finished within five minutes.
 Demo mode also fills the diagnostic and audit logs with an invented three-week history that follows the demo
 data: logins, signups, published content, a password attack, email outages and slow requests. A later start
 writes a new one once the audit log holds no entry of a demo account younger than the diagnostic retention;
