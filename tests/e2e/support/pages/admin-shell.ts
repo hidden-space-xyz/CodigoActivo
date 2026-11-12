@@ -8,6 +8,7 @@ export type AdminSection =
   | 'admin-partners'
   | 'admin-resources'
   | 'admin-users'
+  | 'admin-inventory'
   | 'admin-diagnostics'
   | 'admin-audit'
   | 'admin-blocked-data'
@@ -21,6 +22,7 @@ const PATHS: Readonly<Record<AdminSection, string>> = {
   'admin-partners': '/admin/partners',
   'admin-resources': '/admin/resources',
   'admin-users': '/admin/users',
+  'admin-inventory': '/admin/inventory',
   'admin-diagnostics': '/admin/diagnostics',
   'admin-audit': '/admin/audit',
   'admin-blocked-data': '/admin/blocked-data',

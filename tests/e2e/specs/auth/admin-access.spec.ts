@@ -17,6 +17,7 @@ const ADMINISTRATOR_SECTIONS: readonly AdminSection[] = [
   'admin-partners',
   'admin-resources',
   'admin-users',
+  'admin-inventory',
   'admin-diagnostics',
   'admin-blocked-data',
   'admin-legal-policies',

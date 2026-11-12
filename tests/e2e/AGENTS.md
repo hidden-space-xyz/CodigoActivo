@@ -13,8 +13,8 @@ conventions that this file leaves out.
   admin tables, `pages/` holds the page objects and `assets/` the uploaded image.
 - `specs/` has one folder per area and `setup/`, the project every other one depends on: `auth/`
   (registration, login, recovery and who reaches the administration), `account/` («Mi cuenta»), `public/` (what
-  visitors see), `signups/` (signing up for activities) and `admin-content/`, `admin-events/` and
-  `admin-people/` (the administration).
+  visitors see), `signups/` (signing up for activities) and `admin-content/`, `admin-events/`,
+  `admin-inventory/` and `admin-people/` (the administration).
 - Request and response types come from the frontend's generated models (`@contract/*`), so a contract change
   breaks the type check; catalog identifiers are the stable ones in `support/api/catalogs.ts`.
 - `support/i18n.ts` formats the SPA's messages (`@locales/es.json`) with `t()`, so a renamed key breaks the
