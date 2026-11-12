@@ -73,6 +73,39 @@ public sealed class ApiRateLimitConfigurationTests
     }
 
     [Fact]
+    public async Task GlobalLimiterAdmitsPasswordHashingRequestsWhileOtherRequestsWait()
+    {
+        using var sut = ApiRateLimitConfiguration.CreateGlobalLimiter(new ApiRateLimitOptions());
+        var executing = new List<RateLimitLease>();
+        Task<RateLimitLease>? queued = null;
+        while (queued is null)
+        {
+            var request = Acquire(sut, Request(IPAddress.Loopback));
+            if (request.IsCompleted)
+            {
+                executing.Add(await request);
+            }
+            else
+            {
+                queued = request;
+            }
+        }
+
+        var hashing = Acquire(sut, PasswordHashingRequest(Address(1)));
+
+        executing.Should().AllSatisfy(lease => lease.IsAcquired.Should().BeTrue());
+        hashing.IsCompleted.Should().BeTrue();
+        using (var admitted = await hashing)
+        {
+            admitted.IsAcquired.Should().BeTrue();
+        }
+
+        Release(executing);
+        using var admittedQueued = await queued;
+        admittedQueued.IsAcquired.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task GlobalLimiterEnforcesEveryPolicyBudget()
     {
         using var sut = ApiRateLimitConfiguration.CreateGlobalLimiter(

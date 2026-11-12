@@ -45,7 +45,9 @@ public static class ClientRequestRateLimiter
     }
 
     /// <summary>
-    /// Creates a process-wide concurrency limiter for API requests.
+    /// Creates a process-wide concurrency limiter for API requests. Endpoints marked with
+    /// <see cref="PasswordHashingAttribute"/> stay out of it: they have a pool of their own, and a
+    /// request holding one of its few permits must not also wait behind the rest of the traffic.
     /// </summary>
     /// <param name="permitLimit">Requests allowed to execute concurrently.</param>
     /// <param name="queueLimit">Requests allowed to wait for execution capacity.</param>
@@ -58,16 +60,18 @@ public static class ClientRequestRateLimiter
         ArgumentOutOfRangeException.ThrowIfLessThan(permitLimit, 1);
         ArgumentOutOfRangeException.ThrowIfNegative(queueLimit);
 
-        return PartitionedRateLimiter.Create<HttpContext, string>(_ =>
-            RateLimitPartition.GetConcurrencyLimiter(
-                "api",
-                _ => new ConcurrencyLimiterOptions
-                {
-                    PermitLimit = permitLimit,
-                    QueueLimit = queueLimit,
-                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                }
-            )
+        return PartitionedRateLimiter.Create<HttpContext, string>(context =>
+            context.GetEndpoint()?.Metadata.GetMetadata<PasswordHashingAttribute>() is not null
+                ? RateLimitPartition.GetNoLimiter(nameof(PasswordHashingAttribute))
+                : RateLimitPartition.GetConcurrencyLimiter(
+                    "api",
+                    _ => new ConcurrencyLimiterOptions
+                    {
+                        PermitLimit = permitLimit,
+                        QueueLimit = queueLimit,
+                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    }
+                )
         );
     }
 

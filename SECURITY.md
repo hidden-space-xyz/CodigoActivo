@@ -356,7 +356,9 @@ open a blocked data consultation and both unsubscribe endpoints) have layered co
 - the credential routes that run Argon2 (`[PasswordHashing]`: the login password step, registration, password
   reset and change, and every route that asks for the password again) share a process-wide concurrency limit of
   4 executing requests and a FIFO queue of 64, which bounds the memory-hard Argon2 work; a queued request holds
-  no Argon2 memory. The other credential routes never wait behind them (`ApiConventionTests` checks the split).
+  no Argon2 memory. They stay out of the process-wide pool below, so a request holding one of those 4 permits
+  never also waits behind the rest of the traffic. The other credential routes never wait behind them
+  (`ApiConventionTests` checks the split).
 
 Normal API traffic uses different limits, sized for about 100 people browsing at once behind one address (a
 classroom, a venue's Wi-Fi, a carrier's CGNAT address), since an active person's SPA sends about 100
