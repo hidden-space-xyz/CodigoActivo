@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS base
+FROM mcr.microsoft.com/dotnet/aspnet:11.0-alpine AS base
 RUN apk add --no-cache krb5-libs tzdata && mkdir -p /home/app
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true \
     ASPNETCORE_HTTP_PORTS=8080 \
@@ -11,7 +11,7 @@ ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true \
 WORKDIR /app
 EXPOSE 8080
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0-alpine AS build
 ARG TARGETARCH
 WORKDIR /source
 COPY Directory.Packages.props Directory.Build.props Directory.Build.Analyzers.props Directory.Build.targets ./
