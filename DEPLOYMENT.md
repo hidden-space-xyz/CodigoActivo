@@ -40,11 +40,13 @@ The API stores its log in two PostgreSQL tables, which administrators read on th
 cannot reach the database. [SECURITY.md](SECURITY.md#logging) describes what each log holds and every
 retention. Queued email is persisted in `db-data`, not held in memory; see [Email delivery](#email-delivery).
 
-Both application containers run as non-root, drop Linux capabilities, use `no-new-privileges` and have
-read-only root filesystems with explicit writable mounts. `db` also uses `no-new-privileges` and keeps only
-the capabilities its entrypoint needs to fix the volume ownership and switch to the `postgres` user
-(`CHOWN`, `DAC_OVERRIDE`, `FOWNER`, `SETGID`, `SETUID`); its entrypoint also hands `logs-db` to that user.
-Health checks target `/api/auth/csrf` (API) and `/healthz` (nginx).
+The `api` image is chiseled Ubuntu 26.04, with no shell or package manager, so `docker compose exec` cannot open
+a shell in it; `web` is the official unprivileged nginx `stable-alpine-slim` image. Both application containers run as
+non-root, drop Linux capabilities, use `no-new-privileges` and have read-only root filesystems with explicit
+writable mounts. `db` also uses `no-new-privileges` and keeps only the capabilities its entrypoint needs to fix
+the volume ownership and switch to the `postgres` user (`CHOWN`, `DAC_OVERRIDE`, `FOWNER`, `SETGID`, `SETUID`);
+its entrypoint also hands `logs-db` to that user. Health checks target `/api/auth/csrf` (API, through a probe
+bundled in its image) and `/healthz` (nginx).
 
 nginx gzips text responses of 1 KiB or more on the fly, both static files and proxied API responses; the API
 itself does not compress. The `web` image build also stores a `.gz` sibling of each text asset, which nginx

@@ -55,9 +55,8 @@ internal static class PersistenceRegistration
     /// <summary>
     /// Builds the connection string of the application database from the flat <c>POSTGRES_*</c>
     /// settings; every one but the password has a local development default. The database
-    /// authenticates with a password, so GSS encryption is disabled: negotiating it makes every new
-    /// connection resolve the host through Kerberos, whose lookup on musl (the Alpine image) is
-    /// not thread-safe and crashed the process when connections opened concurrently. The pool
+    /// authenticates with a password, so GSS encryption is disabled: negotiating it needs the
+    /// Kerberos library, which the chiseled runtime image does not include. The pool
     /// opens at most <see cref="MaxPoolSize"/> connections, so with the three of the log pool they
     /// stay under PostgreSQL's default of 100, which the account, a superuser, may use in full, and
     /// leave a few for administration.

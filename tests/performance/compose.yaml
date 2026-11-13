@@ -89,7 +89,7 @@ services:
     read_only: true
     tmpfs: [/tmp]
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null --header='X-Forwarded-Proto: https' http://127.0.0.1:8080/api/auth/csrf"]
+      test: ["CMD", "dotnet", "/healthcheck/healthcheck.dll", "http://127.0.0.1:8080/api/auth/csrf", "X-Forwarded-Proto: https"]
       interval: 30s
       timeout: 5s
       retries: 3

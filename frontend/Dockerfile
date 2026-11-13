@@ -11,7 +11,7 @@ RUN find dist -type f -size +1023c \
            -o -name '*.json' -o -name '*.xml' -o -name '*.txt' -o -name '*.map' -o -name '*.webmanifest' \) \
         -exec gzip -9 -k {} +
 
-FROM nginxinc/nginx-unprivileged:1-alpine AS runtime
+FROM nginxinc/nginx-unprivileged:stable-alpine-slim AS runtime
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/default.conf /etc/nginx/conf.d/default.conf

@@ -1,17 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine AS base
-RUN apk add --no-cache krb5-libs tzdata && mkdir -p /home/app
-ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true \
-    ASPNETCORE_HTTP_PORTS=8080 \
-    HOME=/home/app \
-    DOTNET_RUNNING_IN_CONTAINER=true \
-    DOTNET_CLI_TELEMETRY_OPTOUT=1 \
-    DOTNET_NOLOGO=1
-WORKDIR /app
-EXPOSE 8080
-
-FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0-resolute AS build
 ARG TARGETARCH
 WORKDIR /source
 COPY Directory.Packages.props Directory.Build.props Directory.Build.Analyzers.props Directory.Build.targets ./
@@ -23,19 +12,34 @@ COPY src/CodigoActivo.API/CodigoActivo.API.csproj                      src/Codig
 RUN dotnet restore src/CodigoActivo.API/CodigoActivo.API.csproj -a $TARGETARCH
 COPY . .
 
+FROM mcr.microsoft.com/dotnet/aspnet:10.0-resolute-chiseled AS base
+COPY --from=build /usr/share/zoneinfo /usr/share/zoneinfo
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true \
+    ASPNETCORE_HTTP_PORTS=8080 \
+    HOME=/home/app \
+    DOTNET_RUNNING_IN_CONTAINER=true \
+    DOTNET_CLI_TELEMETRY_OPTOUT=1 \
+    DOTNET_NOLOGO=1
+WORKDIR /app
+EXPOSE 8080
+
 FROM build AS publish
 ARG TARGETARCH
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish src/CodigoActivo.API/CodigoActivo.API.csproj \
     -c $BUILD_CONFIGURATION -a $TARGETARCH -o /app/publish --no-restore -p:UseAppHost=false
+RUN dotnet publish docker/healthcheck.cs -c $BUILD_CONFIGURATION -o /app/healthcheck -p:UseAppHost=false \
+    && mkdir -p /app/writable
 
 FROM base AS final
 ENV ASPNETCORE_ENVIRONMENT=Production
 WORKDIR /app
 COPY --from=publish --chown=1654:1654 /app/publish ./
-RUN mkdir -p /app/files /app/state /home/app/.aspnet/DataProtection-Keys \
-    && chown -R 1654:1654 /app/files /app/state /home/app
+COPY --from=publish /app/healthcheck /healthcheck
+COPY --from=publish --chown=1654:1654 /app/writable /app/files
+COPY --from=publish --chown=1654:1654 /app/writable /app/state
+COPY --from=publish --chown=1654:1654 /app/writable /home/app/.aspnet/DataProtection-Keys
 USER 1654
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-    CMD wget -q -O /dev/null --header="X-Forwarded-Proto: https" http://127.0.0.1:8080/api/auth/csrf || exit 1
+    CMD ["dotnet", "/healthcheck/healthcheck.dll", "http://127.0.0.1:8080/api/auth/csrf", "X-Forwarded-Proto: https"]
 ENTRYPOINT ["dotnet", "CodigoActivo.API.dll"]
