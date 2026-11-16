@@ -145,7 +145,7 @@ public static partial class InfrastructureLog
     /// <param name="exception">Failure raised while recording the attempt.</param>
     [LoggerMessage(
         Level = LogLevel.Error,
-        Message = "Could not record the failed attempt {Attempts} of a {Kind} email; it stays due and will be retried"
+        Message = "Could not record the outcome of attempt {Attempts} of a {Kind} email; it stays due and the next run claims it again"
     )]
     public static partial void EmailAttemptNotRecorded(
         this ILogger logger,

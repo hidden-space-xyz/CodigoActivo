@@ -60,27 +60,6 @@ public abstract class ApiControllerBase : ControllerBase
     }
 
     /// <summary>
-    /// Answers a successful command with the read model loaded afterwards from the command output,
-    /// or with the command error.
-    /// </summary>
-    /// <typeparam name="TOutput">Type of the value produced by the command.</typeparam>
-    /// <typeparam name="T">Type of the read model returned to the client.</typeparam>
-    /// <param name="result">Outcome of the command.</param>
-    /// <param name="read">Query that loads the read model once the command succeeded.</param>
-    /// <returns>
-    /// An action result with the read model, or the problem describing the failure.
-    /// </returns>
-    protected async Task<ActionResult<T>> ToOkAfterAsync<TOutput, T>(
-        Result<TOutput> result,
-        Func<TOutput, Task<Result<T>>> read
-    )
-    {
-        ArgumentNullException.ThrowIfNull(result);
-        ArgumentNullException.ThrowIfNull(read);
-        return result.IsFailure ? ToProblem(result.Error!) : ToOk(await read(result.Value));
-    }
-
-    /// <summary>
     /// Answers a successful command with the list loaded afterwards from the command output, or
     /// with the command error.
     /// </summary>

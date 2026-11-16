@@ -44,18 +44,6 @@ public sealed record DateRange
     }
 
     /// <summary>
-    /// Tells whether a day falls within the range.
-    /// </summary>
-    /// <param name="day">Day to check.</param>
-    /// <returns>
-    /// <see langword="true"/> when the day is between the first and the last day.
-    /// </returns>
-    public bool Contains(DateOnly day)
-    {
-        return day >= Start && day <= End;
-    }
-
-    /// <summary>
     /// Tells whether the whole range lies before a day.
     /// </summary>
     /// <param name="day">Day to compare with.</param>
