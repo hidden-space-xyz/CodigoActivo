@@ -10,11 +10,12 @@ public sealed record PurgeUnusedFilesCommand : ICommand<Result<int>>, IUnaudited
 
 /// <summary>
 /// Executes the command that deletes the uploads that no content references
-/// <see cref="StoredFile.UnusedRetentionDays"/> after they were uploaded, such as an image picked
-/// for a form that was never saved. A failure of <see cref="IOrphanFileCleaner"/> is raised so the
-/// scheduled run reports it. It then removes the stored content that no file row owns
-/// <see cref="StrayContentAge"/> after it was written: a write cut short, an upload whose row was
-/// never committed or content whose deletion failed.
+/// <see cref="StoredFile.UnusedRetentionDays"/> days after they were uploaded, such as an image
+/// picked for a form that was never saved, and then removes the stored content that no file row
+/// owns <see cref="StrayContentAge"/> after it was written: a write cut short, an upload whose row
+/// was never committed or content whose deletion failed. A failure of
+/// <see cref="IOrphanFileCleaner"/> is raised, so the scheduled run reports it and skips the
+/// removal of stray content.
 /// </summary>
 /// <param name="files">Repository used to persist and retrieve files.</param>
 /// <param name="orphanCleaner">Service used to remove files that are no longer referenced.</param>

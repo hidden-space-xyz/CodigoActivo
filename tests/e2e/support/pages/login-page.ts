@@ -16,7 +16,7 @@ export class LoginPage {
   /** The password field. */
   readonly password: Locator
 
-  /** The «keep me signed in» checkbox. */
+  /** The checkbox that keeps the session open on this device. */
   readonly keepSignedIn: Locator
 
   /** The submit button. */

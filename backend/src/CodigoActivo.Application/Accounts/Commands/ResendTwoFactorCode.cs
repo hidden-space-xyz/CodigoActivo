@@ -44,7 +44,7 @@ public sealed class ResendTwoFactorCodeCommandHandler(
     /// A task whose result indicates success,
     /// <see cref="ApplicationErrorCode.TwoFactorChallengeExpired"/> when the challenge is no longer
     /// open, <see cref="ApplicationErrorCode.TwoFactorResendCooldownActive"/> within the cooldown
-    /// or when the email limiter refuses the code,
+    /// or when the email guard refuses the code,
     /// <see cref="DomainErrorCode.TwoFactorResendNotAllowed"/> for an account that uses an
     /// authenticator, <see cref="DomainErrorCode.TwoFactorLocked"/>, or
     /// <see cref="ApplicationErrorCode.EmailSendFailed"/>.

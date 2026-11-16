@@ -37,7 +37,7 @@ people. The interface is Spanish, managed through Vue I18n.
 | Area     | Main technologies                                                                                     |
 | -------- | ----------------------------------------------------------------------------------------------------- |
 | Backend  | ASP.NET Core on .NET 10, EF Core, PostgreSQL 18, Argon2id, Otp.NET, MailKit, OpenAPI                  |
-| Frontend | Vue 3, Vite, TypeScript, Element Plus, TanStack Query, Vue I18n, TipTap, Chart.js, Orval              |
+| Frontend | Vue 3, Vite, TypeScript, Element Plus, TanStack Query, Vue I18n, Tiptap, Chart.js, Orval              |
 | Quality  | .NET analyzers, CSharpier, ESLint, Stylelint, Steiger, Knip, Prettier, `vue-tsc`                      |
 | Tests    | xUnit v3, AwesomeAssertions, NSubstitute, Testcontainers, Vitest, Vue Test Utils, MSW, Playwright, k6 |
 | Runtime  | Docker Compose and unprivileged nginx                                                                 |
@@ -76,8 +76,8 @@ The SPA is at <http://localhost:8080>, the API at <http://localhost:5150>, Swagg
 PostgreSQL on port `5432`.
 
 > [!WARNING]
-> The development overlay publishes ports on all host interfaces and relaxes API container hardening. Do not
-> use it for production.
+> The development overlay builds local code, publishes the database and the Mailpit inbox and relaxes API
+> container hardening. Do not use it for production.
 
 ### Production stack
 

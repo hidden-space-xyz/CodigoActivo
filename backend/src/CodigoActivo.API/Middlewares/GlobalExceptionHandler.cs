@@ -9,7 +9,7 @@ using Microsoft.AspNetCore.Routing.Patterns;
 namespace CodigoActivo.API.Middlewares;
 
 /// <summary>
-/// Logs unexpected failures and returns a safe problem response. A commit refused because another
+/// Logs unexpected failures and returns a safe error response. A commit refused because another
 /// transaction changed the same data first or stored the same unique value first is an expected
 /// outcome, answered without a log entry as a conflict the client can send again,
 /// <see cref="ErrorCode.ConcurrentUpdate"/>. The entry of an unexpected failure names the endpoint

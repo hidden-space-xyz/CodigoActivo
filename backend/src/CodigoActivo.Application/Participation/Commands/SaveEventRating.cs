@@ -12,10 +12,10 @@ namespace CodigoActivo.Application.Participation.Commands;
 /// <param name="EventId">Identifier of the event.</param>
 /// <param name="Score">Score from 1 to 5, if any.</param>
 /// <param name="MostLiked">
-/// What the participant liked most, if anything, up to 2000 characters; blank counts as missing.
+/// What the rater liked most, if anything, up to 2000 characters; blank counts as missing.
 /// </param>
 /// <param name="LeastLiked">
-/// What the participant liked least, if anything, up to 2000 characters; blank counts as missing.
+/// What the rater liked least, if anything, up to 2000 characters; blank counts as missing.
 /// </param>
 /// <param name="Suggestions">
 /// Suggestions, if any, up to 2000 characters; blank counts as missing. The score and the three

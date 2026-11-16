@@ -12,7 +12,7 @@ namespace CodigoActivo.Application.Accounts.Notifications;
 /// decide whether that fails their request.
 /// </summary>
 /// <param name="emailSender">
-/// Sender that applies the message limiter and queues the messages.
+/// Sender that applies the email guard to the codes and queues the messages.
 /// </param>
 /// <param name="composer">Composer that renders the account messages.</param>
 /// <param name="verification">

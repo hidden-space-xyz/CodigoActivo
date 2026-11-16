@@ -21,7 +21,7 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace CodigoActivo.API.Users;
 
 /// <summary>
-/// Exposes HTTP endpoints for querying and managing user accounts and the minors of their
+/// Exposes HTTP endpoints for querying and managing user accounts and the dependents of their
 /// households.
 /// </summary>
 [ApiController]
@@ -132,7 +132,7 @@ public class UsersController : ApiControllerBase
     /// <summary>
     /// Deletes the selected user, handing the content credited to the account over to the initial
     /// administrator, which is itself refused. Only the initial administrator deletes other
-    /// accounts, and a guardian their minors. The caller's own account is refused here too:
+    /// accounts, and a guardian their dependents. The caller's own account is refused here too:
     /// erasing it requires the password and the second factor through <c>POST /api/me/deletion</c>.
     /// </summary>
     /// <param name="userId">Identifier of the user.</param>
@@ -227,14 +227,14 @@ public class UsersController : ApiControllerBase
     }
 
     /// <summary>
-    /// Adds a minor to the household of the selected user, who must be the caller.
+    /// Adds a dependent to the household of the selected user, who must be the caller.
     /// </summary>
     /// <param name="userId">Identifier of the guardian.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getById">Query handler that reads the created minor.</param>
+    /// <param name="getById">Query handler that reads the created dependent.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>A 201 response with the minor and its location, or an error response.</returns>
+    /// <returns>A 201 response with the dependent and its location, or an error response.</returns>
     [HttpPost("{userId:guid}/children")]
     [AllowOnlySelf(AdministratorsAllowed = false)]
     [ProducesResponseType<UserResponse>(StatusCodes.Status201Created)]

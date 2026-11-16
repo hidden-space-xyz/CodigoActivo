@@ -93,9 +93,9 @@ export async function updateAccountProfileRequest(
 
 /**
  * Asks the API to email to the current address the code that confirms a change of the own account
- * (`POST /api/me/confirmation-code`): deleting it, changing its email or enrolling an authenticator.
- * The password is verified first and nothing changes yet; users with an authenticator application
- * do not need it, since they read the code from their app.
+ * (`POST /api/me/confirmation-code`): deleting it, changing its email or enrolling an
+ * authenticator. The password is verified first and nothing changes yet; users with an
+ * authenticator application do not need it, since they read the code from their app.
  */
 export async function requestConfirmationCodeRequest(input: ConfirmationCodeInput): Promise<void> {
   await postApiMeConfirmationCode({

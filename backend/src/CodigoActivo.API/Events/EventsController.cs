@@ -236,7 +236,7 @@ public class EventsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Lists the event's activities that the current user leads with a confirmed assignment and
+    /// Lists the event's activities that the signed-in user leads with a confirmed signup and
     /// that have not ended yet, each with its currently confirmed attendees. Any other user,
     /// administrators included, receives an empty list.
     /// </summary>

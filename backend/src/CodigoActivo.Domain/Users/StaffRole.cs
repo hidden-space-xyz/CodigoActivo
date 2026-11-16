@@ -19,7 +19,7 @@ public enum StaffRole
 
     /// <summary>
     /// Manages people on top of what an editor does: users, signups, reports, every manual email,
-    /// the diagnostic log and the legal policies.
+    /// the diagnostic log, the inventory and the legal policies.
     /// </summary>
     Administrator = 2,
 }

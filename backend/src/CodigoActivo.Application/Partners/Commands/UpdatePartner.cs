@@ -45,7 +45,7 @@ public sealed class UpdatePartnerCommandHandler(
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
-    /// A task whose result reports success; <see cref="ApplicationErrorCode.PartnerNotFound"/>, or
+    /// A task whose result reports success, <see cref="ApplicationErrorCode.PartnerNotFound"/>, or
     /// <see cref="ApplicationErrorCode.PartnerThumbnailNotFound"/> when the logo is missing.
     /// </returns>
     public async Task<Result> HandleAsync(

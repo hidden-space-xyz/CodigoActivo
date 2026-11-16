@@ -99,7 +99,7 @@ public static class ActivityProjections
     };
 
     /// <summary>
-    /// Projects an assignment to the response returned after signing up or changing it.
+    /// Projects a signup to the response returned after signing up or changing it.
     /// </summary>
     public static readonly Expression<Func<AssignmentRow, AssignmentResponse>> Assignment =
         assignment => new AssignmentResponse(

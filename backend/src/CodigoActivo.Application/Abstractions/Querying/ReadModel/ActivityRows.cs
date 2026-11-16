@@ -76,7 +76,7 @@ public sealed class ActivityRow
     public Guid CreatedBy { get; init; }
 
     /// <summary>
-    /// Gets the assignments of the activity.
+    /// Gets the signups to the activity.
     /// </summary>
     public ICollection<AssignmentRow> Assignments { get; init; } = [];
 
@@ -87,7 +87,7 @@ public sealed class ActivityRow
 }
 
 /// <summary>
-/// Stored assignment of a user to an activity as the queries read it.
+/// Stored signup of a user to an activity as the queries read it.
 /// </summary>
 public sealed class AssignmentRow
 {
@@ -189,13 +189,13 @@ public sealed class ActivityRoleTypeRow
     public string Description { get; init; } = string.Empty;
 
     /// <summary>
-    /// Gets the assignments made with the role.
+    /// Gets the signups made with the role.
     /// </summary>
     public ICollection<AssignmentRow> Assignments { get; init; } = [];
 }
 
 /// <summary>
-/// Stored assignment status as the queries read it.
+/// Stored signup status as the queries read it.
 /// </summary>
 public sealed class AssignmentStatusTypeRow
 {

@@ -286,9 +286,9 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="userId">Identifier of the person signed up.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getAssignment">Query handler that reads the resulting assignment.</param>
+    /// <param name="getAssignment">Query handler that reads the resulting signup.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an assignment, or an error response.</returns>
+    /// <returns>An HTTP response containing the signup, or an error response.</returns>
     [HttpPatch("{activityId:guid}/{userId:guid}/assign")]
     [AllowOnlySelf(AdministratorsAllowed = false)]
     public async Task<ActionResult<AssignmentResponse>> AssignAsync(
@@ -320,7 +320,7 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="activityId">Identifier of the activity.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getAssignments">Query handler that reads the created assignments.</param>
+    /// <param name="getAssignments">Query handler that reads the signups made now.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>An HTTP response containing the signups made now, or an error response.</returns>
     [HttpPost("{activityId:guid}/assign-household")]
@@ -379,9 +379,9 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="userId">Identifier of the person signed up.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getAssignment">Query handler that reads the resulting assignment.</param>
+    /// <param name="getAssignment">Query handler that reads the resulting signup.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an assignment, or an error response.</returns>
+    /// <returns>An HTTP response containing the signup, or an error response.</returns>
     [HttpPatch("{activityId:guid}/{userId:guid}/change-status")]
     [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<AssignmentResponse>> ChangeStatusAsync(
@@ -413,9 +413,9 @@ public class ActivitiesController : ApiControllerBase
     /// <param name="userId">Identifier of the person signed up.</param>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>
-    /// <param name="getAssignment">Query handler that reads the resulting assignment.</param>
+    /// <param name="getAssignment">Query handler that reads the resulting signup.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
-    /// <returns>An HTTP response containing an assignment, or an error response.</returns>
+    /// <returns>An HTTP response containing the signup, or an error response.</returns>
     [HttpPatch("{activityId:guid}/{userId:guid}/change-role")]
     [AllowOnlyStaff(StaffRole.Administrator)]
     public async Task<ActionResult<AssignmentResponse>> ChangeRoleAsync(

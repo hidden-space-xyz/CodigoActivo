@@ -164,7 +164,7 @@ public sealed class UserRow
     public ICollection<UserRow> Children { get; init; } = [];
 
     /// <summary>
-    /// Gets the activity assignments of the account.
+    /// Gets the activity signups of the account.
     /// </summary>
     public ICollection<AssignmentRow> Assignments { get; init; } = [];
 }

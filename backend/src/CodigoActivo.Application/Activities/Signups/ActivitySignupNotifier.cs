@@ -13,7 +13,7 @@ namespace CodigoActivo.Application.Activities.Signups;
 /// anyone may have registered it with someone else's address.
 /// </summary>
 /// <param name="readStore">
-/// Read side used to describe the activity and reach the participant.
+/// Read side used to describe the activity and reach the person signed up.
 /// </param>
 /// <param name="executor">Query executor used to materialize database results.</param>
 /// <param name="emailSender">Sender that delivers the message.</param>
@@ -174,7 +174,8 @@ public sealed class ActivitySignupNotifier(
     )
     {
         /// <summary>
-        /// Gets the first and last names of the participant, as the guardian's message names them.
+        /// Gets the first and last names of the person signed up, as the guardian's message names
+        /// them.
         /// </summary>
         public string FullName => $"{FirstName} {LastName}".Trim();
     }

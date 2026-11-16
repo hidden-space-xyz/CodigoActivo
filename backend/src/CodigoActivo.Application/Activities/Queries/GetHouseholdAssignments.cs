@@ -28,7 +28,7 @@ public sealed class GetHouseholdAssignmentsQueryHandler(
     >
 {
     /// <summary>
-    /// Handles the request to retrieve household assignments.
+    /// Handles the request to retrieve the household's signups to an event.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

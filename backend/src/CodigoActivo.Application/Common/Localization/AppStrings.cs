@@ -51,8 +51,8 @@ public static class AppStrings
     public static string EmailsEmailChangeCodeHeading => Get("emails.emailChangeCode.heading");
 
     /// <summary>
-    /// Gets the closing note of the email with the code that confirms changing one's email, for whoever did
-    /// not ask for it.
+    /// Gets the closing note of the email with the code that confirms changing one's email, for
+    /// whoever did not ask for it.
     /// </summary>
     public static string EmailsEmailChangeCodeIgnoreNote =>
         Get("emails.emailChangeCode.ignoreNote");
@@ -63,7 +63,8 @@ public static class AppStrings
     public static string EmailsEmailChangeCodeIntroHtml => Get("emails.emailChangeCode.introHtml");
 
     /// <summary>
-    /// Gets the plain-text introduction of the email with the code that confirms changing one's email.
+    /// Gets the plain-text introduction of the email with the code that confirms changing one's
+    /// email.
     /// </summary>
     public static string EmailsEmailChangeCodeIntroText => Get("emails.emailChangeCode.introText");
 
@@ -73,32 +74,36 @@ public static class AppStrings
     public static string EmailsEmailChangeCodeSubject => Get("emails.emailChangeCode.subject");
 
     /// <summary>
-    /// Gets the heading of the email with the code that confirms enrolling an authenticator application.
+    /// Gets the heading of the email with the code that confirms enrolling an authenticator
+    /// application.
     /// </summary>
     public static string EmailsAuthenticatorSetupCodeHeading =>
         Get("emails.authenticatorSetupCode.heading");
 
     /// <summary>
-    /// Gets the closing note of the email with the code that confirms enrolling an authenticator application, for whoever did
-    /// not ask for it.
+    /// Gets the closing note of the email with the code that confirms enrolling an authenticator
+    /// application, for whoever did not ask for it.
     /// </summary>
     public static string EmailsAuthenticatorSetupCodeIgnoreNote =>
         Get("emails.authenticatorSetupCode.ignoreNote");
 
     /// <summary>
-    /// Gets the HTML introduction of the email with the code that confirms enrolling an authenticator application.
+    /// Gets the HTML introduction of the email with the code that confirms enrolling an
+    /// authenticator application.
     /// </summary>
     public static string EmailsAuthenticatorSetupCodeIntroHtml =>
         Get("emails.authenticatorSetupCode.introHtml");
 
     /// <summary>
-    /// Gets the plain-text introduction of the email with the code that confirms enrolling an authenticator application.
+    /// Gets the plain-text introduction of the email with the code that confirms enrolling an
+    /// authenticator application.
     /// </summary>
     public static string EmailsAuthenticatorSetupCodeIntroText =>
         Get("emails.authenticatorSetupCode.introText");
 
     /// <summary>
-    /// Gets the subject of the email with the code that confirms enrolling an authenticator application.
+    /// Gets the subject of the email with the code that confirms enrolling an authenticator
+    /// application.
     /// </summary>
     public static string EmailsAuthenticatorSetupCodeSubject =>
         Get("emails.authenticatorSetupCode.subject");
@@ -732,7 +737,7 @@ public static class AppStrings
     public static string EmailsVerificationIgnoreNote => Get("emails.verification.ignoreNote");
 
     /// <summary>
-    /// Gets the paragraph that reminds the news consent given at registration.
+    /// Gets the paragraph that reminds the recipient of the news consent given at registration.
     /// </summary>
     public static string EmailsVerificationNewsConsent => Get("emails.verification.newsConsent");
 
@@ -817,7 +822,8 @@ public static class AppStrings
     }
 
     /// <summary>
-    /// Formats the plain-text lifetime of the code that confirms enrolling an authenticator application.
+    /// Formats the plain-text lifetime of the code that confirms enrolling an authenticator
+    /// application.
     /// </summary>
     /// <param name="minutes">Minutes the code stays valid.</param>
     /// <returns>The generated text.</returns>
@@ -945,9 +951,9 @@ public static class AppStrings
     /// <summary>
     /// Formats the opening line of the notice of a consultation of the blocked data, as HTML.
     /// </summary>
-    /// <param name="officerName">Name of the account that opened it, already encoded.</param>
-    /// <param name="requester">Who asks for the data, already encoded.</param>
-    /// <param name="reference">Reference of the request, already encoded.</param>
+    /// <param name="officerName">Name of the account that opened it, already HTML-encoded.</param>
+    /// <param name="requester">Who asks for the data, already HTML-encoded.</param>
+    /// <param name="reference">Reference of the request, already HTML-encoded.</param>
     /// <returns>The generated text.</returns>
     public static string EmailsBlockedDataConsultationIntroHtml(
         string officerName,

@@ -1,7 +1,7 @@
 namespace CodigoActivo.Domain.Files;
 
 /// <summary>
-/// Works out which files an aggregate with a thumbnail and a rich text description stops
+/// Works out which files an aggregate with a thumbnail and a rich-text description stops
 /// referencing.
 /// </summary>
 public static class ReleasedFiles

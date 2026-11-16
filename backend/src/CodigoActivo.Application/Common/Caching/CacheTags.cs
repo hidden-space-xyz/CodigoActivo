@@ -54,7 +54,7 @@ public static class CacheTags
     public const string Users = "users";
 
     /// <summary>
-    /// Tags the closed catalogs. No domain event invalidates it: they only change with a release.
+    /// Tags the closed catalogs. No domain event invalidates them: they only change with a release.
     /// </summary>
     public const string Catalogs = "catalogs";
 

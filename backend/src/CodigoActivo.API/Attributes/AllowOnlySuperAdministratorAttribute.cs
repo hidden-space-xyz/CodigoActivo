@@ -13,7 +13,7 @@ namespace CodigoActivo.API.Attributes;
 public sealed class AllowOnlySuperAdministratorAttribute : AllowOnlyAttribute
 {
     /// <summary>
-    /// Gets or sets a value indicating whether the administrator designated for data protection
+    /// Gets or sets a value indicating whether the account designated for data protection
     /// passes too. Defaults to <see langword="false"/>.
     /// </summary>
     public bool PrivacyOfficerAllowed { get; set; }

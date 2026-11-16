@@ -69,7 +69,7 @@ public interface IReadStore
     public IQueryable<ActivityRow> Activities { get; }
 
     /// <summary>
-    /// Gets the activity assignments.
+    /// Gets the signups to the activities.
     /// </summary>
     public IQueryable<AssignmentRow> Assignments { get; }
 
@@ -79,7 +79,7 @@ public interface IReadStore
     public IQueryable<ActivityRoleTypeRow> ActivityRoleTypes { get; }
 
     /// <summary>
-    /// Gets the assignment statuses.
+    /// Gets the signup statuses.
     /// </summary>
     public IQueryable<AssignmentStatusTypeRow> AssignmentStatusTypes { get; }
 

@@ -18,17 +18,6 @@ Backend and frontend coding conventions live in [backend/AGENTS.md](backend/AGEN
 [tests/e2e/AGENTS.md](tests/e2e/AGENTS.md) and those of the performance suite in
 [tests/performance/AGENTS.md](tests/performance/AGENTS.md).
 
-## Not deployed yet
-
-The application is not used in production or deployed anywhere yet. Until the user announces a deployment,
-change code and stored structures freely. Keep no legacy code, compatibility shims or data migrations for
-earlier versions.
-
-When the user announces a deployment, remove this section, the regeneration paragraph in CONTRIBUTING.md and
-`MigrationsAlwaysAreTheSingleInitialCreate`, and reword the reason in
-`MigrationSnapshotAlwaysMatchesCurrentModel`: from then on every model change adds a migration and stays
-compatible with the deployed version and its data.
-
 ## Non-negotiable rules
 
 - Never implement cryptographic or one-time-password algorithms by hand. Delegate to .NET primitives

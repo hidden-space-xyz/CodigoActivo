@@ -71,7 +71,7 @@ public record ActivityRoleCapacityResponse(
 );
 
 /// <summary>
-/// Contains the assignment data returned by the API.
+/// Contains the signup data returned by the API.
 /// </summary>
 /// <param name="UserId">Identifier of the person signed up.</param>
 /// <param name="ActivityId">Identifier of the activity.</param>
@@ -87,7 +87,7 @@ public record AssignmentResponse(
 );
 
 /// <summary>
-/// Contains the assignment status data returned by the API.
+/// Contains the signup status data returned by the API.
 /// </summary>
 /// <param name="Id">Catalog identifier of the status.</param>
 /// <param name="Name">Display name of the status.</param>
@@ -213,7 +213,7 @@ public record ActivityRoleTypeResponse(Guid Id, string Name, string Description)
 }
 
 /// <summary>
-/// Contains the assignment status type data returned by the API.
+/// Contains the signup status type data returned by the API.
 /// </summary>
 /// <param name="Id">Catalog identifier of the status.</param>
 /// <param name="Name">Display name of the status.</param>

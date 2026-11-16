@@ -81,18 +81,11 @@ dotnet test tests/CodigoActivo.UnitTests --filter "FullyQualifiedName~ClassName.
 Integration tests require Docker unless `CODIGOACTIVO_TEST_DB_CONNECTION` points to an empty, disposable
 PostgreSQL database whose role may create databases: it becomes the template each test class copies.
 
-Create migrations with:
+A model change adds a migration that stays compatible with the deployed version and its data:
 
 ```bash
 dotnet ef migrations add <Name> --context CodigoActivoDbContext --project src/CodigoActivo.Infrastructure --startup-project src/CodigoActivo.Infrastructure --output-dir Database/Migrations
 ```
-
-Until the first deployment there is only `InitialCreate` ([AGENTS.md](AGENTS.md#not-deployed-yet)): after a
-model change, delete `src/CodigoActivo.Infrastructure/Database/Migrations/` and run the command with that name.
-EF Core cannot create a partitioned table, so then replace the generated `CreateTable` of `audit_log_entries`
-and `diagnostic_log_entries` with the `CREATE TABLE ... PARTITION BY RANGE (occurred_at)` SQL of the deleted
-migration. The API cannot migrate a database created from a previous `InitialCreate`; recreate it, locally
-with `docker compose down -v`.
 
 `--context` is required because Infrastructure also has `CodigoActivoReadDbContext`, the read side, which never
 has migrations. The tools build the context through `CodigoActivoDesignTimeDbContextFactory`, whose placeholder
@@ -107,7 +100,7 @@ architecture tests check structure, not behavior, and stay out of it. It uses Mi
 dotnet test tests/CodigoActivo.UnitTests --coverage --coverage-output-format cobertura --coverage-output unit.cobertura.xml --coverage-settings tests/CodeCoverage.config --results-directory TestResults/coverage
 dotnet test tests/CodigoActivo.IntegrationTests --coverage --coverage-output-format cobertura --coverage-output integration.cobertura.xml --coverage-settings tests/CodeCoverage.config --results-directory TestResults/coverage
 dotnet reportgenerator "-reports:TestResults/coverage/*.cobertura.xml" -targetdir:TestResults/coverage/report "-reporttypes:JsonSummary;Html"
-dotnet run --file scripts/check-coverage.cs -- TestResults/coverage/report/Summary.json 90
+dotnet run --file scripts/check-coverage.cs -- TestResults/coverage/report/Summary.json 95
 ```
 
 `TestResults/coverage/report/index.html` shows the uncovered code.
@@ -134,8 +127,9 @@ The remaining scripts are in `package.json`.
 `tests/e2e/` is a [Playwright](https://playwright.dev/) suite in TypeScript that drives the SPA in Chromium
 through the journeys of each kind of user: visitors, participants, members, sponsors, guardians, activity
 leaders, editors, administrators, the privacy officer and the initial administrator. Like the performance suite
-it runs in Docker as its own Compose project with its own volumes: PostgreSQL, Mailpit, the API (`Development`, without
-demo data) and the nginx image built from the working tree, plus the Playwright runner. From the repository root:
+it runs in Docker as its own Compose project with its own volumes: PostgreSQL, Mailpit, the API (`Development`,
+without demo data) and the nginx image built from the working tree, plus the Playwright runner. From the
+repository root:
 
 ```bash
 docker compose -f tests/e2e/compose.yaml run --rm --build playwright
@@ -150,10 +144,10 @@ the host (`npm ci`, `npx playwright install chromium`, then `npm test` or `npm r
 
 The `setup` project takes over the initial administrator through a password reset and has it designate the
 privacy officer, a member it makes an administrator; every other account and all content are created through
-the API by the tests that need them, so the suite runs again on the same volumes. Logins complete the second factor with
-the code read from Mailpit. The `desktop` project runs every test except those tagged `@mobile`, which only
-`mobile` runs; a full run takes about three minutes with the default four workers. Each worker sends its own
-`X-Forwarded-For`, so the rate limits treat workers as different visitors. The email guard allows 1,000
+the API by the tests that need them, so the suite runs again on the same volumes. Logins complete the second
+factor with the code read from Mailpit. The `desktop` project runs every test except those tagged `@mobile`,
+which only `mobile` runs; a full run takes about three minutes with the default four workers. Each worker sends
+its own `X-Forwarded-For`, so the rate limits treat workers as different visitors. The email guard allows 1,000
 verification and reset emails per hour and only resets with a new API process: after several runs in an hour,
 restart `api` or run `down -v`. The HTML report and the traces of failed tests are written to
 `tests/e2e/results/`; conventions are in [tests/e2e/AGENTS.md](tests/e2e/AGENTS.md).

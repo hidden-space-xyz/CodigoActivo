@@ -1,4 +1,4 @@
-/** A household member's enrollment in one activity, as listed on its timeline card. */
+/** A household member's signup to one activity, as listed on its timeline card. */
 export interface TimelineMemberAssignment {
   userId: string
   name: string
@@ -7,8 +7,8 @@ export interface TimelineMemberAssignment {
 }
 
 /**
- * Public event activity merged with the signed-in user's enrollment data, as rendered by the
- * activities timeline.
+ * Public event activity merged with the signups of the signed-in user and their household, as
+ * rendered by the activities timeline.
  */
 export interface TimelineActivity {
   id: string
@@ -20,9 +20,9 @@ export interface TimelineActivity {
   end: Date
   /** The activity has already begun, so signups and withdrawals are closed for it. */
   started: boolean
-  /** High-demand roles, which show a warning when chosen; empty until enrollments load. */
+  /** High-demand roles, which show a warning when chosen; empty until signups load. */
   highDemandRoleIds: string[]
-  /** The current user's own enrollment, or `null` when not enrolled. */
+  /** The current user's own signup, or `null` when not signed up. */
   assignment: { status: string; roleName: string } | null
   /** Signups to this activity of the user and of the minors in their care. */
   household: TimelineMemberAssignment[]

@@ -366,8 +366,8 @@ public static class UseCaseTiming
 {
     /// <summary>
     /// Gets the duration above which a use case is logged as slow. Hashing a password can take
-    /// about a second on modest hardware, so only a wait a person would take for a failure is
-    /// logged.
+    /// about a second on modest hardware, so only a wait long enough for a person to take it for a
+    /// failure is logged.
     /// </summary>
     public static TimeSpan SlowThreshold { get; } = TimeSpan.FromSeconds(5);
 

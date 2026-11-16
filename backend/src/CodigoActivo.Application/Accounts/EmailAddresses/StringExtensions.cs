@@ -13,7 +13,7 @@ public static class StringExtensions
     /// </summary>
     /// <param name="email">Address to mask.</param>
     /// <returns>
-    /// The masked address, <c>***</c> when it has no local part before an <c>@</c>, or
+    /// The masked address, <c>***</c> when it has no <c>@</c> or nothing before it, or
     /// <see langword="null"/> when there is no address.
     /// </returns>
     public static string? MaskEmail(this string? email)

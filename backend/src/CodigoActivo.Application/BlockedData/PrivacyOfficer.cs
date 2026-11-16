@@ -3,8 +3,8 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.BlockedData;
 
 /// <summary>
-/// Decides who may consult the blocked data: the active administrator the initial administrator
-/// designated for data protection, whatever its second factor.
+/// Decides who may consult the blocked data: the active administrator designated for data
+/// protection, the initial administrator until it designates another, whatever its second factor.
 /// </summary>
 /// <param name="users">Repository used to load the signed-in account.</param>
 /// <param name="currentUser">Signed-in user.</param>

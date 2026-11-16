@@ -19,7 +19,8 @@ public enum EmailKind
 
     /// <summary>
     /// Selects the one-time code of the second factor: the login code and the codes that confirm
-    /// deleting an account or opening a consultation of the blocked data.
+    /// deleting an account, changing its email, enrolling an authenticator application or opening
+    /// a consultation of the blocked data.
     /// </summary>
     TwoFactorCode,
 

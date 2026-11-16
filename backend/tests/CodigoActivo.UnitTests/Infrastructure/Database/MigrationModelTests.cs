@@ -15,19 +15,6 @@ public sealed class MigrationModelTests
         context
             .Database.HasPendingModelChanges()
             .Should()
-            .BeFalse("a model change regenerates InitialCreate as CONTRIBUTING.md describes");
-    }
-
-    [Fact]
-    public void MigrationsAlwaysAreTheSingleInitialCreate()
-    {
-        using var context = new CodigoActivoDesignTimeDbContextFactory().CreateDbContext([]);
-
-        context
-            .Database.GetMigrations()
-            .Should()
-            .ContainSingle("until the first deployment a model change regenerates InitialCreate")
-            .Which.Should()
-            .EndWith("_InitialCreate");
+            .BeFalse("every model change adds a migration that keeps the deployed data");
     }
 }

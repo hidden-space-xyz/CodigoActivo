@@ -11,24 +11,24 @@ import { AppIcon } from '@/shared/ui/app-icon'
 import { BrandButton } from '@/shared/ui/brand-button'
 
 const props = defineProps<{
-  /** Activity shown on the card, including the user's and household's enrollments. */
+  /** Activity shown on the card, including the user's and household's signups. */
   activity: TimelineActivity
   /** Roles the current user may take; a single role is preselected and hides the selector. */
   roles: readonly ActivityRole[]
   /** Signup roles are still loading; shows a loading note or spins the household button. */
   rolesLoading: boolean
-  /** An enrollment request for this activity is in flight; disables and spins its actions. */
+  /** A signup request for this activity is in flight; disables and spins its actions. */
   busy: boolean
   /** Whether a user is signed in; otherwise the card only offers a login button. */
   authenticated: boolean
-  /** Whether the current user may enroll or withdraw right now. */
+  /** Whether the current user may sign up or withdraw right now. */
   signupOpen: boolean
   /** Signup is closed only because early signup is reserved to members and sponsors. */
   earlyOnly?: boolean
-  /** The user manages household members, so enrollment goes through the household dialog. */
+  /** The user manages household members, so signups go through the household dialog. */
   hasHousehold: boolean
   /**
-   * People the household dialog offers, the user included; once all are enrolled, a note replaces
+   * People the household dialog offers, the user included; once all are signed up, a note replaces
    * the household button.
    */
   householdSize?: number
@@ -36,15 +36,15 @@ const props = defineProps<{
   referenceDate?: Date | null
 }>()
 const emit = defineEmits<{
-  /** Fired with the chosen role id when the user enrolls themselves. */
+  /** Fired with the chosen role id when the user signs themselves up. */
   signup: [roleId: string]
-  /** Fired when the user withdraws their own enrollment. */
+  /** Fired when the user withdraws their own signup. */
   unassign: []
   /** Fired with the user id of a listed household signup to withdraw it, the user's own too. */
   unassignMember: [userId: string]
-  /** Fired to open the household enrollment dialog for this activity. */
+  /** Fired to open the household signup dialog for this activity. */
   household: []
-  /** Fired when an anonymous visitor asks to sign in before enrolling. */
+  /** Fired when an anonymous visitor asks to sign in before signing up. */
   login: []
 }>()
 

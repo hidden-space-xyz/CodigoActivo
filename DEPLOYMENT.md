@@ -30,7 +30,7 @@ clients only: see [TLS and proxy boundary](#tls-and-proxy-boundary).
 | `api-state`          | The immutable demo/normal deployment-mode choice                   |
 | `logs-db`            | PostgreSQL log files, one per weekday                              |
 
-Neither the template nor Compose defines `PGDATA`; PostgreSQL uses the default data directory inside the
+Neither `.env.example` nor Compose defines `PGDATA`; PostgreSQL uses the default data directory inside the
 volume mounted at `/var/lib/postgresql`. The container clock runs in UTC, as do the PostgreSQL log files
 and the daily partitions of the API's log tables; only the application clock follows `APP_TIMEZONE`, which
 the log pages also use for their day filters.
@@ -40,13 +40,13 @@ The API stores its log in two PostgreSQL tables, which administrators read on th
 cannot reach the database. [SECURITY.md](SECURITY.md#logging) describes what each log holds and every
 retention. Queued email is persisted in `db-data`, not held in memory; see [Email delivery](#email-delivery).
 
-The `api` image is chiseled Ubuntu 26.04, with no shell or package manager, so `docker compose exec` cannot open
-a shell in it; `web` is the official unprivileged nginx `stable-alpine-slim` image. Both application containers run as
-non-root, drop Linux capabilities, use `no-new-privileges` and have read-only root filesystems with explicit
-writable mounts. `db` also uses `no-new-privileges` and keeps only the capabilities its entrypoint needs to fix
-the volume ownership and switch to the `postgres` user (`CHOWN`, `DAC_OVERRIDE`, `FOWNER`, `SETGID`, `SETUID`);
-its entrypoint also hands `logs-db` to that user. Health checks target `/api/auth/csrf` (API, through a probe
-bundled in its image) and `/healthz` (nginx).
+The `api` image is chiseled Ubuntu 26.04, with no shell or package manager, so `docker compose exec` cannot
+open a shell in it; `web` is built on the unprivileged nginx `stable-alpine-slim` image. Both application
+containers run as non-root, drop Linux capabilities, use `no-new-privileges` and have read-only root
+filesystems with explicit writable mounts. `db` also uses `no-new-privileges` and keeps only the capabilities
+its entrypoint needs to fix the volume ownership and switch to the `postgres` user (`CHOWN`, `DAC_OVERRIDE`,
+`FOWNER`, `SETGID`, `SETUID`); its entrypoint also hands `logs-db` to that user. Health checks target
+`/api/auth/csrf` (API, through a probe bundled in its image) and `/healthz` (nginx).
 
 nginx gzips text responses of 1 KiB or more on the fly, both static files and proxied API responses; the API
 itself does not compress. The `web` image build also stores a `.gz` sibling of each text asset, which nginx
@@ -54,13 +54,13 @@ serves directly (`gzip_static`). A reverse proxy in front must not strip `Accept
 
 ### Capacity and rate limits
 
-nginx allows 24,576 connections per worker, enough for 10,000 active client connections and their connections to
-the API, and 2,000 per IP (`web`'s open-file limit is raised to 65,536). It buffers each request body in `web`'s `/tmp`, a 256 MB tmpfs, before passing it to
-the API, and reuses up to 256 idle connections to it per worker, since opening one per request would run out of
-local ports at a few hundred requests per second. The API opens at most 90 PostgreSQL connections, plus the three
-of its log pool, under PostgreSQL's default of 100, leaving a few for administration. Application request and
-credential-work rate limits are documented once, in
-[SECURITY.md](SECURITY.md#passwords-and-credential-endpoints).
+nginx allows 24,576 connections per worker, enough for 10,000 active client connections and their connections
+to the API, and 2,000 per IP (`web`'s open-file limit is raised to 65,536). It buffers each request body in
+`web`'s `/tmp`, a 256 MB tmpfs, before passing it to the API, and reuses up to 256 idle connections to it per
+worker, since opening one per request would run out of local ports at a few hundred requests per second. The
+API opens at most 90 PostgreSQL connections, plus the three of its log pool, under PostgreSQL's default of
+100, leaving a few for administration. Application request and credential-work rate limits are documented
+once, in [SECURITY.md](SECURITY.md#passwords-and-credential-endpoints).
 
 ## First production start
 
@@ -79,10 +79,13 @@ docker compose exec db sh -c 'tail -n 100 /var/log/postgresql/postgresql-*.log'
 ```
 
 Set at least `APP_BASE_URL` (final public HTTPS origin, no path/query/fragment), `DEMO_MODE` (permanent for
-these volumes), `BOOTSTRAP_ADMIN_EMAIL` (used only when the user table is empty),
-`SMTP_HOST` and `SMTP_FROM_ADDRESS`, the association's identity for the privacy policy (`LEGAL_NAME`,
-`LEGAL_TAX_ID`, `LEGAL_ADDRESS`, `LEGAL_REGISTRY`, `LEGAL_EMAIL`), plus `SMTP_USERNAME` and its password in
-`secrets/smtp_password` when the server needs a login. See [Secrets](#secrets) for the file rules.
+these volumes), `BOOTSTRAP_ADMIN_EMAIL` (used only when the user table is empty), `SMTP_HOST` and
+`SMTP_FROM_ADDRESS`, the association's identity for the privacy policy (`LEGAL_NAME`, `LEGAL_TAX_ID`,
+`LEGAL_ADDRESS`, `LEGAL_REGISTRY`, `LEGAL_EMAIL`), plus `SMTP_USERNAME` and its password in
+`secrets/smtp_password` when the server needs a login. See [Secrets](#secrets) for the file rules. Put the
+[TLS proxy](#tls-and-proxy-boundary) in front of port `8080`, then set the initial administrator's first
+password through the login page's password reset
+([initial administrator](#demo-mode-and-initial-administrator)).
 
 `docker compose logs api` shows only a failed start (its fatal event) and failures of the logging pipeline;
 everything else the API logs is on the «Diagnóstico» page.
@@ -160,7 +163,7 @@ variables (the site through `GET /api/legal-entity`); a `LEGAL_EMAIL` that is no
 `LEGAL_PHONE` that is not a phone number of 7 to 15 digits or another `LEGAL_*` value over 300 characters stops
 the start. They are deployment settings rather than code so that personal details, such as a home address or a
 private phone, never reach the public repository; the association's public identity (name, domain, social
-profiles) is code, in `Organization` (backend) and `shared/config` (frontend).
+profiles) is code, in `Organization` (backend) and `shared/config/organization.ts` (frontend).
 
 The account designated for data protection, the only one that may consult the blocked data (see
 [SECURITY.md](SECURITY.md#blocked-data-consultations)), is chosen in the application by the initial
@@ -237,13 +240,13 @@ large or content the key ring cannot read is removed and logged. A failure that 
 the server defers (4xx) or refuses for another reason (a relay's policy or quota) or any other reply to the
 message, is retried after 1, 5 and 30 minutes and then every hour. An unreachable server, a refused login or
 sender, a `421`, or three different messages in a row failing for an unknown cause (copies of one mailing count
-once) pause the whole delivery for 1, 2, 5, 10 and then 30 minutes, handing the claimed messages back untried. Messages expire instead
-of running out of attempts: codes with their own lifetime, other mail after 3 days; the coming-of-age notice
-and the notices to the legal contact never expire. Delivery is at-least-once: a crash between a successful send
-and removing the row can resend it. Shutdown only waits for the send in flight, up to 20 seconds, below the API
-service's 30-second `stop_grace_period`, and hands the rest of the claimed messages back untried, due at once; a
-send still running by then stays due and goes again after the restart. These values live in `EmailQueueOptions`
-and cannot be configured; only the provider pace is.
+once) pause the whole delivery for 1, 2, 5, 10 and then 30 minutes, handing the claimed messages back
+untried. Messages expire instead of running out of attempts: codes with their own lifetime, other mail after 3
+days; the coming-of-age notice and the notices to the legal contact never expire. Delivery is at-least-once: a
+crash between a successful send and removing the row can resend it. Shutdown only waits for the send in flight,
+up to 20 seconds, below the API service's 30-second `stop_grace_period`, and hands the rest of the claimed
+messages back untried, due at once; a send still running by then stays due and goes again after the restart.
+These values live in `EmailQueueOptions` and cannot be configured; only the provider pace is.
 
 The legal contact (`LEGAL_EMAIL`) is told about withdrawn consents and opened consultations of the blocked data
 by `ScheduledJobsWorker`, 30 seconds after startup and then every minute: each kind goes in one email listing up
@@ -340,9 +343,9 @@ publishing SMTP on port `1025` and its inbox UI on port `8025` and points the SM
 fixes `APP_BASE_URL`, `APP_TIMEZONE`, `DEMO_MODE=true` and every `LEGAL_*` value (so `.env` only needs
 `BOOTSTRAP_ADMIN_EMAIL`), exposes PostgreSQL on port `5432` and makes the backend network non-internal, and
 disables the API read-only root filesystem in favor of debugger-oriented privileges. It publishes those ports on
-`127.0.0.1` only, since the Mailpit inbox shows every login code and reset link. Visual Studio uses the same
-Compose project through `backend/docker-compose.dcproj`. In Development the API also writes its log to the
-console, which the overlay keeps at 5 MB per file, two files.
+`127.0.0.1` only, since the Mailpit inbox shows every login code and reset link; `web` keeps the base mapping
+on all IPv4 interfaces. Visual Studio uses the same Compose project through `backend/docker-compose.dcproj`.
+In Development the API also writes its log to the console, which the overlay keeps at 5 MB per file, two files.
 
 ## Releases and upgrades
 
@@ -353,12 +356,11 @@ independently or on a schedule.
 
 Pushes to `develop` or `master` that change `backend/`, `frontend/`, `tests/` or the workflow itself start the
 CodeQL workflow, which is independent of CI and does not gate publishing. A newer push to the same branch
-cancels the scan in progress.
-Findings never fail the run; review them in the repository's code scanning alerts or in the
-`codeql-sarif-<language>` workflow artifacts, retained for 7 days. Only a broken build, analysis or upload fails it.
-C# analysis uses a full .NET 10 build under CodeQL tracing, including source generators and test projects;
-results located in `obj/` or `bin/` (generated code) are dropped before upload. JavaScript/TypeScript uses
-the build-free analysis mode.
+cancels the scan in progress. Findings never fail the run; review them in the repository's code scanning
+alerts or in the `codeql-sarif-<language>` workflow artifacts, retained for 7 days. Only a broken build,
+analysis or upload fails it. C# analysis uses a full .NET 10 build under CodeQL tracing, including source
+generators and test projects; results located in `obj/` or `bin/` (generated code) are dropped before upload.
+JavaScript/TypeScript uses the build-free analysis mode.
 
 API and UI share one version and one GitHub release, tagged `vX.Y.Z`. All repository commits since the
 highest stable `vX.Y.Z` tag count. With no matching tag, the baseline is `0.0.0` and the full commit history

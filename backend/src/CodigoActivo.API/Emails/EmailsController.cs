@@ -222,9 +222,9 @@ public class EmailsController : ApiControllerBase
     }
 
     /// <summary>
-    /// Withdraws the news consent of the account the unsubscribe link of a news
-    /// email names. It needs no session, so the link works wherever the email is read, and it
-    /// answers 204 again when the link is followed once more.
+    /// Withdraws the news consent of the account the unsubscribe link of a news email names. It
+    /// needs no session, so the link works wherever the email is read, and it answers 204 again
+    /// when the link is followed once more.
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>

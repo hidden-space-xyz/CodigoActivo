@@ -5,8 +5,8 @@ namespace CodigoActivo.Application.Common.Security;
 /// <summary>
 /// Decides whether the signed-in user may act for a person: for themselves, for one of their
 /// dependents, or for anyone when they are an administrator. Personal data, the news consent,
-/// dependents and signups are narrower: only the holder or their guardian manages them,
-/// administrators included. The guardianship is read from the read side, so commands and queries
+/// dependents and signups are narrower: only the holder or their guardian manages them, not even
+/// an administrator. The guardianship is read from the read side, so commands and queries
 /// can both check it without loading the account.
 /// </summary>
 /// <param name="currentUser">Person the use case runs for.</param>

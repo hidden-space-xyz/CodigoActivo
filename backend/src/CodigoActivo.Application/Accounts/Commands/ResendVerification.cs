@@ -39,7 +39,7 @@ public sealed class ResendVerificationCommandHandler(
 ) : ICommandHandler<ResendVerificationCommand, Result>
 {
     /// <summary>
-    /// Handles the request to resend verification. A new link reaches the address only when it
+    /// Handles the request for a new verification link. A new link reaches the address only when it
     /// belongs to an account waiting for verification whose last link is older than the resend
     /// cooldown; every request succeeds alike, so the answer never tells whether the address has
     /// an account. Only an account that will get a link is locked, so an address that gets nothing

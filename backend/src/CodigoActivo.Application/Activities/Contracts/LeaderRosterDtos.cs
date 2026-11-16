@@ -1,7 +1,7 @@
 namespace CodigoActivo.Application.Activities.Contracts;
 
 /// <summary>
-/// Contains an activity that the requesting user leads with a confirmed assignment, with the
+/// Contains an activity that the requesting user leads with a confirmed signup, with the
 /// attendees currently confirmed in it grouped by role, returned by the API.
 /// </summary>
 /// <param name="ActivityId">Identifier of the activity.</param>

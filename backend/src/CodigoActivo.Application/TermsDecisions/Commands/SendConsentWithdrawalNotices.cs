@@ -11,9 +11,10 @@ namespace CodigoActivo.Application.TermsDecisions.Commands;
 public sealed record SendConsentWithdrawalNoticesCommand : ICommand<Result<int>>, IScheduledCommand;
 
 /// <summary>
-/// Executes the command that tells the association's legal contact, in one email, about the
-/// withdrawals it was not told about yet, so the images or the names of the people stop being used
-/// and are removed from the site and the social profiles. A withdrawal waits in its decision until
+/// Executes the command that tells the association's legal contact, in one email, about up to
+/// <see cref="ConsentWithdrawalNotifier.MaxPerNotice"/> of the withdrawals it was not told about
+/// yet, so the images or the names of the people stop being used and are removed from the site and
+/// the social profiles. A withdrawal waits in its decision until
 /// the email is queued, so none is lost to a failure or a restart; while the last notice is still
 /// waiting to be delivered, the new withdrawals wait for the next one, so the legal contact gets
 /// one email at a time however many arrive. Without a legal contact nothing is sent and the

@@ -7,7 +7,7 @@ namespace CodigoActivo.Infrastructure.Communication.Templates;
 
 /// <summary>
 /// Builds the notice that tells a guardian on which day a dependent comes of age and is erased, and
-/// where to download its data before.
+/// where to download their data before then.
 /// </summary>
 public static class ComingOfAgeNoticeEmail
 {

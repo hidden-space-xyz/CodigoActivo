@@ -10,8 +10,8 @@ namespace CodigoActivo.Infrastructure.TermsDecisions;
 
 /// <summary>
 /// Defines the Entity Framework mapping for event terms acceptance. Whether a withdrawal notice is
-/// pending stays out of the data history, and the pending ones are indexed in the order they are
-/// told.
+/// pending stays out of the data history, and the pending ones are indexed in the order their
+/// notices are sent.
 /// </summary>
 public sealed class EventTermsAcceptanceConfiguration
     : IEntityTypeConfiguration<EventTermsAcceptance>

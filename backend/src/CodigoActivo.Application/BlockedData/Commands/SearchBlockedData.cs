@@ -57,8 +57,7 @@ public sealed class SearchBlockedDataCommandHandler(
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
     /// A task whose result carries the accounts found;
-    /// <see cref="CodigoActivo.Application.Common.Errors.ApplicationErrorCode.BlockedDataOfficerOnly"/>
-    /// for any other account,
+    /// <see cref="ApplicationErrorCode.BlockedDataOfficerOnly"/> for any other account,
     /// <see cref="DomainErrorCode.BlockedDataConsultationNotFound"/> for a consultation another
     /// account opened or that does not exist, or
     /// <see cref="DomainErrorCode.BlockedDataConsultationExpired"/> once it has closed.

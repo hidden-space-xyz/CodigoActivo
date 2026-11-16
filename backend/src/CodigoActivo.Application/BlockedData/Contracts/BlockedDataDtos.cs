@@ -116,7 +116,9 @@ public sealed record BlockedDataEntryResponse(
 /// signature that proves it, for the kinds <c>EventTermsAcceptance</c> and
 /// <c>TermsDecisionChange</c>.
 /// </param>
-/// <param name="Ratings">The ratings of events the account wrote, for the kind <c>EventRating</c>.</param>
+/// <param name="Ratings">
+/// The ratings of events the account wrote, for the kind <c>EventRating</c>.
+/// </param>
 public sealed record BlockedDataCurrentDataResponse(
     PersonalDataAccountResponse? Account,
     IReadOnlyList<PersonalDataConsentChangeResponse>? NewsConsentChanges,

@@ -102,7 +102,9 @@ export function toInventoryCategoryDraft(
     : { name: '', columns: [newColumnDraft()] }
 }
 
-/** What the entries say about a column: how many have a value, whether any has none, the options. */
+/**
+ * What the entries say about a column: how many have a value, whether any has none, the options.
+ */
 export function columnUsage(
   column: InventoryColumn,
   entries: readonly InventoryEntry[],

@@ -48,13 +48,13 @@ public interface IActivityRepository : IRepository<Activity>
     );
 
     /// <summary>
-    /// Tells whether any of some people had a confirmed place in an activity of an event.
+    /// Tells whether any of some people holds a confirmed signup in an activity of an event.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="userIds">Identifiers of the people.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
-    /// A task whose result is <see langword="true"/> when one of them was confirmed.
+    /// A task whose result is <see langword="true"/> when one of them is confirmed.
     /// </returns>
     public Task<bool> AnyConfirmedSignupAsync(
         EventId eventId,

@@ -915,7 +915,7 @@ internal sealed class DemoLogHistory : IDisposable
 /// Holds the demo data the invented log history follows.
 /// </summary>
 /// <param name="Users">Demo accounts still in the database, adults and children.</param>
-/// <param name="Signups">Assignments of the demo accounts.</param>
+/// <param name="Signups">Signups of the demo accounts.</param>
 /// <param name="Events">Events the demo accounts published.</param>
 /// <param name="Activities">Activities the demo accounts published.</param>
 /// <param name="News">News items the demo accounts published.</param>
@@ -935,7 +935,7 @@ internal sealed record DemoLogFacts(
 /// Describes a demo account.
 /// </summary>
 /// <param name="Id">Account.</param>
-/// <param name="ParentId">Guardian, for a child.</param>
+/// <param name="ParentId">Guardian, for a dependent.</param>
 /// <param name="Type">Kind of account.</param>
 /// <param name="LastLoginAt">Last sign-in the account records.</param>
 /// <param name="IsStaff">Whether the account holds a staff role.</param>
@@ -948,11 +948,11 @@ internal sealed record DemoLogUser(
 );
 
 /// <summary>
-/// Describes the assignment of a demo account to an activity.
+/// Describes the signup of a demo account in an activity.
 /// </summary>
 /// <param name="ActivityId">Activity.</param>
 /// <param name="EventId">Event of the activity.</param>
-/// <param name="UserId">Assigned account.</param>
+/// <param name="UserId">Account the signup is for.</param>
 /// <param name="Status">Current status.</param>
 /// <param name="CreatedAt">When it was requested.</param>
 internal sealed record DemoLogSignup(

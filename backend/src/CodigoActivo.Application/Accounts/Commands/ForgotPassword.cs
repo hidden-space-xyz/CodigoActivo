@@ -44,7 +44,7 @@ public sealed class ForgotPasswordCommandHandler(
     /// never tells whether the address has an account. Only an account that will get a code is
     /// locked, so an address that gets nothing costs the same as one without an account; the code
     /// is issued with the account locked and its eligibility checked again, so parallel requests
-    /// run one after another and the later ones find the resend cooldown. A mail the limiter
+    /// run one after another and the later ones find the resend cooldown. A mail the email guard
     /// refuses or that cannot be queued stores no code.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>

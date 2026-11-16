@@ -9,7 +9,7 @@ namespace CodigoActivo.API.Diagnostics;
 internal static partial class ApiLog
 {
     /// <summary>
-    /// Records an exception that reached the pipeline and was answered with a problem response.
+    /// Records an exception that reached the pipeline and was answered with a 500 error response.
     /// </summary>
     /// <param name="logger">Logger used to record operational diagnostics.</param>
     /// <param name="method">HTTP method of the request.</param>

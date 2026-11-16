@@ -25,7 +25,7 @@ public sealed record OpenBlockedDataConsultationCommand(
 
 /// <summary>
 /// Executes the command that opens a consultation of the blocked data for a request.
-/// Only the account designated for data protection opens one, after its current
+/// Only the account designated for data protection opens one, confirmed with its current
 /// password and a code of its second factor, emailed on demand or read from its authenticator app.
 /// The code is checked and spent with the account locked, so it opens a single consultation, and
 /// wrong codes count towards the same lockout as logins. The consultation stays open for

@@ -9,9 +9,9 @@ namespace CodigoActivo.Application.Common.Validation;
 /// ones the client keeps when it parses a document. Links may only point to absolute HTTP(S) URLs
 /// without credentials, <c>mailto:</c>, <c>tel:</c>, a root-relative path (never <c>//</c> or
 /// <c>/\</c>, which browsers read as another host) or a fragment; images may only reference the
-/// file content endpoint of this application; colors are hex or rgb values. Text and labels are
-/// plain text (<see cref="PlainTextAttribute"/>), since an escaped U+0000 would only fail in the
-/// PostgreSQL <c>jsonb</c> column.
+/// file content endpoint of this application; colors are hex, rgb or rgba values. Text and
+/// labels are plain text (<see cref="PlainTextAttribute"/>), since an escaped U+0000 would only
+/// fail in the PostgreSQL <c>jsonb</c> column.
 /// </summary>
 public static partial class RichTextAllowlist
 {

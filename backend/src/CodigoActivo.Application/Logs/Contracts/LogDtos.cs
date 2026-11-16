@@ -83,10 +83,10 @@ public sealed record DiagnosticLogEntryDetailResponse(
 );
 
 /// <summary>
-/// Represents one audited command.
+/// Represents one audit log entry: an audited command or query, or a detected security event.
 /// </summary>
 /// <param name="Id">Identifier of the entry.</param>
-/// <param name="OccurredAt">UTC instant the command ended.</param>
+/// <param name="OccurredAt">UTC instant the event was recorded.</param>
 /// <param name="ActorType">Who ran it.</param>
 /// <param name="ActorId">Account that ran it, if a user did.</param>
 /// <param name="ActorName">
@@ -94,14 +94,14 @@ public sealed record DiagnosticLogEntryDetailResponse(
 /// </param>
 /// <param name="ActorEmail">Email of that account, if it still exists and has one.</param>
 /// <param name="ClientIp">Address of the caller, if it came through a request.</param>
-/// <param name="Action">Command that ran.</param>
+/// <param name="Action">What happened.</param>
 /// <param name="EntityType">Kind of the main entity, if any.</param>
 /// <param name="EntityId">Identifier of the main entity, if any.</param>
 /// <param name="EntityName">
 /// Name of the main entity, such as a person's full name or a title, or <see langword="null"/>
 /// when it no longer exists or is a consultation or hold of the blocked data, which is never named.
 /// </param>
-/// <param name="Related">Other entities the command named.</param>
+/// <param name="Related">Other entities the entry named.</param>
 /// <param name="Outcome">How it ended.</param>
 /// <param name="ErrorCode">
 /// Code of the error that rejected it, or <c>ConcurrentUpdate</c> or
@@ -128,7 +128,7 @@ public sealed record AuditLogEntryResponse(
 );
 
 /// <summary>
-/// Represents an entity an audited command named besides its main one.
+/// Represents an entity an audit log entry named besides its main one.
 /// </summary>
 /// <param name="Type">Kind of the entity.</param>
 /// <param name="Id">Identifier of the entity.</param>
@@ -144,7 +144,7 @@ public sealed record AuditRelatedEntityResponse(AuditEntityType Type, Guid Id, s
 /// left out when another user ran it, since it is that user's.
 /// </summary>
 /// <param name="OccurredAt">When it ran.</param>
-/// <param name="Action">Command that ran.</param>
+/// <param name="Action">What happened.</param>
 /// <param name="Outcome">How it ended.</param>
 /// <param name="ActorType">
 /// Who ran it: a signed-in user, someone not signed in or the system.

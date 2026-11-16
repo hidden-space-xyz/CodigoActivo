@@ -139,7 +139,7 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                 Id = AssignmentStatus.Requested,
                 Name = "Solicitada",
                 Description =
-                    "La asignación ha sido solicitada y está pendiente de revisión por parte de un "
+                    "La inscripción ha sido solicitada y está pendiente de revisión por parte de un "
                     + "responsable.",
                 Color = "#6B7280",
             },
@@ -148,8 +148,8 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                 Id = AssignmentStatus.Confirmed,
                 Name = "Confirmada",
                 Description =
-                    "La asignación ha sido revisada y aprobada. La persona queda oficialmente "
-                    + "asignada a la actividad.",
+                    "La inscripción ha sido revisada y aprobada. La persona queda oficialmente "
+                    + "inscrita en la actividad.",
                 Color = "#22C55E",
             },
             new AssignmentStatusEntry
@@ -157,7 +157,7 @@ public class DatabaseSeeder(CodigoActivoDbContext context)
                 Id = AssignmentStatus.Denied,
                 Name = "Rechazada",
                 Description =
-                    "La asignación ha sido revisada y rechazada. La persona no participará en la "
+                    "La inscripción ha sido revisada y rechazada. La persona no participará en la "
                     + "actividad bajo este rol.",
                 Color = "#EF4444",
             },

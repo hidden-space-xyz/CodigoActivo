@@ -160,13 +160,17 @@ export const INVENTORY_TEXT_MAX_LENGTH = 200
 /** Longest value of a long text column of the inventory (`InventoryColumn.LongTextMaxLength`). */
 export const INVENTORY_LONG_TEXT_MAX_LENGTH = 2000
 
-/** Longest number of a number column of the inventory as typed (`InventoryColumn.NumberMaxLength`). */
+/**
+ * Longest number of a number column of the inventory as typed (`InventoryColumn.NumberMaxLength`).
+ */
 export const INVENTORY_NUMBER_MAX_LENGTH = 30
 
 /** Most decimals of a number column of the inventory (`InventoryColumn.NumberMaxDecimals`). */
 export const INVENTORY_NUMBER_MAX_DECIMALS = 2
 
-/** Largest absolute value of a number column of the inventory (`InventoryColumn.NumberMaxValue`). */
+/**
+ * Largest absolute value of a number column of the inventory (`InventoryColumn.NumberMaxValue`).
+ */
 export const INVENTORY_NUMBER_MAX_VALUE = 9_999_999_999_999.99
 
 /** Smallest quantity of an inventory entry (`[Range(0, …)] Quantity`). */

@@ -19,7 +19,7 @@ import { formatFileSize } from '@/shared/lib/number'
 const { t } = useI18n()
 
 const props = defineProps<{
-  /** Serialized TipTap JSON document; anything else loads as an empty document. */
+  /** Serialized Tiptap JSON document; anything else loads as an empty document. */
   modelValue?: string | null
   /** Applies the error border, e.g. when a required description is missing. */
   invalid?: boolean

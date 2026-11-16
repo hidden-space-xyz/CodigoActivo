@@ -215,7 +215,7 @@ public record VerifyRequest([Required] [MaxLength(128)] string Otp);
 public record ForgotPasswordRequest([Required] [EmailAddress] [MaxLength(256)] string Email)
 {
     /// <summary>
-    /// Builds the command that emails a reset code.
+    /// Builds the command that emails a reset link.
     /// </summary>
     /// <returns>The command.</returns>
     public ForgotPasswordCommand ToCommand()

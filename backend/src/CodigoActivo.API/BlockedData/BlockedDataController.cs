@@ -167,7 +167,7 @@ public class BlockedDataController : ApiControllerBase
 
     /// <summary>
     /// Takes an extract of the blocked data about an account an open consultation found and its
-    /// minors, and records the extract in the consultation.
+    /// dependents, and records the extract in the consultation.
     /// </summary>
     /// <param name="consultationId">Identifier of the consultation.</param>
     /// <param name="request">Validated client request data.</param>
@@ -187,7 +187,7 @@ public class BlockedDataController : ApiControllerBase
     }
 
     /// <summary>
-    /// Keeps the history of an account an open consultation found and of its minors past its
+    /// Keeps the history of an account an open consultation found and of its dependents past its
     /// retention, for the claim the consultation was opened for, until the hold is lifted.
     /// </summary>
     /// <param name="consultationId">Identifier of the consultation.</param>

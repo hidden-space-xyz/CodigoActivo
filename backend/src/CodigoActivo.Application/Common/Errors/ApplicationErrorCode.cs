@@ -309,7 +309,8 @@ public enum ApplicationErrorCode
     OtpInvalidOrExpired,
 
     /// <summary>
-    /// The email guard refused the email that confirms a new email address.
+    /// The email guard refused the email a change of address sends: the confirmation to the new
+    /// address or, when another account owns it, the notice to its holder.
     /// </summary>
     OtpResendCooldownActive,
 
@@ -387,8 +388,9 @@ public enum ApplicationErrorCode
     EmailAttachmentsTooLarge,
 
     /// <summary>
-    /// An email could not be queued for delivery: a login code or the confirmation of a new email
-    /// failed to compose or store, or the outbox could not store or had no room for a manual email.
+    /// An email could not be queued for delivery: a login code or the email a change of address
+    /// sends failed to compose or store, or the outbox could not store or had no room for a manual
+    /// email.
     /// </summary>
     EmailSendFailed,
 

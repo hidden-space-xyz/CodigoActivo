@@ -4,7 +4,7 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Users.Queries;
 
 /// <summary>
-/// Carries the criteria used to retrieve user by identifier.
+/// Carries the criteria used to retrieve a user by identifier.
 /// </summary>
 /// <param name="UserId">Identifier of the user.</param>
 public sealed record GetUserByIdQuery(UserId UserId) : IQuery<Result<UserResponse>>;
@@ -20,7 +20,7 @@ public sealed class GetUserByIdQueryHandler(IReadStore readStore, IQueryExecutor
     : IQueryHandler<GetUserByIdQuery, Result<UserResponse>>
 {
     /// <summary>
-    /// Handles the request to retrieve user by identifier.
+    /// Handles the request to retrieve a user by identifier.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

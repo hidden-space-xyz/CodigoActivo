@@ -71,13 +71,13 @@ public static class EventAttendeeFilters
     }
 
     /// <summary>
-    /// Gets the condition an assignment meets to make its user an attendee under the criteria: it
-    /// belongs to an activity of the event and, when they are selected, to the activity, the role
-    /// and the status.
+    /// Gets the condition a signup meets to make its user an attendee under the criteria: it
+    /// belongs to an activity of the event and, when they are selected, to that activity, with that
+    /// role and that status.
     /// </summary>
     /// <param name="eventId">Identifier of the event.</param>
     /// <param name="query">Query containing the selection criteria.</param>
-    /// <returns>The condition on an assignment.</returns>
+    /// <returns>The condition on a signup.</returns>
     public static Expression<Func<AssignmentRow, bool>> MatchingAssignment(
         Guid eventId,
         EventAttendeeListQuery query

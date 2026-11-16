@@ -40,7 +40,7 @@ export const USER_TYPE_STYLE: StyleMap = {
   participant: { labelKey: 'pages.admin.dashboard.series.participant', color: (p) => p.azure },
 }
 
-/** Inscription series styles keyed by status: green confirmed, amber requested, red denied. */
+/** Signup series styles keyed by status: green confirmed, amber requested, red denied. */
 export const INSCRIPTION_STATUS_STYLE: StyleMap = {
   confirmed: { labelKey: 'pages.admin.dashboard.series.confirmed', color: (p) => p.success },
   requested: { labelKey: 'pages.admin.dashboard.series.requested', color: (p) => p.warning },

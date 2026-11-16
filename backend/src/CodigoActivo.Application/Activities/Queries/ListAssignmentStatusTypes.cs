@@ -4,7 +4,7 @@ using CodigoActivo.Application.Common.Caching;
 namespace CodigoActivo.Application.Activities.Queries;
 
 /// <summary>
-/// Carries the criteria used to list assignment status types.
+/// Carries the criteria used to list signup status types.
 /// </summary>
 public sealed record ListAssignmentStatusTypesQuery
     : IQuery<IReadOnlyList<AssignmentStatusTypeResponse>>,
@@ -24,7 +24,7 @@ public sealed record ListAssignmentStatusTypesQuery
 }
 
 /// <summary>
-/// Executes the query to list assignment status types.
+/// Executes the query to list signup status types.
 /// </summary>
 /// <param name="readStore">Read side the query reads from.</param>
 /// <param name="executor">Query executor used to materialize database results.</param>
@@ -34,7 +34,7 @@ public sealed class ListAssignmentStatusTypesQueryHandler(
 ) : IQueryHandler<ListAssignmentStatusTypesQuery, IReadOnlyList<AssignmentStatusTypeResponse>>
 {
     /// <summary>
-    /// Handles the request to list assignment status types.
+    /// Handles the request to list signup status types.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

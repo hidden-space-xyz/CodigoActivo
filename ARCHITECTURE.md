@@ -44,13 +44,13 @@ outbox for events or event sourcing.
 
 ### Project dependencies
 
-| Project                       | Responsibility                                                                                                             | Direct project dependencies         |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| `CodigoActivo.Domain`         | Aggregates, typed identifiers, value objects, domain events and policies, repository ports, `Result`, `Error` and `DomainErrorCode` | None                                |
-| `CodigoActivo.Application`    | Use cases with their validated messages, response contracts, the read model, the use case decorators and the ports they need       | Domain                              |
+| Project                       | Responsibility                                                                                                                                                                                                                                                                                                                                                          | Direct project dependencies         |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `CodigoActivo.Domain`         | Aggregates, typed identifiers, value objects, domain events and policies, repository ports, `Result`, `Error` and `DomainErrorCode`                                                                                                                                                                                                                                     | None                                |
+| `CodigoActivo.Application`    | Use cases with their validated messages, response contracts, the read model, the use case decorators and the ports they need                                                                                                                                                                                                                                            | Domain                              |
 | `CodigoActivo.Infrastructure` | EF Core write and read contexts, repositories, the unit of work and event publisher, the caching decorator, the encrypted data history, file storage and image re-encoding (NetVips), Argon2id, HMAC-SHA256 one-time code hashing, TOTP (Otp.NET), the encrypted Data Protection key ring, SMTP, email templates, the clock and the log tables with their Serilog sinks | Domain, Application                 |
-| `CodigoActivo.Composition`    | The composition root: registrations by feature, strict configuration-to-options mapping checked on start, data protection and database initialization | Domain, Application, Infrastructure |
-| `CodigoActivo.API`            | HTTP controllers and request contracts by feature, the wire `ErrorCode`, middleware, claims and cookies, rate and concurrency limits, output caching, OpenAPI, SEO documents and startup | Composition                         |
+| `CodigoActivo.Composition`    | The composition root: registrations by feature, strict configuration-to-options mapping checked on start, data protection and database initialization                                                                                                                                                                                                                   | Domain, Application, Infrastructure |
+| `CodigoActivo.API`            | HTTP controllers and request contracts by feature, the wire `ErrorCode`, middleware, claims and cookies, rate and concurrency limits, output caching, OpenAPI, SEO documents and startup                                                                                                                                                                                | Composition                         |
 
 The `ProjectReference` graph is the source of truth for these boundaries.
 `backend/tests/CodigoActivo.ArchitectureTests` enforces the layer and feature dependencies (the API reaches
@@ -145,24 +145,24 @@ neither Infrastructure nor EF Core) and further conventions over the compiled as
   EF Core cannot order moving the flag between rows within one save, so `SetEventFeatured` and
   `SetNewsItemFeatured` save the unfeaturing of the current item before featuring the chosen one, in one
   transaction; a concurrent featuring that loses the race fails instead of leaving two items featured. Event
-  category type and terms document names are unique ignoring letter case: the unique index and the name check
-  both compare with the nondeterministic ICU collation `case_insensitive`.
+  category type, inventory category and terms document names are unique ignoring letter case: the unique index
+  and the name check both compare with the nondeterministic ICU collation `case_insensitive`.
 - `IUnitOfWork.ExecuteInTransactionAsync` runs work in one explicit transaction. When the work throws, the
   transaction rolls back and the domain events raised in it are discarded; a deadlock that PostgreSQL resolves
-  by aborting it surfaces as `ConcurrentUpdateException`. `PasswordAttemptGuard` counts a wrong password inside it with the account row locked (`FOR UPDATE`), so
-  parallel attempts lose no increment and only one of them sees the account lock. `SavePasswordStateAsync` writes
-  only the lockout and login challenge columns (a lock closes the challenge), so it hands just the
-  `PasswordLocked` event to the unit of work, which publishes it when that transaction commits; the account's
-  other changes and events wait for their own commit, and it advances the account's token only when no other
-  transaction wrote the row since it was loaded. Second-factor
+  by aborting it surfaces as `ConcurrentUpdateException`. `PasswordAttemptGuard` counts a wrong password
+  inside it with the account row locked (`FOR UPDATE`), so parallel attempts lose no increment and only one of
+  them sees the account lock. `SavePasswordStateAsync` writes only the lockout and login challenge columns (a
+  lock closes the challenge), so it hands just the `PasswordLocked` event to the unit of work, which publishes
+  it when that transaction commits; the account's other changes and events wait for their own commit, and it
+  advances the account's token only when no other transaction wrote the row since it was loaded. Second-factor
   checks lock and reload the account the same way (`IUserRepository.LockAsync`), token included, before
   `SecondFactorGuard` counts the code.
 - Users are deleted only through `AccountEraser`, used by `DeleteUser`, `DeleteOwnAccount`, the account purges
   and `EmailClaims`, which replaces an unverified account whose email a registration or a confirmed email change
   takes. It refuses the initial administrator and, in one `ExecuteInTransactionAsync` transaction, locks the
   account (`FOR UPDATE`) and loads its household and what belongs to it, signups, terms decisions and ratings
-  included (`IAccountErasureStore`), hands the content credited to the household over to the initial administrator,
-  discards the email still waiting about its members, whatever address it waits for
+  included (`IAccountErasureStore`), hands the content credited to the household over to the initial
+  administrator, discards the email still waiting about its members, whatever address it waits for
   (`EmailTopics.AboutPersonSuffix`), and removes the account; any other change staged in the unit of work
   commits with it. `InitialAdministratorGuard`, a `SaveChangesInterceptor` that `CodigoActivoDbContext` adds to
   itself, refuses any deletion of the initial administrator. Deleting an event, an activity or a rating, or
@@ -177,9 +177,9 @@ neither Infrastructure nor EF Core) and further conventions over the compiled as
   only lock, read or write tables without history. The scheduled commands (`PurgeDataHistory`,
   `PurgeUnverifiedAccounts`, `PurgeAdultDependents`, `PurgeUnusedFiles`, `RemoveExpiredSessions`,
   `DiscardExpiredAccountChanges` and `SendComingOfAgeNotices`) apply the retentions [SECURITY.md](SECURITY.md)
-  states, erasing accounts through `AccountEraser` and uploads through `IOrphanFileCleaner`; `ScheduledJobsWorker` only runs
-  them on the schedule each feature registers (`ScheduledJob`). What the history holds, how long it is kept and who reads it is in
-  [SECURITY.md](SECURITY.md#data-history).
+  states, erasing accounts through `AccountEraser` and uploads through `IOrphanFileCleaner`;
+  `ScheduledJobsWorker` only runs them on the schedule each feature registers (`ScheduledJob`). What the
+  history holds, how long it is kept and who reads it is in [SECURITY.md](SECURITY.md#data-history).
 - Technical ports (`IClock`, `IPasswordHasher`, `IOneTimeCodeHasher`, `ITotpService`, `ISecretProtector`,
   `IFileStorage`, `IAuditTrail`, `IRequestOrigin`, the email, persistence and read ports) live in
   `Application/Abstractions` or in the feature
@@ -223,10 +223,10 @@ reaches the date rules through the validation context, never through a service l
 records live in the API (`API/<Feature>/Contracts/`) with only the standard attributes the OpenAPI document
 describes, plus the catalog membership check (`IValidatableObject` through `CatalogIdentifiers`), and map
 themselves to the command (`request.ToCommand(id)`). Response records and list criteria stay
-in `Application/<Feature>/Contracts/` as the read contracts of the queries. `Gender`, `TwoFactorMethod`, `StaffRole`,
-`TermsDocumentKind`, `LegalPolicyKind` and `InventoryColumnType` are contract enums that mirror the domain ones
-(`ContractEnums`); they
-live with the read rows that store them, so the read model depends on no feature.
+in `Application/<Feature>/Contracts/` as the read contracts of the queries. `Gender`, `TwoFactorMethod`,
+`StaffRole`, `TermsDocumentKind`, `LegalPolicyKind` and `InventoryColumnType` are contract enums that mirror
+the domain ones (`ContractEnums`); they live with the read rows that store them, so the read model depends on no
+feature.
 
 Queries read the database through `IReadStore`: no-tracking `IQueryable` sources of read rows
 (`Application/Abstractions/Querying/ReadModel`) that `CodigoActivoReadDbContext` maps onto the same tables,
@@ -263,8 +263,9 @@ ID of the command), the other typed IDs as related entities and the outcome. `Au
 for a query marked `IAuditedQuery`, `AccountLockoutLog` for the locks of an account and the access denied event
 of the session cookie for a refused account. `MessageAudit` reads only the typed IDs, never another value;
 `IUnaudited` keeps a command out, `[Unaudited]` a property, and `IScheduledCommand`, `IPreparatoryCommand`,
-`IAccountLookupCommand` and `IRoutineCommand` limit the outcomes recorded. `SerilogAuditTrail` (Infrastructure) queues the record to
-`audit_log_entries`. What an entry holds, what stays out and why is in [SECURITY.md](SECURITY.md#audit-log).
+`IAccountLookupCommand` and `IRoutineCommand` limit the outcomes recorded. `SerilogAuditTrail` (Infrastructure)
+queues the record to `audit_log_entries`. What an entry holds, what stays out and why is in
+[SECURITY.md](SECURITY.md#audit-log).
 
 Use cases decide who may run them on whose behalf. `ICurrentUser` (implemented by `HttpCurrentUser` in the API)
 tells who is signed in; commands and queries take the author, the acting user and whether they are an administrator
@@ -296,7 +297,7 @@ decisions taken and whether they decide their own consents, and administrators l
 under `/api/events/{eventId}/terms/decisions`. A withdrawal (`WithdrawTermsConsent`) leaves its notice pending
 (`WithdrawalNoticePending`, kept out of the data history), which `SendConsentWithdrawalNotices` turns into an
 email to the legal contact; `AccountEraser` and `ParticipationEraser` tell it first the pending withdrawals and
-the consents given that they delete. Who
+the consents given for already started events that they delete. Who
 decides, what each kind requires, withdrawals, versions and signatures are in
 [SECURITY.md](SECURITY.md#terms-documents-and-decisions).
 
@@ -395,11 +396,11 @@ same topic and address, and how long a code is worth with `ValidFor`. A backgrou
 `EmailOutboxDeliveryWorker` hosted service claims due rows and delivers them through one `IEmailTransport`
 session per run (`SmtpEmailSender`), paced by `EmailDeliveryPacer` and with retries, pauses and expiry by the
 fault `EmailDeliveryException` names. The notices to the legal contact are scheduled commands
-(`SendConsentWithdrawalNotices`,
-`SendBlockedDataConsultationNotices`, run every minute by `ScheduledJobsWorker`) that ask `IPendingEmails` whether their last
-summary is still waiting. The send commands (`SendEmailToUsers`,
-`SendEmailToEventAttendees`) and the audience-preview queries in `Application/Emails/Queries` share recipient
-selection through `ManualEmailAudience`, so a preview always matches what the corresponding send would reach;
+(`SendConsentWithdrawalNotices`, `SendBlockedDataConsultationNotices`, run every minute by
+`ScheduledJobsWorker`) that ask `IPendingEmails` whether their last summary is still waiting. The send commands
+(`SendEmailToUsers`, `SendEmailToEventAttendees`) and the audience-preview queries in
+`Application/Emails/Queries` share recipient selection through `ManualEmailAudience`, so a preview always
+matches what the corresponding send would reach;
 the send's `ManualEmailPurpose` decides whether recipients without news consent are left out. A
 news batch keeps one shared content whose footer leaves a slot for the unsubscribe link:
 `ManualEmailComposer` gives each `EmailRecipient` its own link (a token from `IUnsubscribeTokens`), the outbox

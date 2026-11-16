@@ -25,8 +25,8 @@ namespace CodigoActivo.API.Accounts;
 public class MyAccountController : ApiControllerBase
 {
     /// <summary>
-    /// Returns a copy of the personal data kept about the signed-in user and the minors in their
-    /// care, which the SPA saves as a JSON file. It shares the report rate limit.
+    /// Returns a copy of the personal data kept about the signed-in user and their dependents, which
+    /// the SPA saves as a JSON file. It shares the report rate limit.
     /// </summary>
     /// <param name="handler">Application handler that executes the requested use case.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
@@ -64,9 +64,8 @@ public class MyAccountController : ApiControllerBase
     }
 
     /// <summary>
-    /// Deletes the signed-in user's own account together with every minor under their
-    /// guardianship once the current password and the second factor are accepted, and closes the
-    /// session that asked for it.
+    /// Deletes the signed-in user's own account together with their dependents once the current
+    /// password and the second factor are accepted, and closes the session that asked for it.
     /// </summary>
     /// <param name="request">Validated client request data.</param>
     /// <param name="handler">Application handler that executes the requested use case.</param>

@@ -17,7 +17,10 @@ import InventoryEntryDialog from './InventoryEntryDialog.vue'
 import InventoryValueCell from './InventoryValueCell.vue'
 
 const props = defineProps<{
-  /** Category whose entries the table lists; the parent re-creates the table when its columns change. */
+  /**
+   * Category whose entries the table lists; the parent re-creates the table when its columns
+   * change.
+   */
   category: InventoryCategory
 }>()
 

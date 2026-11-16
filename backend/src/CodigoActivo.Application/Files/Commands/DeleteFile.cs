@@ -25,8 +25,9 @@ public sealed class DeleteFileCommandHandler(
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
-    /// A task whose result reports success; <see cref="ApplicationErrorCode.FileNotFound"/>, or
-    /// <see cref="ApplicationErrorCode.FileInUse"/> when content still references the file.
+    /// A task whose result reports success; <see cref="ApplicationErrorCode.FileNotFound"/> when
+    /// no file has that identifier, or <see cref="ApplicationErrorCode.FileInUse"/> when content
+    /// still references the file.
     /// </returns>
     public async Task<Result> HandleAsync(DeleteFileCommand command, CancellationToken ct = default)
     {

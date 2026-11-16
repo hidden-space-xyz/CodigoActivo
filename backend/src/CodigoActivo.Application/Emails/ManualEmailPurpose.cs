@@ -7,7 +7,7 @@ public enum ManualEmailPurpose
 {
     /// <summary>
     /// Something that concerns the recipients: their account, their signups or an activity they
-    /// already take part in. It reaches everyone selected.
+    /// already take part in. It reaches every confirmed address selected.
     /// </summary>
     Notice,
 

@@ -101,7 +101,7 @@ public record ResetTwoFactorRequest([Required] [MaxLength(128)] string CurrentPa
 /// </param>
 /// <param name="Gender">Gender of the user.</param>
 /// <param name="ParentId">
-/// Identifier of the parent. Only accepted for an account that is already a dependent, and only
+/// Identifier of the guardian. Only accepted for an account that is already a dependent, and only
 /// repeating the guardian it already has; the guardian is never reassigned here.
 /// </param>
 /// <param name="CurrentPassword">

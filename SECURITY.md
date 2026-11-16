@@ -28,10 +28,10 @@ authentication are not supported.
   designation and the `sid` row in one query: it rejects the ticket when the account is not active, has another
   password or has no live row, and refreshes its claims, such as the staff role, when they changed. A
   [password lock](#passwords-and-credential-endpoints) leaves existing sessions working. Changing a user's role
-  or designation takes effect on existing sessions;
-  changing or resetting the password invalidates them through the fingerprint, and the change then deletes that
-  user's session rows. When the API answers `AuthenticationRequired` or `CurrentUserNotFound` to a signed-in SPA, or right after the user
-  changes their password, the SPA drops its cached session and data and sends protected pages back to login.
+  or designation takes effect on existing sessions; changing or resetting the password invalidates them through
+  the fingerprint, and the change then deletes that user's session rows. When the API answers
+  `AuthenticationRequired` or `CurrentUserNotFound` to a signed-in SPA, or right after the user changes their
+  password, the SPA drops its cached session and data and sends protected pages back to login.
 - `POST /api/auth/logout` deletes the row of the presented session before clearing the cookies, so a copy of
   that cookie stops working immediately instead of lasting until its expiry. It is idempotent: it asks for no
   valid session, only the CSRF token, and always answers 204 after clearing the session and challenge
@@ -47,12 +47,12 @@ authentication are not supported.
   (`ParticipationDeletionRequiresAdministrator`).
   `[AllowOnlyStaff(StaffRole.Administrator)]` protects everything about people beyond the caller's own
   household: other users, signups, terms decisions, ratings, reports, every manual email, the diagnostic log,
-  the legal policies and the inventory; the audit log is [read](#audit-log) only by the initial administrator and the account
-  designated for data protection. The initial administrator is the superadministrator: only it changes staff
-  roles and designates the account for data protection, whose endpoints admit administrators and whose use
-  cases refuse anyone else (`SuperAdministratorOnly`, answered as `AccessDenied`), and only it deletes accounts
-  other than a guardian's own dependents ([Account deletion](#account-deletion)). `[AllowOnlySelf]` accepts the
-  target user, that user's guardian or an administrator, except on `PUT /api/users/{id}`,
+  the legal policies and the inventory; the audit log is [read](#audit-log) only by the initial administrator
+  and the account designated for data protection. The initial administrator is the superadministrator: only it
+  changes staff roles and designates the account for data protection, whose endpoints admit administrators and
+  whose use cases refuse anyone else (`SuperAdministratorOnly`, answered as `AccessDenied`), and only it deletes
+  accounts other than a guardian's own dependents ([Account deletion](#account-deletion)). `[AllowOnlySelf]`
+  accepts the target user, that user's guardian or an administrator, except on `PUT /api/users/{id}`,
   `POST /api/users/{id}/children` and `PATCH /api/activities/{activityId}/{userId}/assign`
   (`AdministratorsAllowed = false`): personal data, consents, dependents and signups change only through their
   holder or guardian, never an administrator. Catalog values such as `UserType` are not authorization roles.
@@ -70,7 +70,8 @@ authentication are not supported.
 - The email is the only login identifier and the only unique personal value. The DNI/NIE, the phone and
   the optional secondary phone are not unique, so no route checks them against other accounts and neither
   registration nor profile updates reveal whether someone else uses them; the secondary phone only has to
-  differ from the same account's phone (`SecondaryPhoneSameAsPrimary`). `POST /api/auth/login` resolves the account by email only.
+  differ from the same account's phone (`SecondaryPhoneSameAsPrimary`). `POST /api/auth/login` resolves the
+  account by email only.
 - No anonymous route tells whether an email has an account. `POST /api/auth/register` answers 204 to every
   valid request: a new address gets the verification link; an address whose account was verified gets a
   notice instead, saying that it already has an account and that nothing changed, and nothing is created;
@@ -79,9 +80,9 @@ authentication are not supported.
   verification mail it replaces. `POST /api/auth/resend-verification` (by email) and `forgot-password` also
   answer 204 alike. Registration refuses a disposable domain first (`DisposableEmailNotAllowed`), which depends
   only on the domain, and then hashes the password before looking the address up, so every other outcome costs
-  the same Argon2 work. An account still unverified 24 hours after registering is erased with its
-  dependents, keeping their data history, by `PurgeUnverifiedAccounts`, which `ScheduledJobsWorker` runs 30 seconds
-  after startup and then hourly.
+  the same Argon2 work. An account still unverified 24 hours after registering is erased with its dependents,
+  keeping their data history, by `PurgeUnverifiedAccounts`, which `ScheduledJobsWorker` runs 30 seconds after
+  startup and then hourly.
 - Only someone who knows an account's password learns its state: after a correct password, the password step
   answers an unverified account with `UserAccountPendingVerification` and a locked second factor with
   `TwoFactorLocked`.
@@ -94,8 +95,8 @@ authentication are not supported.
   [initial administrator](DEPLOYMENT.md#demo-mode-and-initial-administrator), whose random password is
   discarded, so there is no bootstrap password. That generic account can be neither demoted
   (`UserCannotRemoveInitialAdmin`) nor deleted, so the application always keeps an administrator; the SPA
-  offers no role change for it and disables its deletion. A dependent, who never signs in, never holds a role or the designation
-  (`UserDependentCannotHoldStaffRole`), nor does an account whose email is unconfirmed
+  offers no role change for it and disables its deletion. A dependent, who never signs in, never holds a role
+  or the designation (`UserDependentCannotHoldStaffRole`), nor does an account whose email is unconfirmed
   (`UserPendingVerificationCannotHoldStaffRole`); the SPA offers the actions only for independent accounts.
   Editors and administrators are members: a role is refused to any other type and, while an account holds one,
   so is changing its type (`UserStaffRoleRequiresMember`). Only an administrator is designated for data
@@ -142,8 +143,8 @@ authentication are not supported.
   `SendComingOfAgeNotices` emails the guardian 30 days before, recording it in
   `users.coming_of_age_notice_sent_at`. A changed birth date clears that record, so the corrected day gets its
   own notice; a notice the email limits refuse is retried on the next run, and a guardian whose email nobody
-  verified gets none. `ScheduledJobsWorker` runs both, one after the other, 30 seconds after startup and then hourly. A
-  household signup list holds at most 21 people.
+  verified gets none. `ScheduledJobsWorker` runs both, one after the other, 30 seconds after startup and then
+  hourly. A household signup list holds at most 21 people.
 - `PATCH /api/users/{id}/password` changes only the caller's own password and asks for the current one;
   guardians and administrators get `AccessDenied` (403) for any other account, so nobody else can spend that
   account's password attempts.
@@ -162,13 +163,13 @@ and the account itself refuses the challenge once its lifetime has passed, whate
 Answering, reading or resending a challenge needs the open challenge the cookie names on an account that
 may still sign in; the use cases check that themselves, while the password fingerprint is only checked
 through the cookie. A challenge obtained just before the account was locked by wrong passwords is refused at
-both the ticket and the handler. The account flows serialize on
-the account row only when they will act (`AccountLock`, see
-[ARCHITECTURE.md](ARCHITECTURE.md#domain-and-persistence)), so parallel requests each answer as they would
-alone: a repeated request finds the cooldown and emails nothing, and a correct password whose account was reset
-or locked since it was checked is answered like a wrong one (not counted) and opens no challenge. Reading or
-resending the current challenge keeps working across reloads. The session cookie is only issued by `POST /api/auth/login/two-factor`, which
-accepts the second factor, records the login timestamp and stores the session in one transaction.
+both the ticket and the handler. The account flows serialize on the account row only when they will act
+(`AccountLock`, see [ARCHITECTURE.md](ARCHITECTURE.md#domain-and-persistence)), so parallel requests each
+answer as they would alone: a repeated request finds the cooldown and emails nothing, and a correct password
+whose account was reset or locked since it was checked is answered like a wrong one (not counted) and opens no
+challenge. Reading or resending the current challenge keeps working across reloads. The session cookie is only
+issued by `POST /api/auth/login/two-factor`, which accepts the second factor, records the login timestamp and
+stores the session in one transaction.
 
 Each user chooses one second factor from their account:
 
@@ -368,10 +369,10 @@ rate; the API applies a sliding one-minute budget of 600 requests per authentica
 administrator paging through tables of thumbnails sends, or 10,000 per IP for anonymous traffic. Report routes
 add a 60-request/minute budget per user (8 executing, 40 waiting); multipart file writes allow 30
 requests/minute per user (4 executing, since only two uploads are decoded at a time, and 20 waiting). Each
-request counts at most once against each budget, whether it executes, waits or is refused, and before it waits for a
-concurrency permit (`SinglePassChainedRateLimiter`). Process-wide, 64 requests execute and 2,048 wait in FIFO
-order, enough for the refetch that 1,000 open event pages send together when signups open; a request waiting
-for a route's own limit holds none of those 64. Rejected requests, by nginx or the API, answer 429
+request counts at most once against each budget, whether it executes, waits or is refused, and before it waits
+for a concurrency permit (`SinglePassChainedRateLimiter`). Process-wide, 64 requests execute and 2,048 wait in
+FIFO order, enough for the refetch that 1,000 open event pages send together when signups open; a request
+waiting for a route's own limit holds none of those 64. Rejected requests, by nginx or the API, answer 429
 `TooManyRequests` with `Retry-After`: 10 seconds, the soonest a sliding window returns a permit, when an API
 budget refuses them (`RetryAfterRateLimiter`), and 1 second otherwise. These are per-instance controls; scaling
 API replicas multiplies aggregate capacity.
@@ -447,14 +448,14 @@ code cite only these laws.
   checked against the local copy.
 - The only cookies are the session, two-factor challenge and CSRF cookies above; the theme choice stays in
   `localStorage` and is never sent to the server, and `sessionStorage` only holds the stale-build reload mark.
-  They are all needed to run the site or keep a preference the user picks, and only the persistent session,
-  behind its unticked checkbox, outlives the browser session, so the site shows no cookie banner. The
-  `/cookies` page shows the cookie policy the administrators publish, which must list every cookie and storage
-  key with its purpose and duration; ask them to publish a new version with any change to them.
-  `Referrer-Policy: same-origin` keeps page URLs out of
-  requests to external sites, and `X-DNS-Prefetch-Control: off` stops browsers from pre-resolving link
-  destinations. API responses whose body is `application/json` or `application/problem+json` also carry
-  `X-Robots-Tag: noindex, nofollow`, so search engines do not index API payloads.
+  They are all needed to run the site or keep a preference the user picks, and of the cookies only the
+  persistent session, behind its unticked checkbox, outlives the browser session, so the site shows no cookie
+  banner. The `/cookies` page shows the cookie policy the administrators publish, which must list every cookie
+  and storage key with its purpose and duration; ask them to publish a new version with any change to them.
+  `Referrer-Policy: same-origin` keeps page URLs out of requests to external sites, and
+  `X-DNS-Prefetch-Control: off` stops browsers from pre-resolving link destinations. API responses whose body is
+  `application/json` or `application/problem+json` also carry `X-Robots-Tag: noindex, nofollow`, so search
+  engines do not index API payloads.
 - The `/privacy` page shows the data controller from the `LEGAL_*` settings and then the privacy policy the
   administrators publish, which must state, for each processing of personal data, the data, purpose, legal
   basis and retention, plus the processors, transfers and rights; the registration form shows its first layer
@@ -464,29 +465,29 @@ code cite only these laws.
 - `GET /api/me/personal-data` (report rate limit) gives the signed-in user a copy of their own and their
   dependents' personal data (articles 15 and 20 GDPR), which «Mi cuenta» saves as a JSON file with Spanish
   names and labels. It names and links the privacy policy version in force, which gives the information of
-  article 15.1, and holds the account with any unconfirmed new email, the news consent history, the dependents, the
-  household's signups, the terms decisions about the household with every change, who took it and the
-  signature kept for it, withdrawn acceptances included, the user's event ratings, the open sessions and the audit
-  entries the user ran or that name a household member as main or related entity, logins before the session
-  included (time, action, outcome, kind of actor and client IP, without the IP when an administrator ran it
-  and never what else the entry touched). It reads only the caller's household and never holds password or
-  code hashes, authenticator secrets, the login challenge or lockout counters. It leaves out the data history, which nobody may use (LOPDGDD article 32); the
-  email outbox, which only holds a message until it is delivered and may carry one-time codes; and the
-  authorship of content, which is answered on request. Add a new
-  personal field or table to it.
+  article 15.1, and holds the account with any unconfirmed new email, the news consent history, the dependents,
+  the household's signups, the terms decisions about the household with every change, who took it and the
+  signature kept for it, withdrawn acceptances included, the user's event ratings, the open sessions and the
+  audit entries the user ran or that name a household member as main or related entity, logins before the
+  session included (time, action, outcome, kind of actor and client IP, without the IP when an administrator
+  ran it and never what else the entry touched). It reads only the caller's household and never holds password
+  or code hashes, authenticator secrets, the login challenge or lockout counters. It leaves out the data
+  history, which nobody may use (LOPDGDD article 32); the email outbox, which only holds a message until it is
+  delivered and may carry one-time codes; and the authorship of content, which is answered on request. Add a
+  new personal field or table to it.
 - News consent (articles 6.1.a and 7 GDPR) is changed only by its holder: at
   registration, in «Mi cuenta», or through the unsubscribe link of a news email or its mail client's
   unsubscribe button. `User` appends every change to `news_consent_changes` with its instant and source
-  (`Registration`, `Profile`, `UnsubscribeLink`, `OneClickUnsubscribe`) and the data history keeps them once deleted. Consents stored before that table existed have no
-  recorded change.
+  (`Registration`, `Profile`, `UnsubscribeLink`, `OneClickUnsubscribe`) and the data history keeps them once
+  deleted.
 - Only adults register, and only a parent or legal guardian, who represents the minor (Civil Code articles
   162 and 225), adds a minor: `POST /api/auth/register` refuses a body without `declaresAdult`
   (`UserAdultDeclarationRequired`) before looking the address up, and every minor, added at registration or
   through `POST /api/users/{id}/children`, needs `declaresGuardianship` (`UserGuardianshipDeclarationRequired`).
   `users.adult_declared_at` and `users.guardianship_declared_at` keep when each was declared, also in the
   data history. The SPA sends the first once the visitor confirms being of age at its age gate and the second
-  with every minor, since each form that adds one states that adding it is that declaration. Accounts and
-  minors added before they were recorded have none.
+  with every minor, since each form that adds one states that adding it is that declaration. The initial
+  administrator, who never registers, has neither.
 - Verification, email-change and password-reset links put the user id and a 256-bit code from a
   cryptographic random generator in the URL fragment (`/reset-password#userId=…&code=…`), which browsers
   never send to the server; the page reads and removes it from the address bar, so a reload needs the
@@ -501,19 +502,17 @@ code cite only these laws.
   on the guardian's screen. Article 3.1 LO 1/1982 leaves the consent of a minor to their maturity without
   setting an age; the association applies to every consent, images included, the age of 14 that article 7
   LOPDGDD sets for data processing. `TermsConsent.DeciderOf` names the decider from the birth date, never
-  from the request. A consent is never required: an event that links one
-  as required is refused (`EventTermsConsentRequired`), and `TermsGate` never blocks a signup on a consent.
-  An acceptance is never re-asked and holds until its consent is withdrawn; a rejection or a withdrawal is
-  revisable and the stored row takes who accepts it now; a required document's rejection is never persisted,
-  so it blocks that signup without excluding the person for good. The row is the current state: each change
-  of it (the first decision, a later acceptance, a withdrawal) also appends to `terms_decision_changes` whether
-  it accepts, who decided, the account that recorded it (the signed-in user, an administrator included), when and the
-  signature, so each earlier state can still be proven (article 7.1 GDPR). `AssignActivity` and
-  `AssignHousehold` run it for every person they sign up, each with their own decisions, since only the
-  person or their guardian signs them up. Decisions stored before they were per person name the deciding guardian as the
-  person; documents stored before they had a kind are conditions; decisions stored before the history began
-  with one change, their state then, recorded by who decided it. The rows and their history go with
-  the person or the decider and with the event, each leaving its data history.
+  from the request. A consent is never required: an event that links one as required is refused
+  (`EventTermsConsentRequired`), and `TermsGate` never blocks a signup on a consent. An acceptance is never
+  re-asked and holds until its consent is withdrawn; a rejection or a withdrawal is revisable and the stored row
+  takes who accepts it now; a required document's rejection is never persisted, so it blocks that signup without
+  excluding the person for good. The row is the current state: each change of it (the first decision, a later
+  acceptance, a withdrawal) also appends to `terms_decision_changes` whether it accepts, who decided, the
+  account that recorded it (the signed-in user, an administrator included), when and the signature, so each
+  earlier state can still be proven (article 7.1 GDPR). `AssignActivity` and `AssignHousehold` run it for
+  every person they sign up, each with their own decisions, since only the person or their guardian signs them
+  up. The rows and their history go with the person or the decider and with the event, each leaving its data
+  history.
 - A consent is withdrawn (article 7.3 GDPR) through
   `POST /api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/withdraw` (`[AllowOnlySelf]`): by the
   person, by their guardian, or by an administrator who records a withdrawal asked for by email. Conditions are
@@ -527,31 +526,31 @@ code cite only these laws.
   and the notice keeps waiting) so what the consent covered stops being used and is removed from the site and
   the social profiles. Several withdrawals go in one email, a withdrawal accepted again before the notice needs
   none, and a failure only delays the notice: it never undoes the withdrawal nor loses the notice.
-- Erasing an account (by its holder, a guardian or the initial administrator, or on coming of age) or an event deletes
-  its terms decisions, which then stay only in the [data history](#data-history), blocked: nobody may consult
-  them to tell whether a published image or name is still covered. So the erasure, in its own transaction and
-  before deleting them, also emails the legal contact every consent given it deletes about an event that has
-  already started (`ConsentWithdrawalNotifier.NotifyErasedAsync`, at most 50 per email, of the same kind as
-  the withdrawal notice), so what they covered stops being used as well. Consents about an event still to come
-  are left out, since nothing of it can have been published.
-- A terms document is versioned (`terms_documents.version`), so the text each decision was taken on can always be
-  shown (article 7.1 GDPR): every rewrite that changes its name, text, kind or signature keeps the replaced version
-  in `terms_document_versions` and numbers the new one, even when nobody decided yet, so a decision recorded while
-  the document changes still names a version whose text is kept. Its kind cannot change while an event links it
-  or anyone decided on it (`TermsDocumentKindInUse`), since what a decision requires and whether it can be
-  withdrawn follow the current kind. Each decision and each change of its history
-  stores the version it was taken on (`terms_document_version`; a withdrawal keeps the one withdrawn), and nobody is
-  asked again after a rewrite. Every decision sent names the version shown (`TermsDecisionRequest.Version`, which
-  the terms state returns); one on a version that is no longer current is refused (`EventTermsDocumentChanged`)
-  and the SPA reloads the documents and asks again. Texts are compared as JSON, so saving without changes keeps
-  the version. Decisions stored before versions existed name version 1, the text then current.
+- Erasing an account (by its holder, a guardian or the initial administrator, or on coming of age) or an event
+  deletes its terms decisions, which then stay only in the [data history](#data-history), blocked: nobody may
+  consult them to tell whether a published image or name is still covered. So the erasure, in its own
+  transaction and before deleting them, also emails the legal contact every consent given it deletes about an
+  event that has already started (`ConsentWithdrawalNotifier.NotifyErasedAsync`, at most 50 per email, of the
+  same kind as the withdrawal notice), so what they covered stops being used as well. Consents about an event
+  still to come are left out, since nothing of it can have been published.
+- A terms document is versioned (`terms_documents.version`), so the text each decision was taken on can always
+  be shown (article 7.1 GDPR): every rewrite that changes its name, text, kind or signature keeps the replaced
+  version in `terms_document_versions` and numbers the new one, even when nobody decided yet, so a decision
+  recorded while the document changes still names a version whose text is kept. Its kind cannot change while an
+  event links it or anyone decided on it (`TermsDocumentKindInUse`), since what a decision requires and whether
+  it can be withdrawn follow the current kind. Each decision and each change of its history stores the version
+  it was taken on (`terms_document_version`; a withdrawal keeps the one withdrawn), and nobody is asked again
+  after a rewrite. Every decision sent names the version shown (`TermsDecisionRequest.Version`, which the terms
+  state returns); one on a version that is no longer current is refused (`EventTermsDocumentChanged`) and the
+  SPA reloads the documents and asks again. Texts are compared as JSON, so saving without changes keeps the
+  version.
 - A terms document can ask for a handwritten signature (`requires_signature`): accepting it then needs a PNG
   drawn on screen (`TermsConsent` refuses the acceptance without one). Every consent a dependent accepts from
   the age of 14 needs one too, whatever the document asks, so the acceptance taken on the guardian's screen
-  carries the minor's own signature. The signature is a PNG `HandwrittenSignature` refuses above 128 KiB or 2000×1000 pixels and which is stored
-  in `event_terms_acceptances.signature`, never in the public file storage. Only administrators read it
-  (`GET /api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/signature`, answered
-  `no-store`).
+  carries the minor's own signature. The signature is a PNG `HandwrittenSignature` refuses above 128 KiB or
+  2000×1000 pixels and which is stored in `event_terms_acceptances.signature`, never in the public file
+  storage. Only administrators read it
+  (`GET /api/events/{eventId}/terms/decisions/{userId}/{termsDocumentId}/signature`, answered `no-store`).
 
 ### Event ratings
 
@@ -576,26 +575,27 @@ access can still read the author.
 The API keeps two logs: the diagnostic log, read by administrators, and the [audit log](#audit-log), read only
 by the initial administrator and the account designated for data protection. The diagnostic log follows GDPR
 data minimization: only failures and warnings an operator has to diagnose are recorded, so normal use writes
-nothing to it, and none of its entries outlives its retention (30 days). Never in the diagnostic log: names, emails, phone numbers, anything typed
-by the client, the requested path or query, client IP, user agent, cookies, tokens and one-time codes. Logged:
-counters, enum/kind values, error/SMTP/HTTP codes, the HTTP
+nothing to it, and none of its entries outlives its retention (30 days). Never in the diagnostic log: names,
+emails, phone numbers, anything typed by the client, the requested path or query, client IP, user agent,
+cookies, tokens and one-time codes. Logged: counters, enum/kind values, error/SMTP/HTTP codes, the HTTP
 method, the matched endpoint's route template, and exception type/message/stack traces. No event template
 carries an id, but an exception message may quote the pseudonymous GUID of a row or stored file it failed on,
 such as the path of a file under `/app/files`; it is written as is.
 
 - **API**: every event is declared with `[LoggerMessage]` in one of four `*Log` classes — `SecurityLog` and
-  `ApplicationLog` (Application), `InfrastructureLog` and `ApiLog`. `CA1848` is an error (`backend/.editorconfig`), and the
-  architecture tests `LoggingConventionTests`/`LoggingCallSiteTests` enforce an allowed-placeholder list and
-  that no event is declared below `Warning`. `Logging:LogLevel` in `appsettings.json` is the level policy for
-  both the database and the console: `Default` is `Warning`, which also drops the framework's start and stop
-  messages; `Microsoft.EntityFrameworkCore` is `None`: every EF Core failure is rethrown and recorded where it
-  is caught, so its own entries only repeated it, quoted the SQL of a failing command (which can carry literal
-  values) and reported expected unique-key races and deadlocks as errors. An environment can override
-  any category with `Logging__LogLevel__<Category>`. There is no per-request logging middleware: unhandled
-  exceptions are recorded only by `GlobalExceptionHandler`, with the HTTP method and the route template, never
-  the requested path. Expected outcomes are not logged: a concurrent update, unique-key race or deadlock
-  refused with 409, or a rejected CSRF token, which the client refreshes and sends again. A use case is logged as slow only above 5 seconds; repeated email
-  delivery failures are throttled as [DEPLOYMENT.md](DEPLOYMENT.md#email-delivery) describes.
+  `ApplicationLog` (Application), `InfrastructureLog` and `ApiLog`. `CA1848` is an error
+  (`backend/.editorconfig`), and the architecture tests `LoggingConventionTests`/`LoggingCallSiteTests` enforce
+  an allowed-placeholder list and that no event is declared below `Warning`. `Logging:LogLevel` in
+  `appsettings.json` is the level policy for both the database and the console: `Default` is `Warning`, which
+  also drops the framework's start and stop messages; `Microsoft.EntityFrameworkCore` is `None`: every EF Core
+  failure is rethrown and recorded where it is caught, so its own entries only repeated it, quoted the SQL of a
+  failing command (which can carry literal values) and reported expected unique-key races and deadlocks as
+  errors. `Logging__LogLevel__<Category>` overrides a category, but Compose forwards none. There is no
+  per-request logging middleware: unhandled exceptions are recorded only by `GlobalExceptionHandler`, with the
+  HTTP method and the route template, never the requested path. Expected outcomes are not logged: a concurrent
+  update, unique-key race or deadlock refused with 409, or a rejected CSRF token, which the client refreshes and
+  sends again. A use case is logged as slow only above 5 seconds; repeated email delivery failures are
+  throttled as [DEPLOYMENT.md](DEPLOYMENT.md#email-delivery) describes.
   `NormalUseLoggingTests` drives anonymous, member and administrator flows and fails if any entry passes the
   policy. EF Core sensitive-data logging stays disabled; `SmtpEmailSender` strips the recipient and server
   reply out of SMTP exceptions before they are logged.
@@ -679,9 +679,10 @@ account.
   and of the audit log itself, where every page and filter would add an entry.
 
 An extract of the blocked data or a hold on it never names its account (`[Unaudited]`), so only the
-privacy officer knows whose blocked data was handed over or held: neither the other administrators nor that person read
-it in the audit log or the personal data copy (LOPDGDD article 32). The account ids have no foreign key, so an erased account's entries remain
-until the audit retention ends; they are not part of the data history.
+privacy officer knows whose blocked data was handed over or held: neither the other administrators nor the
+person concerned read it in the audit log or the personal data copy (LOPDGDD article 32). The account ids have
+no foreign key, so an erased account's entries remain until the audit retention ends; they are not part of the
+data history.
 
 `GET /api/logs/diagnostics` and `/api/logs/diagnostics/{id}` require the administrator role, and
 `GET /api/logs/audit` the initial administrator or the account designated for data protection
@@ -731,9 +732,9 @@ is discarded too, since it may name the people the image shows: the file is know
 admin forms show, and the rich text editor inserts images with an empty `alt`. The variants are saved
 under `/app/files` in the `api-files` volume, each written to a temporary entry, flushed to disk and only then
 moved to its name, which never replaces stored content. Files are served only by the API, never from a static
-mount of the volume: only editors and administrators upload or delete them, and anyone who knows a file's id may read it
-(`GET /api/files/{id}/content` and `/thumbnail`); no route returns its metadata, which only the upload answers
-with. An upload is kept while content references it
+mount of the volume: only editors and administrators upload or delete them, and anyone who knows a file's id
+may read it (`GET /api/files/{id}/content` and `/thumbnail`); no route returns its metadata, which only the
+upload answers with. An upload is kept while content references it
 (`StoredFileRepository.GetInUseAsync`); one that nothing references 7 days after it was uploaded, such as an
 image picked for a form that was never saved, is deleted with its content by `PurgeUnusedFiles`, which
 `ScheduledJobsWorker` runs 30 seconds after startup and then hourly. Saving an event, activity, news item,
@@ -849,8 +850,8 @@ administrator preview a send before committing to it: given the same filters as 
 `POST /api/emails/events/{eventId}/attendees`, they return `{ recipients, withoutConsent }` computed by the
 same shared selection (`ManualEmailAudience`) the send commands use, so the preview always matches what a
 send would reach — distinct addressable recipients deduplicated case-insensitively, which a notice
-reaches, and how many of them a news send leaves out for lack of consent. These preview endpoints carry none of the send limits above, only
-the general API limits of nginx and the API.
+reaches, and how many of them a news send leaves out for lack of consent. These preview endpoints carry none
+of the send limits above, only the general API limits of nginx and the API.
 
 ### Demo mode
 

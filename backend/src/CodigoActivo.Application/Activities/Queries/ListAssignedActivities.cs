@@ -26,7 +26,7 @@ public sealed class ListAssignedActivitiesQueryHandler(
 ) : IQueryHandler<ListAssignedActivitiesQuery, IReadOnlyList<AssignedActivityResponse>>
 {
     /// <summary>
-    /// Handles the request to list assigned activities.
+    /// Handles the request to list the activities the signed-in user is signed up to.
     /// </summary>
     /// <param name="query">Query containing the selection criteria.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

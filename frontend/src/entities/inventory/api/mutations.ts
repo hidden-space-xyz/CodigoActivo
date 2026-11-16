@@ -29,20 +29,20 @@ export const inventoryMutations = {
       mutationFn: (id: string) => deleteInventoryCategoryRequest(id),
       meta: { invalidates: [inventoryKeys.all] },
     }),
-  /** Adds entries to the category `categoryId`. */
+  /** Adds an entry to the category `categoryId`. */
   addEntry: (categoryId: string) =>
     mutationOptions({
       mutationFn: (input: InventoryEntryInput) => addInventoryEntryRequest(categoryId, input),
       meta: { invalidates: [inventoryKeys.all] },
     }),
-  /** Replaces entries of the category `categoryId`. */
+  /** Replaces the values of an entry of the category `categoryId`. */
   updateEntry: (categoryId: string) =>
     mutationOptions({
       mutationFn: ({ id, input }: { id: string; input: InventoryEntryInput }) =>
         updateInventoryEntryRequest(categoryId, id, input),
       meta: { invalidates: [inventoryKeys.all] },
     }),
-  /** Deletes entries of the category `categoryId`. */
+  /** Deletes an entry of the category `categoryId`. */
   removeEntry: (categoryId: string) =>
     mutationOptions({
       mutationFn: (id: string) => deleteInventoryEntryRequest(categoryId, id),

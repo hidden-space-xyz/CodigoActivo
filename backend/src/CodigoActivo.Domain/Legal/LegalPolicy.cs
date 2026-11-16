@@ -76,7 +76,7 @@ public class LegalPolicy : AggregateRoot<LegalPolicyId>
     }
 
     /// <summary>
-    /// Publishes a new content. When it differs from the version in force, that version is kept in
+    /// Publishes new content. When it differs from the version in force, that version is kept in
     /// <see cref="PreviousVersions"/>, the new one gets the next number and
     /// <see cref="LegalPolicyPublished"/> is raised; the same content changes nothing.
     /// </summary>

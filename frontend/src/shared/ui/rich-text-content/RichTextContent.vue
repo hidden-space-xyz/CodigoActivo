@@ -4,7 +4,7 @@ import { renderRichTextHtml } from '@/shared/lib/rich-text'
 
 const props = defineProps<{
   /**
-   * Serialized TipTap JSON document, sanitized before rendering to HTML. Empty or unrenderable
+   * Serialized Tiptap JSON document, sanitized before rendering to HTML. Empty or unrenderable
    * content outputs nothing.
    */
   content?: string | null

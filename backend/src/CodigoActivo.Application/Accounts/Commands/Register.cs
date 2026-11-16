@@ -81,7 +81,7 @@ public sealed class RegisterCommandHandler(
     /// whose account <see cref="User.OwnsEmail"/> gets a notice instead and nothing is created; an
     /// address held by an account nobody verified gets the link of a new account that replaces it.
     /// The password is hashed before the address is looked up, so every outcome does the same
-    /// expensive work. A mail the limiter refuses or that cannot be queued does not fail the
+    /// expensive work. A mail the email guard refuses or that cannot be queued does not fail the
     /// registration; after a failed verification mail a new link can be requested at once.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>

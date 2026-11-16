@@ -16,7 +16,7 @@ public sealed record GetLeaderRosterQuery(EventId EventId)
 /// <summary>
 /// Executes the query to retrieve the leader roster of an event. It returns only the activities of
 /// the event that have not ended and in which the requesting user holds a confirmed leader
-/// assignment of their own, each with its currently confirmed attendees; everyone else, including
+/// signup of their own, each with its currently confirmed attendees; everyone else, including
 /// administrators and the guardians of a leading minor, receives an empty list. An unknown event
 /// answers that the event was not found.
 /// </summary>

@@ -4,7 +4,7 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Accounts.Commands;
 
 /// <summary>
-/// Carries the input required to change password.
+/// Carries the input required to change the password.
 /// </summary>
 /// <param name="UserId">Identifier of the account; it must be the signed-in user's own.</param>
 /// <param name="CurrentPassword">Current password of the account.</param>
@@ -16,7 +16,7 @@ public sealed record ChangePasswordCommand(
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to change password. The new password is hashed before the account is
+/// Executes the command to change the password. The new password is hashed before the account is
 /// locked and reloaded; the change then applies only while the stored password is still the one
 /// the current password was checked against, so a concurrent password step or code request waits
 /// for it instead of making it fail. Only the holder changes their own password: it needs the
@@ -40,7 +40,7 @@ public sealed class ChangePasswordCommandHandler(
 ) : ICommandHandler<ChangePasswordCommand, Result>
 {
     /// <summary>
-    /// Handles the request to change password.
+    /// Handles the request to change the password.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

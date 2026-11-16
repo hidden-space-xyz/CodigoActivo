@@ -5,7 +5,7 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Application.Accounts.Commands;
 
 /// <summary>
-/// Carries the input required to login.
+/// Carries the input required to log in.
 /// </summary>
 /// <param name="Identifier">Email of the account.</param>
 /// <param name="Password">Password of the account.</param>
@@ -47,7 +47,7 @@ public sealed class LoginCommandHandler(
 ) : ICommandHandler<LoginCommand, Result<LoginChallengeKey>>
 {
     /// <summary>
-    /// Handles the request to login.
+    /// Handles the request to log in.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

@@ -6,7 +6,7 @@ namespace CodigoActivo.Infrastructure.Database.Context;
 /// <summary>
 /// Builds the write context for the EF Core tools, so migrations are created from Infrastructure
 /// alone and the design-time packages never ship with the API. Creating a migration never opens
-/// the connection, so it points at a local placeholder database.
+/// the connection, so it points at a placeholder host that never resolves.
 /// </summary>
 public sealed class CodigoActivoDesignTimeDbContextFactory
     : IDesignTimeDbContextFactory<CodigoActivoDbContext>

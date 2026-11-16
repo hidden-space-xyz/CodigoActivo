@@ -75,7 +75,7 @@ public sealed class AuditLogEntryListQuery : PageQuery
     public Guid? ActorId { get; set; }
 
     /// <summary>
-    /// Gets or sets the command the entries must record.
+    /// Gets or sets the action the entries must record.
     /// </summary>
     [EnumDataType(typeof(AuditAction))]
     public AuditAction? Action { get; set; }

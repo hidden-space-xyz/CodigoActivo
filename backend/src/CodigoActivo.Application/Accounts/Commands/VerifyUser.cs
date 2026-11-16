@@ -32,8 +32,10 @@ public sealed class VerifyUserCommandHandler(
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>
     /// <returns>
-    /// A task whose result reports success, <see cref="ApplicationErrorCode.UserNotFound"/>, or
-    /// <see cref="ApplicationErrorCode.OtpInvalidOrExpired"/> for a wrong, expired or spent code.
+    /// A task whose result reports success, <see cref="ApplicationErrorCode.UserNotFound"/>,
+    /// <see cref="ApplicationErrorCode.OtpInvalidOrExpired"/> for a wrong, expired or spent code,
+    /// or <see cref="DomainErrorCode.UserNotPendingVerification"/> when the account no longer
+    /// waits for its verification.
     /// </returns>
     public async Task<Result> HandleAsync(VerifyUserCommand command, CancellationToken ct = default)
     {

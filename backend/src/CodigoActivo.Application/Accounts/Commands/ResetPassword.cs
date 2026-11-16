@@ -16,12 +16,12 @@ public sealed record ResetPasswordCommand(
 ) : ICommand<Result>;
 
 /// <summary>
-/// Executes the command to reset password. The new password is hashed before the account is
+/// Executes the command to reset the password. The new password is hashed before the account is
 /// locked and reloaded, and the code is checked again on the reloaded account, so a concurrent
 /// password step or code request waits for the reset instead of making it fail. The reset spends
-/// the code, lifts the lock left by wrong passwords and closes any open second-factor challenge;
-/// once it is committed every session of the account ends and the holder is emailed a security
-/// alert.
+/// the code, lifts the lock left by wrong passwords, closes any open second-factor challenge and
+/// drops the email change waiting for confirmation; once it is committed every session of the
+/// account ends and the holder is emailed a security alert.
 /// </summary>
 /// <param name="users">Repository used to persist and retrieve users.</param>
 /// <param name="accountLock">Runs the reset with the account locked.</param>
@@ -37,7 +37,7 @@ public sealed class ResetPasswordCommandHandler(
 ) : ICommandHandler<ResetPasswordCommand, Result>
 {
     /// <summary>
-    /// Handles the request to reset password.
+    /// Handles the request to reset the password.
     /// </summary>
     /// <param name="command">Command containing the operation input.</param>
     /// <param name="ct">Cancellation token used to stop the asynchronous operation.</param>

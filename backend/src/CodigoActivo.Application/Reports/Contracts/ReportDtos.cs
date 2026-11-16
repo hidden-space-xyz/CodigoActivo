@@ -106,7 +106,7 @@ public record EventGuardianContactResponse(
 /// <param name="Email">Attendee's email address; dependents have none.</param>
 /// <param name="Phone">Attendee's primary phone; dependents have none.</param>
 /// <param name="SecondaryPhone">Optional second contact phone of the attendee.</param>
-/// <param name="BirthDate">User's date of birth; only dependents have one.</param>
+/// <param name="BirthDate">Attendee's date of birth; only dependents have one.</param>
 /// <param name="Gender">Gender of the attendee.</param>
 /// <param name="UserTypeName">Display name of the membership type.</param>
 /// <param name="UserTypeColor">Color the membership type is shown with.</param>
@@ -181,10 +181,10 @@ public record EventBadgesResponse(
 /// <param name="UserId">Identifier of the person.</param>
 /// <param name="FirstName">Person's given name.</param>
 /// <param name="LastName">Person's family name.</param>
-/// <param name="BirthDate">User's date of birth; only dependents have one.</param>
+/// <param name="BirthDate">Person's date of birth; only dependents have one.</param>
 /// <param name="Email">Person's email address; dependents have none.</param>
 /// <param name="Phone">Person's primary phone; dependents have none.</param>
-/// <param name="SecondaryPhone">Optional second contact phone of the participant.</param>
+/// <param name="SecondaryPhone">Optional second contact phone of the person.</param>
 /// <param name="RoleName">Display name of the role the person is confirmed in.</param>
 /// <param name="Guardian">Guardian of a dependent; <see langword="null"/> for anyone else.</param>
 public record EventRosterParticipantResponse(

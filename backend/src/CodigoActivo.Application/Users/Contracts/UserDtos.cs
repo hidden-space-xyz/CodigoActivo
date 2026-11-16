@@ -42,8 +42,8 @@ namespace CodigoActivo.Application.Users.Contracts;
 /// </param>
 /// <param name="IsInitialAdmin">
 /// Whether the account is the initial administrator, the superadministrator: the only one that
-/// changes staff roles, designates the account for data protection and deletes other accounts, and
-/// one that can be neither deleted nor demoted.
+/// changes staff roles, designates the account for data protection and deletes accounts other than
+/// a guardian's own dependents, and one that can be neither deleted nor demoted.
 /// </param>
 /// <param name="Type">
 /// Membership type of the user; <see langword="null"/> unless read through

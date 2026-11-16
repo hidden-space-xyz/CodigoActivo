@@ -5,9 +5,12 @@ namespace CodigoActivo.Application.Inventory.Commands;
 /// <summary>
 /// What a column of an inventory category should become.
 /// </summary>
-/// <param name="Id">Identifier of an existing column of the category; <see langword="null"/> adds one.</param>
+/// <param name="Id">
+/// Identifier of an existing column of the category; <see langword="null"/> adds one.
+/// </param>
 /// <param name="Name">
-/// Name of up to <see cref="InventoryColumn.NameMaxLength"/> characters, unique within the category.
+/// Name of up to <see cref="InventoryColumn.NameMaxLength"/> characters, unique within the
+/// category.
 /// </param>
 /// <param name="Type">Kind of value the column holds.</param>
 /// <param name="Required">Whether every entry must have a value in it.</param>
@@ -43,7 +46,9 @@ public sealed record InventoryColumnDraft(
 /// <summary>
 /// What an option of a list column should become.
 /// </summary>
-/// <param name="Id">Identifier of an existing option of the column; <see langword="null"/> adds one.</param>
+/// <param name="Id">
+/// Identifier of an existing option of the column; <see langword="null"/> adds one.
+/// </param>
 /// <param name="Name">
 /// Name of up to <see cref="InventoryColumnOption.NameMaxLength"/> characters, unique within the
 /// column.

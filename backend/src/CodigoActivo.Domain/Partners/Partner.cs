@@ -4,7 +4,7 @@ using CodigoActivo.Domain.Users;
 namespace CodigoActivo.Domain.Partners;
 
 /// <summary>
-/// Organisation that supports the association, listed by sponsorship tier. Its profile changes
+/// Organization that supports the association, listed by sponsorship tier. Its profile changes
 /// only as a whole, recording who made the change.
 /// </summary>
 public class Partner : AuditableEntity<PartnerId>
