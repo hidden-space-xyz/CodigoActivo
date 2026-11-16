@@ -62,8 +62,7 @@ public class TermsDocumentsController : ApiControllerBase
     {
         return await ToCreatedAfterAsync(
             await handler.HandleAsync(request.ToCommand(), ct),
-            id => getById.HandleAsync(new GetTermsDocumentByIdQuery(id), ct),
-            id => $"/api/events/termsDocument/{id}"
+            id => getById.HandleAsync(new GetTermsDocumentByIdQuery(id), ct)
         );
     }
 

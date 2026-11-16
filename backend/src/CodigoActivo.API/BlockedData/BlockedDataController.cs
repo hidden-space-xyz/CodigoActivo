@@ -139,8 +139,7 @@ public class BlockedDataController : ApiControllerBase
     {
         return await ToCreatedAfterAsync(
             await handler.HandleAsync(request.ToCommand(), ct),
-            id => getById.HandleAsync(new GetBlockedDataConsultationQuery(id), ct),
-            id => $"/api/blocked-data/consultations/{id}"
+            id => getById.HandleAsync(new GetBlockedDataConsultationQuery(id), ct)
         );
     }
 
@@ -211,8 +210,7 @@ public class BlockedDataController : ApiControllerBase
     {
         return await ToCreatedAfterAsync(
             await handler.HandleAsync(request.ToCommand(consultationId), ct),
-            id => getById.HandleAsync(new GetBlockedDataHoldQuery(id), ct),
-            id => $"/api/blocked-data/holds/{id}"
+            id => getById.HandleAsync(new GetBlockedDataHoldQuery(id), ct)
         );
     }
 

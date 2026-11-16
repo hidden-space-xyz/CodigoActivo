@@ -58,7 +58,7 @@ public sealed class ExpiredAccountChangeCleanupTests(CodigoActivoWebAppFactory f
                     {
                         NewEmail = WaitingAddress,
                         CodeHash = "fake:email-change",
-                        ExpiresAt = now,
+                        ExpiresAt = now.AddSeconds(1),
                     },
                 }
             );

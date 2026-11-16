@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 
 import { legalEntityQueries } from '@/entities/legal-entity'
+import { logoMarkLarge } from '@/shared/branding'
 import { AppIcon } from '@/shared/ui/app-icon'
 import { BrandButton } from '@/shared/ui/brand-button'
 
@@ -37,8 +38,8 @@ const { data: legalEntity } = useQuery(legalEntityQueries.detail())
 
     <section class="about-what">
       <div class="ca-container--narrow about-what__grid">
-        <div class="about-what__photo" aria-hidden="true">
-          {{ $t('pages.about.what.photoPlaceholder') }}
+        <div class="about-what__brand" aria-hidden="true">
+          <img class="about-what__logo" :src="logoMarkLarge" alt="" width="640" height="640" />
         </div>
         <div>
           <h2 class="about-what__title">{{ $t('pages.about.what.title') }}</h2>
@@ -163,24 +164,19 @@ const { data: legalEntity } = useQuery(legalEntityQueries.detail())
   align-items: center;
 }
 
-.about-what__photo {
+.about-what__brand {
   min-height: 340px;
+  padding: 32px;
   border-radius: 18px;
-  background: repeating-linear-gradient(
-    135deg,
-    var(--ca-border),
-    var(--ca-border) 11px,
-    transparent 11px,
-    transparent 22px
-  );
   border: 1px solid var(--ca-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--ca-font-mono);
-  color: var(--ca-text-ghost);
-  font-size: 13px;
-  text-align: center;
+}
+
+.about-what__logo {
+  width: min(100%, 280px);
+  height: auto;
 }
 
 .about-what__title {
@@ -305,6 +301,9 @@ const { data: legalEntity } = useQuery(legalEntityQueries.detail())
   .about-what__grid {
     grid-template-columns: 1fr;
     gap: 28px;
+  }
+  .about-what__brand {
+    min-height: 0;
   }
   .about-hero__title {
     font-size: 36px;

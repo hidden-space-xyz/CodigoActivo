@@ -79,8 +79,8 @@ public abstract class ApiControllerBase : ControllerBase
     }
 
     /// <summary>
-    /// Answers a successful creation with its location and the read model loaded afterwards, or
-    /// with the command error.
+    /// Answers a successful creation with the read model loaded afterwards, and its location when
+    /// the API can read the new resource on its own, or with the command error.
     /// </summary>
     /// <typeparam name="TId">Type of the identifier of the new resource.</typeparam>
     /// <typeparam name="T">Type of the read model returned to the client.</typeparam>
@@ -89,7 +89,8 @@ public abstract class ApiControllerBase : ControllerBase
     /// </param>
     /// <param name="read">Query that loads the read model of the new resource.</param>
     /// <param name="location">
-    /// Builds the relative location of the new resource from its raw id.
+    /// Builds the relative location of the new resource from its raw id, or <see langword="null"/>
+    /// when no endpoint reads that resource alone, so the response carries no location.
     /// </param>
     /// <returns>
     /// A 201 result with the read model and its location, or the problem describing the failure.
@@ -97,21 +98,25 @@ public abstract class ApiControllerBase : ControllerBase
     protected async Task<ActionResult<T>> ToCreatedAfterAsync<TId, T>(
         Result<TId> result,
         Func<TId, Task<Result<T>>> read,
-        Func<Guid, string> location
+        Func<Guid, string>? location = null
     )
         where TId : struct, IEntityId<TId>
     {
         ArgumentNullException.ThrowIfNull(result);
         ArgumentNullException.ThrowIfNull(read);
-        ArgumentNullException.ThrowIfNull(location);
         if (result.IsFailure)
         {
             return ToProblem(result.Error!);
         }
 
         var created = await read(result.Value);
-        return created.IsFailure
-            ? ToProblem(created.Error!)
+        if (created.IsFailure)
+        {
+            return ToProblem(created.Error!);
+        }
+
+        return location is null
+            ? StatusCode(StatusCodes.Status201Created, created.Value)
             : Created(new Uri(location(result.Value.Value), UriKind.Relative), created.Value);
     }
 

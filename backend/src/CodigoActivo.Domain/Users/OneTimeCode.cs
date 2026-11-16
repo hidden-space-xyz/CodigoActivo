@@ -35,7 +35,7 @@ public readonly record struct OneTimeCode(
     /// <returns>The hash, or <see langword="null"/> when there is no code or it expired.</returns>
     public string? UsableHash(DateTimeOffset now)
     {
-        return ExpiresAt >= now ? Hash : null;
+        return ExpiresAt > now ? Hash : null;
     }
 
     /// <summary>

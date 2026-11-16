@@ -215,10 +215,10 @@ Equipo de Código Activo</value>
     <value>Confirma el cambio de correo</value>
   </data>
   <data name="emails.emailChangeCode.introText" xml:space="preserve">
-    <value>Hemos recibido una solicitud para cambiar el correo electrónico de tu cuenta de Código Activo. Desde entonces los códigos de acceso y los enlaces para restablecer la contraseña llegarán a la nueva dirección. Introduce este código para confirmar el cambio:</value>
+    <value>Hemos recibido una solicitud para cambiar el correo electrónico de tu cuenta de Código Activo. Cuando lo confirmes, los códigos de acceso y los enlaces para restablecer la contraseña llegarán a la nueva dirección. Introduce este código para confirmar el cambio:</value>
   </data>
   <data name="emails.emailChangeCode.introHtml" xml:space="preserve">
-    <value>Hemos recibido una solicitud para cambiar el correo electrónico de tu cuenta de &lt;b&gt;Código Activo&lt;/b&gt;. Desde entonces los códigos de acceso y los enlaces para restablecer la contraseña llegarán a la nueva dirección. Introduce este código para confirmar el cambio:</value>
+    <value>Hemos recibido una solicitud para cambiar el correo electrónico de tu cuenta de &lt;b&gt;Código Activo&lt;/b&gt;. Cuando lo confirmes, los códigos de acceso y los enlaces para restablecer la contraseña llegarán a la nueva dirección. Introduce este código para confirmar el cambio:</value>
   </data>
   <data name="emails.emailChangeCode.expiryText" xml:space="preserve">
     <value>El código caduca en {0} minutos y solo sirve una vez.</value>

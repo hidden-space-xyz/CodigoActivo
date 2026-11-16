@@ -8554,7 +8554,7 @@
           "activitiesCount",
           "confirmedAssignments",
           "deniedAssignments",
-          "distinctVolunteers",
+          "distinctPeople",
           "eventId",
           "ratingsCount",
           "requestedAssignments",
@@ -8592,7 +8592,7 @@
             "type": "integer",
             "format": "int32"
           },
-          "distinctVolunteers": {
+          "distinctPeople": {
             "type": "integer",
             "format": "int32"
           },

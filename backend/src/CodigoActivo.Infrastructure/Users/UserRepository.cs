@@ -83,7 +83,7 @@ public class UserRepository(CodigoActivoDbContext context, UnitOfWork unitOfWork
     {
         return await Accounts
             .Where(user =>
-                user.EmailChange.ExpiresAt < now || user.Authenticator.PendingExpiresAt <= now
+                user.EmailChange.ExpiresAt <= now || user.Authenticator.PendingExpiresAt <= now
             )
             .ToListAsync(ct);
     }

@@ -66,8 +66,7 @@ public class EventCategoryTypesController : ApiControllerBase
     {
         return await ToCreatedAfterAsync(
             await handler.HandleAsync(request.ToCommand(), ct),
-            id => getById.HandleAsync(new GetEventCategoryTypeByIdQuery(id), ct),
-            id => $"/api/events/categoryType/{id}"
+            id => getById.HandleAsync(new GetEventCategoryTypeByIdQuery(id), ct)
         );
     }
 

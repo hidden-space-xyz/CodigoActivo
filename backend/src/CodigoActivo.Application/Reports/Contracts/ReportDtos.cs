@@ -12,7 +12,7 @@ namespace CodigoActivo.Application.Reports.Contracts;
 /// <param name="RequestedAssignments">Number of signups waiting for a decision.</param>
 /// <param name="ConfirmedAssignments">Number of confirmed signups.</param>
 /// <param name="DeniedAssignments">Number of denied signups.</param>
-/// <param name="DistinctVolunteers">
+/// <param name="DistinctPeople">
 /// Number of different people signed up to any activity, whatever their role or status.
 /// </param>
 /// <param name="RatingsCount">Number of ratings received, with or without a score.</param>
@@ -31,7 +31,7 @@ public record EventSummaryResponse(
     int RequestedAssignments,
     int ConfirmedAssignments,
     int DeniedAssignments,
-    int DistinctVolunteers,
+    int DistinctPeople,
     int RatingsCount,
     int ScoredRatingsCount,
     double? RatingsAverage,

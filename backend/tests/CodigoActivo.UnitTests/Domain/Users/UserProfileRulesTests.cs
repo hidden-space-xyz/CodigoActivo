@@ -495,8 +495,8 @@ public sealed class UserProfileRulesTests
         account.Email!.Value.Should().Be("ana@test.com");
         account.Phone!.Value.Should().Be("600999999");
         account.EmailChange.NewEmail!.Value.Should().Be("new@test.com");
-        account.EmailChange.UsableCodeHash(Now.AddMinutes(15)).Should().Be("hash");
-        account.EmailChange.UsableCodeHash(Now.AddMinutes(16)).Should().BeNull();
+        account.EmailChange.UsableCodeHash(Now.AddMinutes(14)).Should().Be("hash");
+        account.EmailChange.UsableCodeHash(Now.AddMinutes(15)).Should().BeNull();
         account.UpdatedAt.Should().Be(Now);
 
         account.ConfirmEmailChange(Now.AddMinutes(1));

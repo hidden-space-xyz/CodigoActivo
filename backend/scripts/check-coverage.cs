@@ -1,12 +1,10 @@
-// Fails when merged backend coverage drops below the minimum percentage.
-// Usage: dotnet run --file scripts/check-coverage.cs -- <ReportGenerator Summary.json> [minimum, default 95]
 using System.Globalization;
 using System.Text.Json;
 
 if (args.Length is < 1 or > 2)
 {
     Console.Error.WriteLine(
-        "Usage: dotnet run --file scripts/check-coverage.cs -- <Summary.json> [minimum]"
+        "Usage: dotnet run --file scripts/check-coverage.cs -- <Summary.json> [minimum, default 95]"
     );
     return 2;
 }

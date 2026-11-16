@@ -58,7 +58,7 @@ export function buildSummary(overrides: Partial<EventSummaryResponse> = {}): Eve
     requestedAssignments: 1,
     confirmedAssignments: 7,
     deniedAssignments: 1,
-    distinctVolunteers: 5,
+    distinctPeople: 5,
     ratingsCount: 2,
     scoredRatingsCount: 2,
     ratingsAverage: 4.25,

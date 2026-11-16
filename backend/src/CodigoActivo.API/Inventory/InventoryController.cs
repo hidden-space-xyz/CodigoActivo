@@ -190,8 +190,7 @@ public class InventoryController : ApiControllerBase
         var id = InventoryCategoryId.From(categoryId);
         return await ToCreatedAfterAsync(
             await handler.HandleAsync(request.ToCommand(id), ct),
-            entryId => getById.HandleAsync(new GetInventoryEntryByIdQuery(id, entryId), ct),
-            entryId => $"/api/inventory/categories/{categoryId}/entries/{entryId}"
+            entryId => getById.HandleAsync(new GetInventoryEntryByIdQuery(id, entryId), ct)
         );
     }
 

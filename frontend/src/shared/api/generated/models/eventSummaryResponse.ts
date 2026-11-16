@@ -14,7 +14,7 @@ export interface EventSummaryResponse {
   requestedAssignments: number;
   confirmedAssignments: number;
   deniedAssignments: number;
-  distinctVolunteers: number;
+  distinctPeople: number;
   ratingsCount: number;
   scoredRatingsCount: number;
   /** @nullable */

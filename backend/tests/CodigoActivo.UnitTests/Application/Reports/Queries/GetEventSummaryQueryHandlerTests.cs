@@ -137,7 +137,7 @@ public sealed class GetEventSummaryQueryHandlerTests
         summary.RequestedAssignments.Should().Be(1);
         summary.ConfirmedAssignments.Should().Be(3);
         summary.DeniedAssignments.Should().Be(1);
-        summary.DistinctVolunteers.Should().Be(3);
+        summary.DistinctPeople.Should().Be(3);
         summary
             .RoleTypeBreakdown.Should()
             .Equal(
@@ -171,7 +171,7 @@ public sealed class GetEventSummaryQueryHandlerTests
         result.Value.RequestedAssignments.Should().Be(0);
         result.Value.ConfirmedAssignments.Should().Be(0);
         result.Value.DeniedAssignments.Should().Be(0);
-        result.Value.DistinctVolunteers.Should().Be(0);
+        result.Value.DistinctPeople.Should().Be(0);
         result.Value.RoleTypeBreakdown.Should().BeEmpty();
     }
 }

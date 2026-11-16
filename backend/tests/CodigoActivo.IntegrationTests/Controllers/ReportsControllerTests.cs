@@ -300,7 +300,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         summary.RequestedAssignments.Should().Be(1);
         summary.ConfirmedAssignments.Should().Be(2);
         summary.DeniedAssignments.Should().Be(1);
-        summary.DistinctVolunteers.Should().Be(4);
+        summary.DistinctPeople.Should().Be(4);
         summary
             .RoleTypeBreakdown.Select(r => (r.RoleTypeId, r.RoleTypeName, r.ApprovedAssignments))
             .Should()
@@ -312,7 +312,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
-    public async Task EventSummaryAsyncRepeatedUserAcrossActivitiesCountsDistinctVolunteersOnce()
+    public async Task EventSummaryAsyncRepeatedUserAcrossActivitiesCountsDistinctPeopleOnce()
     {
         await SeedEventGraphAsync();
         await Factory.SeedAsync(db =>
@@ -340,7 +340,7 @@ public sealed class ReportsControllerTests(CodigoActivoWebAppFactory factory)
         summary.RequestedAssignments.Should().Be(2);
         summary.ConfirmedAssignments.Should().Be(2);
         summary.DeniedAssignments.Should().Be(1);
-        summary.DistinctVolunteers.Should().Be(4);
+        summary.DistinctPeople.Should().Be(4);
     }
 
     [Fact]

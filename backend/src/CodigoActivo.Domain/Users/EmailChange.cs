@@ -40,7 +40,7 @@ public readonly record struct EmailChange(
     /// </returns>
     public string? UsableCodeHash(DateTimeOffset now)
     {
-        return ExpiresAt >= now ? CodeHash : null;
+        return ExpiresAt > now ? CodeHash : null;
     }
 
     /// <summary>

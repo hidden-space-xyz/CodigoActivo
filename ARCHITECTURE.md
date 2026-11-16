@@ -360,7 +360,8 @@ has no translation or a wire code is reached by none. Controllers translate fail
 model validation, authorization, CSRF, rate-limit rejections (`TooManyRequests` with `Retry-After`) and
 unhandled exceptions. HTTP mappings: 400 validation, 401 unauthenticated, 403 forbidden, 404 not found, 409
 conflict, 429 too many requests, 500 unexpected. A path under `/api` that matches no endpoint answers 404
-`EndpointNotFound` to anyone, and every create answers 201 with the new resource and its `Location`.
+`EndpointNotFound` to anyone, and every create answers 201 with the new resource, plus its `Location` when an
+endpoint reads that resource alone.
 
 `ErrorCode` is serialized as a string and is part of the frontend contract; the API registers the string enum
 converter for MVC and for the responses it writes directly, since the Domain carries no serialization

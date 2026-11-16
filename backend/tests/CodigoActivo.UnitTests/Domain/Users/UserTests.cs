@@ -391,7 +391,11 @@ public sealed class UserTests
     public void DiscardExpiredChangesKeepsWhatCanStillBeConfirmed()
     {
         var user = NewPendingUser();
-        var emailChange = new EmailChange(EmailAddress.FromStored("nueva@test.local"), "HASH", Now);
+        var emailChange = new EmailChange(
+            EmailAddress.FromStored("nueva@test.local"),
+            "HASH",
+            Now.AddSeconds(1)
+        );
         var authenticator = new Authenticator(null, null, "PENDING", Now.AddSeconds(1));
         Persisted.Overwrite(user, new { EmailChange = emailChange, Authenticator = authenticator });
 
@@ -594,7 +598,7 @@ public sealed class UserTests
 
     [Theory]
     [InlineData(9, true)]
-    [InlineData(10, true)]
+    [InlineData(10, false)]
     [InlineData(11, false)]
     public void IssueOtpIssuedCodeIsUsableUntilItExpires(int minutesLater, bool usable)
     {
@@ -608,7 +612,7 @@ public sealed class UserTests
 
     [Theory]
     [InlineData(9, true)]
-    [InlineData(10, true)]
+    [InlineData(10, false)]
     [InlineData(11, false)]
     public void IssueLoginCodeIssuedCodeIsUsableUntilItExpires(int minutesLater, bool usable)
     {
@@ -622,7 +626,7 @@ public sealed class UserTests
 
     [Theory]
     [InlineData(9, true)]
-    [InlineData(10, true)]
+    [InlineData(10, false)]
     [InlineData(11, false)]
     public void IssuePasswordResetCodeIssuedCodeIsUsableUntilItExpires(
         int minutesLater,
