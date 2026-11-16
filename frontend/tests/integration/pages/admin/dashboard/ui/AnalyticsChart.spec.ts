@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import AnalyticsChart from '@/pages/admin/dashboard/ui/AnalyticsChart.vue'
-import { BaseChart } from '@/shared/ui/chart'
 
 import { renderWithProviders, t } from '../../../../../support/render'
 import { fakeCharts, resetFakeCharts } from '../../../../../support/chart-mock'
@@ -16,12 +15,10 @@ describe('AnalyticsChart', () => {
   const chart = { data: { labels: [], datasets: [] }, options: {}, empty: false }
   const baseProps = { title: 'Inscripciones', subtitle: 'Por estado', chart }
 
-  it('draws a bar chart inside a card with the default height', async () => {
+  it('draws a bar chart with the default height', async () => {
     const { wrapper } = await renderWithProviders(AnalyticsChart, { props: baseProps })
 
-    expect(wrapper.find('h2').text()).toBe('Inscripciones')
     expect(wrapper.find('.analytics-chart__canvas').attributes('style')).toContain('height: 260px')
-    expect(wrapper.findComponent(BaseChart).exists()).toBe(true)
     expect(fakeCharts).toHaveLength(1)
     expect(fakeCharts[0]?.config.type).toBe('bar')
   })

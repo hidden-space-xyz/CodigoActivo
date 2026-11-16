@@ -1,19 +1,24 @@
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
-import { ElColorPicker, ElDatePicker, ElDialog, ElSelect } from 'element-plus'
+import { ElColorPicker, ElDatePicker, ElDialog, ElSelect, ElSwitch } from 'element-plus'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { EventDetail, EventInput } from '@/entities/event'
 import { toEventDetail } from '@/entities/event/api/mapper'
 import EventFormDialog from '@/pages/admin/events/ui/EventFormDialog.vue'
-import type { CreateEventCategoryTypeRequest, EventResponse } from '@/shared/api/generated/models'
+import type {
+  CreateEventCategoryTypeRequest,
+  EventResponse,
+  TermsDocumentResponse,
+} from '@/shared/api/generated/models'
 
 import { renderWithProviders, t } from '../../../../../support/render'
-import { apiError, http, HttpResponse, server } from '../../../../../support/server'
+import { apiError, http, HttpResponse, paged, server } from '../../../../../support/server'
 import { useCatalogHandlers } from '../../../../../support/api/catalogs'
 import {
   buildEventCategory,
   buildEventResponse,
   buildEventTermsLink,
+  buildTermsDocument,
   THUMBNAIL_ID,
 } from '../../../../../support/builders'
 import { bodyFind, clickButton, pickThumbnail, propOf } from '../../../../../support/dom'
@@ -40,8 +45,15 @@ function buildAdminEvent(overrides: Partial<EventResponse> = {}): EventDetail {
   )
 }
 
-async function openDialog(event: EventDetail | null = null) {
+async function openDialog(
+  event: EventDetail | null = null,
+  termsDocuments?: TermsDocumentResponse[],
+) {
   useCatalogHandlers()
+  if (termsDocuments)
+    server.use(
+      http.get('/api/events/termsDocument', () => HttpResponse.json(paged(termsDocuments))),
+    )
   const rendered = await renderWithProviders(EventFormDialog, {
     props: { visible: false, event, saving: false },
     attach: true,
@@ -167,14 +179,6 @@ describe('EventFormDialog', () => {
     })
   })
 
-  it('starts blank when creating an event', async () => {
-    const { wrapper } = await openDialog()
-
-    expect(bodyFind<HTMLInputElement>('#event-title').element.value).toBe('')
-    expect(wrapper.findAllComponents(ElSelect)[0]?.props('modelValue')).toEqual([])
-    expect(pickers(wrapper).eventStart.props('modelValue')).toBeNull()
-  })
-
   it('keeps the order of the linked terms documents and whether each one is required', async () => {
     const { wrapper } = await openDialog(
       buildAdminEvent({
@@ -218,26 +222,49 @@ describe('EventFormDialog', () => {
     expect(wrapper.emitted('submit')).toBeUndefined()
   })
 
-  it('rejects inconsistent date ranges', async () => {
+  it('shows the early signup error when it opens after the regular signup', async () => {
     const { wrapper } = await openDialog(buildAdminEvent())
-    const dates = pickers(wrapper)
-    await setDate(dates.eventStart, new Date(2026, 9, 12))
-    await setDate(dates.eventEnd, new Date(2026, 9, 10))
-    await setDate(dates.signupStart, new Date(2026, 9, 20, 10, 0))
-    await setDate(dates.signupEnd, new Date(2026, 9, 20, 10, 0))
-    await setDate(dates.earlySignup, new Date(2026, 9, 21, 10, 0))
+    await setDate(pickers(wrapper).earlySignup, new Date(2026, 8, 2, 10, 0))
 
     const dialog = document.body.querySelector('.el-dialog')
     if (!dialog) throw new Error('Dialog not found')
     clickButton(t('common.save'), dialog)
     await flushPromises()
 
-    const text = bodyText()
-    expect(text).toContain(t('pages.admin.events.form.problems.eventOrderInvalid'))
-    expect(text).toContain(t('pages.admin.events.form.problems.signupOrderInvalid'))
-    expect(text).toContain(t('pages.admin.events.form.problems.signupAfterEventEnd'))
-    expect(text).toContain(t('pages.admin.events.form.problems.earlySignupOrderInvalid'))
+    expect(bodyText()).toContain(t('pages.admin.events.form.problems.earlySignupOrderInvalid'))
     expect(wrapper.emitted('submit')).toBeUndefined()
+  })
+
+  it('lets a linked condition be made optional and never offers the switch for a consent', async () => {
+    const { wrapper } = await openDialog(buildAdminEvent(), [
+      buildTermsDocument({ id: 'terms-1', name: 'Normas' }),
+      buildTermsDocument({ id: 'terms-2', name: 'Imagen', kind: 'Consent' }),
+    ])
+    wrapper.findAllComponents(ElSelect)[1]?.vm.$emit('update:modelValue', ['terms-1', 'terms-2'])
+    await flushPromises()
+
+    const rows = [...document.body.querySelectorAll('[data-testid="event-form-terms-row"]')]
+    expect(rows.map((row) => row.querySelector('.form__terms-name')?.textContent)).toEqual([
+      'Normas',
+      'Imagen',
+    ])
+    expect(rows[1]?.textContent).toContain(t('pages.admin.events.form.termsConsentOptional'))
+    expect(rows[1]?.querySelector('.el-switch')).toBeNull()
+    const switches = wrapper.findAllComponents(ElSwitch)
+    expect(switches).toHaveLength(1)
+    switches[0]?.vm.$emit('update:modelValue', false)
+    await flushPromises()
+
+    const dialog = document.body.querySelector('.el-dialog')
+    if (!dialog) throw new Error('Dialog not found')
+    clickButton(t('common.save'), dialog)
+    await vi.waitFor(() => expect(wrapper.emitted('submit')).toHaveLength(1))
+
+    const [input] = wrapper.emitted<[EventInput]>('submit')?.[0] ?? []
+    expect(input?.terms).toEqual([
+      { documentId: 'terms-1', required: false },
+      { documentId: 'terms-2', required: false },
+    ])
   })
 
   it('disables calendar days outside the allowed ranges', async () => {

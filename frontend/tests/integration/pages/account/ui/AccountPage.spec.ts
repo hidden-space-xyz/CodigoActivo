@@ -33,10 +33,6 @@ function serveAccount() {
   )
 }
 
-function tabLabels(): string[] {
-  return [...document.querySelectorAll('.el-tabs__item')].map((tab) => tab.textContent.trim())
-}
-
 function activePanelText(): string {
   const panel = [...document.querySelectorAll<HTMLElement>('.el-tab-pane')].find(
     (candidate) => candidate.style.display !== 'none',
@@ -70,18 +66,8 @@ describe('account page', () => {
     const { wrapper } = await renderApp('/account', { user: {} })
     await vi.waitFor(() => expect(wrapper.text()).toContain('Byron Lovelace'))
 
-    expect(wrapper.text()).toContain(t('pages.account.title'))
-    expect(wrapper.text()).toContain(t('pages.account.intro'))
-    expect(tabLabels()).toEqual([
-      t('pages.account.tabs.profile'),
-      t('pages.account.tabs.history'),
-      t('pages.account.tabs.certificates'),
-    ])
     expect(activePanelText()).toContain(t('pages.account.profile.lead'))
-    expect(activePanelText()).toContain(t('pages.account.twoFactor.title'))
-    expect(activePanelText()).toContain(t('pages.account.minors.title'))
     await vi.waitFor(() => expect(activePanelText()).toContain(t('pages.account.consents.empty')))
-    expect(activePanelText()).toContain(t('pages.account.deleteAccount.title'))
     expect(wrapper.text()).not.toContain('Campus de verano')
   })
 

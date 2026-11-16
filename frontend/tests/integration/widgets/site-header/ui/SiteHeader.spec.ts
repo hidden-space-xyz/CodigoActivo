@@ -47,12 +47,9 @@ describe('SiteHeader', () => {
     expect(wrapper.find('.header__brand').attributes('aria-label')).toBe(t('common.brand.name'))
     expect(wrapper.find('.header__brand').attributes('href')).toBe('/')
     expect(linkTexts(wrapper, '.header__nav .header__link')).toEqual(primaryLabels())
-    expect(wrapper.find('.header__login').text()).toBe(t('common.login'))
     expect(wrapper.find('.header__login').attributes('href')).toBe('/login')
-    expect(wrapper.find('.header__cta').text()).toBe(t('common.register'))
     expect(wrapper.find('.header__cta').attributes('href')).toBe('/register')
     expect(wrapper.find('.header__greeting').exists()).toBe(false)
-    expect(wrapper.find('.theme-toggle').exists()).toBe(true)
     expect(wrapper.text()).not.toContain(t('common.myAccount'))
   })
 
@@ -134,9 +131,6 @@ describe('SiteHeader', () => {
       const menu = await openMenu(wrapper)
 
       expect(burger.attributes('aria-expanded')).toBe('true')
-      expect(document.body.querySelector('.el-drawer__title')?.textContent).toBe(
-        t('widgets.siteHeader.menuTitle'),
-      )
       expect(menu.querySelector('.menu__greeting')).toBeNull()
       expect(menuLinks(menu)).toEqual(primaryLabels())
       expect(

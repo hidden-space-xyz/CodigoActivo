@@ -2,7 +2,7 @@ import { expect, type Locator, type Page } from '@playwright/test'
 
 import type { Credentials } from '../../api/accounts'
 import { AuthenticatorApp } from '../../api/my-account'
-import { codeIn, SUBJECTS, type Mailbox } from '../../mail/mailbox'
+import { codeIn, SUBJECTS, type Email, type Mailbox } from '../../mail/mailbox'
 import type { AccountPage } from './account-page'
 
 /** The section «Verificación en dos pasos» of the profile tab. */
@@ -56,6 +56,9 @@ export class AuthenticatorSetupDialog {
   /** «Activar», which sends the code step. */
   readonly activate: Locator
 
+  /** «Reenviar código», in the emailed code step. */
+  readonly resend: Locator
+
   /** The error the dialog shows for a refused request. */
   readonly error: Locator
 
@@ -69,20 +72,26 @@ export class AuthenticatorSetupDialog {
     this.code = this.root.getByTestId('two-factor-setup-code')
     this.activate = this.root.getByTestId('two-factor-setup-activate')
     this.error = this.root.getByTestId('two-factor-setup-error')
+    this.resend = this.root.getByTestId('two-factor-setup-resend')
   }
 
-  /** Sends the password step and waits for the code it emails to `credentials.email`. */
-  async requestCode(mailbox: Mailbox, credentials: Credentials): Promise<string> {
+  /** Sends the password step and waits for the code email it sends to `credentials.email`. */
+  async requestCode(mailbox: Mailbox, credentials: Credentials): Promise<Email> {
     await this.password.fill(credentials.password)
     const sentAfter = new Date()
     await this.sendCode.click()
     await expect(this.emailCode).toBeVisible()
-    const email = await mailbox.waitFor({
+    return mailbox.waitFor({
       to: credentials.email,
       subject: SUBJECTS.authenticatorSetupCode,
       sentAfter,
     })
-    return codeIn(email)
+  }
+
+  /** Asks for another code once the resend cooldown after `previous` is over and returns it. */
+  async resendCode(mailbox: Mailbox, to: string, previous: Email): Promise<string> {
+    const query = { to, subject: SUBJECTS.authenticatorSetupCode }
+    return codeIn(await mailbox.waitForResent(previous, query, this.resend))
   }
 
   /**
@@ -90,7 +99,7 @@ export class AuthenticatorSetupDialog {
    * then shows.
    */
   async unlock(mailbox: Mailbox, credentials: Credentials): Promise<AuthenticatorApp> {
-    await this.emailCode.fill(await this.requestCode(mailbox, credentials))
+    await this.emailCode.fill(codeIn(await this.requestCode(mailbox, credentials)))
     await this.continue.click()
     await expect(this.sharedKey).toHaveText(/^[A-Z2-7 ]{16,}$/)
     return new AuthenticatorApp(await this.sharedKey.innerText())

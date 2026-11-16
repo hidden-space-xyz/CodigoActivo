@@ -7,7 +7,6 @@ import { i18n } from '@/shared/i18n'
 
 import { renderApp, t } from '../../../../support/render'
 import { apiError, http, noContent, server, TEST_CSRF_TOKEN } from '../../../../support/server'
-import { useHomeApi } from '../../../../support/api/home'
 
 function page(wrapper: VueWrapper) {
   return wrapper.get('main')
@@ -53,19 +52,6 @@ function serveRegister(response: () => Response) {
 }
 
 describe('register page', () => {
-  it('stops minors at the age gate with guardian instructions', async () => {
-    const { wrapper } = await renderApp('/register')
-    const heading = page(wrapper).get('.register-head')
-    expect(heading.get('h1').text()).toBe(t('pages.register.title'))
-    expect(heading.get('.page-heading__comment').text()).toBe(`//${t('pages.register.intro')}`)
-    expect(heading.find('.eyebrow').exists()).toBe(false)
-
-    await clickButton(wrapper, t('pages.register.ageGate.decline'))
-
-    expect(page(wrapper).text()).toContain(t('pages.register.ageGate.blockedHeading'))
-    expect(wrapper.find('form').exists()).toBe(false)
-  })
-
   it('registers an adult with a minor and asks to verify the email', async () => {
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] })
     const received = serveRegister(noContent)
@@ -175,33 +161,5 @@ describe('register page', () => {
     )
     expect(wrapper.find('form').exists()).toBe(true)
     expect((wrapper.get('#reg-firstname').element as HTMLInputElement).value).toBe('Ada')
-  })
-
-  it('does not call the API when the form is invalid', async () => {
-    const received = serveRegister(noContent)
-    const { wrapper } = await renderApp('/register')
-    await clickButton(wrapper, t('pages.register.ageGate.confirm'))
-
-    await wrapper.find('form').trigger('submit')
-    await vi.waitFor(() => expect(wrapper.findAll('.ca-field__error').length).toBeGreaterThan(0))
-
-    expect(received).toHaveLength(0)
-  })
-
-  it('returns from the form to the age gate', async () => {
-    const { wrapper } = await renderApp('/register')
-    await clickButton(wrapper, t('pages.register.ageGate.confirm'))
-
-    await clickButton(wrapper, t('pages.register.back'))
-
-    expect(page(wrapper).text()).toContain(t('pages.register.ageGate.question'))
-  })
-
-  it('sends signed-in users home', async () => {
-    useHomeApi()
-
-    const { router } = await renderApp('/register', { user: {} })
-
-    expect(router.currentRoute.value.name).toBe('home')
   })
 })

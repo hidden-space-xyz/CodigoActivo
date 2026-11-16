@@ -17,16 +17,10 @@ async function renderFilter(props: { preset: string; customRange: (Date | null)[
 }
 
 describe('RangeFilter', () => {
-  it('renders the presets and marks the active one', async () => {
+  it('marks the active preset as pressed', async () => {
     const { wrapper } = await renderFilter({ preset: '90d', customRange: null })
 
     const pills = wrapper.findAll('.range-filter__pill')
-    expect(pills.map((pill) => pill.text())).toEqual([
-      t('pages.admin.dashboard.range.preset30d'),
-      t('pages.admin.dashboard.range.preset90d'),
-      t('pages.admin.dashboard.range.preset12m'),
-      t('pages.admin.dashboard.range.custom'),
-    ])
     expect(pills.map((pill) => pill.attributes('aria-pressed'))).toEqual([
       'false',
       'true',

@@ -107,11 +107,12 @@ describe('ProfileSection', () => {
   })
 
   it('shows dashes for missing optional data', async () => {
-    serveProfile(buildUserResponse({ email: null, phone: null }))
+    serveProfile(buildUserResponse({ email: null, phone: null, nationalId: null }))
 
     await renderSection()
 
     expect(infoRows()).toMatchObject({
+      [t('common.nationalId')]: '—',
       [t('common.email')]: '—',
       [t('common.phone')]: '—',
       [t('common.secondaryPhone')]: '—',
@@ -334,6 +335,27 @@ describe('ProfileSection', () => {
       ).toBe(t('errors.TwoFactorResendCooldownActive')),
     )
     expect(findButton(t('common.sendCode'), dialog)).toBeTruthy()
+  })
+
+  it('reports a wrong password under the password when asking for the code', async () => {
+    serveProfile()
+    server.use(
+      http.post('/api/me/confirmation-code', () => apiError(400, 'UserCurrentPasswordIncorrect')),
+    )
+    await renderSection()
+
+    await click(findButton(t('pages.account.profile.editData'), document.body))
+    const dialog = openDialog(t('pages.account.profile.editDialogHeader'))
+    await typeInto('#p-email', 'augusta@example.test', dialog)
+    await typeInto('#p-current', 'wrong-password', dialog)
+    await click(findButton(t('common.sendCode'), dialog))
+
+    await vi.waitFor(() =>
+      expect(dialog.textContent).toContain(t('errors.UserCurrentPasswordIncorrect')),
+    )
+    expect(dialog.querySelector('[data-testid="profile-dialog-code-error"]')).toBeNull()
+    expect(findButton(t('common.sendCode'), dialog)).toBeTruthy()
+    expect(notificationTexts()).toHaveLength(0)
   })
 
   it('asks an authenticator user for the app code without emailing one', async () => {
@@ -621,6 +643,21 @@ describe('ProfileSection', () => {
     expect(logout).toHaveBeenCalledOnce()
     expect(notificationTexts().join()).toContain(t('pages.account.profile.passwordUpdatedSummary'))
     expect(notificationTexts().join()).toContain(t('pages.account.profile.passwordUpdatedDetail'))
+  })
+
+  it('still ends the session and asks to sign in again when signing out fails', async () => {
+    serveProfile()
+    server.use(
+      http.patch('/api/users/:userId/password', () => new HttpResponse(null, { status: 204 })),
+      http.post('/api/auth/logout', () => apiError(500)),
+    )
+    const { router, queryClient } = await renderSection()
+
+    await submitPassword('old-password', 'a-long-password-1', 'a-long-password-1')
+
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login'))
+    expect(currentUser(queryClient)).toBeNull()
+    expect(notificationTexts().join()).toContain(t('pages.account.profile.passwordUpdatedSummary'))
   })
 
   it('resets the password form on reopening', async () => {

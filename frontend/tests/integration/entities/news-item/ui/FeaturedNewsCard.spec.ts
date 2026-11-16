@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { FeaturedNewsCard } from '@/entities/news-item'
 
-import { renderWithProviders, t } from '../../../../support/render'
+import { renderWithProviders } from '../../../../support/render'
 import { buildNewsSummary } from '../../../../support/models'
 
 describe('FeaturedNewsCard', () => {
@@ -13,18 +13,12 @@ describe('FeaturedNewsCard', () => {
       props: { newsItem },
     })
 
-    expect(wrapper.find('.featured__badge').text()).toBe(t('entities.newsItem.featured.badge'))
     expect(wrapper.find('h2').text()).toBe('Abrimos inscripciones')
     expect(wrapper.find('.featured__slogan').text()).toBe('Plazas limitadas')
     expect(wrapper.find('.featured__cats').exists()).toBe(false)
-    expect(wrapper.find('.featured__meta-label').text()).toBe(
-      t('entities.newsItem.featured.publishedLabel'),
-    )
     expect(wrapper.find('.featured__meta-value').text()).toBe('15 mar 2026')
 
-    const cta = wrapper.find('a.featured__cta')
-    expect(cta.text()).toBe(t('entities.newsItem.featured.readMore'))
-    await cta.trigger('click')
+    await wrapper.find('a.featured__cta').trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.fullPath).toBe('/news/news-item-1')
   })

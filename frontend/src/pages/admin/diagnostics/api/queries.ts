@@ -6,7 +6,7 @@ import type { DiagnosticEntry, DiagnosticListParams } from '../model/types'
 import { getDiagnosticDetailRequest, getDiagnosticsPageRequest } from './requests'
 
 /** Query keys of the diagnostic log. */
-export const diagnosticKeys = {
+const diagnosticKeys = {
   all: ['logs', 'diagnostics'] as const,
   list: () => [...diagnosticKeys.all, 'list'] as const,
   detail: (id: string) => [...diagnosticKeys.all, 'detail', id] as const,

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using AwesomeAssertions;
 using CodigoActivo.API.Contracts;
 using CodigoActivo.API.Controllers.Abstractions;
@@ -5,7 +6,9 @@ using CodigoActivo.API.Errors;
 using CodigoActivo.API.Extensions;
 using CodigoActivo.Application.Common.Errors;
 using CodigoActivo.Domain.Common;
+using CodigoActivo.Domain.Partners;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Xunit;
 
@@ -35,6 +38,16 @@ public sealed class ApiErrorResponseExtensionsTests
         public new ActionResult ToProblem(Error error)
         {
             return base.ToProblem(error);
+        }
+
+        public new Task<ActionResult<T>> ToCreatedAfterAsync<TId, T>(
+            Result<TId> result,
+            Func<TId, Task<Result<T>>> read,
+            Func<Guid, string> location
+        )
+            where TId : struct, IEntityId<TId>
+        {
+            return base.ToCreatedAfterAsync(result, read, location);
         }
     }
 
@@ -154,5 +167,78 @@ public sealed class ApiErrorResponseExtensionsTests
         body.Title.Should().Be("Bad Request");
         body.Code.Should().Be(ErrorCode.PartnerThumbnailNotFound);
         body.TraceId.Should().Be("trace-problem");
+    }
+
+    [Fact]
+    public void CreateRequestActivityShowsItsTraceIdInsteadOfTheConnectionOne()
+    {
+        using var activity = new Activity("request").SetIdFormat(ActivityIdFormat.W3C).Start();
+        var context = ContextWithTrace();
+        context.Features.Set<IHttpActivityFeature>(new ActivityFeature(activity));
+
+        var (_, body) = ApiErrorResponseExtensions.Create(
+            ApiError.Unauthorized(ErrorCode.InvalidCredentials),
+            context
+        );
+
+        body.TraceId.Should().Be(activity.TraceId.ToHexString());
+    }
+
+    [Fact]
+    public void CreateActivityWithoutTraceIdShowsTheConnectionOne()
+    {
+        var context = ContextWithTrace();
+        context.Features.Set<IHttpActivityFeature>(new ActivityFeature(new Activity("request")));
+
+        var (_, body) = ApiErrorResponseExtensions.Create(
+            ApiError.Unauthorized(ErrorCode.InvalidCredentials),
+            context
+        );
+
+        body.TraceId.Should().Be(TraceId);
+    }
+
+    [Fact]
+    public async Task ToCreatedAfterAsyncCreatedResourceAnswersItsLocationAndReadModel()
+    {
+        var id = PartnerId.New();
+
+        var actionResult = await NewController()
+            .ToCreatedAfterAsync(
+                Result.Success(id),
+                created => Task.FromResult(Result.Success(created.Value.ToString())),
+                raw => $"/api/partners/{raw}"
+            );
+
+        var created = actionResult.Result.Should().BeOfType<CreatedResult>().Subject;
+        created.Location.Should().Be($"/api/partners/{id.Value}");
+        created.Value.Should().Be(id.Value.ToString());
+    }
+
+    [Fact]
+    public async Task ToCreatedAfterAsyncReadFailingAfterTheCreationAnswersItsProblem()
+    {
+        var actionResult = await NewController()
+            .ToCreatedAfterAsync(
+                Result.Success(PartnerId.New()),
+                _ =>
+                    Task.FromResult<Result<string>>(
+                        Error.NotFound(ApplicationErrorCode.PartnerNotFound)
+                    ),
+                raw => $"/api/partners/{raw}"
+            );
+
+        var problem = actionResult.Result.Should().BeOfType<ObjectResult>().Subject;
+        problem.StatusCode.Should().Be(StatusCodes.Status404NotFound);
+        problem
+            .Value.Should()
+            .BeOfType<ApiErrorResponse>()
+            .Which.Code.Should()
+            .Be(ErrorCode.PartnerNotFound);
+    }
+
+    private sealed class ActivityFeature(Activity activity) : IHttpActivityFeature
+    {
+        public Activity Activity { get; set; } = activity;
     }
 }

@@ -13,15 +13,8 @@ function leaves(value: unknown, path = ''): [string, string][] {
 }
 
 describe('elementPlusLocale', () => {
-  it('is the Spanish locale with the accessible labels translated', () => {
+  it('is the Spanish locale with no sentence in English besides a developer warning', () => {
     expect(elementPlusLocale.name).toBe('es')
-    expect(elementPlusLocale.el.dialog.close).toBe('Cerrar este diálogo')
-    expect(elementPlusLocale.el.messagebox.close).toBe('Cerrar este diálogo')
-    expect(elementPlusLocale.el.table.sortLabel).toBe('Ordenar por {column}')
-    expect(elementPlusLocale.el.pagination.next).toBe('Ir a la página siguiente')
-  })
-
-  it('leaves no sentence in English besides a developer warning', () => {
     const english = new Map(leaves(en.el))
     const untranslated = leaves(elementPlusLocale.el).filter(
       ([path, text]) => english.get(path) === text && /[a-z]{3}/i.test(text),

@@ -169,6 +169,22 @@ public sealed class SecurityAlertEmailTests
         message.HtmlBody.Should().NotBeNullOrEmpty();
     }
 
+    [Fact]
+    public void CreateUnknownChangeIsRefused()
+    {
+        var act = () =>
+            SecurityAlertEmail.Create(
+                "owner@test.com",
+                "Owner",
+                (AccountSecurityChange)999,
+                OccurredAt,
+                TimeZoneInfo.Utc,
+                "https://app.test"
+            );
+
+        act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("change");
+    }
+
     [Theory]
     [MemberData(nameof(Sentences))]
     public void CreateTitlesEachLockApartFromTheOtherChanges(

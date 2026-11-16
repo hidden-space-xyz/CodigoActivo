@@ -11,7 +11,7 @@ import {
 import { createTestQueryClient } from '../../../../../support/render'
 
 describe('rosterQueries', () => {
-  it('loads the roster of an event, leaving unknown contact data empty', async () => {
+  it('loads the roster of an event, leaving unknown contact data of participants and guardians empty', async () => {
     server.use(
       http.get('/api/reports/events/:eventId/roster', () =>
         HttpResponse.json({
@@ -23,6 +23,10 @@ describe('rosterQueries', () => {
                 buildRosterParticipant({
                   email: null,
                   guardian: { firstName: 'Mary', lastName: 'Lovelace', phone: '611000000' },
+                }),
+                buildRosterParticipant({
+                  userId: 'user-2',
+                  guardian: { firstName: 'Tom', lastName: 'Lovelace', phone: null },
                 }),
               ],
             }),
@@ -60,6 +64,10 @@ describe('rosterQueries', () => {
                 secondaryPhone: '',
               },
             },
+            expect.objectContaining({
+              userId: 'user-2',
+              guardian: expect.objectContaining({ phone: '' }),
+            }),
           ],
         },
       ],

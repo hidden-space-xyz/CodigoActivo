@@ -1,6 +1,7 @@
 using System.Text.Json;
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Security;
+using CodigoActivo.Composition;
 using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.BlockedData;
 using CodigoActivo.Domain.Events;
@@ -42,7 +43,7 @@ public sealed class DemoDataHistorySeederTests(CodigoActivoWebAppFactory factory
     private async Task SeedHistoryAsync()
     {
         await using var scope = Factory.Services.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<DemoDataHistorySeeder>().SeedAsync(Ct);
+        await scope.ServiceProvider.SeedDemoDataHistoryAsync(Ct);
     }
 
     private static string? Text(DataHistoryRecord record, string property)

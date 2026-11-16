@@ -23,6 +23,7 @@ public sealed class RetryAfterRateLimiterTests
         refused.IsAcquired.Should().BeFalse();
         RetryAfter(refused).Should().Be(Wait);
         refused.MetadataNames.Should().Contain(MetadataName.RetryAfter.Name);
+        sut.GetStatistics(new DefaultHttpContext())!.CurrentAvailablePermits.Should().Be(0);
     }
 
     [Fact]

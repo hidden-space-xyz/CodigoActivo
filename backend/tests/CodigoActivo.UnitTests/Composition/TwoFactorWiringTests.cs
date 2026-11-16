@@ -63,6 +63,16 @@ public sealed class TwoFactorWiringTests : IDisposable
         rekeyed.GetRequiredService<IOneTimeCodeHasher>().Verify("123456", hash).Should().BeFalse();
     }
 
+    [Fact]
+    public void AddCodigoActivoUnusableDataProtectionKeyStopsTheStart()
+    {
+        using var unusable = BuildProvider(Convert.ToBase64String(new byte[8]));
+
+        var act = () => unusable.GetRequiredService<IOneTimeCodeHasher>();
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*DATA_PROTECTION_KEY*");
+    }
+
     private ServiceProvider BuildProvider(string key)
     {
         var configuration = new ConfigurationBuilder()

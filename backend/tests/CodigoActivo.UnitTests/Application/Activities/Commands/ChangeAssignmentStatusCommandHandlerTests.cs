@@ -238,6 +238,39 @@ public sealed class ChangeAssignmentStatusCommandHandlerTests
         emailSender.Sent.Should().BeEmpty();
     }
 
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public async Task HandleAsyncActivityOrAccountGoneBeforeTheNoticeSendsNothing(
+        bool activityRemains,
+        bool accountRemains
+    )
+    {
+        var userId = Guid.NewGuid();
+        var activity = SignedUpActivity(userId, status: AssignmentStatus.Requested);
+        if (accountRemains)
+        {
+            readStore.TargetUser(userId, KnownIds.UserTypes.Participant);
+        }
+
+        if (!activityRemains)
+        {
+            readStore.Activities.Clear();
+        }
+
+        readStore.CatalogRoles();
+
+        var result = await ChangeStatusAsync(
+            activity.Id.Value,
+            userId,
+            new ChangeAssignmentStatusRequest(KnownIds.AssignmentStatusTypes.Confirmed)
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        composer.Composed.Should().BeEmpty();
+        emailSender.Sent.Should().BeEmpty();
+    }
+
     [Fact]
     public async Task HandleAsyncEmailDeliveryFailsStillStagesTheStatusChange()
     {

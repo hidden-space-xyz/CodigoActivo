@@ -24,10 +24,7 @@ describe('two-factor login page', () => {
     const { wrapper, router } = await renderApp('/login/verify')
     await vi.waitFor(() => expect(wrapper.find('#two-factor-code').exists()).toBe(true))
 
-    const intro = wrapper.get('.two-factor-form__intro').text()
-    expect(intro).toContain('a***@example.test')
-    expect(intro).toContain(t('pages.loginTwoFactor.emailIntroBefore').trim())
-    expect(wrapper.text()).toContain(t('pages.loginTwoFactor.resendPrompt'))
+    expect(wrapper.get('.two-factor-form__intro').text()).toContain('a***@example.test')
     expect(wrapper.find('.el-checkbox').exists()).toBe(false)
 
     await wrapper.find('#two-factor-code').setValue('123456')
@@ -51,6 +48,34 @@ describe('two-factor login page', () => {
       t('pages.loginTwoFactor.authenticatorIntro'),
     )
     expect(wrapper.find('.two-factor-resend').exists()).toBe(false)
+  })
+
+  it('counts down before offering to email the code again, then restarts the wait', async () => {
+    vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] })
+    serveChallenge()
+    let resent = 0
+    server.use(
+      http.post('/api/auth/login/two-factor/resend', () => {
+        resent += 1
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+
+    const { wrapper } = await renderApp('/login/verify')
+    await vi.waitFor(() => expect(wrapper.find('.two-factor-resend__button').exists()).toBe(true))
+    const resend = () => wrapper.get('.two-factor-resend__button')
+    expect(resend().text()).toBe(t('pages.loginTwoFactor.resendCountdown', { s: 60 }))
+    expect(resend().attributes('disabled')).toBeDefined()
+
+    vi.advanceTimersByTime(60_000)
+    await vi.waitFor(() => expect(resend().text()).toBe(t('pages.loginTwoFactor.resend')))
+    expect(resend().attributes('disabled')).toBeUndefined()
+    await resend().trigger('click')
+
+    await vi.waitFor(() => expect(resent).toBe(1))
+    await vi.waitFor(() =>
+      expect(resend().text()).toBe(t('pages.loginTwoFactor.resendCountdown', { s: 60 })),
+    )
   })
 
   it('shows the wrong-code error and keeps the form', async () => {
@@ -78,14 +103,6 @@ describe('two-factor login page', () => {
     expect(wrapper.get('.status-panel__actions a').attributes('href')).toBe(
       router.resolve({ name: 'login', query: { redirect: '/events' } }).href,
     )
-  })
-
-  it('sends signed-in users home', async () => {
-    useHomeApi()
-
-    const { router } = await renderApp('/login/verify', { user: {} })
-
-    expect(router.currentRoute.value.name).toBe('home')
   })
 
   it('marks the page as not indexable', async () => {

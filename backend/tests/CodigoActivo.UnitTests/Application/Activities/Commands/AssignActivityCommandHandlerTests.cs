@@ -110,6 +110,26 @@ public sealed class AssignActivityCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncEventGoneForMemberReturnsSignupClosed()
+    {
+        var activityId = Guid.NewGuid();
+        clock.UtcNow = Now;
+        activities.HasActivityWindow(events, activityId, OpenStart, OpenEnd);
+        events.GetByIdAsync(Arg.Any<EventId>(), Arg.Any<CancellationToken>()).Returns((Event?)null);
+
+        var result = await AssignAsync(
+            activityId,
+            SelfId,
+            SelfId,
+            new AssignRequest(KnownIds.ActivityRoleTypes.Participant),
+            isAdmin: false
+        );
+
+        result.ShouldFail(ErrorKind.Validation, DomainErrorCode.ActivitySignupClosed);
+        await uow.DidNotSaveAsync();
+    }
+
+    [Fact]
     public async Task HandleAsyncUserMissingReturnsUserNotFound()
     {
         var activityId = Guid.NewGuid();

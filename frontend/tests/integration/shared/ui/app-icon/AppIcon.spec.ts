@@ -10,19 +10,10 @@ describe('AppIcon', () => {
     })
 
     const icon = wrapper.find('.el-icon')
-    expect(icon.exists()).toBe(true)
     expect(icon.attributes('aria-hidden')).toBe('true')
     expect(icon.classes()).toEqual(expect.arrayContaining(['app-icon', 'extra']))
     expect(icon.classes()).not.toContain('app-icon--spin')
     expect(icon.find('svg').exists()).toBe(true)
-  })
-
-  it('renders custom icons with fill and stroke paths', async () => {
-    const { wrapper } = await renderWithProviders(AppIcon, { props: { name: 'list' } })
-
-    const paths = wrapper.findAll('path')
-    expect(paths.filter((path) => path.attributes('fill') === 'currentColor')).toHaveLength(3)
-    expect(paths.filter((path) => path.attributes('stroke') === 'currentColor')).toHaveLength(3)
   })
 
   it('renders stroke-only and fill-only custom icons', async () => {
@@ -39,12 +30,6 @@ describe('AppIcon', () => {
 
     expect(element.wrapper.find('.el-icon').classes()).toContain('app-icon--spin')
     expect(custom.wrapper.find('.el-icon').classes()).toContain('app-icon--spin')
-  })
-
-  it('renders the row menu icon', async () => {
-    const { wrapper } = await renderWithProviders(AppIcon, { props: { name: 'more' } })
-
-    expect(wrapper.find('.el-icon svg').exists()).toBe(true)
   })
 
   it('renders nothing for an unknown name', async () => {

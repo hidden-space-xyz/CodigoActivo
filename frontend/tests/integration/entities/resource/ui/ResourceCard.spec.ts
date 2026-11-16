@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { ResourceCard } from '@/entities/resource'
 import { formatDate } from '@/shared/lib/date'
 
-import { renderWithProviders, t } from '../../../../support/render'
+import { renderWithProviders } from '../../../../support/render'
 import { buildResourceSummary } from '../../../../support/models'
 
 describe('ResourceCard', () => {
@@ -16,7 +16,6 @@ describe('ResourceCard', () => {
     expect(link.attributes('href')).toBe('/resources/resource-1')
     expect(wrapper.find('h3').text()).toBe('Guía de Scratch')
     expect(wrapper.find('.resource-card__subtitle').text()).toBe('Primeros pasos')
-    expect(wrapper.find('time').text()).toContain(t('entities.resource.card.dateLabel'))
     expect(wrapper.find('time').text()).toContain(formatDate('2026-02-01T10:00:00Z'))
     expect(wrapper.find('img').attributes('src')).toBe('/api/files/thumb-r/thumbnail')
 

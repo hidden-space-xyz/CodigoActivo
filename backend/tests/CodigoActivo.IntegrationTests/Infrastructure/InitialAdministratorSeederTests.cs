@@ -92,6 +92,27 @@ public sealed class InitialAdministratorSeederTests(PostgresDatabaseFixture post
         (await db.Users.CountAsync(TestCancellation.Ct)).Should().Be(0);
     }
 
+    [Fact]
+    public async Task SaveChangesAsyncDeletingTheInitialAdministratorIsRefused()
+    {
+        await using (var seed = postgres.CreateContext())
+        {
+            seed.Users.Add(NewExistingUser(KnownIds.Users.InitialAdministrator));
+            await seed.SaveChangesAsync(TestCancellation.Ct);
+        }
+
+        await using var db = postgres.CreateContext();
+        db.Users.Remove(await db.Users.SingleAsync(TestCancellation.Ct));
+
+        var act = () => db.SaveChangesAsync(TestCancellation.Ct);
+
+        await act.Should()
+            .ThrowAsync<InvalidOperationException>()
+            .WithMessage("*initial administrator can never be deleted*");
+        await using var verify = postgres.CreateContext();
+        (await verify.Users.CountAsync(TestCancellation.Ct)).Should().Be(1);
+    }
+
     public ValueTask DisposeAsync()
     {
         return ValueTask.CompletedTask;

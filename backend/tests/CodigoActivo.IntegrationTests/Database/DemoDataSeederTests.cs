@@ -1,5 +1,6 @@
 using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Security;
+using CodigoActivo.Composition;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.IntegrationTests.Infrastructure;
@@ -34,7 +35,7 @@ public sealed class DemoDataSeederTests(CodigoActivoWebAppFactory factory)
     private async Task SeedAsync()
     {
         await using var scope = Factory.Services.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<DemoDataSeeder>().SeedAsync(Ct);
+        await scope.ServiceProvider.SeedDemoDataAsync(Ct);
     }
 
     private Task<List<User>> PendingAccountsAsync()

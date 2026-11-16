@@ -82,13 +82,18 @@ describe('useTwoFactorLogin', () => {
     expect(result.resendCooldown.value).toBe(0)
   })
 
-  it('treats a failed challenge lookup as expired so the user can log in again', async () => {
-    serveChallenge(() => apiError(500))
+  it.each([401, 500])(
+    'treats a challenge lookup answered %i as expired so the user can log in again',
+    async (status) => {
+      serveChallenge(() => apiError(status))
 
-    const { result } = await mountReady()
+      const { result } = await mountReady()
 
-    expect(result.expired.value).toBe(true)
-  })
+      expect(result.expired.value).toBe(true)
+      expect(result.method.value).toBeNull()
+      expect(result.maskedEmail.value).toBeNull()
+    },
+  )
 
   it('verifies the trimmed code, stores the user and navigates to the redirect', async () => {
     serveChallenge()

@@ -4,12 +4,11 @@ import { dayFromToday, instantOn } from '../../support/data/time'
 import { uniqueLetters, uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
-import { EventAdminPage } from '../../support/pages/admin-events/event-admin-page'
 import {
   EventFormDialog,
   EventsAdminPage,
 } from '../../support/pages/admin-events/events-admin-page'
-import { confirm, expectChecked, notification } from '../../support/ui/element-plus'
+import { confirm, expectChecked, fillPicker, notification } from '../../support/ui/element-plus'
 
 test.describe('events admin', () => {
   test('an administrator creates an event with categories, optional terms and an image', async ({
@@ -117,8 +116,14 @@ test.describe('events admin', () => {
     await expect(dialog.root.getByTestId('event-form-starts-on-error')).toBeHidden()
   })
 
-  test('an administrator renames an event', async ({ pageAs, admin, seed }) => {
+  test('an administrator edits the title, categories, terms and signup moments of an event', async ({
+    pageAs,
+    admin,
+    seed,
+  }) => {
     const event = await seed.event()
+    const category = await seed.category()
+    const conditions = await seed.termsDocument()
     const renamed = uniqueTitle('Evento renombrado')
     const page = await pageAs(admin)
     const events = new EventsAdminPage(page)
@@ -130,13 +135,27 @@ test.describe('events admin', () => {
     await expect(dialog.title).toHaveValue(event.title)
     await expect(dialog.subtitle).toHaveValue(event.subtitle)
     await dialog.title.fill(renamed)
+    await dialog.chooseCategory(category.id)
+    await dialog.chooseTerms(conditions.id)
+    await expectChecked(dialog.termsRequired(conditions.name), true)
+    await fillPicker(dialog.signupFrom, pickerMoment(dayFromToday(-2), 9))
+    await fillPicker(dialog.signupUntil, pickerMoment(dayFromToday(12), 18))
     await dialog.save.click()
 
     await expect(notification(page, t('pages.admin.events.toasts.updated'))).toBeVisible()
     await expect(dialog.root).toBeHidden()
     await events.find(renamed)
-    await expect(events.table.row(renamed)).toBeVisible()
-    expect((await eventById(admin.api, event.id)).title).toBe(renamed)
+    await expect(events.table.row(renamed)).toContainText(category.name)
+    const saved = await eventById(admin.api, event.id)
+    expect(saved.title).toBe(renamed)
+    expect(saved.categories.map((item) => item.name).sort()).toStrictEqual(
+      [...event.categories.map((item) => item.name), category.name].sort(),
+    )
+    expect(saved.termsDocuments).toStrictEqual([
+      expect.objectContaining({ termsDocumentId: conditions.id, required: true }),
+    ])
+    expect(Date.parse(saved.signupStartsAt)).toBe(instantOn(dayFromToday(-2), 9).getTime())
+    expect(Date.parse(saved.signupEndsAt)).toBe(instantOn(dayFromToday(12), 18).getTime())
   })
 
   test('an administrator deletes an event after confirming', async ({ pageAs, admin, seed }) => {
@@ -219,18 +238,5 @@ test.describe('events admin', () => {
         }),
       ),
     ).toBeVisible()
-  })
-
-  test('managing an event opens its admin page', async ({ pageAs, admin, seed }) => {
-    const event = await seed.event()
-    const page = await pageAs(admin)
-    const events = new EventsAdminPage(page)
-    await events.open()
-    await events.find(event.title)
-
-    await events.table.rowAction(event.title, 'manage')
-
-    await expect(page).toHaveURL(EventAdminPage.path(event.id))
-    await expect(new EventAdminPage(page).heading(event.title)).toBeVisible()
   })
 })

@@ -94,4 +94,13 @@ describe('PersonFields', () => {
     expect(wrapper.emitted('update:birthDate')).toEqual([['2016-02-03']])
     expect(wrapper.emitted('update:gender')).toEqual([['Female']])
   })
+
+  it('reveals a missing DNI/NIE only once the form asks for every error', async () => {
+    const { wrapper } = await renderFields({ nationalId: '' })
+    expect(wrapper.find('#p-national-id-error').exists()).toBe(false)
+
+    await wrapper.setProps({ showNationalIdErrors: true })
+
+    expect(wrapper.get('#p-national-id-error').text()).toBe(t('validation.nationalIdFormat'))
+  })
 })

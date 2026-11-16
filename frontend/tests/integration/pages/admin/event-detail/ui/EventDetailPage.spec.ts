@@ -12,6 +12,7 @@ import type {
   EventSummaryResponse,
 } from '@/shared/api/generated/models'
 
+import { setMediaQueryMatches } from '../../../../../support/media'
 import { renderWithProviders, t } from '../../../../../support/render'
 import { apiError, http, HttpResponse, paged, server } from '../../../../../support/server'
 import { useCatalogHandlers } from '../../../../../support/api/catalogs'
@@ -142,9 +143,6 @@ describe('EventDetailPage', () => {
     expect(text).toContain('Painting')
     expect(text).toContain('On site')
     expect(wrapper.find('.data-table__count').text()).toBe(tp('table.results', 2))
-    expect(wrapper.find('.data-table__toolbar').text()).toContain(
-      t('pages.admin.eventDetail.newActivity'),
-    )
     const first = wrapper.findAll('.el-table__body tr')[0]
     expect(first?.find('.table-primary-cell__title').text()).toBe('Robotics')
     expect(first?.find('.table-primary-cell__subtitle').text()).toBe('Room 1')
@@ -154,6 +152,19 @@ describe('EventDetailPage', () => {
       formatDate('2026-10-10T09:00:00.000Z'),
       formatTimeRange('2026-10-10T09:00:00.000Z', '2026-10-10T11:00:00.000Z'),
     ])
+  })
+
+  it('pins the activity column on wide screens only', async () => {
+    const wide = await renderDetail()
+    expect(wide.wrapper.find('td.el-table-fixed-column--left .table-primary-cell').exists()).toBe(
+      true,
+    )
+    wide.wrapper.unmount()
+
+    setMediaQueryMatches((query) => query === '(max-width: 640px)')
+    const narrow = await renderDetail()
+    expect(narrow.wrapper.find('.table-primary-cell').exists()).toBe(true)
+    expect(narrow.wrapper.find('td.el-table-fixed-column--left').exists()).toBe(false)
   })
 
   it('falls back when the event, summary data and role names are missing', async () => {

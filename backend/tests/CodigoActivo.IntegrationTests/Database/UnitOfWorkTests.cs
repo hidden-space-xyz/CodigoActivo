@@ -488,6 +488,38 @@ public sealed class UnitOfWorkTests(PostgresDatabaseFixture postgres)
     }
 
     [Fact]
+    public async Task ExecuteInTransactionAsyncNestedWorkRollsBackWithTheOuterTransaction()
+    {
+        await using (var db = postgres.CreateContext())
+        {
+            var publisher = new RecordingPublisher();
+            var uow = new UnitOfWork(db, publisher);
+            var users = new UserRepository(db, uow);
+            var user = (await users.GetByIdAsync(SeededUserId, Ct))!;
+
+            var refused = () =>
+                uow.ExecuteInTransactionAsync<bool>(
+                    async attempt =>
+                    {
+                        await uow.ExecuteInTransactionAsync(
+                            nested => LockPasswordAsync(users, user, nested),
+                            attempt
+                        );
+                        throw new InvalidOperationException("refused");
+                    },
+                    Ct
+                );
+
+            await refused.Should().ThrowAsync<InvalidOperationException>();
+            publisher.Published.Should().BeEmpty();
+        }
+
+        await using var verify = postgres.CreateContext();
+        var stored = await verify.Users.SingleAsync(u => u.Id == SeededUserId, Ct);
+        stored.PasswordLockout.IsLocked(Fixed).Should().BeFalse();
+    }
+
+    [Fact]
     public async Task ExecuteInTransactionAsyncDeadlockedWorkThrowsConcurrentUpdate()
     {
         await using var db = postgres.CreateContext();

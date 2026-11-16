@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Passwords;
 using CodigoActivo.Application.Accounts.SecondFactor;
+using CodigoActivo.Composition;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
@@ -58,7 +59,7 @@ public sealed class DemoLogSeederTests(CodigoActivoWebAppFactory factory)
     private async Task SeedHistoryAsync()
     {
         await using var scope = Factory.Services.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<DemoLogSeeder>().SeedAsync(Ct);
+        await scope.ServiceProvider.SeedDemoLogsAsync(Ct);
     }
 
     private void AdvanceClock(TimeSpan by)

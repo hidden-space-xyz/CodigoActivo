@@ -7,7 +7,7 @@ import {
   activityQueries,
 } from '@/entities/activity'
 
-import { apiError, http, HttpResponse, paged, server } from '../../../../support/server'
+import { http, HttpResponse, paged, server } from '../../../../support/server'
 import {
   assignmentStatusTypes,
   buildActivityResponse,
@@ -88,18 +88,14 @@ describe('activityKeys', () => {
 })
 
 describe('admin activity queries', () => {
-  it('loads an activity to edit, or null when it no longer exists', async () => {
-    server.use(
-      http.get('/api/activities/act-1', () => HttpResponse.json(buildActivityResponse())),
-      http.get('/api/activities/missing', () => apiError(404)),
-    )
+  it('loads an activity to edit', async () => {
+    server.use(http.get('/api/activities/act-1', () => HttpResponse.json(buildActivityResponse())))
     const client = createTestQueryClient()
 
     await expect(client.fetchQuery(activityQueries.detail('act-1'))).resolves.toMatchObject({
       id: 'act-1',
       modalityId: 'mod-1',
     })
-    await expect(client.fetchQuery(activityQueries.detail('missing'))).resolves.toBeNull()
   })
 
   it('loads the catalogs of roles, statuses and modalities', async () => {

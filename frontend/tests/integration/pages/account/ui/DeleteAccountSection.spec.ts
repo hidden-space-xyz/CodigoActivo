@@ -63,19 +63,11 @@ async function acceptConsent(dialog: HTMLElement): Promise<void> {
 }
 
 describe('DeleteAccountSection', () => {
-  it('warns about what is deleted and offers the action to members', async () => {
-    await renderSection()
-
-    expect(document.body.textContent).toContain(t('pages.account.deleteAccount.title'))
-    expect(document.body.textContent).toContain(t('pages.account.deleteAccount.lead'))
-    expect(findButtons(t(ACTION), document.body)).toHaveLength(1)
-    expect(document.body.textContent).not.toContain(
-      t('pages.account.deleteAccount.initialAdminNote'),
-    )
-  })
-
-  it('offers the action to the other administrators', async () => {
-    await renderSection({ user: { staffRole: 'Administrator' } })
+  it.each([
+    { who: 'members', user: {} },
+    { who: 'the other administrators', user: { staffRole: 'Administrator' as const } },
+  ])('offers the action to $who', async ({ user }) => {
+    await renderSection({ user })
 
     await vi.waitFor(() => expect(findButtons(t(ACTION), document.body)).toHaveLength(1))
     expect(document.body.textContent).not.toContain(

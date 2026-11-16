@@ -11,6 +11,7 @@ import type {
   EventResponse,
 } from '@/shared/api/generated/models'
 
+import { setMediaQueryMatches } from '../../../../../support/media'
 import { renderWithProviders, t } from '../../../../../support/render'
 import { apiError, http, HttpResponse, paged, server } from '../../../../../support/server'
 import { useCatalogHandlers } from '../../../../../support/api/catalogs'
@@ -185,7 +186,6 @@ describe('EventsAdminPage', () => {
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Workshop'))
     const text = wrapper.text()
-    expect(text).toContain(t('pages.admin.events.header.title'))
     expect(text).toContain(formatDateRange('2026-10-10', '2026-10-12'))
     expect(text).toContain(formatDateRange('2026-11-07', '2026-11-07'))
 
@@ -265,6 +265,19 @@ describe('EventsAdminPage', () => {
     const otherItem = rowMenuItem(otherMenu, t('pages.admin.events.actions.feature'))
     expect(otherItem.getAttribute('aria-disabled')).not.toBe('true')
     expect(otherItem.querySelector('.row-actions__item-reason')).toBeNull()
+  })
+
+  it('pins the event column on wide screens only', async () => {
+    const wide = await renderPage()
+    expect(wide.wrapper.find('td.el-table-fixed-column--left .table-primary-cell').exists()).toBe(
+      true,
+    )
+    wide.wrapper.unmount()
+
+    setMediaQueryMatches((query) => query === '(max-width: 640px)')
+    const narrow = await renderPage()
+    expect(narrow.wrapper.find('.table-primary-cell').exists()).toBe(true)
+    expect(narrow.wrapper.find('td.el-table-fixed-column--left').exists()).toBe(false)
   })
 
   it('opens the event management page from the row', async () => {

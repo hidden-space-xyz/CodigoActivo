@@ -230,6 +230,33 @@ public sealed class InventoryControllerTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task AddEntryNullValueLeavesItsColumnEmpty()
+    {
+        var client = await LoginAsAdminAsync();
+        var category = await CreateAsync(client);
+        var talla = Column(category, "Talla");
+
+        var response = await client.PostJsonAsync(
+            $"{Categories}/{category.Id}/entries",
+            new
+            {
+                quantity = 2,
+                values = new Dictionary<Guid, string?>
+                {
+                    [talla.Id] = talla.Options[0].Id.ToString(),
+                    [Column(category, "Color").Id] = null,
+                },
+            },
+            Ct
+        );
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        (await response.ReadJsonAsync<InventoryEntryResponse>(Ct))!
+            .Values.Keys.Should()
+            .Equal(talla.Id);
+    }
+
+    [Fact]
     public async Task UpdateEntryUnknownReturnsNotFound()
     {
         var client = await LoginAsAdminAsync();

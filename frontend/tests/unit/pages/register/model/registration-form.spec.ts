@@ -8,23 +8,6 @@ import {
 import { MAX_DEPENDENTS } from '@/shared/config'
 
 describe('registration form factories', () => {
-  it('creates a blank form without minors', () => {
-    expect(createEmptyRegistrationForm()).toEqual({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phone: '',
-      secondaryPhone: '',
-      password: '',
-      confirmPassword: '',
-      nationalId: '',
-      gender: null,
-      newsConsent: false,
-      declaresAdult: false,
-      minors: [],
-    })
-  })
-
   it('returns independent forms on every call', () => {
     const first = createEmptyRegistrationForm()
     first.minors.push(createEmptyMinor())

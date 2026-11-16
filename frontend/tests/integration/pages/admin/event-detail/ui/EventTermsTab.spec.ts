@@ -10,10 +10,12 @@ import { SearchInput } from '@/shared/ui/search-input'
 import {
   acceptMessageBox,
   click,
+  dismissDialog,
   expectNotification,
   findButton,
   findButtons,
   findDialog,
+  isDialogOpen,
   messageBox,
   textOf,
 } from '../../../../../support/dom'
@@ -87,32 +89,26 @@ describe('EventTermsTab', () => {
     expect(declined?.find('.signature-thumb').exists()).toBe(false)
   })
 
-  it('shows a signature in full when its thumbnail is opened', async () => {
+  it('shows a signature in full when its thumbnail is opened until dismissed', async () => {
     const { wrapper } = await renderTab([buildTermsDecision()])
     await vi.waitFor(() => expect(wrapper.find('.signature-thumb').exists()).toBe(true))
 
     await click(wrapper.find('.signature-thumb').element)
 
-    const dialog = findDialog(
-      t('pages.admin.eventDetail.terms.signatureOf', { name: 'Ada Lovelace' }),
-    )
+    const title = t('pages.admin.eventDetail.terms.signatureOf', { name: 'Ada Lovelace' })
+    const dialog = findDialog(title)
     expect(dialog?.querySelector('img')?.getAttribute('src')).toBe(
       `/api/events/${EVENT_ID}/terms/decisions/user-1/terms-1/signature`,
     )
     expect(textOf(dialog?.querySelector('figcaption') ?? null)).toContain('Autorización de imagen')
+
+    await dismissDialog(wrapper, title)
+    expect(isDialogOpen(title)).toBe(false)
   })
 
   it('offers the documents of the event in the document filter', async () => {
     const { wrapper } = await renderTab([])
 
-    const headers = wrapper.findAll('.el-table__header th').map((cell) => cell.text())
-    expect(headers).toEqual(
-      expect.arrayContaining([
-        t('pages.admin.eventDetail.terms.columns.person'),
-        t('pages.admin.eventDetail.terms.columns.document'),
-        t('pages.admin.eventDetail.terms.columns.signature'),
-      ]),
-    )
     expect(wrapper.findComponent(ColumnFilterSelect).props('options')).toEqual([
       { label: 'Autorización de imagen', value: 'terms-1' },
       { label: 'Normas', value: 'terms-2' },

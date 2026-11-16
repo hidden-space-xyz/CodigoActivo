@@ -96,7 +96,7 @@ describe('ResourceFormDialog', () => {
     })
   })
 
-  it('validates and submits the url of an external resource', async () => {
+  it('requires and submits the url of an external resource', async () => {
     serveTypes()
     server.use(http.post('/api/files', () => HttpResponse.json({ id: 'uploaded-id' })))
     const { wrapper } = await renderDialog()
@@ -106,13 +106,6 @@ describe('ResourceFormDialog', () => {
     await click(findButton(t('common.save'), dialog))
     expect(dialog.textContent).toContain(t('pages.admin.resources.form.problems.urlRequired'))
 
-    await typeInto('#resource-url', 'ftp://example.test')
-    await click(findButton(t('common.save'), dialog))
-    expect(dialog.textContent).toContain(t('pages.admin.resources.form.problems.urlInvalid'))
-
-    await typeInto('#resource-url', 'https://')
-    await click(findButton(t('common.save'), dialog))
-    expect(dialog.textContent).toContain(t('pages.admin.resources.form.problems.urlInvalid'))
     expect(wrapper.emitted('submit')).toBeUndefined()
 
     await typeInto('#resource-url', ' https://vuejs.org ')

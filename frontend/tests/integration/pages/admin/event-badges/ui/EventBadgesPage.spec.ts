@@ -40,7 +40,7 @@ function styleVar(element: Element | undefined, name: string): number {
 }
 
 describe('EventBadgesPage', () => {
-  it('renders one badge per attendee with brand, event, type, guardian and activities', async () => {
+  it('renders one badge per attendee with event, type, guardian and activities', async () => {
     const { wrapper } = await renderBadges([
       buildBadge({
         guardian: { firstName: 'Mary', phone: '600111222' },
@@ -65,7 +65,6 @@ describe('EventBadgesPage', () => {
     expect(wrapper.find('.print-toolbar__back').attributes('href')).toBe(
       `/admin/events/${EVENT_ID}`,
     )
-    expect(ada?.find('.badge__brand').text()).toContain(t('seo.siteName'))
     expect(ada?.find('.badge__event').text()).toBe('Hackathon')
     expect(ada?.find('.badge__name').text()).toBe('Ada Lovelace')
     expect(ada?.attributes('style')).toContain('--accent: #123456')
@@ -130,7 +129,6 @@ describe('EventBadgesPage', () => {
         style.textContent?.includes('@page { size: A4 portrait; margin: 0; }'),
       )
     expect(pageRule()).toBe(true)
-    expect(wrapper.find('.print-hint').text()).toBe(t('pages.admin.eventBadges.printHint'))
 
     await wrapper.find('.print-toolbar__print').trigger('click')
     expect(print).toHaveBeenCalledTimes(1)

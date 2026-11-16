@@ -32,4 +32,12 @@ describe('EventCategoryFields', () => {
 
     expect(wrapper.emitted('update:color')).toEqual([['#123456'], ['#6366F1']])
   })
+
+  it('emits the typed name', async () => {
+    const { wrapper } = await renderFields({ name: '', color: '#FF0000' })
+
+    await wrapper.get('#event-category-name').setValue('Talk')
+
+    expect(wrapper.emitted('update:name')).toEqual([['Talk']])
+  })
 })

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { usePersonForm } from '@/entities/user'
+import { toDateOnly } from '@/shared/lib/date'
 
 import { t } from '../../../../support/render'
 
@@ -76,6 +77,37 @@ describe('usePersonForm', () => {
     expect(form.requiresPassword.value).toBe(false)
   })
 
+  it('counts the phones a record lacks as empty', () => {
+    const stored = { email: 'ada@example.test' }
+    const form = usePersonForm({ kind: 'independent', stored, today: TODAY })
+    form.load(stored)
+
+    expect(form.requiresPassword.value).toBe(false)
+
+    form.draft.secondaryPhone = '611111111'
+
+    expect(form.requiresPassword.value).toBe(true)
+  })
+
+  it('empties the draft when loaded without a record', () => {
+    const form = usePersonForm({ kind: 'independent', stored: null, today: TODAY })
+    form.load(storedAdult)
+
+    form.load(null)
+
+    expect({ ...form.draft }).toEqual({
+      firstName: '',
+      lastName: '',
+      gender: null,
+      email: '',
+      phone: '',
+      secondaryPhone: '',
+      nationalId: '',
+      newsConsent: false,
+      birthDate: '',
+    })
+  })
+
   it('asks for the password once the server refused one, and submits it', () => {
     const form = usePersonForm({ kind: 'independent', stored: storedAdult, today: TODAY })
     form.load(storedAdult)
@@ -144,5 +176,18 @@ describe('usePersonForm', () => {
 
     expect(form.submit()).toBeNull()
     expect(form.errors.value).toEqual({ birthDate: t('entities.user.person.birthDateNotMinor') })
+  })
+
+  it('refuses an adult birth date for a new dependent and accepts one born today', () => {
+    const form = usePersonForm({ kind: 'dependent' })
+    form.load(storedChild)
+
+    expect(form.submit()).toBeNull()
+    expect(form.errors.value).toEqual({ birthDate: t('entities.user.person.birthDateNotMinor') })
+
+    const today = toDateOnly(new Date())
+    form.draft.birthDate = today
+
+    expect(form.submit()).toMatchObject({ person: { birthDate: today } })
   })
 })

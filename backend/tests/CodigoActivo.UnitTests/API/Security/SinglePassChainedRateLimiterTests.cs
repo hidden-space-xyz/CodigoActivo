@@ -42,6 +42,9 @@ public sealed class SinglePassChainedRateLimiterTests
 
         attempt.IsAcquired.Should().BeFalse();
         acquired.IsAcquired.Should().BeTrue();
+        attempt.MetadataNames.Should().BeEmpty();
+        attempt.TryGetMetadata(MetadataName.RetryAfter, out _).Should().BeFalse();
+        sut.GetStatistics(NewContext())!.CurrentAvailablePermits.Should().Be(0);
     }
 
     [Fact]

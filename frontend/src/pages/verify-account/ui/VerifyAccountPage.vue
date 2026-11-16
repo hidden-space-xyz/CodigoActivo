@@ -70,6 +70,7 @@ onMounted(() => {
             <el-input
               id="verify-resend-email"
               v-model="resendForm.email"
+              data-testid="verify-resend-email"
               type="email"
               inputmode="email"
               autocomplete="email"
@@ -79,7 +80,13 @@ onMounted(() => {
               :maxlength="EMAIL_ADDRESS_MAX_LENGTH"
               required
             />
-            <BrandButton type="submit" variant="primary" block :loading="isResending">
+            <BrandButton
+              type="submit"
+              variant="primary"
+              block
+              :loading="isResending"
+              data-testid="verify-resend-submit"
+            >
               {{ $t('pages.verifyAccount.resend') }}
             </BrandButton>
           </form>

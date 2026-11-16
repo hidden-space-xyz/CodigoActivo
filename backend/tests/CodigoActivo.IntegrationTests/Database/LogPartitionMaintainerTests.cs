@@ -167,6 +167,28 @@ public sealed class LogPartitionMaintainerTests(PostgresDatabaseFixture postgres
     }
 
     [Fact]
+    public async Task MaintainAsyncKeepsAPartitionItDidNotNameAndTrimsItsExpiredRows()
+    {
+        await using (var db = postgres.CreateContext())
+        {
+            await db.Database.ExecuteSqlRawAsync(
+                "CREATE TABLE IF NOT EXISTS diagnostic_log_entries_archive PARTITION OF diagnostic_log_entries "
+                    + "FOR VALUES FROM ('2025-01-01 00:00:00+00') TO ('2025-02-01 00:00:00+00')",
+                Ct
+            );
+        }
+
+        await InsertDiagnosticAsync(new DateTimeOffset(2025, 1, 15, 0, 0, 0, TimeSpan.Zero));
+
+        await Maintainer.MaintainAsync(Ct);
+
+        (await LogTables.PartitionsAsync(postgres, LogTable.Diagnostics))
+            .Should()
+            .Contain("diagnostic_log_entries_archive");
+        (await LogTables.DiagnosticEntriesAsync(postgres)).Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task EnsurePartitionsAsyncCreatesOnlyTheDaysInsideTheWindow()
     {
         await LogTables.DropPartitionAsync(

@@ -1,17 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { auditKeys, auditList } from '@/pages/admin/audit/api/queries'
+import { auditList } from '@/pages/admin/audit/api/queries'
 
 import { http, HttpResponse, paged, server } from '../../../../../support/server'
 import { buildAuditEntry } from '../../../../../support/builders'
 import { queryOf } from '../../../../../support/dom'
-
-describe('auditKeys', () => {
-  it('nests the list under the audit log', () => {
-    expect(auditKeys.all).toEqual(['logs', 'audit'])
-    expect(auditKeys.list()).toEqual(['logs', 'audit', 'list'])
-  })
-})
 
 describe('auditList', () => {
   it('sends the filters, sort and page as query and maps the rows', async () => {

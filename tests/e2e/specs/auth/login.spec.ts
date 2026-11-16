@@ -4,7 +4,7 @@ import { PASSWORD } from '../../support/config/environment'
 import { emailAddress } from '../../support/data/people'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
-import { codeIn, SUBJECTS } from '../../support/mail/mailbox'
+import { codeIn, RESEND_COOLDOWN_MS, SUBJECTS } from '../../support/mail/mailbox'
 import {
   LoginPage,
   sessionExpiry,
@@ -13,8 +13,6 @@ import {
 } from '../../support/pages/login-page'
 import { SiteHeader } from '../../support/pages/site-header'
 import { setChecked } from '../../support/ui/element-plus'
-
-const RESEND_COOLDOWN_MS = 60_000
 
 test.describe('login', () => {
   test('a person signs in with the password and the emailed code', async ({

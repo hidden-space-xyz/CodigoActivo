@@ -3,15 +3,10 @@ import { describe, expect, it } from 'vitest'
 import {
   readConsultationCodeDraft,
   readConsultationRequestDraft,
-  toConsultationCodeDraft,
   toConsultationRequestDraft,
 } from '@/pages/admin/blocked-data/model/open-consultation-form'
 
 describe('readConsultationRequestDraft', () => {
-  it('starts blank', () => {
-    expect(toConsultationRequestDraft()).toEqual({ requester: '', reference: '', password: '' })
-  })
-
   it('asks for every field of a blank request', () => {
     expect(readConsultationRequestDraft(toConsultationRequestDraft())).toEqual({
       problems: {
@@ -42,10 +37,6 @@ describe('readConsultationRequestDraft', () => {
 })
 
 describe('readConsultationCodeDraft', () => {
-  it('starts blank', () => {
-    expect(toConsultationCodeDraft()).toEqual({ code: '' })
-  })
-
   it('refuses a code that is not six digits', () => {
     expect(readConsultationCodeDraft({ code: '12345a' })).toEqual({
       problems: { code: 'pages.admin.blockedData.open.form.problems.codeInvalid' },

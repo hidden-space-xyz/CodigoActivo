@@ -51,7 +51,7 @@ test.describe('audit log', () => {
     await expect(log.count).toHaveText(t('table.results', { n: 4 }))
   })
 
-  test('pinning an actor, an entity and a trace narrows the log and leads to the diagnostics', async ({
+  test('pinning an actor, an entity, a related entity and a trace narrows the log and leads to the diagnostics', async ({
     pageAs,
     initialAdmin,
     admin,
@@ -86,6 +86,17 @@ test.describe('audit log', () => {
       log.chip(t('pages.admin.audit.filters.entity', { entity: item.title })),
     ).toBeVisible()
     await expect(log.count).toHaveText(t('table.results', { n: 1 }))
+    const relatedName = entry.related[0]?.name ?? ''
+    expect(relatedName).not.toBe('')
+    await created.getByTestId('audit-related').click()
+
+    await expect(
+      log.chip(t('pages.admin.audit.filters.entity', { entity: relatedName })),
+    ).toBeVisible()
+    await expect(
+      log.chip(t('pages.admin.audit.filters.entity', { entity: item.title })),
+    ).toBeHidden()
+    await expect(created).toBeVisible()
     await created.getByTestId('audit-trace').click()
 
     await expect(log.chip(t('pages.admin.audit.filters.trace', { trace: traceId }))).toBeVisible()

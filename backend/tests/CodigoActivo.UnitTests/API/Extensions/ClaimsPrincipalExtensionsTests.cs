@@ -96,6 +96,7 @@ public sealed class ClaimsPrincipalExtensionsTests
             .IsSuperAdministrator()
             .Should()
             .BeFalse();
+        PrincipalWith().IsSuperAdministrator().Should().BeFalse();
     }
 
     [Fact]

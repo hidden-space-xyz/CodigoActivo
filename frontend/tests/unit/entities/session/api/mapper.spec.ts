@@ -11,6 +11,7 @@ describe('toAuthUser', () => {
           staffRole: 'Administrator',
           isInitialAdmin: true,
           isPrivacyOfficer: true,
+          earlySignupEligible: true,
         }),
       ),
     ).toEqual({
@@ -22,15 +23,9 @@ describe('toAuthUser', () => {
       staffRole: 'Administrator',
       isSuperAdmin: true,
       isPrivacyOfficer: true,
-      earlySignupEligible: false,
+      earlySignupEligible: true,
       twoFactorMethod: 'Email',
     })
-  })
-
-  it('keeps the early signup entitlement the API decided', () => {
-    expect(toAuthUser(buildUserResponse({ earlySignupEligible: true })).earlySignupEligible).toBe(
-      true,
-    )
   })
 
   it('shows missing contact details as empty text', () => {

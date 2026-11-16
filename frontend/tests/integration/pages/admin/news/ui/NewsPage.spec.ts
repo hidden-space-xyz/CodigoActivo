@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { NewsPage } from '@/pages/admin/news'
 import type { NewsItemResponse, NewsListItemResponse } from '@/shared/api/generated/models'
 
+import { setMediaQueryMatches } from '../../../../../support/media'
 import { renderApp, renderWithProviders, t } from '../../../../../support/render'
 import { apiError, http, HttpResponse, paged, server } from '../../../../../support/server'
 import { buildNewsItemResponse, omit, richText } from '../../../../../support/builders'
@@ -90,7 +91,6 @@ describe('admin news page', () => {
 
     const { wrapper } = await renderPage()
 
-    expect(wrapper.text()).toContain(t('pages.admin.news.header.title'))
     expect(queryOf(urls[0] ?? '')).toEqual({ page: '1', pageSize: '25', sort: '-createdAt' })
     expect(textOf(wrapper.find('.data-table__count').element)).toBe(tp('table.results', 2))
     const rows = wrapper.findAll('.el-table__body tr')
@@ -123,6 +123,20 @@ describe('admin news page', () => {
     const feature = rowMenuItem(otherMenu, t('pages.admin.news.feature'))
     expect(feature.getAttribute('aria-disabled')).not.toBe('true')
     expect(feature.querySelector('.row-actions__item-reason')).toBeNull()
+  })
+
+  it('pins the title column on wide screens only', async () => {
+    serveNews()
+    const wide = await renderPage()
+    expect(wide.wrapper.find('td.el-table-fixed-column--left .table-primary-cell').exists()).toBe(
+      true,
+    )
+    wide.wrapper.unmount()
+
+    setMediaQueryMatches((query) => query === '(max-width: 640px)')
+    const narrow = await renderPage()
+    expect(narrow.wrapper.find('.table-primary-cell').exists()).toBe(true)
+    expect(narrow.wrapper.find('td.el-table-fixed-column--left').exists()).toBe(false)
   })
 
   it('renders through the application router for editors', async () => {

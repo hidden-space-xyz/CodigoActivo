@@ -7,6 +7,7 @@ import { ResourcesPage } from '@/pages/admin/resources'
 import ResourceFormDialog from '@/pages/admin/resources/ui/ResourceFormDialog.vue'
 import type { ResourceListItemResponse } from '@/shared/api/generated/models'
 
+import { setMediaQueryMatches } from '../../../../../support/media'
 import { renderApp, renderWithProviders, t } from '../../../../../support/render'
 import { apiError, http, HttpResponse, paged, server } from '../../../../../support/server'
 import {
@@ -100,6 +101,20 @@ describe('admin resources page', () => {
         t('pages.admin.resources.columns.created'),
       ].map((column) => elementPlusLocale.el.table.sortLabel.replace('{column}', column)),
     )
+  })
+
+  it('pins the title column on wide screens only', async () => {
+    serveResources()
+    const wide = await renderPage()
+    expect(wide.wrapper.find('td.el-table-fixed-column--left .table-primary-cell').exists()).toBe(
+      true,
+    )
+    wide.wrapper.unmount()
+
+    setMediaQueryMatches((query) => query === '(max-width: 640px)')
+    const narrow = await renderPage()
+    expect(narrow.wrapper.find('.table-primary-cell').exists()).toBe(true)
+    expect(narrow.wrapper.find('td.el-table-fixed-column--left').exists()).toBe(false)
   })
 
   it('renders through the application router for admins', async () => {

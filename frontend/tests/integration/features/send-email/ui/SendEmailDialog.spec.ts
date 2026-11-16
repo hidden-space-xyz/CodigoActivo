@@ -128,15 +128,6 @@ describe('SendEmailDialog', () => {
     expect(wrapper.emitted('submit')).toBeUndefined()
   })
 
-  it('shows the recipients and the plain-text hint', async () => {
-    const { dialog } = await renderDialog({ target: 'the 3 filtered users' })
-
-    expect(dialog.textContent).toContain(
-      t('features.sendEmail.target', { target: 'the 3 filtered users' }),
-    )
-    expect(dialog.textContent).toContain(t('features.sendEmail.bodyHint'))
-  })
-
   it('requires a purpose, a subject and a body before asking for confirmation', async () => {
     const { wrapper, dialog } = await renderDialog()
 
@@ -295,6 +286,15 @@ describe('SendEmailDialog', () => {
         max: formatFileSize(MANUAL_EMAIL_MAX_ATTACHMENTS_BYTES),
       }),
     )
+    expect(dialog.querySelectorAll('.attachments__name')).toHaveLength(0)
+  })
+
+  it('refuses an empty file, which the API would not send', async () => {
+    const { dialog } = await renderDialog()
+
+    await pickFiles(fileInput(dialog), [new File([], 'empty.txt')])
+
+    expect(dialog.textContent).toContain(t('features.sendEmail.attachments.empty'))
     expect(dialog.querySelectorAll('.attachments__name')).toHaveLength(0)
   })
 

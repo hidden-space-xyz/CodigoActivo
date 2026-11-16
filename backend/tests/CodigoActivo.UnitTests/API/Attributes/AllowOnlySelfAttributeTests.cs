@@ -135,15 +135,44 @@ public sealed class AllowOnlySelfAttributeTests : IDisposable
         store.ReadsOf<UserRow>().Should().Be(0);
     }
 
-    [Fact]
-    public async Task OnAuthorizationAsyncRouteValueUnparseableForbids()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("not-a-guid")]
+    public async Task OnAuthorizationAsyncRouteValueUnparseableForbids(string? routeUserId)
     {
-        var context = BuildContext(User(Guid.NewGuid()), "not-a-guid");
+        var context = BuildContext(User(Guid.NewGuid()), routeUserId);
 
         await new AllowOnlySelfAttribute().OnAuthorizationAsync(context);
 
         context.Result.Should().BeOfType<ForbidResult>();
         store.ReadsOf<UserRow>().Should().Be(0);
+    }
+
+    [Fact]
+    public async Task OnAuthorizationAsyncAdministratorsExcludedAdminOnAnotherUserForbids()
+    {
+        var context = BuildContext(User(Guid.NewGuid(), isAdmin: true), Guid.NewGuid());
+
+        await new AllowOnlySelfAttribute { AdministratorsAllowed = false }.OnAuthorizationAsync(
+            context
+        );
+
+        context.Result.Should().BeOfType<ForbidResult>();
+    }
+
+    [Fact]
+    public async Task OnAuthorizationAsyncAdministratorsExcludedAdminOnOwnChildAllows()
+    {
+        var adminId = Guid.NewGuid();
+        var childId = Guid.NewGuid();
+        store.Users.Add(Dependent(childId, adminId));
+        var context = BuildContext(User(adminId, isAdmin: true), childId);
+
+        await new AllowOnlySelfAttribute { AdministratorsAllowed = false }.OnAuthorizationAsync(
+            context
+        );
+
+        context.Result.Should().BeNull();
     }
 
     [Fact]

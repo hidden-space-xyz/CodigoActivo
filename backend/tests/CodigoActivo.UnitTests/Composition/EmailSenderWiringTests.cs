@@ -33,7 +33,6 @@ public sealed class EmailSenderWiringTests
             .Should()
             .BeSameAs(provider.GetRequiredService<IEmailOutboxStore>())
             .And.BeOfType<EmailOutboxStore>();
-        provider.GetRequiredService<EmailOutboxProtector>().Should().NotBeNull();
         provider
             .GetRequiredService<EmailOutboxSignal>()
             .Should()
@@ -65,6 +64,20 @@ public sealed class EmailSenderWiringTests
         );
 
         provider.GetRequiredService<SmtpOptions>().Security.Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData("Tls")]
+    [InlineData("99")]
+    public void AddCodigoActivoSmtpSecurityNamingNoModeStopsTheStart(string security)
+    {
+        using var provider = BuildProvider(
+            new Dictionary<string, string?>(StringComparer.Ordinal) { ["SMTP_SECURITY"] = security }
+        );
+
+        var act = () => provider.GetRequiredService<SmtpOptions>();
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*SMTP_SECURITY*");
     }
 
     [Fact]

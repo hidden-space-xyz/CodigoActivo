@@ -28,9 +28,7 @@ describe('ListThumbnail', () => {
     const { wrapper } = await renderWithProviders(ListThumbnail, { props: { thumbnailId: null } })
 
     expect(wrapper.find('img').exists()).toBe(false)
-    const placeholder = wrapper.find('.list-thumb__placeholder')
-    expect(placeholder.attributes('aria-hidden')).toBe('true')
-    expect(placeholder.find('.app-icon').exists()).toBe(true)
+    expect(wrapper.find('.list-thumb__placeholder').attributes('aria-hidden')).toBe('true')
   })
 
   it('fills a card frame by default and offers a table size that shows whole logos', async () => {

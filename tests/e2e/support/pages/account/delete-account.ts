@@ -1,7 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
 import type { Credentials } from '../../api/accounts'
-import { codeIn, SUBJECTS, type Mailbox } from '../../mail/mailbox'
+import { codeIn, SUBJECTS, type Email, type Mailbox } from '../../mail/mailbox'
 import { setChecked } from '../../ui/element-plus'
 import type { AccountPage } from './account-page'
 
@@ -46,6 +46,9 @@ export class DeleteAccountDialog {
   /** «Eliminar definitivamente». */
   readonly submit: Locator
 
+  /** «Reenviar código», in the emailed code step. */
+  readonly resend: Locator
+
   /** The error the dialog shows for a refused request. */
   readonly error: Locator
 
@@ -57,25 +60,31 @@ export class DeleteAccountDialog {
     this.irreversible = this.root.getByTestId('delete-account-irreversible')
     this.submit = this.root.getByTestId('delete-account-submit')
     this.error = this.root.getByTestId('delete-account-error')
+    this.resend = this.root.getByTestId('delete-account-resend')
   }
 
-  /** Sends the password step and waits for the code it emails to `credentials.email`. */
-  async requestCode(mailbox: Mailbox, credentials: Credentials): Promise<string> {
+  /** Sends the password step and waits for the code email it sends to `credentials.email`. */
+  async requestCode(mailbox: Mailbox, credentials: Credentials): Promise<Email> {
     await this.password.fill(credentials.password)
     const sentAfter = new Date()
     await this.sendCode.click()
     await expect(this.code).toBeVisible()
-    const email = await mailbox.waitFor({
+    return mailbox.waitFor({
       to: credentials.email,
       subject: SUBJECTS.accountDeletionCode,
       sentAfter,
     })
-    return codeIn(email)
+  }
+
+  /** Asks for another code once the resend cooldown after `previous` is over and returns it. */
+  async resendCode(mailbox: Mailbox, to: string, previous: Email): Promise<string> {
+    const query = { to, subject: SUBJECTS.accountDeletionCode }
+    return codeIn(await mailbox.waitForResent(previous, query, this.resend))
   }
 
   /** Deletes the account with the emailed code, accepting that it cannot be undone. */
   async deleteWithEmailedCode(mailbox: Mailbox, credentials: Credentials): Promise<void> {
-    await this.code.fill(await this.requestCode(mailbox, credentials))
+    await this.code.fill(codeIn(await this.requestCode(mailbox, credentials)))
     await setChecked(this.irreversible, true)
     await this.submit.click()
   }

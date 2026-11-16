@@ -55,13 +55,16 @@ describe('useAssignmentChanges', () => {
   it('keeps the dialog open when the change fails and ignores an empty choice', async () => {
     let calls = 0
     server.use(
-      http.patch('/api/activities/:activityId/:userId/change-status', () => {
+      http.patch('/api/activities/:activityId/:userId/:change', () => {
         calls += 1
         return apiError(500)
       }),
     )
     const { result } = await mountComposable(() => useAssignmentChanges(() => 'event-1'))
 
+    result.openRole(attendee, signup())
+    result.roleDialog.selectedId = null
+    result.applyRole()
     result.openStatus(attendee, signup())
     result.statusDialog.selectedId = null
     result.applyStatus()

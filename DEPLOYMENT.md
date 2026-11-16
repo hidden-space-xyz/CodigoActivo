@@ -347,7 +347,7 @@ console, which the overlay keeps at 5 MB per file, two files.
 ## Releases and upgrades
 
 Only pushes to `master` start CI, merged pull requests included; open pull requests and pushes to `develop`
-run none of it. The backend build, its architecture, unit and integration tests with 90% coverage, and the
+run none of it. The backend build, its architecture, unit and integration tests with 95% coverage, and the
 frontend checks must pass before publishing. The Docker workflow is a reusable CI stage; it does not run
 independently or on a schedule.
 

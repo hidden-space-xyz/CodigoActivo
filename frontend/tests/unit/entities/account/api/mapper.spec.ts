@@ -10,6 +10,7 @@ import {
   toSaveEventRatingRequest,
   toUpdateMinorRequest,
 } from '@/entities/account/api/mapper'
+import type { EventHistoryRatingResponse } from '@/shared/api/generated/models'
 
 import {
   buildCertificateResponse,
@@ -29,14 +30,16 @@ const MINOR = {
 
 describe('account mapper', () => {
   it('maps the own profile, missing contact details as empty text', () => {
-    expect(toAccountProfile(buildUserResponse({ email: null }))).toEqual({
+    expect(
+      toAccountProfile(buildUserResponse({ email: null, phone: null, nationalId: null })),
+    ).toEqual({
       id: 'user-1',
       firstName: 'Ada',
       lastName: 'Lovelace',
       email: '',
-      phone: '600000000',
+      phone: '',
       secondaryPhone: '',
-      nationalId: '12345678Z',
+      nationalId: '',
       newsConsent: false,
       gender: 'Female',
       statusName: 'Active',
@@ -78,15 +81,15 @@ describe('account mapper', () => {
   })
 
   it('turns the stored rating into form values with missing answers as empty text', () => {
-    const entry = toAccountHistoryEntry(
-      buildHistoryResponse({
-        rating: { score: null, mostLiked: 'El taller', leastLiked: null, suggestions: null },
-      }),
-    )
+    const ratingOf = (rating: EventHistoryRatingResponse) =>
+      toAccountHistoryEntry(buildHistoryResponse({ rating })).rating
 
-    expect(entry.rating).toEqual({
-      score: null,
-      mostLiked: 'El taller',
+    expect(
+      ratingOf({ score: null, mostLiked: 'El taller', leastLiked: null, suggestions: null }),
+    ).toEqual({ score: null, mostLiked: 'El taller', leastLiked: '', suggestions: '' })
+    expect(ratingOf({ score: 4 })).toEqual({
+      score: 4,
+      mostLiked: '',
       leastLiked: '',
       suggestions: '',
     })
@@ -281,6 +284,55 @@ describe('toPersonalDataFile', () => {
     const file = toPersonalDataFile(copy, 'https://site.test/privacy', t)
 
     expect(file.politicaDePrivacidad).toBeNull()
+  })
+
+  it('writes the details the copy leaves out as null', () => {
+    const copy = buildPersonalDataResponse()
+    const [dependent] = copy.dependents
+    if (!dependent) throw new Error('missing dependent')
+    copy.account = {
+      ...copy.account,
+      email: null,
+      pendingEmail: null,
+      phone: null,
+      nationalId: null,
+      lastLoginAt: null,
+      adultDeclaredAt: null,
+    }
+    copy.dependents = [
+      {
+        ...dependent,
+        birthDate: null,
+        guardianshipDeclaredAt: null,
+        comingOfAgeNoticeSentAt: null,
+      },
+    ]
+    copy.ratings = [{ eventTitle: 'Hackatón', score: null, mostLiked: null, suggestions: null }]
+
+    const file = toPersonalDataFile(copy, 'https://site.test/privacy', t)
+
+    expect(file.cuenta).toMatchObject({
+      email: null,
+      emailNuevoSinConfirmar: null,
+      telefono: null,
+      dniNie: null,
+      ultimoAccesoEl: null,
+      declaraSerMayorDeEdadEl: null,
+    })
+    expect(file.menores[0]).toMatchObject({
+      fechaDeNacimiento: null,
+      declarasSerSuPadreMadreOTutorEl: null,
+      teAvisamosDeQueCumple18El: null,
+    })
+    expect(file.valoraciones).toEqual([
+      {
+        evento: 'Hackatón',
+        puntuacion: null,
+        loQueMasGusto: null,
+        loQueMenosGusto: null,
+        sugerencias: null,
+      },
+    ])
   })
 
   it('labels the cargo and tells whether the account is the data protection officer', () => {

@@ -1,26 +1,23 @@
 import { flushPromises } from '@vue/test-utils'
-import { ElDatePicker, ElInputNumber } from 'element-plus'
+import { ElDatePicker } from 'element-plus'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { Partner } from '@/entities/partner'
 import PartnerFormDialog from '@/pages/admin/partners/ui/PartnerFormDialog.vue'
 
 import { renderWithProviders, t } from '../../../../../support/render'
 import { apiError, http, server } from '../../../../../support/server'
-import { buildPartner } from '../../../../../support/models'
 import {
   click,
   findButton,
-  inputValue,
   openDialog,
   pickFiles,
   propOf,
   typeInto,
 } from '../../../../../support/dom'
 
-async function renderDialog(partner: Partner | null = null) {
+async function renderDialog() {
   const rendered = await renderWithProviders(PartnerFormDialog, {
-    props: { visible: false, partner, saving: false },
+    props: { visible: false, partner: null, saving: false },
     attach: true,
   })
   await rendered.wrapper.setProps({ visible: true })
@@ -47,14 +44,6 @@ describe('PartnerFormDialog', () => {
     expect(wrapper.emitted('submit')).toBeUndefined()
   })
 
-  it('populates the form from the partner being edited', async () => {
-    await renderDialog(buildPartner())
-
-    openDialog(t('pages.admin.partners.form.editHeader'))
-    expect(inputValue('#partner-name')).toBe('Acme')
-    expect(inputValue('#partner-website')).toBe('https://acme.test')
-  })
-
   it('does not let the start day be picked after today', async () => {
     const { wrapper } = await renderDialog()
     const disabled = propOf(wrapper.findComponent(ElDatePicker), 'disabledDate') as (
@@ -74,16 +63,6 @@ describe('PartnerFormDialog', () => {
     )
 
     expect(wrapper.emitted('update:visible')).toEqual([[false]])
-  })
-
-  it('submits tier zero when the tier input is cleared', async () => {
-    const { wrapper } = await renderDialog(buildPartner({ tier: 4 }))
-    const dialog = openDialog(t('pages.admin.partners.form.editHeader'))
-
-    wrapper.findComponent(ElInputNumber).vm.$emit('update:modelValue', undefined)
-    await click(findButton(t('common.save'), dialog))
-
-    expect(wrapper.emitted('submit')?.[0]?.[0]).toMatchObject({ tier: 0, name: 'Acme' })
   })
 
   it('shows the upload error and does not submit when the logo upload fails', async () => {

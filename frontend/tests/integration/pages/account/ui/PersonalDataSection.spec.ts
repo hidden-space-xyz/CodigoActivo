@@ -22,15 +22,13 @@ describe('PersonalDataSection', () => {
       }),
     )
     const clicked = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
-    const { wrapper } = await renderWithProviders(PersonalDataSection, {
+    await renderWithProviders(PersonalDataSection, {
       attach: true,
       route: '/account',
       user: {},
     })
     await flushPromises()
 
-    expect(wrapper.text()).toContain(t('pages.account.personalData.title'))
-    expect(wrapper.text()).toContain(t('pages.account.personalData.lead'))
     await click(findButton(t('pages.account.personalData.download'), document.body))
 
     await vi.waitFor(() => expect(clicked).toHaveBeenCalledOnce())

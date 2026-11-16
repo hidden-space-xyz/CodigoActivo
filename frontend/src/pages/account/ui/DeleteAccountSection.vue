@@ -104,6 +104,7 @@ const {
             <BrandButton
               variant="link"
               class="acc-danger__resend-button"
+              data-testid="delete-account-resend"
               :loading="requestCode.isPending.value"
               @click="resendCode"
             >

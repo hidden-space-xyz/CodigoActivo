@@ -127,6 +127,17 @@ public sealed class EmailSendLimiterTests
             .NotBe(EmailSendLimiter.NormalizeKey("firstlast@example.test"));
     }
 
+    [Theory]
+    [InlineData(" No.Mailbox+Tag ", "no.mailbox+tag")]
+    [InlineData("@GMAIL.com", "@gmail.com")]
+    public void NormalizeKeyWithoutALocalPartIsOnlyTrimmedAndLowerCased(
+        string address,
+        string expected
+    )
+    {
+        EmailSendLimiter.NormalizeKey(address).Should().Be(expected);
+    }
+
     [Fact]
     public void TryConsumeAnonymousBudgetDrainedByOtherRecipientsDeniesWithGlobalScope()
     {

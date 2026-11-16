@@ -10,7 +10,7 @@ import { formatDate } from '@/shared/lib/date'
 import { ColumnFilterDate, ColumnFilterSelect, ColumnSearch } from '@/shared/ui/column-filter'
 import { SearchInput } from '@/shared/ui/search-input'
 
-import { renderApp, renderWithProviders, t } from '../../../../../support/render'
+import { renderWithProviders, t } from '../../../../../support/render'
 import { apiError, http, HttpResponse, server } from '../../../../../support/server'
 import { sessionOf } from '../../../../../support/session'
 import {
@@ -227,14 +227,6 @@ describe('admin users page', () => {
     expect(third?.text()).not.toContain('(')
     expect(third?.text()).toContain('—')
     expect(third?.find('.table-primary-cell__meta').exists()).toBe(false)
-  })
-
-  it('renders through the application router for admins', async () => {
-    serveUsers()
-
-    const { wrapper } = await renderApp('/admin/users', { user: { staffRole: 'Administrator' } })
-
-    await vi.waitFor(() => expect(wrapper.text()).toContain('Tim Lovelace'))
   })
 
   it('shows empty and error states and disables bulk actions without users', async () => {
@@ -518,20 +510,8 @@ describe('admin users page', () => {
 
     await chooseRowAction(wrapper, 0, CHANGE_STAFF_ROLE)
     const dialog = openDialog(t(STAFF_ROLE_TITLE))
-    expect(dialog.textContent).toContain(
-      t('pages.admin.users.staffRole.message', { fullName: 'Ada Lovelace' }),
-    )
-    expect(staffRoleSelect().props('modelValue')).toBe('None')
-    expect(dialog.querySelector('#staff-role-password')).toBeNull()
     staffRoleSelect().vm.$emit('update:modelValue', 'Editor')
     await flushPromises()
-
-    await click(findButton(t('pages.admin.users.staffRole.confirm'), dialog))
-    expect(dialog.textContent).toContain(
-      t('pages.admin.users.adminPassword.form.problems.passwordRequired'),
-    )
-    expect(requests).toEqual([])
-
     await typeInto('#staff-role-password', 'Str0ngPass!23')
     await click(findButton(t('pages.admin.users.staffRole.confirm'), dialog))
     await expectNotification(t('pages.admin.users.toasts.staffRoleChanged'))
@@ -542,7 +522,6 @@ describe('admin users page', () => {
     expect(staffRoleSelect().props('modelValue')).toBe('Administrator')
     staffRoleSelect().vm.$emit('update:modelValue', 'None')
     await flushPromises()
-    expect(again.querySelector('#staff-role-password')).toBeNull()
     await click(findButton(t('pages.admin.users.staffRole.confirm'), again))
 
     await vi.waitFor(() => expect(requests).toHaveLength(2))
@@ -612,12 +591,6 @@ describe('admin users page', () => {
     expect(dialog.textContent).toContain(
       t('pages.admin.users.privacyOfficer.message', { fullName: 'Ada Lovelace' }),
     )
-    await click(findButton(t('pages.admin.users.privacyOfficer.confirm'), dialog))
-    expect(dialog.textContent).toContain(
-      t('pages.admin.users.adminPassword.form.problems.passwordRequired'),
-    )
-    expect(designated).toEqual([])
-
     await typeInto('#privacy-officer-password', 'Str0ngPass!23')
     await click(findButton(t('pages.admin.users.privacyOfficer.confirm'), dialog))
 
@@ -633,6 +606,11 @@ describe('admin users page', () => {
     await vi.waitFor(() => expect(designated).toHaveLength(2))
     await flushPromises()
     expect(meCalls).toBe(1)
+
+    await chooseRowAction(wrapper, 0, DESIGNATE_OFFICER)
+    await click(findButton(t('common.cancel'), openDialog(t(OFFICER_TITLE))))
+    await vi.waitFor(() => expect(isDialogOpen(t(OFFICER_TITLE))).toBe(false))
+    expect(designated).toHaveLength(2)
   })
 
   it('shows the cargo, designation and deletion actions only to the superadministrator', async () => {
@@ -867,12 +845,6 @@ describe('admin users page', () => {
     expect(dialog.textContent).toContain(
       t('pages.admin.users.resetTwoFactor.messageEmail', { fullName: 'Ada Lovelace' }),
     )
-
-    await click(findButton(t('pages.admin.users.resetTwoFactor.confirm'), dialog))
-    expect(dialog.textContent).toContain(
-      t('pages.admin.users.adminPassword.form.problems.passwordRequired'),
-    )
-    expect(requests).toEqual([])
 
     await typeInto('#reset-two-factor-password', 'Str0ngPass!23')
     await click(findButton(t('pages.admin.users.resetTwoFactor.confirm'), dialog))

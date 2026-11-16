@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { eventKeys, eventList, eventPages, eventQueries } from '@/entities/event'
 import { FEATURED_FIRST_SORT } from '@/shared/api'
 
-import { apiError, http, HttpResponse, paged, server } from '../../../../support/server'
+import { http, HttpResponse, paged, server } from '../../../../support/server'
 import {
   buildEventListItem,
   buildEventResponse,
@@ -34,17 +34,15 @@ describe('eventKeys', () => {
 })
 
 describe('eventQueries', () => {
-  it('loads a whole event, or null when it does not exist', async () => {
+  it('loads a whole event under its key', async () => {
     server.use(
       http.get('/api/events/e1', () => HttpResponse.json(buildEventResponse({ id: 'e1' }))),
-      http.get('/api/events/missing', () => apiError(404)),
     )
     const client = createTestQueryClient()
 
     await expect(client.fetchQuery(eventQueries.detail('e1'))).resolves.toMatchObject({
       id: 'e1',
     })
-    await expect(client.fetchQuery(eventQueries.detail('missing'))).resolves.toBeNull()
     expect(eventQueries.detail('e1').queryKey).toEqual(eventKeys.detail('e1'))
   })
 

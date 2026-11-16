@@ -1,23 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  diagnosticKeys,
-  diagnosticList,
-  diagnosticQueries,
-} from '@/pages/admin/diagnostics/api/queries'
+import { diagnosticList, diagnosticQueries } from '@/pages/admin/diagnostics/api/queries'
 
 import { http, HttpResponse, paged, server } from '../../../../../support/server'
 import { buildDiagnosticDetail, buildDiagnosticEntry } from '../../../../../support/builders'
 import { queryOf } from '../../../../../support/dom'
 import { createTestQueryClient } from '../../../../../support/render'
-
-describe('diagnosticKeys', () => {
-  it('nests the list and every entry under the diagnostic log', () => {
-    expect(diagnosticKeys.all).toEqual(['logs', 'diagnostics'])
-    expect(diagnosticKeys.list()).toEqual(['logs', 'diagnostics', 'list'])
-    expect(diagnosticKeys.detail('e1')).toEqual(['logs', 'diagnostics', 'detail', 'e1'])
-  })
-})
 
 describe('diagnosticQueries', () => {
   it('loads one entry with its exception', async () => {

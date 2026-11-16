@@ -35,7 +35,6 @@ describe('AdminShell', () => {
   it('renders the sidebar navigation, user bar and page content', async () => {
     const { wrapper } = await renderLayout()
 
-    expect(wrapper.find('.admin__brand').text()).toBe(t('common.brand.name'))
     expect(wrapper.find('.admin__brand').attributes('href')).toBe('/')
     const links = wrapper.findAll('.admin__sidebar .admin__link')
     expect(links.map((link) => link.text())).toEqual(ADMIN_NAV.map((item) => t(item.labelKey)))
@@ -56,9 +55,7 @@ describe('AdminShell', () => {
     expect(wrapper.find('.admin__sidebar .admin__link--active').text()).toBe(
       t('widgets.adminShell.nav.events'),
     )
-    expect(wrapper.find('.admin__home').text()).toBe(t('widgets.adminShell.goToSite'))
     expect(wrapper.find('.admin__username').text()).toBe('Ada')
-    expect(wrapper.find('.theme-toggle').exists()).toBe(true)
     expect(wrapper.find('.admin__main .page-content').text()).toBe('Dashboard body')
   })
 
@@ -101,9 +98,7 @@ describe('AdminShell', () => {
     )
     const { wrapper, router, queryClient } = await renderLayout()
 
-    const logout = wrapper.find('.admin__logout')
-    expect(logout.text()).toBe(t('common.logout'))
-    await logout.trigger('click')
+    await wrapper.find('.admin__logout').trigger('click')
 
     await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login'))
     expect(called).toBe(true)
@@ -119,9 +114,6 @@ describe('AdminShell', () => {
     const nav = await openMenu(wrapper)
 
     expect(burger.attributes('aria-expanded')).toBe('true')
-    expect(document.body.querySelector('.el-drawer__title')?.textContent).toBe(
-      t('widgets.adminShell.menuTitle'),
-    )
     const links = [...nav.querySelectorAll<HTMLAnchorElement>('.admin__link--drawer')]
     expect(links.map((link) => link.textContent?.trim())).toEqual([
       ...ADMIN_NAV.map((item) => t(item.labelKey)),

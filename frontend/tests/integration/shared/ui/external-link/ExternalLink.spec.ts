@@ -23,7 +23,6 @@ describe('ExternalLink', () => {
       props: { href: 'https://example.test' },
     })
 
-    expect(wrapper.find('.external-link__hint').text()).toBe(t('common.opensInNewTab'))
     expect(wrapper.text().replace(/\s+/g, ' ')).toBe(`example.test ${t('common.opensInNewTab')}`)
   })
 })

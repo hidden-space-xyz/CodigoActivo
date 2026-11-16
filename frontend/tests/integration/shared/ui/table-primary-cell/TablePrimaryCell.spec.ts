@@ -12,7 +12,6 @@ describe('TablePrimaryCell', () => {
     })
 
     const title = wrapper.find('.table-primary-cell__title')
-    expect(title.element.tagName).toBe('SPAN')
     expect(title.text()).toBe('Taller de robótica')
     expect(title.attributes('title')).toBe('Taller de robótica')
 

@@ -653,6 +653,56 @@ public sealed class EmailOutboxDelivererTests
     }
 
     [Fact]
+    public async Task DeliverDueAsyncBookkeepingFailuresAfterSendingAreLoggedWithoutStoppingTheRun()
+    {
+        var store = new FailingBookkeepingStore(protector) { EnqueuedAt = Now };
+        await store.TryEnqueueAsync(Batch("uno@example.test", "dos@example.test"), Ct());
+        var logger = new RecordingLogger<EmailOutboxDeliverer>();
+
+        var delivered = await Create(store, logger).DeliverDueAsync(Ct());
+
+        delivered.Should().Be(2);
+        transport.Sent.Should().HaveCount(2);
+        store.Messages.Should().HaveCount(2, "a row that could not be removed stays due");
+        var errors = logger
+            .LevelEntries.Where(entry => entry.Level == LogLevel.Error)
+            .Select(entry => entry.Message)
+            .ToList();
+        errors.Count(message => message.Contains("stays due")).Should().Be(2);
+        errors.Should().ContainSingle(message => message.Contains("daily count"));
+        errors.Should().ContainSingle(message => message.Contains("expired email"));
+    }
+
+    [Fact]
+    public async Task DeliverDueAsyncExpiredRemovalFailingAgainIsLoggedOncePerInterval()
+    {
+        var store = new FailingBookkeepingStore(protector) { EnqueuedAt = Now };
+        var logger = new RecordingLogger<EmailOutboxDeliverer>();
+        var deliverer = Create(store, logger);
+
+        await deliverer.DeliverDueAsync(Ct());
+        await deliverer.DeliverDueAsync(Ct());
+
+        logger.Entries.Should().ContainSingle(message => message.Contains("expired email"));
+    }
+
+    [Fact]
+    public async Task DeliverDueAsyncHandingTheBatchBackFailsIsLoggedAndStillPauses()
+    {
+        var store = new FailingBookkeepingStore(protector) { EnqueuedAt = Now };
+        await store.TryEnqueueAsync(Batch("uno@example.test", "dos@example.test"), Ct());
+        transport.ThrowOnOpen = ServerDown();
+        var logger = new RecordingLogger<EmailOutboxDeliverer>();
+        var deliverer = Create(store, logger);
+
+        await deliverer.DeliverDueAsync(Ct());
+
+        deliverer.PausedUntil.Should().Be(Now.AddMinutes(1));
+        transport.Sent.Should().BeEmpty();
+        logger.Entries.Count(message => message.Contains("stays due")).Should().Be(2);
+    }
+
+    [Fact]
     public async Task DeliverDueAsyncMoreMessagesThanTheBatchSizeClaimsOnlyOneBatch()
     {
         var store = Store();
@@ -789,6 +839,41 @@ public sealed class EmailOutboxDelivererTests
         )
         {
             throw new InvalidOperationException("The outbox write failed.");
+        }
+    }
+
+    private sealed class FailingBookkeepingStore(EmailOutboxProtector protector)
+        : FakeEmailOutboxStore(protector)
+    {
+        public override Task RemoveAsync(Guid messageId, CancellationToken ct = default)
+        {
+            throw new InvalidOperationException("The outbox delete failed.");
+        }
+
+        public override Task ReleaseAsync(
+            Guid messageId,
+            DateTimeOffset nextAttemptAt,
+            CancellationToken ct = default
+        )
+        {
+            throw new InvalidOperationException("The outbox release failed.");
+        }
+
+        public override Task<IReadOnlyList<EmailKind>> RemoveExpiredAsync(
+            DateTimeOffset now,
+            CancellationToken ct = default
+        )
+        {
+            throw new InvalidOperationException("The expiry sweep failed.");
+        }
+
+        public override Task RecordSentAsync(
+            DateTimeOffset now,
+            int sent,
+            CancellationToken ct = default
+        )
+        {
+            throw new InvalidOperationException("The sent count failed.");
         }
     }
 

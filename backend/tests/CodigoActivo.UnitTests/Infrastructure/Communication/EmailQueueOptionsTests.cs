@@ -88,6 +88,14 @@ public sealed class EmailQueueOptionsTests
     }
 
     [Fact]
+    public void PriorityOfUnknownKindIsRefused()
+    {
+        var act = () => EmailQueueOptions.PriorityOf((EmailKind)999);
+
+        act.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("kind");
+    }
+
+    [Fact]
     public void PrioritiesAlwaysRankLoginCodesFirstAndBulkMailLast()
     {
         int[] priorities =

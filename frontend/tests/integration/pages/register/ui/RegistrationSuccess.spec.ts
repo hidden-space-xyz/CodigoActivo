@@ -20,7 +20,6 @@ describe('RegistrationSuccess', () => {
   it('asks to verify the email and lets the user resend it', async () => {
     const { wrapper } = await renderWithProviders(RegistrationSuccess, { props: baseProps })
 
-    expect(wrapper.text()).toContain(t('pages.register.success.title'))
     expect(wrapper.get('.reg-success__verify-intro b').text()).toBe('ada@example.test')
     expect(wrapper.find('.reg-success__role').exists()).toBe(false)
     expect(resendButton(wrapper).text()).toBe(t('pages.register.success.resend'))
@@ -62,16 +61,11 @@ describe('RegistrationSuccess', () => {
     )
   })
 
-  it('links home and to events and emits reset to register someone else', async () => {
-    const { wrapper, router } = await renderWithProviders(RegistrationSuccess, {
+  it('names a single enrolled minor and emits reset to register someone else', async () => {
+    const { wrapper } = await renderWithProviders(RegistrationSuccess, {
       props: { ...baseProps, minorCount: 1 },
     })
-    const hrefs = wrapper.findAll('.reg-success__actions a').map((link) => link.attributes('href'))
 
-    expect(hrefs).toEqual([
-      router.resolve({ name: 'home' }).href,
-      router.resolve({ name: 'events' }).href,
-    ])
     expect(wrapper.get('.reg-success__role b').text()).toBe(
       i18n.global.t('pages.register.success.minorsEnrolled', { n: 1 }, 1),
     )

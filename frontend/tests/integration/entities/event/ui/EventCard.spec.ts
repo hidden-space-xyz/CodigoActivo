@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { EventCard } from '@/entities/event'
 
-import { renderWithProviders, t } from '../../../../support/render'
+import { renderWithProviders } from '../../../../support/render'
 import { buildEventSummary } from '../../../../support/models'
 
 describe('EventCard', () => {
@@ -15,7 +15,6 @@ describe('EventCard', () => {
     expect(link.attributes('href')).toBe('/events/event-1')
     expect(wrapper.find('h3').text()).toBe('Día Código Activo')
     expect(wrapper.text()).toContain('«Programa tu futuro»')
-    expect(wrapper.text()).toContain(`${t('entities.event.card.dateLabel')}:`)
     expect(wrapper.text()).toContain('3 oct 2026')
     expect(wrapper.find('img').attributes()).toMatchObject({
       src: '/api/files/thumb-1/thumbnail',

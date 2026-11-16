@@ -402,6 +402,20 @@ public sealed class UserTests
     }
 
     [Fact]
+    public void DiscardExpiredChangesWithNothingPendingDropsNothing()
+    {
+        var user = NewPendingUser();
+        var authenticator = new Authenticator("ACTIVE", 41, null, null);
+        Persisted.Overwrite(user, new { Authenticator = authenticator });
+
+        user.DiscardExpiredChanges(Now).Should().BeFalse();
+
+        user.Authenticator.Should().Be(authenticator);
+        user.Authenticator.HasPendingEnrollment(Now).Should().BeFalse();
+        user.EmailChange.Should().Be(default(EmailChange));
+    }
+
+    [Fact]
     public void EnableAuthenticatorActiveAuthenticatorIsNeverReplaced()
     {
         var user = NewPendingUser();

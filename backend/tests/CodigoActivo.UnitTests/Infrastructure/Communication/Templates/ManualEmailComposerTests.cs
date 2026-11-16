@@ -154,6 +154,32 @@ public sealed class ManualEmailComposerTests
         batch.HtmlBody.Should().NotContain(link, "the shared content names no recipient");
     }
 
+    [Fact]
+    public void ComposeLongBodyCutsThePreheaderAtTheLastWholeWord()
+    {
+        var body = string.Join(' ', Enumerable.Repeat("palabra", 30));
+
+        var batch = sut.Compose("Asunto", body, ManualEmailPurpose.Notice, [Ana], []);
+
+        PreheaderOf(batch.HtmlBody).Should().Be(string.Join(' ', Enumerable.Repeat("palabra", 17)));
+    }
+
+    [Fact]
+    public void ComposeBodyOfOneLongWordCutsThePreheaderAtItsLimit()
+    {
+        var body = new string('a', 200);
+
+        var batch = sut.Compose("Asunto", body, ManualEmailPurpose.Notice, [Ana], []);
+
+        PreheaderOf(batch.HtmlBody).Should().Be(new string('a', 140));
+    }
+
+    private static string PreheaderOf(string html)
+    {
+        var start = TokenIn(html, $"<div style=\"{EmailStyles.Preheader}\">");
+        return start[..start.IndexOf("&#8203;", StringComparison.Ordinal)];
+    }
+
     private UserId TokenOf(string link, string marker)
     {
         tokens.TryRead(TokenIn(link, marker), out var userId).Should().BeTrue();

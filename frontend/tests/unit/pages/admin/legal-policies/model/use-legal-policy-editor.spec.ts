@@ -73,18 +73,24 @@ describe('useLegalPolicyEditor', () => {
     expect(result.form.draft.content).toBe(richText('Mía'))
   })
 
-  it('refuses to publish a policy without text', async () => {
-    servePolicy(() => richText('Vigente'))
-    const { result } = await mountEditor()
-
-    result.form.draft.content = richText(' ')
-    result.publish()
-    await flushPromises()
-
-    expect(result.form.errors.value.content).toBe(
-      t('pages.admin.legalPolicies.form.problems.contentRequired'),
+  it('takes up the first version published meanwhile while the draft is still blank', async () => {
+    let published = false
+    server.use(
+      http.get('/api/legal-policies/Privacy', () =>
+        published
+          ? HttpResponse.json(buildLegalPolicy({ content: richText('Primera'), version: 1 }))
+          : apiError(404),
+      ),
+      http.get('/api/legal-policies/Privacy/versions', () => HttpResponse.json([])),
     )
-    expect(document.querySelector('.el-message-box')).toBeNull()
+    const { result, queryClient } = await mountComposable(() => useLegalPolicyEditor('Privacy'))
+    await vi.waitFor(() => expect(result.policy.value).toBeNull())
+
+    published = true
+    await queryClient.invalidateQueries({ queryKey: legalPolicyKeys.all })
+
+    await vi.waitFor(() => expect(result.form.draft.content).toBe(richText('Primera')))
+    expect(result.dirty.value).toBe(false)
   })
 
   it('publishes the next version once confirmed', async () => {

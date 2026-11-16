@@ -4,7 +4,7 @@ import type { DashboardRange } from '../model/types'
 import { getDashboardAnalyticsRequest } from './requests'
 
 /** Query keys of the dashboard, under the root of every report. */
-export const dashboardKeys = {
+const dashboardKeys = {
   all: ['reports'] as const,
   analytics: (range: DashboardRange) =>
     [...dashboardKeys.all, 'dashboard-analytics', range.from, range.to] as const,

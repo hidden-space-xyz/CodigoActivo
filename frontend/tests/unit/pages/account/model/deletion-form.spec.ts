@@ -3,19 +3,12 @@ import { describe, expect, it } from 'vitest'
 import {
   readDeletionPassword,
   toDeletionConfirmation,
-  toDeletionDraft,
   type DeletionDraft,
 } from '@/pages/account/model/deletion-form'
 
 function draftOf(overrides: Partial<DeletionDraft> = {}): DeletionDraft {
   return { password: 'secret', code: ' 123456 ', accepted: true, ...overrides }
 }
-
-describe('toDeletionDraft', () => {
-  it('starts blank and not accepted', () => {
-    expect(toDeletionDraft()).toEqual({ password: '', code: '', accepted: false })
-  })
-})
 
 describe('readDeletionPassword', () => {
   it('keeps the password as typed', () => {

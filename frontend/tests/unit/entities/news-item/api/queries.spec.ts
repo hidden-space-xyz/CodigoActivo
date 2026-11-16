@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { newsKeys, newsList, newsPages, newsQueries } from '@/entities/news-item'
 
-import { apiError, http, HttpResponse, paged, server } from '../../../../support/server'
+import { http, HttpResponse, paged, server } from '../../../../support/server'
 import { buildNewsItemResponse, buildNewsListItem } from '../../../../support/builders'
 import { queryOf } from '../../../../support/dom'
 import { createTestQueryClient } from '../../../../support/render'
@@ -25,7 +25,6 @@ describe('newsQueries', () => {
         HttpResponse.json(paged([buildNewsListItem({ featured: true })])),
       ),
       http.get('/api/news/a1', () => HttpResponse.json(buildNewsItemResponse({ id: 'a1' }))),
-      http.get('/api/news/missing', () => apiError(404)),
     )
     const client = createTestQueryClient()
 
@@ -35,7 +34,6 @@ describe('newsQueries', () => {
       items: [],
     })
     await expect(client.fetchQuery(newsQueries.detail('a1'))).resolves.toMatchObject({ id: 'a1' })
-    await expect(client.fetchQuery(newsQueries.detail('missing'))).resolves.toBeNull()
   })
 })
 

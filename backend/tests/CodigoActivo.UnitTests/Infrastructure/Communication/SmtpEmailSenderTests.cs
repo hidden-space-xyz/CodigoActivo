@@ -314,6 +314,51 @@ public sealed class SmtpEmailSenderTests
     }
 
     [Fact]
+    public async Task SendAsyncConnectionThatRefusesTheNoOpIsOpenedAgain()
+    {
+        await using var server = new ScriptedSmtpServer { NoOpReply = "421 4.4.2 Idle timeout" };
+        var options = new SmtpOptions
+        {
+            Host = "127.0.0.1",
+            Port = server.Port,
+            Security = SmtpSecurityMode.None,
+            FromAddress = "no-reply@codigoactivo.test",
+        };
+        await using var session = await Create(options).OpenAsync(Timeout());
+
+        await session.SendAsync(Message("one@example.test"), Timeout());
+        await session.SendAsync(Message("two@example.test"), Timeout());
+
+        server.Delivered.Should().Be(2);
+        server.Connections.Should().Be(2);
+    }
+
+    [Fact]
+    public async Task OpenAsyncRefusedLoginIsTheServersFaultWithoutThePassword()
+    {
+        await using var server = new ScriptedSmtpServer
+        {
+            AuthReply = "535 5.7.8 Authentication credentials invalid",
+        };
+        var options = new SmtpOptions
+        {
+            Host = "127.0.0.1",
+            Port = server.Port,
+            Security = SmtpSecurityMode.None,
+            Username = "mailer",
+            Password = "secret",
+            FromAddress = "no-reply@codigoactivo.test",
+        };
+
+        var act = () => Create(options).OpenAsync(Timeout());
+
+        var thrown = (await act.Should().ThrowAsync<EmailDeliveryException>()).Which;
+        thrown.Failure.Should().Be(EmailDeliveryFailure.ServerUnavailable);
+        thrown.ToString().Should().NotContain("secret");
+        server.Delivered.Should().Be(0);
+    }
+
+    [Fact]
     public async Task SendAsyncGreylistedRecipientIsDeferredWithoutTheAddress()
     {
         await using var server = new FakeSmtpServer { DeferredRecipient = "later@example.test" };

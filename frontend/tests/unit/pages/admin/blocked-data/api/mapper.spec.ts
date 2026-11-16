@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  toBlockedDataAccess,
   toCandidate,
   toConsultation,
   toExtractFile,
@@ -11,13 +10,6 @@ import {
 import { t } from '../../../../../support/render'
 
 describe('blocked data mapper', () => {
-  it('maps what the administrator may do', () => {
-    expect(toBlockedDataAccess({ isPrivacyOfficer: true, entities: ['User'] })).toEqual({
-      isPrivacyOfficer: true,
-      entities: ['User'],
-    })
-  })
-
   it('maps a consultation whose officer was erased', () => {
     expect(
       toConsultation({

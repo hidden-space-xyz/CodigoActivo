@@ -2,10 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import type { InventoryCategory, InventoryColumn } from '@/entities/inventory'
 import {
-  columnTypeLabelKey,
   columnUsage,
   draftColumnUsage,
-  INVENTORY_COLUMN_TYPES,
   moveItem,
   newColumnDraft,
   newOptionDraft,
@@ -200,12 +198,5 @@ describe('moveItem', () => {
     moveItem(items, 0, -1)
     moveItem(items, 2, 1)
     expect(items).toEqual(['b', 'a', 'c'])
-  })
-})
-
-describe('column types', () => {
-  it('lists every type with its label key', () => {
-    expect(INVENTORY_COLUMN_TYPES).toHaveLength(7)
-    expect(columnTypeLabelKey('Quantity')).toBe('pages.admin.inventory.form.types.Quantity')
   })
 })

@@ -78,6 +78,20 @@ describe('selectEntries', () => {
     expect(ids({ sort: 'unknown' })).toEqual(['e1', 'e2', 'e3'])
   })
 
+  it('breaks ties by entry, empty values included, in either direction', () => {
+    const tied = [
+      entry('b', { bought: '2024-03-05' }),
+      entry('d', {}),
+      entry('a', { bought: '2024-03-05' }),
+      entry('c', {}),
+    ]
+    const order = (sort: string) =>
+      selectEntries(COLUMNS, tied, { sort }).items.map((item) => item.id)
+
+    expect(order('bought')).toEqual(['a', 'b', 'c', 'd'])
+    expect(order('-bought')).toEqual(['a', 'b', 'c', 'd'])
+  })
+
   it('cuts the page asked for and counts every match', () => {
     expect(selectEntries(COLUMNS, ENTRIES, { page: 2, pageSize: 2, sort: 'name' })).toEqual({
       items: [ENTRIES[0]],

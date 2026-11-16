@@ -1,15 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  readAdminPasswordDraft,
-  toAdminPasswordDraft,
-} from '@/pages/admin/users/model/admin-password-form'
-
-describe('toAdminPasswordDraft', () => {
-  it('starts blank', () => {
-    expect(toAdminPasswordDraft()).toEqual({ password: '' })
-  })
-})
+import { readAdminPasswordDraft } from '@/pages/admin/users/model/admin-password-form'
 
 describe('readAdminPasswordDraft', () => {
   it('sends the password as typed', () => {

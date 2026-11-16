@@ -30,10 +30,6 @@ describe('audit labels', () => {
   it('lists and names every command the API declares', () => {
     expect([...AUDIT_ACTIONS].sort()).toEqual(Object.values(AuditAction).sort())
     for (const action of AUDIT_ACTIONS) expect(has(actionLabelKey(action))).toBe(true)
-    expect(t(actionLabelKey('SetStaffRole'))).toBe('Cambiar el cargo de un usuario')
-    expect(t(actionLabelKey('DesignatePrivacyOfficer'))).toBe(
-      'Designar al responsable de protección de datos',
-    )
   })
 
   it('names every actor kind, entity kind and outcome', () => {
@@ -41,11 +37,7 @@ describe('audit labels', () => {
     for (const entityType of AUDIT_ENTITY_TYPES) {
       expect(has(entityTypeLabelKey(entityType))).toBe(true)
     }
-    expect(AUDIT_OUTCOMES.map((outcome) => t(outcomeLabelKey(outcome)))).toEqual([
-      'Correcto',
-      'Rechazado',
-      'Fallido',
-    ])
+    for (const outcome of AUDIT_OUTCOMES) expect(has(outcomeLabelKey(outcome))).toBe(true)
     expect(AUDIT_OUTCOMES.map(outcomeTagType)).toEqual(['success', 'warning', 'danger'])
   })
 

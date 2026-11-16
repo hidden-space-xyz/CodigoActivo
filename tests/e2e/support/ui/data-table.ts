@@ -1,5 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 
+import { dayFromToday } from '../data/time'
 import { chooseOption } from './element-plus'
 
 /**
@@ -100,6 +101,34 @@ export class DataTable {
     await box.press('Enter')
     await this.expectSettled()
     await expect(panel).toBeHidden()
+  }
+
+  /**
+   * Narrows the date range filter that carries the test id `filter` to the single `day`
+   * (`YYYY-MM-DD`): the left calendar of the range picker goes back from the current month to the
+   * month of `day`, a year or a month a click, and the day is picked as both ends of the range.
+   */
+  async filterByDay(filter: string, day: string): Promise<void> {
+    const panel = await this.openFilter(filter)
+    await panel.locator('.column-filter-date').click()
+    const calendar = this.page
+      .locator('.el-date-range-picker__content.is-left')
+      .filter({ visible: true })
+    const [year = 0, month = 0] = day.split('-').map(Number)
+    const [thisYear = 0, thisMonth = 0] = dayFromToday(0).split('-').map(Number)
+    const monthsBack = (thisYear - year) * 12 + thisMonth - month
+    for (let step = 0; step < Math.floor(monthsBack / 12); step++) {
+      await calendar.locator('.d-arrow-left').click()
+    }
+    for (let step = 0; step < monthsBack % 12; step++) {
+      await calendar.locator('.arrow-left').click()
+    }
+    const cell = calendar
+      .locator('td.available:not(.prev-month):not(.next-month)')
+      .filter({ hasText: new RegExp(`^${Number(day.slice(8))}$`) })
+    await cell.click()
+    await cell.click()
+    await this.expectSettled()
   }
 
   /**

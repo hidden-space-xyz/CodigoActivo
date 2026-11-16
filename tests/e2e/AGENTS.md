@@ -54,5 +54,5 @@ part of a journey.
   that reason and `seed` shares one image per worker.
 - Selects share their option ids and a closing list stays visible: open them with `chooseOption`, which waits
   for the previous list to close.
-- Codes and links come from Mailpit through `Mailbox`; authenticator codes come from `otpauth`, never from
-  code of our own.
+- Codes and links come from Mailpit through `Mailbox`, a resent one through `waitForResent`, which waits
+  out the one-minute resend cooldown; authenticator codes come from `otpauth`, never from code of our own.

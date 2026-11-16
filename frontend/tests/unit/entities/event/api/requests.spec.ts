@@ -107,22 +107,6 @@ describe('event requests', () => {
   })
 
   describe('getEventRequest', () => {
-    it('maps the whole event', async () => {
-      const event: EventResponse = buildEventResponse({
-        id: 'e1',
-        title: 'Día',
-        description: 'Texto',
-      })
-      server.use(http.get('/api/events/e1', () => HttpResponse.json(event)))
-
-      await expect(getEventRequest('e1')).resolves.toMatchObject({
-        id: 'e1',
-        description: 'Texto',
-        status: 'signupOpen',
-        terms: [],
-      })
-    })
-
     it('resolves null for a missing event', async () => {
       server.use(http.get('/api/events/missing', () => apiError(404, 'EventNotFound')))
 

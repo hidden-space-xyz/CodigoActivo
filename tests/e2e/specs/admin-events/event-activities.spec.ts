@@ -8,13 +8,14 @@ import {
   ActivityFormDialog,
   EventAdminPage,
 } from '../../support/pages/admin-events/event-admin-page'
+import { EventsAdminPage } from '../../support/pages/admin-events/events-admin-page'
 import { confirm, fillPicker, notification } from '../../support/ui/element-plus'
 import { pickThumbnail } from '../../support/ui/forms'
 
 const EVENT_DAY = 14
 
 test.describe('event activities admin', () => {
-  test('the event page shows its title and the confirmed people per role', async ({
+  test('managing an event from the list opens its page with its title and confirmed people per role', async ({
     pageAs,
     admin,
     seed,
@@ -27,10 +28,15 @@ test.describe('event activities admin', () => {
     await seed.enrol(member.api, activity, member.account.id, 'leader')
     await seed.enrol(participant.api, activity, participant.account.id, 'participant', 'requested')
     const page = await pageAs(admin)
+    const events = new EventsAdminPage(page)
+    await events.open()
+    await events.find(event.title)
+
+    await events.table.rowAction(event.title, 'manage')
+
     const eventPage = new EventAdminPage(page)
-
-    await eventPage.goto(event.id, event.title)
-
+    await expect(page).toHaveURL(EventAdminPage.path(event.id))
+    await expect(eventPage.heading(event.title)).toBeVisible()
     await expect(eventPage.subtitle).toHaveText(event.subtitle)
     await expect(eventPage.summaryValue(t('pages.admin.eventDetail.tabs.activities'))).toHaveText(
       '2',

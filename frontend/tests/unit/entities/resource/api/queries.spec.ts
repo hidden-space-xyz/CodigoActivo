@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { resourceKeys, resourceList, resourcePages, resourceQueries } from '@/entities/resource'
 
-import { apiError, http, HttpResponse, paged, server } from '../../../../support/server'
+import { http, HttpResponse, paged, server } from '../../../../support/server'
 import {
   buildResourceListItem,
   buildResourceResponse,
@@ -21,17 +21,15 @@ describe('resourceKeys', () => {
 })
 
 describe('resourceQueries', () => {
-  it('loads a whole resource, or null when it does not exist', async () => {
+  it('loads a whole resource', async () => {
     server.use(
       http.get('/api/resources/r1', () => HttpResponse.json(buildResourceResponse({ id: 'r1' }))),
-      http.get('/api/resources/missing', () => apiError(404)),
     )
     const client = createTestQueryClient()
 
     await expect(client.fetchQuery(resourceQueries.detail('r1'))).resolves.toMatchObject({
       id: 'r1',
     })
-    await expect(client.fetchQuery(resourceQueries.detail('missing'))).resolves.toBeNull()
   })
 
   it('loads the resource types', async () => {

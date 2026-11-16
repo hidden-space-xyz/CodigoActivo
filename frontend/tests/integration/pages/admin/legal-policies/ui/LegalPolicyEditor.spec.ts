@@ -100,6 +100,7 @@ describe('LegalPolicyEditor', () => {
     expect(wrapper.get('.ca-field__error').text()).toBe(
       t('pages.admin.legalPolicies.form.problems.contentRequired'),
     )
+    expect(document.querySelector('.el-message-box')).toBeNull()
     await click(findButton(t('pages.admin.legalPolicies.discard')))
     expect(wrapper.text()).not.toContain(t('pages.admin.legalPolicies.unpublishedChanges'))
   })

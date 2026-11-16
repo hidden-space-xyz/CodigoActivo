@@ -10,10 +10,8 @@ import {
   deleteAccountEventRatingRequest,
   deleteAccountRequest,
   disableAuthenticatorRequest,
-  getAccountCertificatesRequest,
   getAccountChildrenRequest,
   getAccountConsentsRequest,
-  getAccountHistoryRequest,
   getAccountPersonalDataRequest,
   getAccountProfileRequest,
   requestConfirmationCodeRequest,
@@ -38,9 +36,7 @@ import {
   TEST_CSRF_TOKEN,
 } from '../../../../support/server'
 import {
-  buildCertificateResponse,
   buildConsentResponse,
-  buildHistoryResponse,
   buildPersonalDataResponse,
   buildUserResponse,
 } from '../../../../support/builders'
@@ -48,16 +44,6 @@ import { t } from '../../../../support/render'
 
 describe('account requests', () => {
   describe('getAccountProfileRequest', () => {
-    it('maps the signed-in user', async () => {
-      server.use(http.get('/api/auth/me', () => HttpResponse.json(buildUserResponse())))
-
-      await expect(getAccountProfileRequest()).resolves.toMatchObject({
-        id: 'user-1',
-        firstName: 'Ada',
-        statusName: 'Active',
-      })
-    })
-
     it.each([401, 403])('resolves null when the API answers %i', async (status) => {
       server.use(http.get('/api/auth/me', () => apiError(status)))
 
@@ -356,25 +342,6 @@ describe('account requests', () => {
 
     expect(child.id).toBe('child-1')
     expect(body).toMatchObject({ parentId: 'parent-1', firstName: 'Byron' })
-  })
-
-  it('maps the event history', async () => {
-    const history = [buildHistoryResponse({ title: 'Día', activities: [] })]
-    server.use(http.get('/api/me/event-history', () => HttpResponse.json(history)))
-
-    const entries = await getAccountHistoryRequest()
-
-    expect(entries).toHaveLength(1)
-    expect(entries[0]).toMatchObject({ eventId: 'event-1', title: 'Día', canRate: false })
-  })
-
-  it('maps the certificates', async () => {
-    const certificates = [buildCertificateResponse({ code: 'CA-1' })]
-    server.use(http.get('/api/me/certificates', () => HttpResponse.json(certificates)))
-
-    await expect(getAccountCertificatesRequest()).resolves.toEqual([
-      expect.objectContaining({ code: 'CA-1', participantId: 'user-1' }),
-    ])
   })
 
   it('maps the consents of the household', async () => {

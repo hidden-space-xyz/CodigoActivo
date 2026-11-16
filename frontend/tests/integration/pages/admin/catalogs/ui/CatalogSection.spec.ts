@@ -21,16 +21,13 @@ describe('CatalogSection', () => {
     expect(wrapper.find('.body').text()).toBe('Contenido')
   })
 
-  it('emits create from a plain primary button', async () => {
+  it('emits create from its new button', async () => {
     const { wrapper } = await renderWithProviders(CatalogSection, {
       props: { title: 'Términos y condiciones', newLabel: 'Nuevos términos' },
       attach: true,
     })
 
-    const button = findButton('Nuevos términos', wrapper.element)
-    expect(button.classList).toContain('is-plain')
-    expect(button.classList).toContain('el-button--primary')
-    await click(button)
+    await click(findButton('Nuevos términos', wrapper.element))
 
     expect(wrapper.emitted('create')).toHaveLength(1)
   })

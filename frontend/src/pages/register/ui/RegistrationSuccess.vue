@@ -46,6 +46,7 @@ const emit = defineEmits<{
         <BrandButton
           variant="link"
           class="reg-success__resend-button"
+          data-testid="register-resend"
           :disabled="resendCooldown > 0 || isResending"
           :loading="isResending"
           @click="emit('resend')"

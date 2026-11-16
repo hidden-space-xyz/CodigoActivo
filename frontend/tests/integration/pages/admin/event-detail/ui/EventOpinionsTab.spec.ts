@@ -18,7 +18,6 @@ async function renderTab(
   ratings: EventRatingListItemResponse[],
   total = ratings.length,
   urls: URL[] = [],
-  active = true,
 ) {
   server.use(
     http.get('/api/events/:eventId/ratings', ({ request }) => {
@@ -27,7 +26,7 @@ async function renderTab(
     }),
   )
   const rendered = await renderWithProviders(EventOpinionsTab, {
-    props: { eventId: EVENT_ID, active },
+    props: { eventId: EVENT_ID, active: true },
   })
   await flushPromises()
   return rendered
@@ -89,15 +88,6 @@ describe('EventOpinionsTab', () => {
       props: { eventId: EVENT_ID, active: true },
     })
     await vi.waitFor(() => expect(failing.wrapper.text()).toContain(t('dataState.error')))
-  })
-
-  it('does not load ratings while inactive', async () => {
-    const urls: URL[] = []
-    const { wrapper } = await renderTab([buildRating()], 1, urls, false)
-
-    expect(urls).toHaveLength(0)
-    await wrapper.setProps({ active: true })
-    await vi.waitFor(() => expect(urls).toHaveLength(1))
   })
 
   it('pages through many ratings', async () => {

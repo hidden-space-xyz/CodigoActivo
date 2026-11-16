@@ -53,32 +53,6 @@ function errors(wrapper: VueWrapper): string[] {
 }
 
 describe('RegistrationForm', () => {
-  it('groups the adult into personal data, contact and account access, then minors and consent', async () => {
-    const { wrapper } = await renderForm()
-
-    expect(wrapper.findAll('h2').map((heading) => heading.text())).toEqual([
-      t('pages.register.form.yourData'),
-      t('pages.register.form.contactTitle'),
-      t('pages.register.form.accessTitle'),
-      t('pages.register.form.minorsTitle'),
-      t('pages.register.form.privacy.title'),
-    ])
-    expect(wrapper.findAll('[id^="reg-"]').map((field) => field.attributes('id'))).toEqual([
-      'reg-firstname',
-      'reg-lastname',
-      'reg-national-id',
-      'reg-gender',
-      'reg-phone',
-      'reg-secondary-phone',
-      'reg-email',
-      'reg-password',
-      'reg-password-confirm',
-      'reg-news-consent',
-      'reg-privacy-title',
-    ])
-    expect(wrapper.find('#reg-national-id-confirm').exists()).toBe(false)
-  })
-
   it('gives the basic data protection information before submitting, linking to the full policy', async () => {
     const { wrapper } = await renderForm()
 

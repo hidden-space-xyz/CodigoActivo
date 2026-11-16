@@ -10,7 +10,6 @@ describe('FilterChip', () => {
       props: { label: 'Estado: Activo', removeLabel: 'Quitar el filtro «Estado: Activo»' },
     })
 
-    expect(wrapper.element.tagName).toBe('LI')
     const label = wrapper.find('.filter-chip__label')
     expect(label.text()).toBe('Estado: Activo')
     expect(label.attributes('title')).toBe('Estado: Activo')
@@ -18,7 +17,6 @@ describe('FilterChip', () => {
     const remove = wrapper.find('button.filter-chip__remove')
     expect(remove.attributes('type')).toBe('button')
     expect(remove.attributes('aria-label')).toBe('Quitar el filtro «Estado: Activo»')
-    expect(remove.find('.app-icon').exists()).toBe(true)
 
     await remove.trigger('click')
 

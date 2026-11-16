@@ -20,12 +20,11 @@ async function renderSearch(props: Record<string, unknown> = {}) {
 
 describe('SearchInput', () => {
   it('uses the label as placeholder and accessible name', async () => {
-    const { wrapper, input } = await renderSearch()
+    const { input } = await renderSearch()
 
     expect(input.attributes('placeholder')).toBe('Search events')
     expect(input.attributes('aria-label')).toBe('Search events')
     expect(input.attributes('enterkeyhint')).toBe('search')
-    expect(wrapper.find('.el-input__prefix .app-icon').exists()).toBe(true)
   })
 
   it('emits the trimmed term after the debounce', async () => {

@@ -135,10 +135,6 @@ describe('EventAttendeesTab', () => {
     expect(text).toContain('ada@example.test')
     expect(text).toContain('600000001')
     expect(text).toContain('600000011')
-    expect(text).toContain('611111112')
-    expect(text).toContain(
-      t('pages.admin.eventDetail.attendees.guardian', { firstName: 'Mary', lastName: 'Berners' }),
-    )
     expect(text).toContain(t('pages.admin.eventDetail.attendees.conflict.badge'))
 
     const [ada, tim] = wrapper.findAll('li.attendee')
@@ -155,6 +151,26 @@ describe('EventAttendeesTab', () => {
     expect(tim?.find('.assignment__warning').exists()).toBe(true)
     expect(findButtons(t('pages.admin.eventDetail.attendees.email.rowLabel'))).toHaveLength(1)
     expect(wrapper.findComponent(ElPagination).exists()).toBe(false)
+  })
+
+  it('shows a dash for each contact detail an attendee or guardian has not given', async () => {
+    const { wrapper } = await renderTab({
+      attendees: [buildAttendee({ email: null, phone: null }), guardianAttendee],
+    })
+
+    await vi.waitFor(() => expect(wrapper.findAll('li.attendee')).toHaveLength(2))
+    const contacts = wrapper
+      .findAll('.attendee__contact')
+      .map((contact) => contact.findAll('span').map((detail) => detail.text()))
+    expect(contacts).toEqual([
+      ['—', '—'],
+      [
+        t('pages.admin.eventDetail.attendees.guardian', { firstName: 'Mary', lastName: 'Berners' }),
+        '—',
+        '—',
+        '611111112',
+      ],
+    ])
   })
 
   it('shows the loading and error states of the event activities', async () => {

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { NewsCard } from '@/entities/news-item'
 
-import { renderWithProviders, t } from '../../../../support/render'
+import { renderWithProviders } from '../../../../support/render'
 import { buildNewsSummary } from '../../../../support/models'
 
 describe('NewsCard', () => {
@@ -17,7 +17,6 @@ describe('NewsCard', () => {
     expect(link.attributes('href')).toBe('/news/news-item-1')
     expect(wrapper.find('h3').text()).toBe('Abrimos inscripciones')
     expect(wrapper.find('.news-card__subtitle').text()).toBe('Plazas limitadas')
-    expect(wrapper.find('time').text()).toContain(t('entities.newsItem.card.dateLabel'))
     expect(wrapper.find('time').text()).toContain('15 mar 2026')
     expect(wrapper.find('img').attributes()).toMatchObject({
       src: '/api/files/thumb-a/thumbnail',

@@ -5,7 +5,7 @@ import type { AuthUser } from '@/entities/session'
 import { DiagnosticsPage } from '@/pages/admin/diagnostics'
 import type { DiagnosticLogEntryResponse } from '@/shared/api/generated/models'
 import { formatDateTimeSeconds } from '@/shared/lib/date'
-import { ColumnFilterSelect, ColumnSearch } from '@/shared/ui/column-filter'
+import { ColumnFilterDate, ColumnFilterSelect, ColumnSearch } from '@/shared/ui/column-filter'
 import { SearchInput } from '@/shared/ui/search-input'
 
 import { renderWithProviders, t } from '../../../../../support/render'
@@ -15,7 +15,14 @@ import {
   buildDiagnosticEntry,
   TRACE_ID,
 } from '../../../../../support/builders'
-import { click, findButton, findButtons, findDialog, textOf } from '../../../../../support/dom'
+import {
+  click,
+  dismissDialog,
+  findButton,
+  findButtons,
+  findDialog,
+  textOf,
+} from '../../../../../support/dom'
 
 const SUPER_ADMIN = { staffRole: 'Administrator', isSuperAdmin: true } as const
 
@@ -69,7 +76,7 @@ describe('DiagnosticsPage', () => {
     expect(slow?.find('.trace').exists()).toBe(false)
   })
 
-  it('searches messages, filters by level and source and sorts by the newest first', async () => {
+  it('searches messages, filters by level, source and days and sorts by the newest first', async () => {
     const urls: URL[] = []
     const { wrapper } = await renderPage([buildDiagnosticEntry()], urls)
     expect(urls[0]?.searchParams.get('sort')).toBe('-occurredAt')
@@ -87,6 +94,16 @@ describe('DiagnosticsPage', () => {
     source.vm.$emit('update:modelValue', 'Handler')
     source.vm.$emit('apply')
     await vi.waitFor(() => expect(urls.at(-1)?.searchParams.get('category')).toBe('Handler'))
+
+    const occurred = wrapper.findComponent(ColumnFilterDate)
+    occurred.vm.$emit('update:modelValue', [new Date(2026, 6, 1), new Date(2026, 6, 4)])
+    occurred.vm.$emit('apply')
+    await vi.waitFor(() =>
+      expect(Object.fromEntries(urls.at(-1)?.searchParams ?? [])).toMatchObject({
+        occurredFrom: '2026-07-01',
+        occurredTo: '2026-07-04',
+      }),
+    )
   })
 
   it('narrows the list to a trace from its cell and lifts it from the chip', async () => {
@@ -119,6 +136,9 @@ describe('DiagnosticsPage', () => {
     expect(blocks[0]).toContain('"RouteTemplate": "api/users/{id}"')
     expect(blocks[1]).toBe('<script>alert(1)</script> boom')
     expect(findDialog(title)?.querySelector('script')).toBeNull()
+
+    await dismissDialog(wrapper, title)
+    expect(findDialog(title)).toBeUndefined()
   })
 
   it('says when an entry has no exception and when it can no longer be loaded', async () => {

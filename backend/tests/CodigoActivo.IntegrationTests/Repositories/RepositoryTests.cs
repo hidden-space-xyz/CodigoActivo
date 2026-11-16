@@ -340,6 +340,16 @@ public sealed class RepositoryTests(PostgresDatabaseFixture postgres)
     }
 
     [Fact]
+    public async Task LockAsyncAccountNotStoredReturnsFalse()
+    {
+        await using var ctx = postgres.CreateContext();
+        var repo = new UserRepository(ctx, TestUnitOfWork.For(ctx));
+        await using var transaction = await ctx.Database.BeginTransactionAsync(Ct);
+
+        (await repo.LockAsync(NewUser("Ada", "A"), Ct)).Should().BeFalse();
+    }
+
+    [Fact]
     public async Task GetByIdAsyncEventWithCategoriesIncludesCategoriesOrReturnsNull()
     {
         await using var ctx = postgres.CreateContext();

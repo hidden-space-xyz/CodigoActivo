@@ -14,12 +14,13 @@ import { SiteHeader } from '../../support/pages/site-header'
 import { notification, setChecked } from '../../support/ui/element-plus'
 
 test.describe('account deletion', () => {
-  test('a person deletes their account with the code emailed to them', async ({
+  test('a person deletes their account with the newest code emailed to them', async ({
     accounts,
     pageAs,
     mailbox,
     initialAdmin,
   }) => {
+    test.slow()
     const actor = await accounts.actor({ label: 'delete' })
     const page = await pageAs(actor)
     const account = new AccountPage(page)
@@ -27,10 +28,11 @@ test.describe('account deletion', () => {
     await new DeleteAccountSection(account).open.click()
     const dialog = new DeleteAccountDialog(page)
 
-    const code = await dialog.requestCode(mailbox, actor.account)
+    const first = await dialog.requestCode(mailbox, actor.account)
     await expect(dialog.root.getByTestId('delete-account-code-intro')).toHaveText(
       t('pages.account.deleteAccount.codeSent', { email: actor.account.email }),
     )
+    const code = await dialog.resendCode(mailbox, actor.account.email, first)
     await expect(dialog.submit).toBeDisabled()
     await dialog.code.fill(code)
     await expect(dialog.submit).toBeDisabled()

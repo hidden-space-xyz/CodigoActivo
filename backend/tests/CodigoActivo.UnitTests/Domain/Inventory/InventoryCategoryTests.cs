@@ -236,6 +236,18 @@ public sealed class InventoryCategoryTests
     }
 
     [Theory]
+    [InlineData("False", "false")]
+    [InlineData(" true ", "true")]
+    public void AddEntryBooleanIsStoredInLowerCase(string written, string stored)
+    {
+        var category = Category(Column("Funciona", InventoryColumnType.Boolean));
+
+        var entry = Added(category, null, Values((Named(category, "Funciona"), written)));
+
+        entry.Values.Of(Named(category, "Funciona").Id).Should().Be(stored);
+    }
+
+    [Theory]
     [InlineData("9999999999999.99")]
     [InlineData("-9999999999999.99")]
     [InlineData("0.5")]
@@ -466,6 +478,23 @@ public sealed class InventoryCategoryTests
             .Should()
             .Equal("Tipo", "Sala");
         entry.Quantity.Should().BeNull();
+        entry.Values.ByColumn.Should().BeEquivalentTo(Values((tipo, "mBot")));
+    }
+
+    [Fact]
+    public void RedefineColumnLeftOutThatAnEntryLeftEmptyKeepsItsOtherValues()
+    {
+        var category = Category(
+            Column("Tipo", InventoryColumnType.Text),
+            Column("Notas", InventoryColumnType.LongText)
+        );
+        var tipo = Named(category, "Tipo");
+        var entry = Added(category, null, Values((tipo, "mBot")));
+        var before = entry.Values;
+
+        category.Redefine("Robots", [Kept(tipo)]).IsSuccess.Should().BeTrue();
+
+        entry.Values.Should().BeSameAs(before);
         entry.Values.ByColumn.Should().BeEquivalentTo(Values((tipo, "mBot")));
     }
 

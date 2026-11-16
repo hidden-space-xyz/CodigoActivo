@@ -173,7 +173,7 @@ describe('admin inventory page', () => {
     await vi.waitFor(() => expect(isDialogOpen(t(NEW_HEADER))).toBe(false))
   })
 
-  it('shows what is wrong instead of saving a category without names', async () => {
+  it('shows what is wrong instead of saving a category without names until it is cancelled', async () => {
     serveCategories([])
     await renderPage()
 
@@ -186,6 +186,9 @@ describe('admin inventory page', () => {
       t('pages.admin.inventory.form.problems.columnNameRequired'),
     )
     expect(isDialogOpen(t(NEW_HEADER))).toBe(true)
+
+    await click(findButton(t('common.cancel'), dialog))
+    await vi.waitFor(() => expect(isDialogOpen(t(NEW_HEADER))).toBe(false))
   })
 
   it('edits a category locking what its rows already use', async () => {
@@ -246,21 +249,30 @@ describe('admin inventory page', () => {
     expect(inputsOf(dialog, 'inventory-column-name')).toHaveLength(2)
   })
 
-  it('reports a category that no longer exists instead of opening it', async () => {
+  it.each([
+    {
+      failure: 'the category no longer exists',
+      category: () => apiError(404, 'InventoryCategoryNotFound'),
+      entries: () => HttpResponse.json([]),
+      message: 'errors.InventoryCategoryNotFound',
+    },
+    {
+      failure: 'its rows fail to load',
+      category: () => HttpResponse.json(buildInventoryCategoryResponse()),
+      entries: () => apiError(500),
+      message: 'common.error',
+    },
+  ] as const)('reports that $failure instead of opening the category', async (scenario) => {
     serveCategories()
     server.use(
-      http.get('/api/inventory/categories/category-1', () =>
-        apiError(404, 'InventoryCategoryNotFound'),
-      ),
-      http.get('/api/inventory/categories/category-1/entries', () =>
-        apiError(404, 'InventoryCategoryNotFound'),
-      ),
+      http.get('/api/inventory/categories/category-1', scenario.category),
+      http.get('/api/inventory/categories/category-1/entries', scenario.entries),
     )
     await renderPage()
 
     await click(findButton(t('common.edit')))
 
-    await expectNotification(t('errors.InventoryCategoryNotFound'))
+    await expectNotification(t(scenario.message))
     expect(isDialogOpen(t(EDIT_HEADER))).toBe(false)
   })
 

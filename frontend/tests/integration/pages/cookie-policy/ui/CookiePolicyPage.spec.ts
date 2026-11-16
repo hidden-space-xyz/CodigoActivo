@@ -20,7 +20,6 @@ describe('cookie policy page', () => {
 
     const { wrapper } = await renderApp('/cookies')
 
-    expect(wrapper.get('h1').text()).toBe(t('pages.cookiePolicy.title'))
     expect(document.title).toContain(t('seo.routes.cookiePolicy.title'))
     await vi.waitFor(() => expect(wrapper.get('.legal-policy').text()).toBe('Solo cookies propias'))
     expect(wrapper.get('.legal-document__updated').text()).toContain('4')

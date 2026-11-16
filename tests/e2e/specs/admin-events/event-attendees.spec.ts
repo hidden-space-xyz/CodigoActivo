@@ -1,6 +1,6 @@
 import { firstDependent } from '../../support/api/accounts'
 import { ROLE_LABELS, STATUS_LABELS, USER_TYPE_LABELS } from '../../support/api/catalogs'
-import { signUp } from '../../support/api/signups'
+import { assignedActivities, signUp } from '../../support/api/signups'
 import { fullName } from '../../support/data/people'
 import { uniqueTitle } from '../../support/data/unique'
 import { expect, test } from '../../support/fixtures/test'
@@ -83,6 +83,45 @@ test.describe('event attendees admin', () => {
       sentAfter,
     })
     expect(email.subject).toBe(`${SUBJECTS.signupConfirmed}: ${activity.title}`)
+  })
+
+  test('denying a signup emails the person and it can be set back to requested', async ({
+    pageAs,
+    admin,
+    seed,
+    member,
+    mailbox,
+  }) => {
+    const event = await seed.event()
+    const activity = await seed.activity(event)
+    await signUp(member.api, activity, member.account.id, 'volunteer')
+    const page = await pageAs(admin)
+    const eventPage = new EventAdminPage(page)
+    await eventPage.goto(event.id, event.title)
+    await eventPage.openTab('attendees')
+    const attendees = new AttendeesTab(page)
+    const name = fullName(member.account)
+    const sentAfter = new Date()
+
+    await attendees.changeStatus(name, activity.title, 'denied')
+
+    await expect(attendees.signup(name, activity.title)).toContainText(STATUS_LABELS.denied)
+    const email = await mailbox.waitFor({
+      to: member.account.email,
+      subject: SUBJECTS.signupDenied,
+      sentAfter,
+    })
+    expect(email.subject).toBe(`${SUBJECTS.signupDenied}: ${activity.title}`)
+    expect(await assignedActivities(member.api, event.id)).toMatchObject([
+      { activityId: activity.id, status: { name: STATUS_LABELS.denied } },
+    ])
+
+    await attendees.changeStatus(name, activity.title, 'requested')
+
+    await expect(attendees.signup(name, activity.title)).toContainText(STATUS_LABELS.requested)
+    expect(await assignedActivities(member.api, event.id)).toMatchObject([
+      { activityId: activity.id, status: { name: STATUS_LABELS.requested } },
+    ])
   })
 
   test('an administrator changes the role of a signup to one the person may take', async ({

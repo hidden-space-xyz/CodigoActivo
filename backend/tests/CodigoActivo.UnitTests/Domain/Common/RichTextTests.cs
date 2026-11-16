@@ -29,4 +29,28 @@ public sealed class RichTextTests
             .Should()
             .BeFalse();
     }
+
+    [Fact]
+    public void HasSameContentAsUnreadableTextComparesItLiterally()
+    {
+        var broken = RichText.From("{\"type\":\"doc\"");
+
+        broken.HasSameContentAs(RichText.From("{\"type\":\"doc\"")).Should().BeTrue();
+        broken.HasSameContentAs(RichText.From("{\"type\": \"doc\"")).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(
+        "{\"type\":\"doc\",\"content\":[{\"type\":\"image\",\"attrs\":{\"src\":\"/a\"}}]}",
+        false
+    )]
+    [InlineData("{\"type\":\"doc\",\"content\":[{\"type\":\"text\",\"text\":\" \"}]}", true)]
+    [InlineData("{\"type\":\"doc\",\"content\":[{\"type\":\"paragraph\"}]}", true)]
+    [InlineData("{\"type\":\"doc\",\"content\":[{\"type\":\"text\",\"text\":\"Hola\"}]}", false)]
+    [InlineData("not json", true)]
+    [InlineData(" ", true)]
+    public void IsEmptyTellsWhetherAnyTextOrImageRemains(string json, bool empty)
+    {
+        RichText.From(json).IsEmpty.Should().Be(empty);
+    }
 }

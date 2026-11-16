@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page, type Request } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 
 /** A public list of cards with a search box: the news archive or the resources. */
 type CardListPath = '/news' | '/resources'
@@ -10,8 +10,7 @@ const CARDS: Readonly<Record<CardListPath, string>> = {
 
 /**
  * The news archive (`/news`) or the resources (`/resources`): a search box, the year pills of the
- * news and a grid of cards, each a link that shows the title. It records the search terms the page
- * sends to the API, so a test can tell when a search was applied.
+ * news and a grid of cards, each a link that shows the title.
  */
 export class CardListPage {
   /** The main landmark of the page. */
@@ -23,9 +22,6 @@ export class CardListPage {
   /** The year pills, on the news archive. */
   readonly years: Locator
 
-  /** The search terms sent to the API so far, in order. */
-  readonly searches: string[] = []
-
   private readonly name: string
 
   constructor(
@@ -36,9 +32,6 @@ export class CardListPage {
     this.main = page.getByTestId(`page-${this.name}`)
     this.search = this.main.getByTestId(`${this.name}-search`)
     this.years = this.main.getByTestId('year-filter')
-    page.on('request', (request) => {
-      this.record(request)
-    })
   }
 
   /** Opens the page and waits for the list. */
@@ -62,11 +55,5 @@ export class CardListPage {
   async searchFor(text: string): Promise<void> {
     await this.search.fill(text)
     await this.search.press('Enter')
-  }
-
-  private record(request: Request): void {
-    const url = new URL(request.url())
-    const term = url.searchParams.get('search')
-    if (url.pathname === `/api${this.path}` && term !== null) this.searches.push(term)
   }
 }

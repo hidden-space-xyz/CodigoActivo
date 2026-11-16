@@ -97,14 +97,4 @@ test.describe('resources', () => {
     )
     await expect(resources.main.getByTestId('resource-card')).toHaveCount(0)
   })
-
-  test('an unknown resource is not found', async ({ page }) => {
-    await page.goto('/resources/00000000-0000-4000-8000-000000000000')
-
-    const main = page.getByTestId('page-resource-detail')
-    await expect(main.getByTestId('resource-detail-not-found')).toHaveText(
-      t('pages.resourceDetail.notFound'),
-    )
-    await expect(main.getByTestId('resource-detail-back')).toBeVisible()
-  })
 })

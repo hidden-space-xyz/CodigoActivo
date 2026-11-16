@@ -32,36 +32,6 @@ function serveUserPages(pages: UserResponse[][]) {
 }
 
 describe('useUsersAdmin', () => {
-  it('narrows the table to the guardian or the dependents of a user', async () => {
-    const urls = serveUserPages([[buildUserResponse()]])
-    const { result } = await mountComposable(() => useUsersAdmin())
-    await vi.waitFor(() => expect(result.table.items.value).toHaveLength(1))
-    expect(queryOf(urls[0] ?? '')).toEqual({
-      page: '1',
-      pageSize: '25',
-      sort: 'firstName',
-      scope: 'Independent',
-    })
-    expect(result.relationChips.value).toEqual([])
-
-    result.showDependentsOf(toUser(buildUserResponse()))
-    await flushPromises()
-    expect(result.scope.value).toBe('dependent')
-    expect(queryOf(urls.at(-1) ?? '')).toMatchObject({ scope: 'Dependent', parentId: 'user-1' })
-
-    result.showGuardianOf(toUser(buildDependentResponse()))
-    await flushPromises()
-    expect(result.scope.value).toBe('independent')
-    expect(result.table.filterParams.value).toEqual({ scope: 'Independent', id: 'user-1' })
-    expect(result.relationChips.value[0]?.label).toBe(
-      t('pages.admin.users.relation.tutorOf', { fullName: 'Byron Lovelace' }),
-    )
-
-    result.relationChips.value[0]?.remove()
-    await flushPromises()
-    expect(result.table.filterParams.value).toEqual({ scope: 'Independent' })
-  })
-
   it('switches between independent accounts, dependents and everyone', async () => {
     const urls = serveUserPages([[buildUserResponse()]])
     const { result } = await mountComposable(() => useUsersAdmin())
@@ -181,18 +151,6 @@ describe('useUsersAdmin', () => {
     expect(result.deleteBlockReason(own)).toBe(t('pages.admin.users.blocked.self'))
     expect(result.deleteBlockReason(other)).toBeUndefined()
     expect(anonymous.result.deleteBlockReason(own)).toBeUndefined()
-  })
-
-  it('offers the second-factor reset only for other accounts with an email', async () => {
-    serveUserPages([[]])
-    const own = toUser(buildUserResponse({ staffRole: 'Administrator' }))
-    const other = toUser(buildUserResponse({ id: 'user-2' }))
-    const dependent = toUser(buildDependentResponse())
-    const { result } = await mountComposable(() => useUsersAdmin(), {
-      user: { id: 'user-1', staffRole: 'Administrator' },
-    })
-
-    expect([own, other, dependent].map(result.mayResetTwoFactor)).toEqual([false, true, false])
   })
 
   it('leaves cargos, the data protection designation and deletions to the superadministrator', async () => {

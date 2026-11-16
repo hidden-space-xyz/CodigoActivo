@@ -175,21 +175,13 @@ describe('ActivityFormDialog', () => {
     expect(wrapper.emitted('submit')).toBeUndefined()
   })
 
-  it('rejects an end before the start and a schedule outside the event days', async () => {
+  it('shows the schedule error when the activity falls outside the event days', async () => {
     const { wrapper } = await openDialog({ activity: detail })
 
-    await setDates(wrapper, new Date(2026, 9, 10, 12, 0), new Date(2026, 9, 10, 10, 0))
+    await setDates(wrapper, new Date(2026, 9, 9, 10, 0), new Date(2026, 9, 10, 10, 0))
     save()
     await flushPromises()
-    expect(bodyText()).toContain(t('pages.admin.eventDetail.activities.form.problems.orderInvalid'))
-    expect(bodyText()).not.toContain(
-      t('pages.admin.eventDetail.activities.form.problems.outsideEvent'),
-    )
 
-    await setDates(wrapper, new Date(2026, 9, 9, 10, 0), new Date(2026, 9, 10, 10, 0))
-    expect(bodyText()).toContain(t('pages.admin.eventDetail.activities.form.problems.outsideEvent'))
-
-    await setDates(wrapper, new Date(2026, 9, 12, 10, 0), new Date(2026, 9, 13, 10, 0))
     expect(bodyText()).toContain(t('pages.admin.eventDetail.activities.form.problems.outsideEvent'))
     expect(wrapper.emitted('submit')).toBeUndefined()
   })

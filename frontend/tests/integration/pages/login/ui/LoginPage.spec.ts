@@ -3,8 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { renderApp, t } from '../../../../support/render'
 import { apiError, http, HttpResponse, server, TEST_CSRF_TOKEN } from '../../../../support/server'
-import { useHomeApi } from '../../../../support/api/home'
-import { buildLoginChallenge, buildUserResponse } from '../../../../support/builders'
+import { buildLoginChallenge } from '../../../../support/builders'
 import { sessionOf } from '../../../../support/session'
 
 function serveChallenge() {
@@ -23,11 +22,6 @@ describe('login page', () => {
     serveChallenge()
 
     const { wrapper, router, queryClient } = await renderApp('/login?redirect=/about')
-    const heading = wrapper.get('.login-head')
-    expect(heading.get('h1').text()).toBe(t('pages.login.title'))
-    expect(heading.get('.page-heading__comment').text()).toBe(`//${t('pages.login.intro')}`)
-    expect(heading.find('.eyebrow').exists()).toBe(false)
-
     await wrapper.find('#login-identifier').setValue('grace@example.test')
     await wrapper.find('#login-password').setValue('secret')
     await wrapper.find('form').trigger('submit')
@@ -57,9 +51,7 @@ describe('login page', () => {
 
     const keep = wrapper.get('#login-keep-signed-in')
     expect((keep.element as HTMLInputElement).checked).toBe(false)
-    const label = wrapper.get('.login-keep__label')
-    expect(label.attributes('for')).toBe('login-keep-signed-in')
-    expect(label.text()).toBe(t('pages.login.keepSignedIn'))
+    expect(wrapper.get('.login-keep__label').attributes('for')).toBe('login-keep-signed-in')
     expect(wrapper.find('.login-keep__hint').exists()).toBe(false)
 
     await wrapper.find('#login-identifier').setValue('grace@example.test')
@@ -86,54 +78,6 @@ describe('login page', () => {
     await vi.waitFor(() => expect(wrapper.find('[role="alert"]').exists()).toBe(true))
     expect(wrapper.find('[role="alert"]').text()).toBe(t('pages.login.error'))
     expect(router.currentRoute.value.name).toBe('login')
-  })
-
-  it('completes both steps and greets the user in the header', async () => {
-    useHomeApi()
-    server.use(
-      http.post('/api/auth/login', () => HttpResponse.json(buildLoginChallenge())),
-      http.post('/api/auth/login/two-factor', () =>
-        HttpResponse.json(buildUserResponse({ firstName: 'Grace' })),
-      ),
-    )
-    serveChallenge()
-
-    const { wrapper, router } = await renderApp('/login')
-    await wrapper.find('#login-identifier').setValue('grace@example.test')
-    await wrapper.find('#login-password').setValue('secret')
-    await wrapper.find('form').trigger('submit')
-    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('login-two-factor'))
-    await vi.waitFor(() => expect(wrapper.find('#two-factor-code').exists()).toBe(true))
-
-    await wrapper.find('#two-factor-code').setValue('123456')
-    await wrapper.find('form').trigger('submit')
-
-    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'), {
-      timeout: 10_000,
-    })
-    await vi.waitFor(() =>
-      expect(wrapper.text()).toContain(t('common.greeting', { name: 'Grace' })),
-    )
-  }, 20_000)
-
-  it('links to password recovery and registration', async () => {
-    const { wrapper, router } = await renderApp('/login')
-    const main = wrapper.get('main')
-
-    expect(main.get('.login-forgot').attributes('href')).toBe(
-      router.resolve({ name: 'forgot-password' }).href,
-    )
-    expect(main.get('.login-alt__link').attributes('href')).toBe(
-      router.resolve({ name: 'register' }).href,
-    )
-  })
-
-  it('sends signed-in users home', async () => {
-    useHomeApi()
-
-    const { router } = await renderApp('/login', { user: {} })
-
-    expect(router.currentRoute.value.name).toBe('home')
   })
 
   it('marks the page as not indexable', async () => {

@@ -1,5 +1,5 @@
 import { flushPromises } from '@vue/test-utils'
-import { ElSelect } from 'element-plus'
+import { ElOption, ElSelect } from 'element-plus'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { BlockedDataPage } from '@/pages/admin/blocked-data'
@@ -20,6 +20,7 @@ import { apiError, http, HttpResponse, paged, server } from '../../../../../supp
 import {
   acceptMessageBox,
   click,
+  dismissDialog,
   expectNotification,
   findButton,
   messageBox,
@@ -344,25 +345,6 @@ describe('BlockedDataPage', () => {
     ])
   })
 
-  it('shows why a consultation could not be opened inside the dialog', async () => {
-    serve(OFFICER)
-    server.use(
-      http.post('/api/blocked-data/consultations', () => apiError(400, 'TwoFactorCodeInvalid')),
-    )
-    const { wrapper } = await renderPage()
-
-    await click(findButton(t('pages.admin.blockedData.open.action')))
-    await fillDialog(CLAIMANT, 'Ref', '000000')
-    await vi.waitFor(() =>
-      expect(wrapper.findComponent(OpenConsultationDialog).props('error')).not.toBe(''),
-    )
-
-    expect(wrapper.findComponent(OpenConsultationDialog).props('error')).toBe(
-      t('errors.TwoFactorCodeInvalid'),
-    )
-    expect(wrapper.text()).not.toContain(t('pages.admin.blockedData.consultation.title'))
-  })
-
   it('lists the holds to any administrator, without the action to lift one', async () => {
     serve(
       { isPrivacyOfficer: false, entities: [] },
@@ -453,6 +435,101 @@ describe('BlockedDataPage', () => {
         name: 'Leo',
       }),
     )
+  })
+
+  it('lets the officer pick among the accounts found, naming the guardian of a minor', async () => {
+    const minor = '0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4b05'
+    const bodies = serve({ isPrivacyOfficer: true, entities: ['User', 'Event'] })
+    server.use(
+      http.post(`/api/blocked-data/consultations/${CONSULTATION.id}/searches`, () =>
+        HttpResponse.json({
+          candidates: [
+            ...FOUND.candidates,
+            {
+              accountId: minor,
+              firstName: 'Leo',
+              lastName: 'Miembro',
+              guardianId: ACCOUNT,
+              exists: true,
+              entries: [],
+            },
+          ],
+        }),
+      ),
+    )
+    saved()
+    const { wrapper } = await renderPage()
+    await openAndFind(wrapper)
+    const panel = wrapper.findComponent(ConsultationPanel)
+
+    expect(findButton(t('pages.admin.blockedData.consultation.download')).disabled).toBe(true)
+    expect(panel.text()).toContain(
+      t('pages.admin.blockedData.consultation.minorOf', { guardian: 'Marta Miembro' }),
+    )
+    expect(panel.text()).toContain(t('pages.admin.blockedData.consultation.noEntries'))
+    expect(panel.findAllComponents(ElOption).map((option) => option.props('label'))).toEqual([
+      t('pages.admin.blockedData.entities.User'),
+      t('pages.admin.blockedData.entities.Event'),
+    ])
+
+    await click(panel.find(`input[type="radio"][value="${minor}"]`).element)
+    await click(findButton(t('pages.admin.blockedData.consultation.download')))
+    await vi.waitFor(() => expect(bodies.extract).toHaveLength(1))
+
+    expect(bodies.extract).toEqual([{ accountId: minor, from: null, to: null, entities: [] }])
+  })
+
+  it('tells when a search finds no account', async () => {
+    serve(OFFICER)
+    server.use(
+      http.post(`/api/blocked-data/consultations/${CONSULTATION.id}/searches`, () =>
+        HttpResponse.json({ candidates: [] }),
+      ),
+    )
+    const { wrapper } = await renderPage()
+    await click(findButton(t('pages.admin.blockedData.open.action')))
+    await fillDialog(COURT, 'Ref', '123456')
+    await vi.waitFor(() => expect(document.querySelector('#blocked-query')).not.toBeNull())
+    const panel = wrapper.findComponent(ConsultationPanel)
+    expect(panel.text()).not.toContain(t('pages.admin.blockedData.consultation.none'))
+
+    await typeInto('#blocked-query', 'nadie@example.test')
+    await click(findButton(t('pages.admin.blockedData.consultation.searchAction')))
+
+    await vi.waitFor(() =>
+      expect(panel.text()).toContain(t('pages.admin.blockedData.consultation.none')),
+    )
+    expect(document.querySelector('[data-testid="blocked-data-panel-download"]')).toBeNull()
+  })
+
+  it('forgets the consultation the officer closes, and with it the lifting of holds', async () => {
+    serve(OFFICER, [], [HOLD])
+    const { wrapper } = await renderPage()
+    await openAndFind(wrapper)
+
+    await click(findButton(t('pages.admin.blockedData.consultation.close')))
+
+    expect(wrapper.findComponent(ConsultationPanel).exists()).toBe(false)
+    expect(findButton(t('pages.admin.blockedData.open.action')).disabled).toBe(false)
+    expect(liftButton().disabled).toBe(true)
+  })
+
+  it('forgets the request awaiting its code when the dialog is dismissed', async () => {
+    const bodies = serve(OFFICER)
+    const { wrapper } = await renderPage('Email')
+    const dialog = wrapper.findComponent(OpenConsultationDialog)
+    await click(findButton(t('pages.admin.blockedData.open.action')))
+    await typeInto('#blocked-requester', COURT)
+    await typeInto('#blocked-reference', 'Ref')
+    await typeInto('#blocked-password', 'secret')
+    await click(findButton(t('common.sendCode')))
+    await vi.waitFor(() => expect(dialog.props('codeStep')).toBe(true))
+
+    await dismissDialog(wrapper, t('pages.admin.blockedData.open.title'))
+
+    expect(dialog.props('visible')).toBe(false)
+    expect(dialog.props('codeStep')).toBe(false)
+    expect(bodies.open).toEqual([])
   })
 
   it('closes the consultation once the API says it is over', async () => {

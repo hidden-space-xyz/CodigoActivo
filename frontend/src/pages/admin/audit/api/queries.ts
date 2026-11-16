@@ -4,7 +4,7 @@ import type { AuditEntry, AuditListParams } from '../model/types'
 import { getAuditPageRequest } from './requests'
 
 /** Query keys of the audit log. */
-export const auditKeys = {
+const auditKeys = {
   all: ['logs', 'audit'] as const,
   list: () => [...auditKeys.all, 'list'] as const,
 }

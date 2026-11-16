@@ -5,6 +5,8 @@ using CodigoActivo.Application.Abstractions.Auditing;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Logs;
 using CodigoActivo.IntegrationTests.Infrastructure;
+using Serilog.Events;
+using Serilog.Parsing;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Database;
@@ -71,6 +73,42 @@ public sealed class AuditLogSinkTests(PostgresDatabaseFixture postgres)
         entry.Outcome.Should().Be("Rejected");
         entry.ErrorCode.Should().Be("UserCurrentPasswordIncorrect");
         entry.TraceId.Should().Be(activity.TraceId.ToHexString());
+    }
+
+    [Fact]
+    public async Task EmitBatchAsyncDropsAnEventItCannotConvertAndStoresTheRest()
+    {
+        var sink = new AuditLogSink(
+            database,
+            new LogPartitionMaintainer(database, new LogRetentionOptions(), clock)
+        );
+        await sink.EmitBatchAsync([
+            AuditLogEvents.ToEvent(
+                Record(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid()),
+                Now,
+                null
+            ),
+        ]);
+
+        await sink.EmitBatchAsync([
+            new LogEvent(
+                Now,
+                LogEventLevel.Information,
+                exception: null,
+                new MessageTemplateParser().Parse("Not audited"),
+                []
+            ),
+            AuditLogEvents.ToEvent(
+                Record(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid()),
+                Now.AddMinutes(1),
+                null
+            ),
+        ]);
+
+        (await LogTables.AuditEntriesAsync(postgres))
+            .Select(entry => entry.OccurredAt)
+            .Should()
+            .Equal(Now, Now.AddMinutes(1));
     }
 
     [Fact]

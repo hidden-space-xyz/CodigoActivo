@@ -17,7 +17,6 @@ describe('RoleCoverageCard', () => {
       },
     })
 
-    expect(wrapper.find('h2').text()).toBe(t('pages.admin.dashboard.roleCoverage.title'))
     const rows = wrapper.findAll('.coverage__role')
     expect(rows.map((row) => row.find('.coverage__name').text())).toEqual([
       t('pages.admin.dashboard.series.roles.leader'),

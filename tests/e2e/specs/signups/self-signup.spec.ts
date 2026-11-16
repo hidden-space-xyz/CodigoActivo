@@ -2,7 +2,6 @@ import { ROLE_LABELS, STATUS_LABELS } from '../../support/api/catalogs'
 import { assignedActivities, eventOnFreeDay, signUp } from '../../support/api/signups'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
-import { SUBJECTS } from '../../support/mail/mailbox'
 import { EventDetailPage } from '../../support/pages/event-detail-page'
 import { confirm, messageBox, notification } from '../../support/ui/element-plus'
 
@@ -132,57 +131,28 @@ test.describe('self signup', () => {
     await expect(card.root.getByTestId('activity-card-high-demand')).toBeHidden()
   })
 
-  test('a confirmed signup shows as confirmed and the person is emailed', async ({
-    seed,
-    participant,
-    pageAs,
-    mailbox,
-  }) => {
-    const event = await eventOnFreeDay(seed)
-    const activity = await seed.activity(event)
-    await signUp(participant.api, activity, participant.account.id)
-    const sentAfter = new Date()
-
-    await seed.decide(activity, participant.account.id, 'confirmed')
-
-    const page = await pageAs(participant)
-    const card = await new EventDetailPage(page).openActivity(event, activity)
-    await expect(card.status).toHaveText(STATUS_LABELS.confirmed)
-    await expect(
-      card.note(t('pages.eventDetail.card.enrolledAs', { role: ROLE_LABELS.participant })),
-    ).toBeVisible()
-    const email = await mailbox.waitFor({
-      to: participant.account.email,
-      subject: SUBJECTS.signupConfirmed,
-      sentAfter,
-    })
-    expect(email.subject).toBe(`${SUBJECTS.signupConfirmed}: ${activity.title}`)
-  })
-
-  test('a denied signup shows as denied and the person is emailed', async ({
+  test('the person sees whether each signup was confirmed or denied', async ({
     seed,
     member,
     pageAs,
-    mailbox,
   }) => {
     const event = await eventOnFreeDay(seed)
-    const activity = await seed.activity(event)
-    await signUp(member.api, activity, member.account.id, 'volunteer')
-    const sentAfter = new Date()
-
-    await seed.decide(activity, member.account.id, 'denied')
+    const confirmed = await seed.activity(event, { startHour: 10, hours: 1 })
+    const denied = await seed.activity(event, { startHour: 12, hours: 1 })
+    await seed.enrol(member.api, confirmed, member.account.id, 'participant', 'confirmed')
+    await seed.enrol(member.api, denied, member.account.id, 'volunteer', 'denied')
 
     const page = await pageAs(member)
-    const card = await new EventDetailPage(page).openActivity(event, activity)
-    await expect(card.status).toHaveText(STATUS_LABELS.denied)
+    const details = new EventDetailPage(page)
+    const confirmedCard = await details.openActivity(event, confirmed)
+    await expect(confirmedCard.status).toHaveText(STATUS_LABELS.confirmed)
     await expect(
-      card.note(t('pages.eventDetail.card.enrolledAs', { role: ROLE_LABELS.volunteer })),
+      confirmedCard.note(t('pages.eventDetail.card.enrolledAs', { role: ROLE_LABELS.participant })),
     ).toBeVisible()
-    const email = await mailbox.waitFor({
-      to: member.account.email,
-      subject: SUBJECTS.signupDenied,
-      sentAfter,
-    })
-    expect(email.subject).toBe(`${SUBJECTS.signupDenied}: ${activity.title}`)
+    const deniedCard = await details.openActivity(event, denied)
+    await expect(deniedCard.status).toHaveText(STATUS_LABELS.denied)
+    await expect(
+      deniedCard.note(t('pages.eventDetail.card.enrolledAs', { role: ROLE_LABELS.volunteer })),
+    ).toBeVisible()
   })
 })

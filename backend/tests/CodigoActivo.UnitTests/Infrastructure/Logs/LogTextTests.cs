@@ -25,6 +25,13 @@ public sealed class LogTextTests
     public void CleanReplacesUnpairedSurrogates()
     {
         LogText.Clean("a\uD800b\uDC00", 100).Should().Be("a�b�");
+        LogText.Clean("ab\uD800", 100).Should().Be("ab�");
+    }
+
+    [Fact]
+    public void CleanKeepsSurrogatePairsOfATextItCleans()
+    {
+        LogText.Clean("a\0\U0001F600b", 100).Should().Be("a\U0001F600b");
     }
 
     [Fact]
@@ -76,5 +83,80 @@ public sealed class LogTextTests
             .Be(
                 """{"Text":"ab","Flag":true,"Missing":null,"Items":[1,"x"],"Item":{"Kind":"Event"}}"""
             );
+    }
+
+    [Fact]
+    public void FromPropertiesWritesEveryKindOfScalarItsOwnWay()
+    {
+        LogJson
+            .FromProperties([
+                new LogEventProperty("Large", new ScalarValue(ulong.MaxValue)),
+                new LogEventProperty("Amount", new ScalarValue(1.5m)),
+                new LogEventProperty("Single", new ScalarValue(0.25f)),
+                new LogEventProperty("Unbounded", new ScalarValue(float.NegativeInfinity)),
+                new LogEventProperty(
+                    "At",
+                    new ScalarValue(new DateTimeOffset(2026, 7, 4, 12, 0, 0, TimeSpan.Zero))
+                ),
+                new LogEventProperty(
+                    "Local",
+                    new ScalarValue(new DateTime(2026, 7, 4, 12, 0, 0, DateTimeKind.Utc))
+                ),
+                new LogEventProperty(
+                    "Id",
+                    new ScalarValue(new Guid("0b1c2d3e-0000-4000-8000-000000000001"))
+                ),
+                new LogEventProperty("Nameless", new ScalarValue(new Nameless())),
+            ])
+            .Should()
+            .Be(
+                """{"Large":18446744073709551615,"Amount":1.5,"Single":0.25,"Unbounded":"-Infinity","At":"2026-07-04T12:00:00+00:00","Local":"2026-07-04T12:00:00Z","Id":"0b1c2d3e-0000-4000-8000-000000000001","Nameless":""}"""
+            );
+    }
+
+    [Fact]
+    public void FromPropertiesWritesDictionariesAsObjectsWithCleanedKeys()
+    {
+        LogJson
+            .FromProperties([
+                new LogEventProperty(
+                    "Counts",
+                    new DictionaryValue([
+                        new(new ScalarValue(1), new ScalarValue("uno")),
+                        new(new ScalarValue("b\0"), new ScalarValue(2)),
+                    ])
+                ),
+            ])
+            .Should()
+            .Be("""{"Counts":{"1":"uno","b":2}}""");
+    }
+
+    [Fact]
+    public void FromPropertiesWritesUnknownValuesAsTheirRenderedText()
+    {
+        LogJson
+            .FromProperties([new LogEventProperty("Custom", new RenderedValue("a\0b"))])
+            .Should()
+            .Be("""{"Custom":"ab"}""");
+    }
+
+    private sealed class Nameless
+    {
+        public override string? ToString()
+        {
+            return null;
+        }
+    }
+
+    private sealed class RenderedValue(string text) : LogEventPropertyValue
+    {
+        public override void Render(
+            TextWriter output,
+            string? format = null,
+            IFormatProvider? formatProvider = null
+        )
+        {
+            output.Write(text);
+        }
     }
 }

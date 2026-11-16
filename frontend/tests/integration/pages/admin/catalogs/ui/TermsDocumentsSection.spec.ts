@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import TermsDocumentsSection from '@/pages/admin/catalogs/ui/TermsDocumentsSection.vue'
 import type { TermsDocumentResponse } from '@/shared/api/generated/models'
 
+import { setMediaQueryMatches } from '../../../../../support/media'
 import { renderWithProviders, t } from '../../../../../support/render'
 import { apiError, http, HttpResponse, paged, server } from '../../../../../support/server'
 import { buildTermsDocument, richText } from '../../../../../support/builders'
@@ -46,7 +47,6 @@ describe('TermsDocumentsSection', () => {
     const urls = serveTerms()
     const { wrapper } = await renderSection()
 
-    expect(wrapper.text()).toContain(t('pages.admin.catalogs.termsDocuments.title'))
     expect(wrapper.find('.el-table__body').text()).toContain('Privacy')
     expect(queryOf(urls[0] ?? '')).toEqual({ page: '1', pageSize: '25', sort: 'name' })
 
@@ -94,6 +94,18 @@ describe('TermsDocumentsSection', () => {
       t('common.name'),
       t('common.actions'),
     ])
+  })
+
+  it('pins the name column on wide screens only', async () => {
+    serveTerms()
+    const wide = await renderSection()
+    expect(wide.wrapper.find('td.el-table-fixed-column--left').exists()).toBe(true)
+    wide.wrapper.unmount()
+
+    setMediaQueryMatches((query) => query === '(max-width: 640px)')
+    const narrow = await renderSection()
+    expect(narrow.wrapper.find('.el-table__body tr').exists()).toBe(true)
+    expect(narrow.wrapper.find('td.el-table-fixed-column--left').exists()).toBe(false)
   })
 
   it('shows empty and error states', async () => {

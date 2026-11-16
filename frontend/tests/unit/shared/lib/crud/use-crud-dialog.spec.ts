@@ -17,8 +17,11 @@ function deferred<T>() {
 }
 
 describe('useCrudDialog', () => {
-  it('opens empty for a new item and closes again', () => {
+  it('opens only through openCreate and closes through visible', () => {
     const dialog = useCrudDialog<Row>()
+
+    dialog.visible.value = true
+    expect(dialog.visible.value).toBe(false)
 
     dialog.openCreate()
     expect(dialog.visible.value).toBe(true)

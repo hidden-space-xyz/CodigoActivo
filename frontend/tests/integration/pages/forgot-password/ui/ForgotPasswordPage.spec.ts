@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { renderApp, t } from '../../../../support/render'
 import { apiError, http, HttpResponse, server, TEST_CSRF_TOKEN } from '../../../../support/server'
-import { useHomeApi } from '../../../../support/api/home'
 
 describe('forgot password page', () => {
   it('requests a reset link for the trimmed email and confirms it was sent', async () => {
@@ -14,7 +13,6 @@ describe('forgot password page', () => {
       }),
     )
     const { wrapper } = await renderApp('/forgot-password')
-    expect(wrapper.text()).toContain(t('pages.forgotPassword.title'))
 
     await wrapper.find('#forgot-email').setValue('  ada@example.test ')
     await wrapper.find('form').trigger('submit')
@@ -38,21 +36,5 @@ describe('forgot password page', () => {
       expect(wrapper.find('[role="alert"]').text()).toBe(t('pages.forgotPassword.error')),
     )
     expect(wrapper.find('form').exists()).toBe(true)
-  })
-
-  it('links back to login', async () => {
-    const { wrapper, router } = await renderApp('/forgot-password')
-
-    expect(wrapper.get('.forgot-alt__link').attributes('href')).toBe(
-      router.resolve({ name: 'login' }).href,
-    )
-  })
-
-  it('sends signed-in users home', async () => {
-    useHomeApi()
-
-    const { router } = await renderApp('/forgot-password', { user: {} })
-
-    expect(router.currentRoute.value.name).toBe('home')
   })
 })

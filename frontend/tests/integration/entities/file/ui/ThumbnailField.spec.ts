@@ -28,9 +28,7 @@ describe('ThumbnailField', () => {
     const { wrapper } = await renderWithProviders(ThumbnailField)
 
     expect(wrapper.find('img').exists()).toBe(false)
-    expect(wrapper.find('.thumb__placeholder').text()).toBe(
-      t('entities.file.thumbnail.placeholder'),
-    )
+    expect(wrapper.find('.thumb__placeholder').exists()).toBe(true)
     expect(buttonLabels(wrapper)).toEqual([t('entities.file.thumbnail.select')])
     expect(wrapper.find('.thumb__name').exists()).toBe(false)
     expect(wrapper.find('.thumb__preview--invalid').exists()).toBe(false)

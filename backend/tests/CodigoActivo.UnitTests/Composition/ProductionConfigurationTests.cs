@@ -42,6 +42,7 @@ public sealed class ProductionConfigurationTests
 
     [Theory]
     [InlineData("POSTGRES_PASSWORD", "short", "POSTGRES_PASSWORD")]
+    [InlineData("POSTGRES_PASSWORD", null, "POSTGRES_PASSWORD")]
     [InlineData("APP_BASE_URL", "http://app.test", "APP_BASE_URL")]
     [InlineData("APP_BASE_URL", "https://example.org", "APP_BASE_URL")]
     [InlineData("APP_BASE_URL", "https://app.test", "APP_BASE_URL")]
@@ -49,14 +50,19 @@ public sealed class ProductionConfigurationTests
     [InlineData("SMTP_SECURITY", "None", "SMTP_SECURITY")]
     [InlineData("SMTP_SECURITY", "Auto", "SMTP_SECURITY")]
     [InlineData("SMTP_HOST", "bad host", "SMTP_HOST")]
+    [InlineData("SMTP_HOST", null, "SMTP_HOST")]
+    [InlineData("SMTP_HOST", " ", "SMTP_HOST")]
     [InlineData("SMTP_FROM_ADDRESS", "Sender <sender@app.test>", "SMTP_FROM_ADDRESS")]
+    [InlineData("SMTP_FROM_ADDRESS", null, "SMTP_FROM_ADDRESS")]
+    [InlineData("SMTP_FROM_ADDRESS", "not an address", "SMTP_FROM_ADDRESS")]
     [InlineData("SMTP_USERNAME", "mailer", "SMTP_USERNAME")]
+    [InlineData("SMTP_PASSWORD", "secret", "SMTP_PASSWORD")]
     [InlineData("LEGAL_NAME", " ", "LEGAL_NAME")]
     [InlineData("LEGAL_TAX_ID", "", "LEGAL_TAX_ID")]
     [InlineData("LEGAL_ADDRESS", " ", "LEGAL_ADDRESS")]
     [InlineData("LEGAL_REGISTRY", "", "LEGAL_REGISTRY")]
     [InlineData("LEGAL_EMAIL", " ", "LEGAL_EMAIL")]
-    public void ValidateUnsafeConfigurationThrows(string key, string value, string expectedMessage)
+    public void ValidateUnsafeConfigurationThrows(string key, string? value, string expectedMessage)
     {
         var config = BuildConfiguration(new KeyValuePair<string, string?>(key, value));
 

@@ -30,7 +30,6 @@ describe('PendingSignupsCard', () => {
   it('lists each event with its pending count, dates and a link to manage it', async () => {
     const { wrapper } = await renderWithProviders(PendingSignupsCard, { props: { pending } })
 
-    expect(wrapper.find('h2').text()).toBe(t('pages.admin.dashboard.pending.title'))
     expect(wrapper.find('.pending__total').text()).toBe('4 solicitudes pendientes')
     const links = wrapper.findAll('.pending__link')
     expect(links.map((link) => link.attributes('href'))).toEqual([

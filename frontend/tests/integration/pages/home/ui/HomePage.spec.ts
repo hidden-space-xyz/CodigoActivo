@@ -2,8 +2,6 @@ import type { VueWrapper } from '@vue/test-utils'
 import type { JsonBodyType } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
 
-import { ORGANIZATION } from '@/shared/config'
-
 import { renderApp, t } from '../../../../support/render'
 import { http, HttpResponse, paged, server } from '../../../../support/server'
 import { useHomeApi } from '../../../../support/api/home'
@@ -32,14 +30,11 @@ async function clickArrow(wrapper: VueWrapper, labelKey: string): Promise<void> 
 }
 
 describe('home page', () => {
-  it('shows the hero with calls to action and the founding year', async () => {
+  it('invites a guest to register', async () => {
     useHomeApi()
     const { wrapper, router } = await renderApp('/')
     const hero = wrapper.get('.hero')
 
-    expect(hero.get('h1').text()).toContain(t('pages.home.hero.titleLine1'))
-    expect(hero.text()).toContain(t('pages.home.hero.badge', { year: ORGANIZATION.foundingYear }))
-    expect(hero.text()).toContain(t('pages.home.hero.stats.free'))
     expect(hero.findAll('.hero__actions a').map((link) => link.attributes('href'))).toEqual([
       router.resolve({ name: 'register' }).href,
       router.resolve({ name: 'about' }).href,

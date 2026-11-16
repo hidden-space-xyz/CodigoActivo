@@ -1,26 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import { fileContentUrl, fileThumbnailUrl } from '@/shared/api'
 
-describe('fileContentUrl', () => {
-  it('builds the same-origin content URL for a file id', () => {
-    expect(fileContentUrl('abc-123')).toBe('/api/files/abc-123/content')
+describe.each([
+  ['fileContentUrl', fileContentUrl, 'content'],
+  ['fileThumbnailUrl', fileThumbnailUrl, 'thumbnail'],
+])('%s', (_name, url, kind) => {
+  it('builds the same-origin URL for a file id', () => {
+    expect(url('abc-123')).toBe(`/api/files/abc-123/${kind}`)
   })
 
   it('returns an empty string without an id', () => {
-    expect(fileContentUrl(null)).toBe('')
-    expect(fileContentUrl(undefined)).toBe('')
-    expect(fileContentUrl('')).toBe('')
-  })
-})
-
-describe('fileThumbnailUrl', () => {
-  it('builds the same-origin thumbnail URL for a file id', () => {
-    expect(fileThumbnailUrl('abc-123')).toBe('/api/files/abc-123/thumbnail')
-  })
-
-  it('returns an empty string without an id', () => {
-    expect(fileThumbnailUrl(null)).toBe('')
-    expect(fileThumbnailUrl(undefined)).toBe('')
-    expect(fileThumbnailUrl('')).toBe('')
+    expect(url(null)).toBe('')
+    expect(url(undefined)).toBe('')
+    expect(url('')).toBe('')
   })
 })

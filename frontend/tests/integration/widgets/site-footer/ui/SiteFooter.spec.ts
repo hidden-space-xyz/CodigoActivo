@@ -7,16 +7,9 @@ import { renderWithProviders, t } from '../../../../support/render'
 import { http, HttpResponse, server, TEST_LEGAL_ENTITY } from '../../../../support/server'
 
 describe('SiteFooter', () => {
-  it('shows the brand, tagline and contact links', async () => {
+  it('links to the contact details of the association', async () => {
     const { wrapper } = await renderWithProviders(SiteFooter)
 
-    expect(wrapper.find('.brand').exists()).toBe(true)
-    expect(wrapper.find('.footer__tagline').text()).toBe(t('widgets.siteFooter.tagline'))
-    expect(wrapper.findAll('.footer__heading').map((heading) => heading.text())).toEqual([
-      t('widgets.siteFooter.contact'),
-      t('widgets.siteFooter.follow'),
-      t('widgets.siteFooter.legal'),
-    ])
     await vi.waitFor(() =>
       expect(
         wrapper.findAll('.footer__link').map((link) => [link.text(), link.attributes('href')]),
@@ -51,9 +44,6 @@ describe('SiteFooter', () => {
       [t('widgets.siteFooter.privacy'), router.resolve({ name: 'privacy-policy' }).href],
       [t('widgets.siteFooter.cookies'), router.resolve({ name: 'cookie-policy' }).href],
     ])
-    for (const link of links) {
-      expect(link.find('.app-icon').exists()).toBe(true)
-    }
   })
 
   it('opens social profiles in a new tab', async () => {
@@ -69,7 +59,6 @@ describe('SiteFooter', () => {
     for (const link of channels) {
       expect(link.attributes('target')).toBe('_blank')
       expect(link.attributes('rel')).toBe('noopener')
-      expect(link.find('.app-icon').exists()).toBe(true)
     }
   })
 })

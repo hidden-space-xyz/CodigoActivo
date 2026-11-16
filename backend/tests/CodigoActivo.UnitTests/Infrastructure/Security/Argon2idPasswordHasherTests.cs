@@ -65,6 +65,9 @@ public sealed class Argon2idPasswordHasherTests
     [InlineData(
         "argon2id$3$65536$4000$MDEyMzQ1Njc4OWFiY2RlZg==$MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
     )]
+    [InlineData(
+        "argon2id$3$65536$4$!!!!!!!!!!!!!!!!!!!!!!!!$MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+    )]
     public void VerifyMalformedHashStringReturnsFalse(string malformed)
     {
         sut.Verify("anything", malformed).Should().BeFalse();

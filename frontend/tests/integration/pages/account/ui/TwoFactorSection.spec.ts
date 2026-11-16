@@ -80,20 +80,15 @@ function serveConfirm(response: () => Response = () => new HttpResponse(null, { 
 }
 
 describe('TwoFactorSection', () => {
-  it('shows the email method and offers the authenticator', async () => {
-    await renderSection()
+  it.each([
+    { method: 'Email' as const, security: 'securityEmail', offer: 'useAuthenticator' },
+    { method: 'Authenticator' as const, security: 'securityAuthenticator', offer: 'useEmail' },
+  ])('shows the $method method and offers the other one', async ({ method, security, offer }) => {
+    await renderSection({ user: { twoFactorMethod: method } })
 
-    expect(methodText()).toBe(t('pages.account.twoFactor.methods.Email'))
-    expect(document.body.textContent).toContain(t('pages.account.twoFactor.securityEmail'))
-    expect(findButton(t('pages.account.twoFactor.useAuthenticator'), document.body)).toBeTruthy()
-  })
-
-  it('shows the authenticator method and offers going back to email', async () => {
-    await renderSection({ user: { twoFactorMethod: 'Authenticator' } })
-
-    expect(methodText()).toBe(t('pages.account.twoFactor.methods.Authenticator'))
-    expect(document.body.textContent).toContain(t('pages.account.twoFactor.securityAuthenticator'))
-    expect(findButton(t('pages.account.twoFactor.useEmail'), document.body)).toBeTruthy()
+    expect(methodText()).toBe(t(`pages.account.twoFactor.methods.${method}`))
+    expect(document.body.textContent).toContain(t(`pages.account.twoFactor.${security}`))
+    expect(findButton(t(`pages.account.twoFactor.${offer}`), document.body)).toBeTruthy()
   })
 
   it('enrolls an authenticator behind the emailed code and updates the shown method', async () => {

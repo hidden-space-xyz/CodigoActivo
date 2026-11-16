@@ -17,15 +17,18 @@ describe('admin legal policies page', () => {
 
     const { wrapper } = await renderApp('/admin/legal', { user: { staffRole: 'Administrator' } })
 
-    expect(wrapper.get('h1').text()).toBe(t('pages.admin.legalPolicies.header.title'))
-    expect(wrapper.findAll('.el-tabs__item').map((tab) => tab.text())).toEqual([
-      t('pages.admin.legalPolicies.tabs.Privacy'),
-      t('pages.admin.legalPolicies.tabs.Cookies'),
-    ])
+    const [privacy, cookies] = wrapper.findAll('.el-tab-pane')
     await vi.waitFor(() =>
-      expect(wrapper.text()).toContain(t('pages.admin.legalPolicies.status.unpublished')),
+      expect(cookies?.text()).toContain(t('pages.admin.legalPolicies.status.unpublished')),
     )
-    expect(wrapper.text()).toContain(t('pages.admin.legalPolicies.privacyHint'))
-    expect(wrapper.findAll('.legal-policy-editor__version')).toHaveLength(2)
+    expect(privacy?.text()).toContain(t('pages.admin.legalPolicies.privacyHint'))
+    expect(cookies?.text()).not.toContain(t('pages.admin.legalPolicies.privacyHint'))
+    expect(privacy?.findAll('.legal-policy-editor__version')).toHaveLength(2)
+    expect(privacy?.isVisible()).toBe(true)
+
+    await wrapper.findAll('.el-tabs__item')[1]?.trigger('click')
+
+    expect(cookies?.isVisible()).toBe(true)
+    expect(privacy?.isVisible()).toBe(false)
   })
 })

@@ -2,7 +2,7 @@ import { currentUser } from '../../support/api/my-account'
 import { PASSWORD } from '../../support/config/environment'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
-import { SUBJECTS } from '../../support/mail/mailbox'
+import { codeIn, SUBJECTS } from '../../support/mail/mailbox'
 import { AccountPage } from '../../support/pages/account/account-page'
 import {
   AuthenticatorSetupDialog,
@@ -16,11 +16,12 @@ import { notification } from '../../support/ui/element-plus'
 const INVALID_CODE = t('errors.TwoFactorCodeInvalid')
 
 test.describe('two-step verification', () => {
-  test('the setup refuses a wrong password, a wrong emailed code and a wrong first code', async ({
+  test('the setup refuses a wrong password, a wrong emailed code and a wrong first code, and takes a resent code', async ({
     accounts,
     pageAs,
     mailbox,
   }) => {
+    test.slow()
     const actor = await accounts.actor({ label: 'totp-refused' })
     const page = await pageAs(actor)
     const account = new AccountPage(page)
@@ -46,12 +47,12 @@ test.describe('two-step verification', () => {
       }),
     ).toBe(false)
 
-    const code = await setup.requestCode(mailbox, actor.account)
-    await setup.emailCode.fill(code === '000000' ? '111111' : '000000')
+    const first = await setup.requestCode(mailbox, actor.account)
+    await setup.emailCode.fill(codeIn(first) === '000000' ? '111111' : '000000')
     await setup.continue.click()
     await expect(setup.error).toHaveText(INVALID_CODE)
     await expect(setup.sharedKey).toBeHidden()
-    await setup.emailCode.fill(code)
+    await setup.emailCode.fill(await setup.resendCode(mailbox, actor.account.email, first))
     await setup.continue.click()
     await expect(setup.sharedKey).toHaveText(/^[A-Z2-7 ]{16,}$/)
     await setup.activate.click()

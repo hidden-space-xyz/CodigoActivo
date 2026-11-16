@@ -16,9 +16,6 @@ describe('admin catalogs page', () => {
     const { wrapper } = await renderApp('/admin/catalogs', { user: { staffRole: 'Editor' } })
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Workshop'))
-    expect(wrapper.text()).toContain(t('pages.admin.catalogs.header.title'))
-    expect(wrapper.text()).toContain(t('pages.admin.catalogs.eventCategories.title'))
-    expect(wrapper.text()).toContain(t('pages.admin.catalogs.termsDocuments.title'))
     expect(wrapper.text()).toContain('Privacy')
 
     const sections = wrapper.findAll('.catalogs-grid > section')

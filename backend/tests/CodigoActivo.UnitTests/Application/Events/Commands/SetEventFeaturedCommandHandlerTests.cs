@@ -56,6 +56,24 @@ public sealed class SetEventFeaturedCommandHandlerTests
     }
 
     [Fact]
+    public async Task HandleAsyncChosenEventAlreadyFeaturedStaysFeaturedWithoutAChange()
+    {
+        var chosen = NewEvent(featured: true);
+        chosen.PullDomainEvents();
+        events.GetByIdAsync(chosen.Id, Arg.Any<CancellationToken>()).Returns(chosen);
+        events.GetFeaturedAsync(Arg.Any<CancellationToken>()).Returns(chosen);
+
+        var result = await sut.HandleAsync(
+            new SetEventFeaturedCommand(chosen.Id),
+            TestContext.Current.CancellationToken
+        );
+
+        result.IsSuccess.Should().BeTrue();
+        chosen.Featured.Should().BeTrue();
+        DomainEvents.Raised<EventFeaturedChanged>(chosen).Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task HandleAsyncOtherEventFeaturedSavesItsUnfeaturingBeforeFeaturingTheChosenOne()
     {
         var chosen = NewEvent();

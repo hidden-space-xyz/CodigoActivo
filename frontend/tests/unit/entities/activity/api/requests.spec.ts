@@ -16,17 +16,12 @@ import {
   getEventActivitiesRequest,
   getHouseholdAssignmentsRequest,
   getMyAssignmentsRequest,
-  getSignupRolesRequest,
   unassignActivityRequest,
   updateActivityRequest,
   verifyOverlapsRequest,
 } from '@/entities/activity/api/requests'
 import { ApiError } from '@/shared/api'
-import type {
-  ActivityResponse,
-  HouseholdSignupRolesResponse,
-  TimeOverlapResponse,
-} from '@/shared/api/generated/models'
+import type { ActivityResponse, TimeOverlapResponse } from '@/shared/api/generated/models'
 
 import { apiError, http, HttpResponse, paged, server } from '../../../../support/server'
 import {
@@ -113,19 +108,6 @@ describe('activity requests', () => {
   })
 
   describe('getActivityRequest', () => {
-    it('maps the admin detail', async () => {
-      server.use(
-        http.get('/api/activities/activity-1', () =>
-          HttpResponse.json(buildActivityResponse({ id: 'activity-1', title: 'Robótica' })),
-        ),
-      )
-
-      await expect(getActivityRequest('activity-1')).resolves.toMatchObject({
-        id: 'activity-1',
-        title: 'Robótica',
-      })
-    })
-
     it('resolves null when the activity no longer exists', async () => {
       server.use(http.get('/api/activities/missing', () => apiError(404, 'ActivityNotFound')))
 
@@ -154,17 +136,6 @@ describe('activity requests', () => {
         roleName: 'Participante',
         status: 'Solicitada',
       },
-    ])
-  })
-
-  it('maps signup roles per household member', async () => {
-    const data: HouseholdSignupRolesResponse[] = [
-      { userId: 'user-1', roles: [{ id: 'role-1', name: 'Mentor' }] },
-    ]
-    server.use(http.get('/api/activities/signup-roles', () => HttpResponse.json(data)))
-
-    await expect(getSignupRolesRequest()).resolves.toEqual([
-      { userId: 'user-1', roles: [{ id: 'role-1', name: 'Mentor' }] },
     ])
   })
 

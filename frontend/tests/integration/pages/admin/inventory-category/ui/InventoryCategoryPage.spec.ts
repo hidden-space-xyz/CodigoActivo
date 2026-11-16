@@ -7,7 +7,8 @@ import type {
   InventoryCategoryResponse,
   InventoryEntryResponse,
 } from '@/shared/api/generated/models'
-import { ColumnFilterSelect, ColumnSearch } from '@/shared/ui/column-filter'
+import { formatDate } from '@/shared/lib/date'
+import { ColumnFilterDate, ColumnFilterSelect, ColumnSearch } from '@/shared/ui/column-filter'
 
 import { renderWithProviders, t } from '../../../../../support/render'
 import { apiError, http, HttpResponse, noContent, server } from '../../../../../support/server'
@@ -91,10 +92,34 @@ describe('admin inventory category page', () => {
     wrapper.findComponent(ElTable).vm.$emit('sort-change', { prop: 'quantity', order: 'ascending' })
     await vi.waitFor(() => expect(rowTexts(wrapper).map((row) => row[2])).toEqual(['12', '30']))
 
-    const [color] = wrapper.findAllComponents(ColumnSearch)
+    const [color, quantity] = wrapper.findAllComponents(ColumnSearch)
     color?.vm.$emit('update:modelValue', 'negra')
     color?.vm.$emit('apply')
     await vi.waitFor(() => expect(rowTexts(wrapper)).toEqual([['S', 'Negra', '30']]))
+
+    color?.vm.$emit('update:modelValue', '')
+    quantity?.vm.$emit('update:modelValue', '12')
+    quantity?.vm.$emit('apply')
+    await vi.waitFor(() => expect(rowTexts(wrapper)).toEqual([['M', '—', '12']]))
+  })
+
+  it('takes one from a quantity and reports a step that fails', async () => {
+    serveCategory()
+    const sent: unknown[] = []
+    server.use(
+      http.put('/api/inventory/categories/category-1/entries/entry-2', async ({ request }) => {
+        sent.push(await request.json())
+        return apiError(500)
+      }),
+    )
+    await renderPage()
+
+    const [, decrease] = findButtons(t('pages.admin.inventoryCategory.decrease'))
+    if (!decrease) throw new Error('missing step button')
+    await click(decrease)
+
+    await expectNotification(t('common.error'))
+    expect(sent).toEqual([{ quantity: 11, values: { size: 'size-m' } }])
   })
 
   it('adds one to a quantity keeping the other values', async () => {
@@ -150,6 +175,11 @@ describe('admin inventory category page', () => {
 
     expect(dialog.querySelectorAll('[data-testid="inventory-entry-field-error"]')).toHaveLength(2)
     expect(isDialogOpen(t('pages.admin.inventoryCategory.form.newHeader'))).toBe(true)
+
+    await click(findButton(t('common.cancel'), dialog))
+    await vi.waitFor(() =>
+      expect(isDialogOpen(t('pages.admin.inventoryCategory.form.newHeader'))).toBe(false),
+    )
   })
 
   it('edits and deletes a row', async () => {
@@ -218,7 +248,7 @@ describe('admin inventory category page', () => {
     await click(findButton(t('pages.admin.inventoryCategory.newEntry')))
     const dialog = openDialog(t('pages.admin.inventoryCategory.form.newHeader'))
     const form = wrapper.findComponent(InventoryEntryDialog)
-    expect(dialog.querySelector('textarea#inventory-entry-notes')).not.toBeNull()
+    await typeInto('textarea#inventory-entry-notes', 'Otra nota')
     await typeInto('#inventory-entry-ram', '8,5')
     form.findComponent(ElDatePicker).vm.$emit('update:modelValue', '2024-03-05')
     form.findComponent(ElSelect).vm.$emit('update:modelValue', 'false')
@@ -227,9 +257,32 @@ describe('admin inventory category page', () => {
     await vi.waitFor(() =>
       expect(created).toEqual({
         quantity: null,
-        values: { ram: '8.5', bought: '2024-03-05', works: 'false' },
+        values: { notes: 'Otra nota', ram: '8.5', bought: '2024-03-05', works: 'false' },
       }),
     )
+  })
+
+  it('filters the rows by a range of days', async () => {
+    serveCategory(
+      buildInventoryCategoryResponse({
+        columns: [{ id: 'bought', name: 'Compra', type: 'Date', required: false, options: [] }],
+      }),
+      [
+        buildInventoryEntryResponse({ quantity: null, values: { bought: '2024-03-05' } }),
+        buildInventoryEntryResponse({
+          id: 'entry-2',
+          quantity: null,
+          values: { bought: '2025-01-10' },
+        }),
+      ],
+    )
+    const { wrapper } = await renderPage()
+    const filter = wrapper.findComponent(ColumnFilterDate)
+
+    filter.vm.$emit('update:modelValue', [new Date(2025, 0, 1), new Date(2025, 0, 31)])
+    filter.vm.$emit('apply')
+
+    await vi.waitFor(() => expect(rowTexts(wrapper)).toEqual([[formatDate('2025-01-10')]]))
   })
 
   it('tells when the category does not exist', async () => {

@@ -36,7 +36,6 @@ describe('RowActions', () => {
     expect(editButton.classList).toContain('row-actions__button')
     expect(editButton.classList).not.toContain('row-actions__button--danger')
     expect(deleteButton.classList).toContain('row-actions__button--danger')
-    expect(editButton.querySelector('.app-icon')).not.toBeNull()
 
     await click(editButton)
     expect(edit.run).toHaveBeenCalledTimes(1)
@@ -66,7 +65,6 @@ describe('RowActions', () => {
     const named = await renderActions([action('Feature')], 'More actions for Ada')
 
     const genericTrigger = generic.wrapper.find('.row-actions__more')
-    expect(genericTrigger.element.tagName).toBe('BUTTON')
     expect(genericTrigger.attributes('aria-label')).toBe(t('table.moreActions'))
     expect(genericTrigger.attributes('id')).toBeTruthy()
     expect(named.wrapper.find('.row-actions__more').attributes('aria-label')).toBe(

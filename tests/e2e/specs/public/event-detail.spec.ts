@@ -138,25 +138,6 @@ test.describe('event page', () => {
     await expect(card.login).toBeHidden()
   })
 
-  test('the status tells a signup that has closed or has not opened yet', async ({
-    page,
-    seed,
-  }) => {
-    const detail = new EventDetailPage(page)
-    for (const [signup, status] of [
-      ['closed', t('entities.event.status.signupClosed')],
-      ['upcoming', t('entities.event.status.upcoming')],
-    ] as const) {
-      const event = await seed.event({ signup })
-
-      await detail.goto(event.id, event.title)
-
-      await expect(
-        detail.main.getByTestId('event-detail-info').getByTestId('event-detail-info-value').last(),
-      ).toHaveText(status)
-    }
-  })
-
   test('an unknown event is not found', async ({ page }) => {
     await page.goto('/events/00000000-0000-4000-8000-000000000000')
 

@@ -43,26 +43,6 @@ beforeEach(() => {
 })
 
 describe('dashboard page', () => {
-  it('loads the last 12 months and renders KPIs, both sections and every chart', async () => {
-    const ranges = serveAnalytics()
-
-    const { wrapper } = await renderPage()
-    await vi.waitFor(() => expect(wrapper.find('.kpi-grid').exists()).toBe(true))
-
-    expect(ranges).toEqual([{ from: '2025-09-17', to: '2026-09-17' }])
-    expect(wrapper.find('h1').text()).toBe(t('pages.admin.dashboard.header.title'))
-    expect(wrapper.findAll('.kpi-card')).toHaveLength(8)
-    expect(wrapper.findAll('.dashboard__section-title').map((title) => title.text())).toEqual([
-      t('pages.admin.dashboard.sections.upcoming.title'),
-      t('pages.admin.dashboard.sections.period.title'),
-    ])
-    expect(wrapper.text()).toContain(t('pages.admin.dashboard.pending.title'))
-    expect(wrapper.text()).toContain(t('pages.admin.dashboard.roleCoverage.title'))
-    expect(wrapper.text()).toContain(t('pages.admin.dashboard.occupancy.title'))
-    expect(wrapper.findAll('.analytics-chart__empty')).toHaveLength(0)
-    expect(liveCharts()).toHaveLength(7)
-  })
-
   it('builds each chart from the matching part of the analytics', async () => {
     serveAnalytics()
 

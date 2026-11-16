@@ -35,7 +35,7 @@ test.describe('data protection', () => {
     await expect(shell.view('admin-audit')).toBeVisible()
   })
 
-  test('the privacy officer opens a consultation, downloads the history of an account and holds it', async ({
+  test('the privacy officer opens a consultation with a resent code, downloads the history of an account and holds it', async ({
     pageAs,
     privacyOfficer,
     accounts,
@@ -67,12 +67,14 @@ test.describe('data protection', () => {
     await expect(dialog).toContainText(
       t('pages.admin.blockedData.open.codeSent', { email: privacyOfficer.account.email }),
     )
-    const message = await mailbox.waitFor({
-      to: privacyOfficer.account.email,
-      subject: SUBJECTS.blockedDataCode,
-      sentAfter,
-    })
-    await dialog.getByTestId('blocked-data-dialog-code').fill(codeIn(message))
+    const codeQuery = { to: privacyOfficer.account.email, subject: SUBJECTS.blockedDataCode }
+    const first = await mailbox.waitFor({ ...codeQuery, sentAfter })
+    const resent = await mailbox.waitForResent(
+      first,
+      codeQuery,
+      dialog.getByTestId('blocked-data-dialog-resend'),
+    )
+    await dialog.getByTestId('blocked-data-dialog-code').fill(codeIn(resent))
     await dialog.getByTestId('blocked-data-dialog-confirm').click()
 
     await expect(dialog).toBeHidden()

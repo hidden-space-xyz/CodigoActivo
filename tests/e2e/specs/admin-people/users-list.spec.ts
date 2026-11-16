@@ -1,6 +1,7 @@
 import { firstDependent } from '../../support/api/accounts'
 import { CATALOG, USER_STATUS_LABELS, USER_TYPE_LABELS } from '../../support/api/catalogs'
 import { environment } from '../../support/config/environment'
+import { dayText } from '../../support/data/formats'
 import { fullName } from '../../support/data/people'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
@@ -33,10 +34,11 @@ test.describe('admin user list', () => {
     await expect(users.table.count).toHaveText(t('table.results', { n: 1 }))
   })
 
-  test('the status, type, admin and news filters narrow the list and show their chips', async ({
+  test('the column filters narrow the list and show their chips', async ({
     pageAs,
     admin,
     member,
+    guardian,
   }) => {
     const person = member.account
     const users = new UsersAdminPage(await pageAs(admin))
@@ -51,6 +53,7 @@ test.describe('admin user list', () => {
     await users.table.filterBy('users-filter-staff-role', 'None')
     await users.table.filterBy('users-filter-news-consent', 'true')
     await users.table.searchColumn('users-filter-national-id', person.nationalId)
+    await users.table.searchColumn('users-filter-phone', person.phone)
 
     await expect(users.row(person)).toBeVisible()
     await expect(users.table.count).toHaveText(t('table.results', { n: 1 }))
@@ -72,6 +75,7 @@ test.describe('admin user list', () => {
         label: t('pages.admin.users.columns.nationalId'),
         value: person.nationalId,
       }),
+      t('table.filterChip', { label: t('common.phone'), value: person.phone }),
     ]) {
       await expect(users.table.chip(chip)).toBeVisible()
     }
@@ -80,6 +84,23 @@ test.describe('admin user list', () => {
 
     await expect(users.table.chips).toBeHidden()
     await expect(users.table.root.getByTestId('data-table-search')).toHaveValue('')
+
+    const dependent = firstDependent(guardian.account)
+    await users.showScope('dependent')
+    await users.find(guardian.account.lastName)
+    await expect(users.table.count).toHaveText(t('table.results', { n: 2 }))
+    await users.table.filterByDay('users-filter-birth-date', dependent.birthDate)
+
+    await expect(users.row(dependent)).toBeVisible()
+    await expect(users.table.count).toHaveText(t('table.results', { n: 1 }))
+    await expect(
+      users.table.chip(
+        t('table.filterChip', {
+          label: t('pages.admin.users.columns.birth'),
+          value: dayText(dependent.birthDate),
+        }),
+      ),
+    ).toBeVisible()
   })
 
   test('the scopes split guardians from their dependents and link them to each other', async ({

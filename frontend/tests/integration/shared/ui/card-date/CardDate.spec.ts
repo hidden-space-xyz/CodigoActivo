@@ -9,10 +9,8 @@ describe('CardDate', () => {
       props: { label: 'Inicio', value: '15 ene 2025' },
     })
 
-    expect(wrapper.find('time').exists()).toBe(true)
-    expect(wrapper.find('.card-date__label').text()).toBe('Inicio:')
-    expect(wrapper.find('.card-date__value').text()).toBe('15 ene 2025')
-    expect(wrapper.find('.app-icon').exists()).toBe(true)
+    expect(wrapper.find('time .card-date__label').text()).toBe('Inicio:')
+    expect(wrapper.find('time .card-date__value').text()).toBe('15 ene 2025')
   })
 
   it('renders nothing without a value', async () => {

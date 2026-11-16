@@ -99,7 +99,7 @@ has migrations. The tools build the context through `CodigoActivoDesignTimeDbCon
 database never resolves, so commands that touch a database need `--connection`.
 `Microsoft.EntityFrameworkCore.Design` stays out of the API.
 
-Backend coverage merges the unit and integration tests and must reach 90% of lines, branches and methods; the
+Backend coverage merges the unit and integration tests and must reach 95% of lines, branches and methods; the
 architecture tests check structure, not behavior, and stay out of it. It uses Microsoft Code Coverage with
 `tests/CodeCoverage.config`, which measures the production assemblies and excludes EF Core migrations:
 
@@ -118,7 +118,7 @@ Run frontend commands from `frontend/`:
 npm run dev             # Vite development server
 npm run build           # Type-check and production build
 npm test                # Vitest unit, integration and architecture tests
-npm run test:coverage   # Tests with the 90% coverage thresholds
+npm run test:coverage   # Tests with the 95% coverage thresholds
 npm run lint            # ESLint, i18n and accessibility rules
 npm run lint:fix        # Safe ESLint fixes
 npm run format          # Write Prettier formatting
@@ -233,7 +233,7 @@ pull request against `develop` every Saturday at 00:00 (Europe/Madrid).
 Before opening a pull request:
 
 1. Run `dotnet build CodigoActivo.slnx` and `dotnet test --solution CodigoActivo.slnx` from `backend/`, and keep
-   backend coverage at or above 90%.
+   backend coverage at or above 95%.
 2. Run `npm run check` from `frontend/`.
 3. Update the owning document when behavior, configuration, architecture or security changes.
 4. Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, and so on); the

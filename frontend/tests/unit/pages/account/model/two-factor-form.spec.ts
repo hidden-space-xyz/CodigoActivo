@@ -4,17 +4,10 @@ import {
   readDisableAuthenticator,
   readTwoFactorCode,
   readTwoFactorPassword,
-  toTwoFactorDraft,
 } from '@/pages/account/model/two-factor-form'
 
 const PASSWORD_REQUIRED = 'pages.account.twoFactor.form.problems.passwordRequired'
 const CODE_REQUIRED = 'pages.account.twoFactor.form.problems.codeRequired'
-
-describe('toTwoFactorDraft', () => {
-  it('starts blank', () => {
-    expect(toTwoFactorDraft()).toEqual({ password: '', code: '' })
-  })
-})
 
 describe('readTwoFactorPassword', () => {
   it('sends the password as typed and ignores the code', () => {

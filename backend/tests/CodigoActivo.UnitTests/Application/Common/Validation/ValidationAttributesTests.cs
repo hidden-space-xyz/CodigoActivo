@@ -170,6 +170,81 @@ public sealed class ValidationAttributesTests
     }
 
     [Theory]
+    [InlineData("{\"type\":\"orderedList\",\"attrs\":{\"start\":null,\"type\":\"a\"}}")]
+    [InlineData("{\"type\":\"orderedList\",\"attrs\":{\"start\":100000,\"type\":\"I\"}}")]
+    [InlineData("{\"type\":\"codeBlock\",\"attrs\":{\"language\":\"c++\"}}")]
+    [InlineData(
+        "{\"type\":\"image\",\"attrs\":{\"src\":\""
+            + FileUrl
+            + "\",\"title\":\"Cartel\",\"width\":640,\"height\":480}}"
+    )]
+    [InlineData(
+        "{\"type\":\"tableCell\",\"attrs\":{\"colspan\":null,\"rowspan\":null,\"colwidth\":null}}"
+    )]
+    [InlineData(
+        "{\"type\":\"tableCell\",\"attrs\":{\"colspan\":2,\"rowspan\":100,\"colwidth\":[1,2000]}}"
+    )]
+    public void IsValidRichTextOptionalNodeAttributesReturnsTrue(string node)
+    {
+        new RichTextAttribute().IsValid(Doc(node)).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("{\"type\":\"orderedList\",\"attrs\":{\"start\":0}}")]
+    [InlineData("{\"type\":\"orderedList\",\"attrs\":{\"start\":1.5}}")]
+    [InlineData("{\"type\":\"orderedList\",\"attrs\":{\"type\":\"disc\"}}")]
+    [InlineData("{\"type\":\"orderedList\",\"attrs\":{\"type\":1}}")]
+    [InlineData("{\"type\":\"image\",\"attrs\":{\"src\":\"" + FileUrl + "\",\"width\":0}}")]
+    [InlineData("{\"type\":\"image\",\"attrs\":{\"src\":\"" + FileUrl + "\",\"height\":10001}}")]
+    [InlineData("{\"type\":\"tableCell\",\"attrs\":{\"rowspan\":101}}")]
+    [InlineData("{\"type\":\"tableCell\",\"attrs\":{\"colwidth\":120}}")]
+    [InlineData("{\"type\":\"tableCell\",\"attrs\":{\"colwidth\":[0]}}")]
+    public void IsValidRichTextOutOfRangeNodeAttributesReturnsFalse(string node)
+    {
+        new RichTextAttribute().IsValid(Doc(node)).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsValidRichTextTooManyColumnWidthsReturnsFalse()
+    {
+        var widths = string.Join(",", Enumerable.Repeat("100", 101));
+
+        new RichTextAttribute()
+            .IsValid(Doc("{\"type\":\"tableCell\",\"attrs\":{\"colwidth\":[" + widths + "]}}"))
+            .Should()
+            .BeFalse();
+    }
+
+    [Theory]
+    [InlineData(
+        "{\"type\":\"link\",\"attrs\":{\"href\":\"https://a.example\",\"target\":null,\"rel\":null,\"class\":\"enlace destacado\"}}"
+    )]
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":\"https://a.example\",\"title\":\"Más\"}}")]
+    [InlineData("{\"type\":\"textStyle\",\"attrs\":{\"color\":null}}")]
+    [InlineData("{\"type\":\"highlight\",\"attrs\":{\"color\":\"rgba(0, 0, 0, .5)\"}}")]
+    public void IsValidRichTextOptionalMarkAttributesReturnsTrue(string mark)
+    {
+        new RichTextAttribute().IsValid(Doc(Paragraph(mark))).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":42}}")]
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":\"ftp://files.example/a\"}}")]
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":\"vbscript:msgbox\"}}")]
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":\"evil.example\"}}")]
+    [InlineData(
+        "{\"type\":\"link\",\"attrs\":{\"href\":\"https://a.example\",\"rel\":\"noopener\\\" onmouseover=\\\"x\"}}"
+    )]
+    [InlineData(
+        "{\"type\":\"link\",\"attrs\":{\"href\":\"https://a.example\",\"class\":\"x\\\" style=\\\"y\"}}"
+    )]
+    [InlineData("{\"type\":\"link\",\"attrs\":{\"href\":\"https://a.example\",\"class\":1}}")]
+    public void IsValidRichTextUnsafeLinkAttributesReturnsFalse(string mark)
+    {
+        new RichTextAttribute().IsValid(Doc(Paragraph(mark))).Should().BeFalse();
+    }
+
+    [Theory]
     [InlineData("not json")]
     [InlineData("")]
     [InlineData("null")]
@@ -373,6 +448,41 @@ public sealed class ValidationAttributesTests
     public void IsValidSpanishNationalIdLeavesMissingValuesToRequired(string? value)
     {
         new SpanishNationalIdAttribute().IsValid(value).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsValidHttpUrlRejectsNonStringValues()
+    {
+        new HttpUrlAttribute().IsValid(42).Should().BeFalse();
+    }
+
+    [Fact]
+    public void GetValidationResultNotDefaultOrFutureDateCurrentDayOfAnotherTypeThrows()
+    {
+        var context = new ValidationContext(
+            new Holder { BirthDate = Today },
+            new Dictionary<object, object?> { [MessageValidator.TodayKey] = "2026-07-04" }
+        );
+
+        var act = () => new NotDefaultOrFutureDateAttribute().GetValidationResult(Today, context);
+
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void GetValidationResultNotDefaultOrFutureDateWithoutMemberNamesNoMember()
+    {
+        var context = new ValidationContext(
+            new Holder { BirthDate = Today },
+            new Dictionary<object, object?> { [MessageValidator.TodayKey] = Today }
+        );
+
+        var result = new NotDefaultOrFutureDateAttribute().GetValidationResult(
+            Today.AddDays(1),
+            context
+        );
+
+        result!.MemberNames.Should().BeEmpty();
     }
 
     [Fact]

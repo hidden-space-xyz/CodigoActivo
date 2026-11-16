@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { ApiError, httpClient, isSessionLost, resetCsrfToken } from '@/shared/api'
+import { ApiError, hasErrorCode, httpClient, isSessionLost, resetCsrfToken } from '@/shared/api'
 import { ErrorCode } from '@/shared/api/generated/models'
 
 import { apiError, http, HttpResponse, server, TEST_CSRF_TOKEN } from '../../../support/server'
@@ -436,6 +436,22 @@ describe('httpClient', () => {
       expect((file.data as Blob).size).toBe(3)
       expect(empty.data).toBeUndefined()
     })
+  })
+})
+
+describe('hasErrorCode', () => {
+  it('matches only an API error carrying the given code', () => {
+    const wrongPassword = new ApiError(400, 'x', undefined, ErrorCode.UserCurrentPasswordIncorrect)
+
+    expect(hasErrorCode(wrongPassword, ErrorCode.UserCurrentPasswordIncorrect)).toBe(true)
+    expect(hasErrorCode(wrongPassword, ErrorCode.TwoFactorCodeInvalid)).toBe(false)
+    expect(hasErrorCode(new ApiError(400, 'x'), ErrorCode.UserCurrentPasswordIncorrect)).toBe(false)
+    expect(
+      hasErrorCode(
+        new Error('UserCurrentPasswordIncorrect'),
+        ErrorCode.UserCurrentPasswordIncorrect,
+      ),
+    ).toBe(false)
   })
 })
 

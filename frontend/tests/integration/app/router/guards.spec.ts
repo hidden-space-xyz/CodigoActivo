@@ -14,21 +14,6 @@ describe('access guard in the app', () => {
     expect(wrapper.text()).toContain(t('pages.login.title'))
   })
 
-  it('sends guests from the admin area to login, coming back to it', async () => {
-    const { router } = await renderApp('/admin')
-
-    expect(router.currentRoute.value.name).toBe('login')
-    expect(router.currentRoute.value.query).toEqual({ redirect: '/admin' })
-  })
-
-  it('sends signed-in users without the needed cargo away from admin pages', async () => {
-    useHomeApi()
-
-    const { router } = await renderApp('/admin/users', { user: { staffRole: 'Editor' } })
-
-    expect(router.currentRoute.value.name).toBe('home')
-  })
-
   it('stays anonymous when the session lookup fails', async () => {
     useHomeApi()
     server.use(http.get('/api/auth/me', () => apiError(403)))

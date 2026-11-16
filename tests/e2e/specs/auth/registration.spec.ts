@@ -1,9 +1,9 @@
-import { findUser } from '../../support/api/accounts'
+import { findUser, registerUnverified } from '../../support/api/accounts'
 import { PASSWORD } from '../../support/config/environment'
 import { fullName, newMinor, newPerson } from '../../support/data/people'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
-import { linkIn, SUBJECTS } from '../../support/mail/mailbox'
+import { accountLinkParts, linkIn, RESEND_COOLDOWN_MS, SUBJECTS } from '../../support/mail/mailbox'
 import { AccountPage } from '../../support/pages/account/account-page'
 import { MinorsSection } from '../../support/pages/account/minors-section'
 import { LoginPage, signInThroughPages } from '../../support/pages/login-page'
@@ -20,11 +20,12 @@ test.describe('registration', () => {
     await expect(registration.submit).toBeHidden()
   })
 
-  test('a guardian registers with two minors, verifies the address and signs in', async ({
+  test('a guardian registers with two minors, verifies the address with a resent link and signs in', async ({
     page,
     mailbox,
     initialAdmin,
   }) => {
+    test.slow()
     const person = newPerson('signup')
     const first = newMinor(person, 9)
     const minors = [first, newMinor(person, 12, [first])]
@@ -40,12 +41,23 @@ test.describe('registration', () => {
     await expect(registration.success).toContainText(
       t('pages.register.success.minorsEnrolled', { n: minors.length }),
     )
-    const email = await mailbox.waitFor({
+    const original = await mailbox.waitFor({
       to: person.email,
       subject: SUBJECTS.verification,
       sentAfter,
     })
-    await page.goto(linkIn(email, '/verify-account'))
+    const resend = registration.success.getByTestId('register-resend')
+    await expect(resend).toBeDisabled()
+    await expect(resend).toBeEnabled({ timeout: RESEND_COOLDOWN_MS + 10_000 })
+    const resentAfter = new Date()
+    await resend.click()
+    const resent = await mailbox.waitFor({
+      to: person.email,
+      subject: SUBJECTS.verification,
+      sentAfter: resentAfter,
+    })
+    expect(resent.text).not.toBe(original.text)
+    await page.goto(linkIn(resent, '/verify-account'))
     await expect(page.getByTestId('verify-account-success')).toBeVisible()
 
     await page.getByTestId('verify-account-login').click()
@@ -100,11 +112,28 @@ test.describe('registration', () => {
     await expect(registration.success).toBeHidden()
   })
 
-  test('a broken verification link is refused', async ({ page }) => {
-    await page.goto(
-      '/verify-account#userId=00000000-0000-4000-8000-000000000000&code=not-a-real-code',
-    )
+  test('a broken verification link is refused and the page emails a new one', async ({
+    page,
+    anonymousApi,
+    mailbox,
+  }) => {
+    test.slow()
+    const { person, sentAfter } = await registerUnverified(anonymousApi, { label: 'relink' })
+    const query = { to: person.email, subject: SUBJECTS.verification }
+    const first = await mailbox.waitFor({ ...query, sentAfter })
+    const { userId } = accountLinkParts(linkIn(first, '/verify-account'))
+
+    await page.goto(`/verify-account#userId=${userId}&code=not-a-real-code`)
 
     await expect(page.getByTestId('verify-account-error')).toBeVisible()
+    await page.getByTestId('verify-resend-email').fill(person.email)
+    const resent = await mailbox.waitForResent(
+      first,
+      query,
+      page.getByTestId('verify-resend-submit'),
+    )
+    const linkPage = await page.context().newPage()
+    await linkPage.goto(linkIn(resent, '/verify-account'))
+    await expect(linkPage.getByTestId('verify-account-success')).toBeVisible()
   })
 })

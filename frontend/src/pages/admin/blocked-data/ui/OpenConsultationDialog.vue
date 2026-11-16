@@ -162,6 +162,7 @@ function confirm(): void {
           {{ $t('common.resendPrompt') }}
           <ActionButton
             :label="$t('common.resendCode')"
+            data-testid="blocked-data-dialog-resend"
             type="primary"
             link
             :loading="sendingCode"

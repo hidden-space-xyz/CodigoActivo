@@ -3,22 +3,11 @@ import { flushPromises } from '@vue/test-utils'
 import { useQuery } from '@tanstack/vue-query'
 import { describe, expect, it, vi } from 'vitest'
 
-import { dashboardKeys, dashboardQueries } from '@/pages/admin/dashboard/api/queries'
+import { dashboardQueries } from '@/pages/admin/dashboard/api/queries'
 
 import { http, HttpResponse, server } from '../../../../../support/server'
 import { buildDashboardAnalytics } from '../../../../../support/builders'
 import { createTestQueryClient, mountComposable } from '../../../../../support/render'
-
-describe('dashboardKeys', () => {
-  it('keys the analytics by range under the reports root', () => {
-    expect(dashboardKeys.analytics({ from: '2026-01-01', to: '2026-01-31' })).toEqual([
-      'reports',
-      'dashboard-analytics',
-      '2026-01-01',
-      '2026-01-31',
-    ])
-  })
-})
 
 describe('dashboardQueries', () => {
   it('requests the analytics of the range', async () => {

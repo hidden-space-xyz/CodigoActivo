@@ -18,7 +18,6 @@ describe('privacy policy page', () => {
 
     const { wrapper } = await renderApp('/privacy')
 
-    expect(wrapper.get('h1').text()).toBe(t('pages.privacyPolicy.title'))
     expect(document.title).toContain(t('seo.routes.privacyPolicy.title'))
     const controller = wrapper.get('[aria-labelledby="privacy-controller"]')
     await vi.waitFor(() =>

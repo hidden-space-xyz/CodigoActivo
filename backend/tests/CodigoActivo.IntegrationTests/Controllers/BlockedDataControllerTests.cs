@@ -827,6 +827,78 @@ public sealed class BlockedDataControllerTests(CodigoActivoWebAppFactory factory
     }
 
     [Fact]
+    public async Task ConsultationStepsAnotherAdministratorAreRefused()
+    {
+        var officer = await OfficerAsync();
+        var consultationId = await OpenedAsync(officer);
+        using var _ = await SearchAsync(officer, consultationId, TestSeedData.AdminEmail);
+        await PromoteMemberToAdministratorAsync();
+        var member = await LoginAsMemberAsync();
+
+        using var searched = await SearchAsync(member, consultationId, TestSeedData.AdminEmail);
+        using var extracted = await ExportAsync(member, consultationId, TestSeedData.Users.AdminId);
+        using var placed = await PlaceHoldAsync(member, consultationId, TestSeedData.Users.AdminId);
+
+        await searched.ShouldBeForbiddenAsync(ErrorCode.BlockedDataOfficerOnly);
+        await extracted.ShouldBeForbiddenAsync(ErrorCode.BlockedDataOfficerOnly);
+        await placed.ShouldBeForbiddenAsync(ErrorCode.BlockedDataOfficerOnly);
+        (await Factory.QueryAsync(db => db.BlockedDataHolds.CountAsync(Ct))).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ConsultationStepsUnknownConsultationAreNotFound()
+    {
+        var officer = await OfficerAsync();
+        var holdId = await HeldMemberAsync(officer);
+        var unknown = Guid.NewGuid();
+
+        using var searched = await SearchAsync(officer, unknown, TestSeedData.MemberEmail);
+        using var extracted = await ExportAsync(officer, unknown, TestSeedData.Users.MemberId);
+        using var placed = await PlaceHoldAsync(officer, unknown, TestSeedData.Users.MemberId);
+        using var lifted = await LiftHoldAsync(officer, unknown, holdId);
+
+        await searched.ShouldBeNotFoundAsync(ErrorCode.BlockedDataConsultationNotFound);
+        await extracted.ShouldBeNotFoundAsync(ErrorCode.BlockedDataConsultationNotFound);
+        await placed.ShouldBeNotFoundAsync(ErrorCode.BlockedDataConsultationNotFound);
+        await lifted.ShouldBeNotFoundAsync(ErrorCode.BlockedDataConsultationNotFound);
+        (await Factory.QueryAsync(db => db.BlockedDataHolds.SingleAsync(Ct)))
+            .LiftedAt.Should()
+            .BeNull();
+    }
+
+    [Theory]
+    [InlineData(2, null)]
+    [InlineData(null, -2)]
+    public async Task ExportPeriodOutsideTheHistoryHoldsNoEntries(int? fromDays, int? toDays)
+    {
+        await EraseMemberAsync();
+        var officer = await OfficerAsync();
+        var consultationId = await OpenedAsync(officer);
+        using var _ = await SearchAsync(officer, consultationId, TestSeedData.MemberEmail);
+        var today = DateOnly.FromDateTime(Factory.Clock.UtcNow.UtcDateTime);
+        using var everything = await ExportAsync(
+            officer,
+            consultationId,
+            TestSeedData.Users.MemberId
+        );
+        (await everything.ReadJsonAsync<BlockedDataExport>(Ct))!.Entries.Should().NotBeEmpty();
+
+        using var extracted = await officer.PostJsonAsync(
+            $"{ConsultationsUrl}/{consultationId}/extracts",
+            new ExportBlockedDataRequest(
+                TestSeedData.Users.MemberId,
+                fromDays is { } from ? today.AddDays(from) : null,
+                toDays is { } to ? today.AddDays(to) : null,
+                null
+            ),
+            Ct
+        );
+
+        extracted.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await extracted.ReadJsonAsync<BlockedDataExport>(Ct))!.Entries.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task PurgeKeepsALiftedHoldFiveYearsAfterItWasLifted()
     {
         var now = Factory.Clock.UtcNow;

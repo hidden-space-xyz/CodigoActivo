@@ -149,6 +149,16 @@ public sealed class DeploymentModeLockTests : IDisposable
     }
 
     [Fact]
+    public void LockPathOfAFileSystemRootFails()
+    {
+        var root = Path.GetPathRoot(Path.GetTempPath())!;
+
+        var act = () => LockInContainer(Build(root), true);
+
+        act.Should().Throw<InvalidOperationException>().WithMessage("*path is invalid*");
+    }
+
+    [Fact]
     public void CheckUnreadablePersistedModeFails()
     {
         var path = Path.Join(directory, "deployment-mode");

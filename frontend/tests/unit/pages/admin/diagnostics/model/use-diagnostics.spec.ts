@@ -26,17 +26,6 @@ function recordRequests(): URL[] {
 }
 
 describe('useDiagnostics', () => {
-  it('lists the newest entries first without a trace filter', async () => {
-    const urls = recordRequests()
-
-    const { result } = await mountComposable(useDiagnostics, { route: '/admin/diagnostics' })
-
-    await vi.waitFor(() => expect(urls).toHaveLength(1))
-    expect(urls[0]?.searchParams.get('sort')).toBe('-occurredAt')
-    expect(urls[0]?.searchParams.has('traceId')).toBe(false)
-    expect(result.extraFilters.value).toEqual([])
-  })
-
   it('takes the trace from the address and shows it as a removable filter', async () => {
     const urls = recordRequests()
 

@@ -1,4 +1,4 @@
-import { expect, request, type APIRequestContext } from '@playwright/test'
+import { expect, request, type APIRequestContext, type Locator } from '@playwright/test'
 
 import { environment } from '../config/environment'
 import { escapeRegExp } from '../data/formats'
@@ -55,6 +55,11 @@ interface MailpitMessage {
 const CLOCK_SKEW_MS = 1_000
 const REUSE_GRACE_MS = 5_000
 const DELIVERY_TIMEOUT_MS = 30_000
+const RESEND_DELIVERY_MS = 10_000
+const RESEND_RETRY_MS = 5_000
+
+/** How long the API makes a person wait before it emails another code or link. */
+export const RESEND_COOLDOWN_MS = 60_000
 
 /**
  * Reads the messages the API delivered to Mailpit. Codes and links are found in the plain text
@@ -89,6 +94,28 @@ export class Mailbox {
       .toBeDefined()
     if (!found) throw new Error(`No «${query.subject}» reached ${query.to}`)
     return found
+  }
+
+  /**
+   * Clicks `resend` until another message like the `previous` one reaches `query.to`. Within the
+   * resend cooldown the API answers without sending anything, so the clicks repeat every few
+   * seconds until the cooldown that started with `previous` is over.
+   */
+  async waitForResent(
+    previous: Email,
+    query: Omit<EmailQuery, 'sentAfter'>,
+    resend: Locator,
+  ): Promise<Email> {
+    let resent: Email | undefined
+    await expect(async () => {
+      const sentAfter = new Date()
+      await resend.click()
+      const email = await this.waitFor({ ...query, sentAfter }, RESEND_DELIVERY_MS)
+      expect(email.text, `another «${query.subject}» for ${query.to}`).not.toBe(previous.text)
+      resent = email
+    }).toPass({ intervals: [RESEND_RETRY_MS], timeout: RESEND_COOLDOWN_MS + 30_000 })
+    if (!resent) throw new Error(`No other «${query.subject}» reached ${query.to}`)
+    return resent
   }
 
   /** Whether any message to `to` with that subject arrived after `sentAfter`. */

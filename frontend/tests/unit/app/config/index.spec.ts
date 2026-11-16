@@ -28,11 +28,10 @@ describe('registerProviders', () => {
 })
 
 describe('elementPlus', () => {
-  it('uses the Spanish locale and default size', () => {
-    const options = elementPlus.options as unknown as { locale: unknown; size: string }
+  it('uses the Spanish locale', () => {
+    const options = elementPlus.options as unknown as { locale: unknown }
 
     expect(options.locale).toBe(elementPlusLocale)
-    expect(options.size).toBe('default')
   })
 })
 

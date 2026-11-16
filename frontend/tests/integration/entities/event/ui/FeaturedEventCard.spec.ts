@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { FeaturedEventCard } from '@/entities/event'
 
-import { renderWithProviders, t } from '../../../../support/render'
+import { renderWithProviders } from '../../../../support/render'
 import { buildEventSummary } from '../../../../support/models'
 
 describe('FeaturedEventCard', () => {
@@ -11,26 +11,16 @@ describe('FeaturedEventCard', () => {
     const event = buildEventSummary()
     const { wrapper, router } = await renderWithProviders(FeaturedEventCard, { props: { event } })
 
-    expect(wrapper.find('.featured__badge').text()).toBe(t('entities.event.featured.badge'))
     expect(wrapper.find('h2').text()).toBe('Día Código Activo')
     expect(wrapper.find('.featured__slogan').text()).toBe('«Programa tu futuro»')
     expect(wrapper.findAll('.el-tag').map((tag) => tag.text())).toEqual(['Robótica', 'IA'])
-    expect(
-      wrapper
-        .findAll('.featured__meta-item')
-        .map((item) => [
-          item.find('.featured__meta-label').text(),
-          item.find('.featured__meta-value').text(),
-        ]),
-    ).toEqual([
-      [t('entities.event.featured.dateLabel'), '3 oct 2026'],
-      [t('common.status'), 'Inscripción abierta'],
+    expect(wrapper.findAll('.featured__meta-value').map((value) => value.text())).toEqual([
+      '3 oct 2026',
+      'Inscripción abierta',
     ])
     expect(wrapper.find('img').attributes('src')).toBe('/api/files/thumb-1/content')
 
-    const cta = wrapper.find('a.featured__cta')
-    expect(cta.text()).toBe(t('entities.event.featured.viewDetails'))
-    await cta.trigger('click')
+    await wrapper.find('a.featured__cta').trigger('click')
     await flushPromises()
     expect(router.currentRoute.value.fullPath).toBe('/events/event-1')
   })

@@ -145,6 +145,10 @@ describe('wrapLabel', () => {
     expect(wrapLabel('one two three four five six', 10, 2)).toEqual(['one two', 'three fou…'])
   })
 
+  it('appends the ellipsis to a last line that has room for it', () => {
+    expect(wrapLabel('Taller de robótica', 10, 1)).toEqual(['Taller de…'])
+  })
+
   it('shortens a single word longer than the maximum line width', () => {
     expect(wrapLabel('Supercalifragilistico', 10)).toEqual(['Supercali…'])
   })

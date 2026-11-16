@@ -41,7 +41,6 @@ describe('unsubscribe page', () => {
     release()
 
     await vi.waitFor(() => expect(wrapper.text()).toContain(t('pages.unsubscribe.successTitle')))
-    expect(wrapper.text()).toContain(t('pages.unsubscribe.successText'))
     expect(bodies).toEqual([{ token: 'token-1' }])
     expect(wrapper.get('.status-panel a').attributes('href')).toBe(
       router.resolve({ name: 'home' }).href,

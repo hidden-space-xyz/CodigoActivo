@@ -1,5 +1,5 @@
 // Fails when merged backend coverage drops below the minimum percentage.
-// Usage: dotnet run --file scripts/check-coverage.cs -- <ReportGenerator Summary.json> [minimum, default 90]
+// Usage: dotnet run --file scripts/check-coverage.cs -- <ReportGenerator Summary.json> [minimum, default 95]
 using System.Globalization;
 using System.Text.Json;
 
@@ -11,7 +11,7 @@ if (args.Length is < 1 or > 2)
     return 2;
 }
 
-var minimum = args.Length == 2 ? double.Parse(args[1], CultureInfo.InvariantCulture) : 90;
+var minimum = args.Length == 2 ? double.Parse(args[1], CultureInfo.InvariantCulture) : 95;
 
 using var document = JsonDocument.Parse(File.ReadAllText(args[0]));
 var summary = document.RootElement.GetProperty("summary");

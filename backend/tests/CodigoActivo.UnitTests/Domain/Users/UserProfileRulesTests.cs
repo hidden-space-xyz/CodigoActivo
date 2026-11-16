@@ -132,6 +132,7 @@ public sealed class UserProfileRulesTests
         "12345678Z",
         DomainErrorCode.SecondaryPhoneSameAsPrimary
     )]
+    [InlineData("ana@", "600111222", null, "12345678Z", DomainErrorCode.UserEmailInvalid)]
     [InlineData("ana@test.com", "123", null, "12345678Z", DomainErrorCode.UserPhoneInvalid)]
     [InlineData("ana@test.com", "abc", null, "12345678Z", DomainErrorCode.UserPhoneInvalid)]
     [InlineData(

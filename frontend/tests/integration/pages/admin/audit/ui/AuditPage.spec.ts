@@ -5,7 +5,7 @@ import type { AuthUser } from '@/entities/session'
 import { AuditPage } from '@/pages/admin/audit'
 import type { AuditLogEntryResponse } from '@/shared/api/generated/models'
 import { formatDateTimeSeconds } from '@/shared/lib/date'
-import { ColumnFilterSelect } from '@/shared/ui/column-filter'
+import { ColumnFilterDate, ColumnFilterSelect } from '@/shared/ui/column-filter'
 import { SearchInput } from '@/shared/ui/search-input'
 
 import { renderWithProviders, t } from '../../../../../support/render'
@@ -107,14 +107,13 @@ describe('AuditPage', () => {
     await vi.waitFor(() =>
       expect(wrapper.text()).toContain(t('pages.admin.audit.deletedEntities.User')),
     )
-    expect(urls[0]?.searchParams.get('sort')).toBe('-occurredAt')
 
     wrapper.findComponent(SearchInput).vm.$emit('update:modelValue', 'marta')
 
     await vi.waitFor(() => expect(urls.at(-1)?.searchParams.get('search')).toBe('marta'))
   })
 
-  it('filters by actor kind, command, entity kind and outcome', async () => {
+  it('filters by actor kind, command, entity kind, outcome and days', async () => {
     const urls: URL[] = []
     const { wrapper } = await renderPage([buildAuditEntry()], urls)
 
@@ -134,6 +133,16 @@ describe('AuditPage', () => {
       select.vm.$emit('apply')
       await vi.waitFor(() => expect(urls.at(-1)?.searchParams.get(param)).toBe(value))
     }
+
+    const occurred = wrapper.findComponent(ColumnFilterDate)
+    occurred.vm.$emit('update:modelValue', [new Date(2026, 6, 1), new Date(2026, 6, 4)])
+    occurred.vm.$emit('apply')
+    await vi.waitFor(() =>
+      expect(Object.fromEntries(urls.at(-1)?.searchParams ?? [])).toMatchObject({
+        occurredFrom: '2026-07-01',
+        occurredTo: '2026-07-04',
+      }),
+    )
   })
 
   it('pins the actor, the address, the entity, a related entity and the trace a click names', async () => {

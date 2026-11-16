@@ -128,7 +128,6 @@ describe('admin partners page', () => {
     const { wrapper } = await renderApp('/admin/partners', { user: { staffRole: 'Administrator' } })
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Acme'))
-    expect(wrapper.text()).toContain(t('pages.admin.partners.header.title'))
   })
 
   it('shows the empty message when there are no partners', async () => {

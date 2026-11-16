@@ -51,11 +51,11 @@ jobs:
           --configuration Release --no-build --no-restore
           --coverage --coverage-output-format cobertura --coverage-output integration.cobertura.xml
           --coverage-settings tests/CodeCoverage.config --results-directory TestResults/coverage
-      - name: Report and enforce coverage >= 90%
+      - name: Report and enforce coverage >= 95%
         run: |
           dotnet reportgenerator "-reports:TestResults/coverage/*.cobertura.xml" -targetdir:TestResults/coverage/report "-reporttypes:JsonSummary;MarkdownSummaryGithub"
           cat TestResults/coverage/report/SummaryGithub.md >> "$GITHUB_STEP_SUMMARY"
-          dotnet run --file scripts/check-coverage.cs -- TestResults/coverage/report/Summary.json 90
+          dotnet run --file scripts/check-coverage.cs -- TestResults/coverage/report/Summary.json 95
 
   frontend:
     runs-on: ubuntu-latest
@@ -77,7 +77,7 @@ jobs:
         run: |
           npm run api:check
           npm run build
-      - name: Tests and coverage >= 90%
+      - name: Tests and coverage >= 95%
         run: npm run test:coverage
       - name: Code quality and formatting
         run: |
