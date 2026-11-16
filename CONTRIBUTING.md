@@ -147,10 +147,10 @@ privacy officer, a member it makes an administrator; every other account and all
 the API by the tests that need them, so the suite runs again on the same volumes. Logins complete the second
 factor with the code read from Mailpit. The `desktop` project runs every test except those tagged `@mobile`,
 which only `mobile` runs; a full run takes about three minutes with the default four workers. Each worker sends
-its own `X-Forwarded-For`, so the rate limits treat workers as different visitors. The email guard allows 1,000
-verification and reset emails per hour and only resets with a new API process: after several runs in an hour,
-restart `api` or run `down -v`. The HTML report and the traces of failed tests are written to
-`tests/e2e/results/`; conventions are in [tests/e2e/AGENTS.md](tests/e2e/AGENTS.md).
+its own `X-Forwarded-For`, and each registration another, so the rate limits treat them as different visitors.
+The email guard allows 1,000 verification and reset emails per hour and only resets with a new API process:
+after several runs in an hour, restart `api` or run `down -v`. The HTML report and the traces of failed
+tests are written to `tests/e2e/results/`; conventions are in [tests/e2e/AGENTS.md](tests/e2e/AGENTS.md).
 
 ### Performance tests
 

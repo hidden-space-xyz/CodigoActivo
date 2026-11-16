@@ -96,8 +96,8 @@ test.describe('login', () => {
     await expect(login.error).toHaveText(t('pages.login.error'))
   })
 
-  test('an account whose email is not verified cannot sign in', async ({ page, anonymousApi }) => {
-    const { person } = await registerUnverified(anonymousApi, { label: 'unverified' })
+  test('an account whose email is not verified cannot sign in', async ({ page }) => {
+    const { person } = await registerUnverified({ label: 'unverified' })
     const login = new LoginPage(page)
     await login.goto()
 

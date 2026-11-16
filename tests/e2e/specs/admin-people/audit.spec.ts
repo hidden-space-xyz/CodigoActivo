@@ -48,7 +48,7 @@ test.describe('audit log', () => {
     await login.getByTestId('audit-ip').click()
 
     await expect(log.chip(t('pages.admin.audit.filters.ip', { ip: clientAddress }))).toBeVisible()
-    await expect(log.count).toHaveText(t('table.results', { n: 4 }))
+    await expect(log.count).toHaveText(t('table.results', { n: 3 }))
   })
 
   test('pinning an actor, an entity, a related entity and a trace narrows the log and leads to the diagnostics', async ({

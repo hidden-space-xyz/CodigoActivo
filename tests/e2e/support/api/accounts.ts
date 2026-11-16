@@ -13,7 +13,7 @@ import {
   type EmailQuery,
   type Mailbox,
 } from '../mail/mailbox'
-import type { ApiClient } from './api-client'
+import { ApiClient } from './api-client'
 import { CATALOG, type UserTypeName } from './catalogs'
 
 /** The email and password an account signs in with. */
@@ -65,11 +65,20 @@ export interface PendingRegistration {
   readonly sentAfter: Date
 }
 
-/** Registers a new person through the API without verifying the address. */
-export async function registerUnverified(
-  api: ApiClient,
-  registration: Registration,
-): Promise<PendingRegistration> {
+let registrations = 0
+
+/**
+ * A client address of its own for each registration, as each new family registers from its own
+ * connection, so the per-address limit on emailing routes never refuses the suite's registrations.
+ */
+function registrationAddress(): string {
+  registrations += 1
+  const host = (process.pid % 500) * 256 + (registrations % 254) + 1
+  return `198.${18 + (host >> 16)}.${(host >> 8) & 255}.${host & 255}`
+}
+
+/** Registers a new person through the API, from an address of its own, without verifying it. */
+export async function registerUnverified(registration: Registration): Promise<PendingRegistration> {
   const generated = newPerson(registration.label)
   const person = registration.email ? { ...generated, email: registration.email } : generated
   const minors: Minor[] = []
@@ -77,7 +86,15 @@ export async function registerUnverified(
     minors.push(newMinor(person, 8 + index, minors))
   }
   const sentAfter = new Date()
-  await api.post('/api/auth/register', registrationOf(person, minors, !!registration.newsConsent))
+  const registrant = await ApiClient.open({ clientAddress: registrationAddress() })
+  try {
+    await registrant.post(
+      '/api/auth/register',
+      registrationOf(person, minors, !!registration.newsConsent),
+    )
+  } finally {
+    await registrant.dispose()
+  }
   return { person, minors, sentAfter }
 }
 
@@ -91,7 +108,7 @@ export async function registerAccount(
   registration: Registration,
   admin?: ApiClient,
 ): Promise<Account> {
-  const { person, minors, sentAfter } = await registerUnverified(api, registration)
+  const { person, minors, sentAfter } = await registerUnverified(registration)
   const email = await mailbox.waitFor({
     to: person.email,
     subject: SUBJECTS.verification,

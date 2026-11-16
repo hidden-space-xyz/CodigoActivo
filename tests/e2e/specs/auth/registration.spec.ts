@@ -114,11 +114,10 @@ test.describe('registration', () => {
 
   test('a broken verification link is refused and the page emails a new one', async ({
     page,
-    anonymousApi,
     mailbox,
   }) => {
     test.slow()
-    const { person, sentAfter } = await registerUnverified(anonymousApi, { label: 'relink' })
+    const { person, sentAfter } = await registerUnverified({ label: 'relink' })
     const query = { to: person.email, subject: SUBJECTS.verification }
     const first = await mailbox.waitFor({ ...query, sentAfter })
     const { userId } = accountLinkParts(linkIn(first, '/verify-account'))
