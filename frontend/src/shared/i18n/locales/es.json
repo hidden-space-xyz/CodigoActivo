@@ -488,7 +488,7 @@
         }
       },
       "consents": {
-        "lead": "Los consentimientos que se han decidido para ti y para los menores a tu cargo en los documentos de los eventos, como el de uso de imágenes. Puedes retirar los que estén dados cuando quieras. Desde los 14 años, los de un menor los decide él.",
+        "lead": "Los consentimientos que se han decidido para ti y para los menores a tu cargo en los documentos de los eventos. Puedes retirar los que estén dados cuando quieras. Desde los 14 años, los de un menor los decide él.",
         "error": "No se pudieron cargar los consentimientos.",
         "empty": "No hay consentimientos decididos para ti ni para los menores a tu cargo.",
         "decided": "Decidió {name} el {date}",
@@ -1065,7 +1065,7 @@
           "termsConsentOptional": "Consentimiento: nunca obligatorio",
           "hints": {
             "earlySignupStart": "Si la indicas, socios y patrocinadores podrán inscribirse desde esa fecha, antes que el resto.",
-            "termsDocuments": "Al inscribirse, o inscribir a los menores a su cargo, en la primera actividad del evento, se decide sobre estos documentos por cada persona. Las condiciones se añaden como obligatorias; desmarca las que sean opcionales. Los consentimientos, como el de uso de imágenes, nunca son obligatorios. El orden de la lista es el orden en que se mostrarán. Se gestionan en Catálogos."
+            "termsDocuments": "Al inscribirse, o inscribir a los menores a su cargo, en la primera actividad del evento, se decide sobre estos documentos por cada persona. Las condiciones se añaden como obligatorias; desmarca las que sean opcionales. Los consentimientos nunca son obligatorios. El orden de la lista es el orden en que se mostrarán. Se gestionan en Catálogos."
           },
           "problems": {
             "categoriesRequired": "Selecciona al menos una categoría.",
@@ -1149,7 +1149,7 @@
             "kind": "Tipo",
             "kindHints": {
               "Conditions": "Normas o condiciones para participar. Las acepta el titular de la cuenta por cada persona que inscribe, y un evento puede exigirlas.",
-              "Consent": "Un consentimiento, como el de uso de imágenes. Nunca es obligatorio: cada persona lo da o lo niega sin que afecte a su inscripción, y desde los 14 años lo decide el propio menor."
+              "Consent": "Un consentimiento nunca es obligatorio: cada persona lo da o lo niega sin que afecte a su inscripción, y desde los 14 años lo decide el propio menor."
             },
             "editHeader": "Editar términos y condiciones",
             "newHeader": "Nuevos términos y condiciones",
