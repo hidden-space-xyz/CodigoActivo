@@ -7,6 +7,7 @@ import { renderApp, t } from '../../../../support/render'
 import { http, HttpResponse, server } from '../../../../support/server'
 import {
   buildCertificateResponse,
+  buildConsentResponse,
   buildDependentResponse,
   buildHistoryResponse,
   buildUserResponse,
@@ -29,7 +30,9 @@ function serveAccount() {
     http.get('/api/me/certificates', () =>
       HttpResponse.json([buildCertificateResponse({ code: 'CA-2025-0042' })]),
     ),
-    http.get('/api/me/consents', () => HttpResponse.json([])),
+    http.get('/api/me/consents', () =>
+      HttpResponse.json([buildConsentResponse({ documentName: 'Uso de imágenes' })]),
+    ),
   )
 }
 
@@ -67,8 +70,8 @@ describe('account page', () => {
     await vi.waitFor(() => expect(wrapper.text()).toContain('Byron Lovelace'))
 
     expect(activePanelText()).toContain(t('pages.account.profile.lead'))
-    await vi.waitFor(() => expect(activePanelText()).toContain(t('pages.account.consents.empty')))
     expect(wrapper.text()).not.toContain('Campus de verano')
+    expect(wrapper.text()).not.toContain(t('pages.account.consents.lead'))
   })
 
   it('switches tabs and keeps the selection in the address', async () => {
@@ -82,6 +85,10 @@ describe('account page', () => {
     await selectTab(t('pages.account.tabs.certificates'))
     await vi.waitFor(() => expect(router.currentRoute.value.query).toEqual({ tab: 'certificates' }))
     await vi.waitFor(() => expect(activePanelText()).toContain('CA-2025-0042'))
+
+    await selectTab(t('pages.account.tabs.consents'))
+    await vi.waitFor(() => expect(router.currentRoute.value.query).toEqual({ tab: 'consents' }))
+    await vi.waitFor(() => expect(activePanelText()).toContain('Uso de imágenes'))
 
     await selectTab(t('pages.account.tabs.profile'))
     await vi.waitFor(() => expect(router.currentRoute.value.query).toEqual({}))

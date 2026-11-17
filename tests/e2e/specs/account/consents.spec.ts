@@ -5,7 +5,7 @@ import { fullName } from '../../support/data/people'
 import { expect, test } from '../../support/fixtures/test'
 import { t } from '../../support/i18n'
 import { AccountPage } from '../../support/pages/account/account-page'
-import { ConsentsSection } from '../../support/pages/account/consents-section'
+import { ConsentsTab } from '../../support/pages/account/consents-tab'
 import { confirm, messageBox, notification } from '../../support/ui/element-plus'
 
 test.describe('consents', () => {
@@ -25,9 +25,8 @@ test.describe('consents', () => {
     const minorName = fullName(minor)
 
     const page = await pageAs(actor)
-    const account = new AccountPage(page)
-    await account.goto()
-    const consents = new ConsentsSection(account)
+    await new AccountPage(page).goto('consents')
+    const consents = new ConsentsTab(page)
     const own = consents.consent(document.name, guardianName)
     const minors = consents.consent(document.name, minorName)
     await expect(own).toContainText(t('pages.account.consents.given'))

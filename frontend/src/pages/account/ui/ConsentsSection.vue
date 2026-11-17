@@ -10,10 +10,7 @@ const { consents, entries, isWithdrawing, withdraw } = useAccountConsents()
 <template>
   <section class="acc-pane" data-testid="consents-section">
     <div class="acc-pane__head">
-      <div class="acc-pane__heading">
-        <h2 class="acc-pane__title">{{ $t('pages.account.consents.title') }}</h2>
-        <p class="acc-pane__lead">{{ $t('pages.account.consents.lead') }}</p>
-      </div>
+      <p class="acc-pane__lead">{{ $t('pages.account.consents.lead') }}</p>
     </div>
 
     <p v-if="consents.isLoading.value" class="acc-pane__state">{{ $t('common.loading') }}</p>
@@ -78,28 +75,10 @@ const { consents, entries, isWithdrawing, withdraw } = useAccountConsents()
 
 <style scoped>
 .acc-pane__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
   margin-bottom: 18px;
 }
 
-.acc-pane__heading {
-  flex: 1;
-  min-width: 240px;
-}
-
-.acc-pane__title {
-  font-family: var(--ca-font-display);
-  font-weight: 700;
-  font-size: 17px;
-  color: var(--ca-text-bright);
-}
-
 .acc-pane__lead {
-  margin-top: 5px;
   font-size: 14px;
   line-height: 1.5;
   color: var(--ca-text-muted);

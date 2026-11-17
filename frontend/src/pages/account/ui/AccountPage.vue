@@ -14,7 +14,7 @@ import PersonalDataSection from './PersonalDataSection.vue'
 import ProfileSection from './ProfileSection.vue'
 import TwoFactorSection from './TwoFactorSection.vue'
 
-const TABS = ['profile', 'history', 'certificates'] as const
+const TABS = ['profile', 'history', 'certificates', 'consents'] as const
 type AccountTab = (typeof TABS)[number]
 
 const DEFAULT_TAB: AccountTab = 'profile'
@@ -62,8 +62,6 @@ const tab = computed<AccountTab>({
               <hr class="account-divider" />
               <MinorsSection />
               <hr class="account-divider" />
-              <ConsentsSection />
-              <hr class="account-divider" />
               <PersonalDataSection />
               <hr class="account-divider" />
               <DeleteAccountSection />
@@ -87,6 +85,16 @@ const tab = computed<AccountTab>({
                 </span>
               </template>
               <CertificatesSection />
+            </el-tab-pane>
+
+            <el-tab-pane name="consents" lazy>
+              <template #label>
+                <span class="account-tabs__label" data-testid="account-tab-consents">
+                  <AppIcon class="account-tabs__icon" name="check-square" />
+                  <span>{{ $t('pages.account.tabs.consents') }}</span>
+                </span>
+              </template>
+              <ConsentsSection />
             </el-tab-pane>
           </el-tabs>
         </div>
@@ -155,6 +163,16 @@ const tab = computed<AccountTab>({
 
   .account-tabs__icon {
     display: none;
+  }
+
+  .account-tabs :deep(.el-tabs__nav) {
+    min-width: 100%;
+    justify-content: space-between;
+  }
+
+  .account-tabs :deep(.el-tabs__item) {
+    padding: 0 4px;
+    font-size: 14px;
   }
 }
 </style>

@@ -3,11 +3,10 @@ import { expect, type Locator, type Page } from '@playwright/test'
 import { saveDownload } from '../../ui/download'
 
 /** A tab of the account page, by the name it has in `?tab=`. */
-export type AccountTab = 'profile' | 'history' | 'certificates'
+export type AccountTab = 'profile' | 'history' | 'certificates' | 'consents'
 
 /** A section of the profile tab. */
-export type AccountSection =
-  'two-factor' | 'minors' | 'consents' | 'personal-data' | 'delete-account'
+export type AccountSection = 'two-factor' | 'minors' | 'personal-data' | 'delete-account'
 
 /** A term of the profile data list. */
 export type ProfileField =
@@ -38,6 +37,7 @@ const TAB_QUERIES: Readonly<Record<AccountTab, string>> = {
   profile: '',
   history: '?tab=history',
   certificates: '?tab=certificates',
+  consents: '?tab=consents',
 }
 
 /**

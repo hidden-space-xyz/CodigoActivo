@@ -452,11 +452,12 @@
     },
     "account": {
       "title": "Mi área de usuario",
-      "intro": "Gestiona tus datos, tu contraseña, los menores a tu cargo, tu historial de eventos y tus diplomas.",
+      "intro": "Gestiona tus datos, tu contraseña, los menores a tu cargo, tu historial de eventos, tus diplomas y tus consentimientos.",
       "tabs": {
         "profile": "Perfil",
         "history": "Historial",
-        "certificates": "Diplomas"
+        "certificates": "Diplomas",
+        "consents": "Consentimientos"
       },
       "certificates": {
         "lead": "Al terminar un evento se emite un diploma por cada persona de tu unidad familiar cuya asistencia quedó confirmada. Ábrelo para verlo en grande o descárgalo en PNG o PDF.",
@@ -487,7 +488,6 @@
         }
       },
       "consents": {
-        "title": "Consentimientos",
         "lead": "Los consentimientos que se han decidido para ti y para los menores a tu cargo en los documentos de los eventos, como el de uso de imágenes. Puedes retirar los que estén dados cuando quieras. Desde los 14 años, los de un menor los decide él.",
         "error": "No se pudieron cargar los consentimientos.",
         "empty": "No hay consentimientos decididos para ti ni para los menores a tu cargo.",
