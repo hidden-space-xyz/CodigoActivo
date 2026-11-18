@@ -32,6 +32,7 @@ services:
       - "127.0.0.1:5150:8080"
     read_only: false
     cap_add:
+      - DAC_OVERRIDE
       - SYS_PTRACE
     security_opt:
       - seccomp:unconfined

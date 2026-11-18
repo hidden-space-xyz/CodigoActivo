@@ -369,7 +369,8 @@ Inside the repository, `docker compose up --build` merges `docker-compose.overri
 - fixes `APP_BASE_URL`, `APP_TIMEZONE`, `DEMO_MODE=true` and every `LEGAL_*` value, so `.env` only needs
   `BOOTSTRAP_ADMIN_EMAIL`;
 - exposes PostgreSQL on port `5432` and makes the backend network non-internal;
-- disables the API read-only root filesystem in favor of debugger-oriented privileges.
+- disables the API read-only root filesystem in favor of debugger-oriented privileges, including
+  `DAC_OVERRIDE` so the root SDK container of Visual Studio's fast mode can reach the key ring in `/home/app`.
 
 The overlay publishes those ports on `127.0.0.1` only, since the Mailpit inbox shows every login code and
 reset link; `web` keeps the base mapping on all IPv4 interfaces. Visual Studio uses the same Compose project
