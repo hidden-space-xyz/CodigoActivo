@@ -238,7 +238,7 @@ function eventActions(event: EventListing): RowAction[] {
         </template>
       </el-table-column>
 
-      <el-table-column :label="$t('common.actions')" width="100" align="right" fixed="right">
+      <el-table-column :label="$t('common.actions')" width="124" align="right" fixed="right">
         <template #default="{ row }">
           <RowActions
             :actions="eventActions(row)"

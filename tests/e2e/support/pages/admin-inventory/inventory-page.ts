@@ -127,8 +127,8 @@ export class InventoryPage {
     return this.table.row(name).getByTestId('admin-inventory-total')
   }
 
-  /** Follows the link of the listed category `name` to its rows. */
+  /** Opens the rows of the listed category `name` through its row action. */
   async openCategory(name: string): Promise<void> {
-    await this.table.row(name).getByTestId('admin-inventory-category-link').click()
+    await this.table.rowAction(name, 'open')
   }
 }

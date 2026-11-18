@@ -20,6 +20,7 @@ const { visible, editing, loading, openCreate, openEdit } = dialog
 
 function categoryActions(category: InventoryCategorySummary): RowAction[] {
   return [
+    editAction(() => void openEdit(category), loading.value),
     {
       key: 'open',
       label: t('pages.admin.inventory.open'),
@@ -29,7 +30,6 @@ function categoryActions(category: InventoryCategorySummary): RowAction[] {
         void router.push({ name: 'admin-inventory-category', params: { categoryId: category.id } })
       },
     },
-    editAction(() => void openEdit(category), loading.value),
     deleteAction(() => confirmRemove(category)),
   ]
 }
@@ -66,13 +66,7 @@ function categoryActions(category: InventoryCategorySummary): RowAction[] {
         :fixed="table.isNarrow.value ? false : 'left'"
       >
         <template #default="{ row }">
-          <RouterLink
-            class="category-link"
-            data-testid="admin-inventory-category-link"
-            :to="{ name: 'admin-inventory-category', params: { categoryId: row.id } }"
-          >
-            <TablePrimaryCell :title="row.name" />
-          </RouterLink>
+          <TablePrimaryCell :title="row.name" />
         </template>
       </el-table-column>
       <el-table-column
@@ -95,7 +89,7 @@ function categoryActions(category: InventoryCategorySummary): RowAction[] {
           <span data-testid="admin-inventory-total">{{ formatNumber(row.total) }}</span>
         </template>
       </el-table-column>
-      <el-table-column :label="$t('common.actions')" width="100" align="right" fixed="right">
+      <el-table-column :label="$t('common.actions')" width="124" align="right" fixed="right">
         <template #default="{ row }">
           <RowActions
             :actions="categoryActions(row)"
@@ -113,15 +107,3 @@ function categoryActions(category: InventoryCategorySummary): RowAction[] {
     />
   </div>
 </template>
-
-<style scoped>
-.category-link {
-  display: block;
-  color: inherit;
-  text-decoration: none;
-}
-
-.category-link:hover {
-  color: var(--ca-azure-ink);
-}
-</style>

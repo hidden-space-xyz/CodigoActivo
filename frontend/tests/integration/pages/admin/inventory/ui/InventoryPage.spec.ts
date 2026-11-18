@@ -95,13 +95,12 @@ describe('admin inventory page', () => {
       'Camisetas',
       'Portátiles',
     ])
-    expect(rows[0]?.find('a').attributes('href')).toBe('/admin/inventory/category-1')
     expect(
       wrapper.findAll('[data-testid="admin-inventory-total"]').map((cell) => cell.text()),
     ).toEqual(['42', '1500'])
     expect(
       rows[0]?.findAll('.row-actions button').map((button) => button.attributes('aria-label')),
-    ).toEqual([t('pages.admin.inventory.open'), t('common.edit'), t('common.delete')])
+    ).toEqual([t('common.edit'), t('pages.admin.inventory.open'), t('common.delete')])
   })
 
   it('renders through the application router for admins', async () => {
