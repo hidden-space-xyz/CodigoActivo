@@ -248,19 +248,19 @@ development overlay does lock the mode.
 
 Demo mode seeds realistic content and invented accounts of every type and staff role, which
 [cannot sign in](SECURITY.md#demo-mode), under `demo.codigoactivo.es`, so every page has something to show:
-events in every stage with signups, terms decisions and ratings, and earlier versions of the conditions and the
-legal policies. The initial administrator gets signups of their own and invented dependents. One registration
-waits for its verification: the purge erases it after a day and each start brings it back. Whoever
-demonstrates the site signs in as the initial administrator, the only account that can; its password reset and
-login codes arrive at `BOOTSTRAP_ADMIN_EMAIL` through the configured SMTP server. Seeding generates its sample
-images locally as color gradients, so it needs no network. A start stops if demo seeding, logs and data
-history included, has not finished within five minutes.
+events in every stage with signups, terms decisions and ratings, an inventory that uses every column type, and
+earlier versions of the conditions and the legal policies. The initial administrator gets signups of their own
+and invented dependents. One registration waits for its verification: the purge erases it after a day and each
+start brings it back. Whoever demonstrates the site signs in as the initial administrator, the only account
+that can; its password reset and login codes arrive at `BOOTSTRAP_ADMIN_EMAIL` through the configured SMTP
+server. Seeding generates its sample images locally as color gradients, so it needs no network. A start stops
+if demo seeding, logs and data history included, has not finished within five minutes.
 
 Demo mode also fills the diagnostic and audit logs with an invented three-week history that follows the demo
-data: logins, signups, published content, a password attack, email outages and slow requests. A later start
-writes a new one once the audit log holds no entry of a demo account younger than the diagnostic retention;
-entries already past the retention of their log are left out. A failure to write it is logged as a warning
-and does not stop the start.
+data: logins, signups, published content, inventory changes, a password attack, email outages and slow
+requests. A later start writes a new one once the audit log holds no entry of a demo account younger than
+the diagnostic retention; entries already past the retention of their log are left out. A failure to write it
+is logged as a warning and does not stop the start.
 
 Finally, demo mode replays a year of changes and erasures of personal data through the data history, so
 «Archivo legal» has something to consult: demo accounts that replaced their email and phone, withdrew their

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using AwesomeAssertions;
 using CodigoActivo.Application.Common.Validation;
@@ -6,6 +7,7 @@ using CodigoActivo.Domain.Activities;
 using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Inventory;
 using CodigoActivo.Domain.Legal;
 using CodigoActivo.Domain.Resources;
 using CodigoActivo.Domain.TermsDecisions;
@@ -88,6 +90,11 @@ public sealed class DemoDataSeederTests
         return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(value, clock.TimeZone).DateTime);
     }
 
+    private static bool HasQuantityColumn(InventoryCategory category)
+    {
+        return category.Columns.Any(column => column.Type is InventoryColumnType.Quantity);
+    }
+
     [Fact]
     public void BuildGraphDefaultProducesExpectedCounts()
     {
@@ -102,7 +109,62 @@ public sealed class DemoDataSeederTests
         graph.CategoryTypes.Should().HaveCount(8);
         graph.TermsDocuments.Should().HaveCount(2);
         graph.LegalPolicies.Should().HaveCount(2);
+        graph.InventoryCategories.Should().HaveCount(7);
+        graph.InventoryCategories.Sum(category => category.Entries.Count).Should().Be(66);
         graph.Files.Should().HaveCount(188);
+    }
+
+    [Fact]
+    public void BuildGraphDefaultInventoryUsesEveryColumnType()
+    {
+        graph
+            .InventoryCategories.SelectMany(category => category.Columns)
+            .Select(column => column.Type)
+            .Distinct()
+            .Should()
+            .BeEquivalentTo(Enum.GetValues<InventoryColumnType>());
+    }
+
+    [Fact]
+    public void BuildGraphDefaultInventoryTotalsAddUpQuantitiesOrCountEntries()
+    {
+        var withEntries = graph.InventoryCategories.Where(category => category.Entries.Count > 0);
+
+        withEntries.Should().Contain(category => !HasQuantityColumn(category));
+        withEntries.Should().Contain(category => HasQuantityColumn(category));
+        withEntries
+            .SelectMany(category => category.Entries)
+            .Should()
+            .Contain(entry => entry.Quantity == 0);
+    }
+
+    [Fact]
+    public void BuildGraphDefaultOneInventoryCategoryWaitsForItsFirstEntry()
+    {
+        graph
+            .InventoryCategories.Should()
+            .ContainSingle(category => category.Entries.Count == 0)
+            .Which.Columns.Should()
+            .NotBeEmpty();
+    }
+
+    [Fact]
+    public void BuildGraphDefaultInventoryDatesFallBeforeAndAfterTheDayOfSeeding()
+    {
+        var dates = graph
+            .InventoryCategories.SelectMany(category =>
+                category
+                    .Columns.Where(column => column.Type is InventoryColumnType.Date)
+                    .SelectMany(column =>
+                        category.Entries.Select(entry => entry.Values.Of(column.Id))
+                    )
+            )
+            .OfType<string>()
+            .Select(value => DateOnly.ParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture))
+            .ToList();
+
+        dates.Should().Contain(day => day < clock.Today);
+        dates.Should().Contain(day => day > clock.Today);
     }
 
     [Fact]

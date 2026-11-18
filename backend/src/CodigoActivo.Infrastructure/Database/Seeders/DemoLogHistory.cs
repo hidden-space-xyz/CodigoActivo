@@ -121,6 +121,7 @@ internal sealed class DemoLogHistory : IDisposable
         history.AddProfileUpdate(adults[1 % adults.Count]);
         history.AddPersonalDataCopy(adults[1 % adults.Count]);
         history.AddEventManagement();
+        history.AddInventoryChanges();
         history.AddBlockedDataConsultations();
         history.AddUserTypeChange(adults);
         history.AddStaffRoleChange(adults);
@@ -447,6 +448,104 @@ internal sealed class DemoLogHistory : IDisposable
         var caller = SignedIn(Administrator, at);
         Record(at, caller, AuditAction.GetEventRoster, EventEntity(target.Id));
         Record(at.AddMinutes(1), caller, AuditAction.GetEventBadges, EventEntity(target.Id));
+    }
+
+    private void AddInventoryChanges()
+    {
+        if (facts.Inventory.FirstOrDefault(category => category.Entries.Count is 0) is { } empty)
+        {
+            var at = Local(Today.AddDays(-17), 18, 12);
+            Record(
+                at,
+                SignedIn(Administrator, at),
+                AuditAction.CreateInventoryCategory,
+                InventoryCategoryEntity(empty.Id)
+            );
+        }
+
+        var stocked = facts
+            .Inventory.Where(category => category.Entries.Count > 0)
+            .OrderByDescending(category => category.Entries.Count)
+            .ThenBy(category => category.Id)
+            .ToList();
+        if (stocked.Count is 0)
+        {
+            return;
+        }
+
+        AddInventoryEntries(stocked[0], Local(Today.AddDays(-16), 17, 5));
+        AddInventoryRedefinition(stocked[1 % stocked.Count], Local(Today.AddDays(-12), 18, 40));
+        AddInventoryCount(stocked[2 % stocked.Count], Local(Today.AddDays(-9), 19, 15), 4);
+        AddInventoryRemoval(stocked[3 % stocked.Count], Local(Today.AddDays(-5), 12, 20));
+        AddInventoryCount(stocked[4 % stocked.Count], Local(Today.AddDays(-1), 12, 47), 1);
+    }
+
+    private void AddInventoryEntries(DemoLogInventoryCategory category, DateTimeOffset start)
+    {
+        var caller = SignedIn(Administrator, start);
+        var added = category.Entries.TakeLast(3).ToList();
+        for (var index = 0; index < added.Count; index++)
+        {
+            Record(
+                start.AddSeconds(index * 75),
+                caller,
+                AuditAction.AddInventoryEntry,
+                new AuditEntity(AuditEntityType.InventoryEntry, added[index]),
+                related: [InventoryCategoryEntity(category.Id)]
+            );
+        }
+    }
+
+    private void AddInventoryRedefinition(DemoLogInventoryCategory category, DateTimeOffset at)
+    {
+        Record(
+            at,
+            SignedIn(Administrator, at),
+            AuditAction.UpdateInventoryCategory,
+            InventoryCategoryEntity(category.Id),
+            related:
+            [
+                .. category.Columns.SelectMany(column =>
+                    column
+                        .Options.Select(option => new AuditEntity(
+                            AuditEntityType.InventoryColumnOption,
+                            option
+                        ))
+                        .Prepend(new AuditEntity(AuditEntityType.InventoryColumn, column.Id))
+                ),
+            ]
+        );
+    }
+
+    private void AddInventoryCount(
+        DemoLogInventoryCategory category,
+        DateTimeOffset start,
+        int count
+    )
+    {
+        var caller = SignedIn(Administrator, start);
+        var counted = category.Entries.Take(count).ToList();
+        for (var index = 0; index < counted.Count; index++)
+        {
+            Record(
+                start.AddSeconds(index * 40),
+                caller,
+                AuditAction.UpdateInventoryEntry,
+                InventoryCategoryEntity(category.Id),
+                related: [new(AuditEntityType.InventoryEntry, counted[index])]
+            );
+        }
+    }
+
+    private void AddInventoryRemoval(DemoLogInventoryCategory category, DateTimeOffset at)
+    {
+        Record(
+            at,
+            SignedIn(Administrator, at),
+            AuditAction.DeleteInventoryEntry,
+            InventoryCategoryEntity(category.Id),
+            related: [new(AuditEntityType.InventoryEntry, Guid.NewGuid())]
+        );
     }
 
     private void AddBlockedDataConsultations()
@@ -868,6 +967,11 @@ internal sealed class DemoLogHistory : IDisposable
         return new AuditEntity(AuditEntityType.Activity, id);
     }
 
+    private static AuditEntity InventoryCategoryEntity(Guid id)
+    {
+        return new AuditEntity(AuditEntityType.InventoryCategory, id);
+    }
+
     private sealed record Caller(AuditActorType Type, UserId? Id, IPAddress? Address)
     {
         public static Caller Scheduled { get; } = new(AuditActorType.System, null, null);
@@ -921,6 +1025,7 @@ internal sealed class DemoLogHistory : IDisposable
 /// <param name="News">News items the demo accounts published.</param>
 /// <param name="Consultations">Consultations of the blocked data.</param>
 /// <param name="Holds">Holds on the blocked data.</param>
+/// <param name="Inventory">Inventory categories.</param>
 internal sealed record DemoLogFacts(
     IReadOnlyList<DemoLogUser> Users,
     IReadOnlyList<DemoLogSignup> Signups,
@@ -928,7 +1033,8 @@ internal sealed record DemoLogFacts(
     IReadOnlyList<DemoLogActivity> Activities,
     IReadOnlyList<DemoLogNewsItem> News,
     IReadOnlyList<DemoLogConsultation> Consultations,
-    IReadOnlyList<DemoLogHold> Holds
+    IReadOnlyList<DemoLogHold> Holds,
+    IReadOnlyList<DemoLogInventoryCategory> Inventory
 );
 
 /// <summary>
@@ -1022,6 +1128,25 @@ internal sealed record DemoLogConsultation(Guid Id, DateTimeOffset OpenedAt, boo
 /// <param name="PlacedAt">When it was placed.</param>
 /// <param name="LiftedAt">When it was lifted, if it was.</param>
 internal sealed record DemoLogHold(Guid Id, DateTimeOffset PlacedAt, DateTimeOffset? LiftedAt);
+
+/// <summary>
+/// Describes an inventory category.
+/// </summary>
+/// <param name="Id">Category.</param>
+/// <param name="Columns">Its columns, in order.</param>
+/// <param name="Entries">Its entries.</param>
+internal sealed record DemoLogInventoryCategory(
+    Guid Id,
+    IReadOnlyList<DemoLogInventoryColumn> Columns,
+    IReadOnlyList<Guid> Entries
+);
+
+/// <summary>
+/// Describes a column of an inventory category.
+/// </summary>
+/// <param name="Id">Column.</param>
+/// <param name="Options">Its options, in order; none unless it is a list.</param>
+internal sealed record DemoLogInventoryColumn(Guid Id, IReadOnlyList<Guid> Options);
 
 /// <summary>
 /// Holds the events of an invented log history, oldest first.

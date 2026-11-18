@@ -158,6 +158,24 @@ public sealed class DemoLogSeeder(
         var holds = await context
             .BlockedDataHolds.Select(hold => new DemoLogHold(hold.Id, hold.PlacedAt, hold.LiftedAt))
             .ToListAsync(ct);
+        var inventory = await context
+            .InventoryCategories.AsSplitQuery()
+            .OrderBy(category => category.Id)
+            .Select(category => new DemoLogInventoryCategory(
+                category.Id,
+                category
+                    .Columns.OrderBy(column => column.Position)
+                    .Select(column => new DemoLogInventoryColumn(
+                        column.Id,
+                        column
+                            .Options.OrderBy(option => option.Position)
+                            .Select(option => option.Id)
+                            .ToList()
+                    ))
+                    .ToList(),
+                category.Entries.OrderBy(entry => entry.Id).Select(entry => entry.Id).ToList()
+            ))
+            .ToListAsync(ct);
 
         return new DemoLogFacts(
             [
@@ -182,7 +200,8 @@ public sealed class DemoLogSeeder(
             activities,
             news,
             consultations,
-            holds
+            holds,
+            inventory
         );
     }
 }

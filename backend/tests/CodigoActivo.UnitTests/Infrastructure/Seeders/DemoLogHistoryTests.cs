@@ -1,6 +1,11 @@
+using System.Linq.Expressions;
 using System.Net;
 using AwesomeAssertions;
+using CodigoActivo.Application.Abstractions.Auditing;
+using CodigoActivo.Application.Common.Messaging;
+using CodigoActivo.Application.Inventory.Commands;
 using CodigoActivo.Domain.Activities;
+using CodigoActivo.Domain.Inventory;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Seeders;
 using CodigoActivo.Infrastructure.Logs;
@@ -34,6 +39,21 @@ public sealed class DemoLogHistoryTests
     private static readonly Guid OldConsultation = new("c0000000-0000-0000-0000-000000000003");
     private static readonly Guid RecentHold = new("d0000000-0000-0000-0000-000000000001");
     private static readonly Guid LiftedHold = new("d0000000-0000-0000-0000-000000000002");
+    private static readonly Guid Laptops = new("90000000-0000-0000-0000-000000000001");
+    private static readonly Guid Prizes = new("90000000-0000-0000-0000-000000000002");
+    private static readonly Guid StateColumn = new("91000000-0000-0000-0000-000000000001");
+    private static readonly Guid NotesColumn = new("91000000-0000-0000-0000-000000000002");
+    private static readonly Guid WorkingOption = new("92000000-0000-0000-0000-000000000001");
+    private static readonly Guid BrokenOption = new("92000000-0000-0000-0000-000000000002");
+
+    private static readonly Dictionary<InventoryColumnId, string> NoValues = [];
+
+    private static readonly Guid[] LaptopEntries =
+    [
+        .. Enumerable
+            .Range(1, 5)
+            .Select(index => new Guid($"93000000-0000-0000-0000-00000000000{index}")),
+    ];
 
     private static readonly IPNetwork[] DocumentationNetworks =
     [
@@ -102,6 +122,14 @@ public sealed class DemoLogHistoryTests
             [
                 new(LiftedHold, Now.AddDays(-50), Now.AddDays(-3)),
                 new(RecentHold, Now.AddDays(-5), null),
+            ],
+            [
+                new(
+                    Laptops,
+                    [new(StateColumn, [WorkingOption, BrokenOption]), new(NotesColumn, [])],
+                    LaptopEntries
+                ),
+                new(Prizes, [new(NotesColumn, [])], []),
             ]
         );
 
@@ -425,6 +453,106 @@ public sealed class DemoLogHistoryTests
     }
 
     [Fact]
+    public void BuildInventoryChangesAreSuccessesOfTheAdministrator()
+    {
+        var changes = Audit()
+            .Where(entry => entry.Action.Contains("Inventory", StringComparison.Ordinal))
+            .ToList();
+
+        changes
+            .Select(entry => entry.Action)
+            .Distinct()
+            .Should()
+            .BeEquivalentTo(
+                "CreateInventoryCategory",
+                "AddInventoryEntry",
+                "UpdateInventoryCategory",
+                "UpdateInventoryEntry",
+                "DeleteInventoryEntry"
+            );
+        changes
+            .Should()
+            .OnlyContain(entry =>
+                entry.ActorId == InitialAdministrator.Id.Value && entry.Outcome == "Succeeded"
+            );
+        changes
+            .Should()
+            .ContainSingle(entry => entry.Action == "CreateInventoryCategory")
+            .Which.EntityId.Should()
+            .Be(Prizes);
+    }
+
+    [Fact]
+    public void BuildInventoryChangesNameWhatTheirCommandsName()
+    {
+        var changes = Audit()
+            .Where(entry => entry.Action.Contains("Inventory", StringComparison.Ordinal))
+            .ToList();
+        var category = InventoryCategoryId.From(Laptops);
+        var added = InventoryEntryId.From(LaptopEntries[^1]);
+        var counted = InventoryEntryId.From(LaptopEntries[0]);
+        var redefinition = new UpdateInventoryCategoryCommand(
+            category,
+            "Portátiles",
+            [
+                new(
+                    InventoryColumnId.From(StateColumn),
+                    "Estado",
+                    InventoryColumnType.List,
+                    true,
+                    [
+                        new(InventoryColumnOptionId.From(WorkingOption), "Operativo", "#22C55E"),
+                        new(InventoryColumnOptionId.From(BrokenOption), "Averiado", "#EF4444"),
+                    ]
+                ),
+                new(
+                    InventoryColumnId.From(NotesColumn),
+                    "Notas",
+                    InventoryColumnType.LongText,
+                    false,
+                    []
+                ),
+            ]
+        );
+
+        var additions = changes.Where(entry => entry.Action == "AddInventoryEntry");
+        var redefinitions = changes.Where(entry => entry.Action == "UpdateInventoryCategory");
+        var counts = changes.Where(entry => entry.Action == "UpdateInventoryEntry");
+        var removal = changes.Single(entry => entry.Action == "DeleteInventoryEntry");
+
+        additions
+            .Should()
+            .Contain(Names(new AddInventoryEntryCommand(category, null, NoValues), added));
+        redefinitions.Should().ContainSingle().And.Contain(Names(redefinition));
+        counts
+            .Should()
+            .Contain(Names(new UpdateInventoryEntryCommand(category, counted, null, NoValues)));
+        removal.EntityId.Should().Be(Laptops);
+        removal.Related.Should().Contain("\"type\":\"InventoryEntry\"");
+        LaptopEntries.Should().NotContain(entry => removal.Related!.Contains(entry.ToString()));
+    }
+
+    private static Expression<Func<AuditLogEntry, bool>> Names(
+        object command,
+        InventoryEntryId? created = null
+    )
+    {
+        var named = MessageAudit.EntitiesOf(command);
+        var entity = created is { } entry
+            ? new AuditEntity(AuditEntityType.InventoryEntry, entry.Value)
+            : named[0];
+        var related = Related([
+            .. named
+                .Where(candidate => candidate != entity)
+                .Select(candidate => (candidate.Type.ToString(), candidate.Id)),
+        ]);
+        return change =>
+            change.EntityType == entity.Type.ToString()
+            && change.EntityId == entity.Id
+            && change.Related == related;
+    }
+
+    [Fact]
     public void BuildHoldChangesAreAuditedOnlyInsideTheHistory()
     {
         var audit = Audit();
@@ -442,7 +570,7 @@ public sealed class DemoLogHistoryTests
     [Fact]
     public void BuildWithoutDemoAdultsHasNoHistory()
     {
-        var batch = Build(new DemoLogFacts([], [], [], [], [], [], []));
+        var batch = Build(new DemoLogFacts([], [], [], [], [], [], [], []));
 
         batch.Audit.Should().BeEmpty();
         batch.Diagnostics.Should().BeEmpty();

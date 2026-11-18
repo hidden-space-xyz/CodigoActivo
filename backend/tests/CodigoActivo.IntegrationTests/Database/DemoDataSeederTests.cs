@@ -56,6 +56,14 @@ public sealed class DemoDataSeederTests(CodigoActivoWebAppFactory factory)
     }
 
     [Fact]
+    public async Task AddAsyncStoresTheInventory()
+    {
+        await AddGraphAsync();
+
+        (await Factory.QueryAsync(db => db.InventoryEntries.CountAsync(Ct))).Should().BePositive();
+    }
+
+    [Fact]
     public async Task SeedAsyncKeepsOneRegistrationWaitingForItsVerification()
     {
         await AddGraphAsync();

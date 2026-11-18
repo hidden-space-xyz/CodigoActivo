@@ -3,6 +3,7 @@ using CodigoActivo.Application.Abstractions.Time;
 using CodigoActivo.Application.Accounts.Passwords;
 using CodigoActivo.Application.Accounts.SecondFactor;
 using CodigoActivo.Composition;
+using CodigoActivo.Domain.Inventory;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.Infrastructure.Database.Context;
 using CodigoActivo.Infrastructure.Database.Seeders;
@@ -90,6 +91,51 @@ public sealed class DemoLogSeederTests(CodigoActivoWebAppFactory factory)
         (await LogTables.PartitionsAsync(Factory.Database, LogTable.Audit))
             .Should()
             .Contain(LogPartitions.NameOf(LogTable.Audit, Factory.Clock.Today.AddDays(-12)));
+    }
+
+    [Fact]
+    public async Task SeedAsyncFollowsTheInventory()
+    {
+        await SeedDemoAdultsAsync();
+        var category = InventoryCategory
+            .Create(
+                "Portátiles",
+                [
+                    new(
+                        null,
+                        "Estado",
+                        InventoryColumnType.List,
+                        true,
+                        [new(null, "Operativo", "#22C55E")]
+                    ),
+                ]
+            )
+            .Value;
+        var column = category.Columns.Single();
+        var option = column.Options.Single();
+        category
+            .AddEntry(
+                null,
+                new Dictionary<InventoryColumnId, string> { [column.Id] = $"{option.Id}" }
+            )
+            .IsSuccess.Should()
+            .BeTrue();
+        await Factory.SeedAsync(db =>
+        {
+            db.InventoryCategories.Add(category);
+            return Task.CompletedTask;
+        });
+
+        await SeedHistoryAsync();
+
+        (await LogTables.AuditEntriesAsync(Factory.Database))
+            .Should()
+            .Contain(entry =>
+                entry.Action == "UpdateInventoryCategory"
+                && entry.EntityId == category.Id.Value
+                && entry.Related!.Contains($"{column.Id}")
+                && entry.Related.Contains($"{option.Id}")
+            );
     }
 
     [Fact]

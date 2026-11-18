@@ -10,6 +10,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.EventCategories;
 using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.Files;
+using CodigoActivo.Domain.Inventory;
 using CodigoActivo.Domain.Legal;
 using CodigoActivo.Domain.News;
 using CodigoActivo.Domain.Partners;
@@ -26,9 +27,10 @@ namespace CodigoActivo.Infrastructure.Database.Seeders;
 /// Creates the invented content of demo mode, so every page has something to show: accounts of
 /// every type and staff role with their children, a registration waiting for its verification,
 /// events in every stage with activities, signups, terms decisions and ratings, news, resources,
-/// partners, and terms documents and legal policies with an earlier version, illustrated with
-/// images generated locally by <see cref="DemoImageGenerator"/>, so seeding needs no network. The
-/// initial administrator gets signups of their own.
+/// partners, an inventory with every column type, and terms documents and legal policies with an
+/// earlier version, illustrated with images generated locally by
+/// <see cref="DemoImageGenerator"/>, so seeding needs no network. The initial administrator gets
+/// signups of their own.
 /// </summary>
 /// <param name="context">Database context used for persistence.</param>
 /// <param name="storage">Storage the encoded variants of the demo images are written to.</param>
@@ -238,6 +240,7 @@ public sealed class DemoDataSeeder(
         context.Resources.AddRange(graph.Resources);
         context.Partners.AddRange(graph.Partners);
         context.LegalPolicies.AddRange(graph.LegalPolicies);
+        context.InventoryCategories.AddRange(graph.InventoryCategories);
         await context.SaveChangesAsync(ct);
     }
 
@@ -258,6 +261,7 @@ public sealed class DemoDataSeeder(
         var resources = BuildResources(now, files);
         var partners = BuildPartners(clock, now, files);
         var legalPolicies = BuildLegalPolicies(now);
+        var inventoryCategories = BuildInventory(clock.Today);
 
         return new DemoGraph(
             users,
@@ -271,7 +275,8 @@ public sealed class DemoDataSeeder(
             news,
             resources,
             partners,
-            legalPolicies
+            legalPolicies,
+            inventoryCategories
         );
     }
 
@@ -712,6 +717,87 @@ public sealed class DemoDataSeeder(
         }
 
         return new JsonObject { ["type"] = "doc", ["content"] = content }.ToJsonString();
+    }
+
+    private static List<InventoryCategory> BuildInventory(DateOnly today)
+    {
+        return DemoInventory.Select(seed => BuildInventoryCategory(seed, today)).ToList();
+    }
+
+    private static InventoryCategory BuildInventoryCategory(
+        InventoryCategorySeed seed,
+        DateOnly today
+    )
+    {
+        var category = InventoryCategory
+            .Create(
+                seed.Name,
+                [
+                    .. seed.Columns.Select(column => new InventoryColumnDefinition(
+                        null,
+                        column.Name,
+                        column.Type,
+                        column.Required,
+                        [
+                            .. (column.Options ?? []).Select(
+                                option => new InventoryColumnOptionDefinition(
+                                    null,
+                                    option.Name,
+                                    option.Color
+                                )
+                            ),
+                        ]
+                    )),
+                ]
+            )
+            .Value;
+        var columns = category.Columns.OrderBy(column => column.Position).ToList();
+
+        foreach (var cells in seed.Entries)
+        {
+            int? quantity = null;
+            var values = new Dictionary<InventoryColumnId, string>();
+            for (var index = 0; index < columns.Count; index++)
+            {
+                var column = columns[index];
+                if (cells[index] is not { } cell)
+                {
+                    continue;
+                }
+
+                if (column.Type is InventoryColumnType.Quantity)
+                {
+                    quantity = (int)cell;
+                }
+                else
+                {
+                    values[column.Id] = WriteInventoryCell(column, cell, today);
+                }
+            }
+
+            if (category.AddEntry(quantity, values).IsFailure)
+            {
+                throw new InvalidOperationException(
+                    "A demo inventory entry does not fit its category."
+                );
+            }
+        }
+
+        return category;
+    }
+
+    private static string WriteInventoryCell(InventoryColumn column, object cell, DateOnly today)
+    {
+        return (column.Type, cell) switch
+        {
+            (InventoryColumnType.List, string option) => column
+                .Options.Single(listed => listed.Name == option)
+                .Id.ToString(),
+            (InventoryColumnType.Date, int days) => today
+                .AddDays(days)
+                .ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+            _ => Convert.ToString(cell, CultureInfo.InvariantCulture) ?? string.Empty,
+        };
     }
 
     private static DateTimeOffset SpreadCreatedAt(
@@ -1191,6 +1277,25 @@ public sealed class DemoDataSeeder(
     );
 
     private sealed record PartnerSeed(string Name, int Tier, string? Web);
+
+    /// <summary>
+    /// Inventory category with its entries. Each entry lists one cell per column, in column order:
+    /// <see langword="null"/> leaves it empty, a list cell names its option, a date cell counts the
+    /// days from the day of seeding, a quantity cell is an <see cref="int"/>, and any other cell is
+    /// written as the value it holds.
+    /// </summary>
+    private sealed record InventoryCategorySeed(
+        string Name,
+        InventoryColumnSeed[] Columns,
+        object?[][] Entries
+    );
+
+    private sealed record InventoryColumnSeed(
+        string Name,
+        InventoryColumnType Type,
+        bool Required = false,
+        (string Name, string Color)[]? Options = null
+    );
 
     private sealed record DemoSchedule(
         List<Event> Events,
@@ -2945,6 +3050,439 @@ public sealed class DemoDataSeeder(
         new("Taller 3D Filamento Verde", 3, "https://filamentoverde.example.com"),
         new("Cafetería Molienda Binaria", 3, null),
     ];
+
+    private static readonly InventoryCategorySeed[] DemoInventory =
+    [
+        new(
+            "Portátiles",
+            [
+                new("Etiqueta", InventoryColumnType.Text, true),
+                new("Modelo", InventoryColumnType.Text, true),
+                new(
+                    "Estado",
+                    InventoryColumnType.List,
+                    true,
+                    [
+                        ("Operativo", "#22C55E"),
+                        ("En reparación", "#F59E0B"),
+                        ("Averiado", "#EF4444"),
+                        ("Dado de baja", "#6B7280"),
+                    ]
+                ),
+                new(
+                    "Sistema operativo",
+                    InventoryColumnType.List,
+                    Options:
+                    [
+                        ("Ubuntu 24.04", "#F97316"),
+                        ("Windows 11", "#0EA5E9"),
+                        ("ChromeOS Flex", "#EAB308"),
+                        ("macOS", "#A855F7"),
+                    ]
+                ),
+                new("RAM (GB)", InventoryColumnType.Number),
+                new("Compra", InventoryColumnType.Date),
+                new("Cargador", InventoryColumnType.Boolean),
+                new("Observaciones", InventoryColumnType.LongText),
+            ],
+            [
+                [
+                    "PC-01",
+                    "Lenovo ThinkPad T14 Gen 3",
+                    "Operativo",
+                    "Ubuntu 24.04",
+                    16,
+                    -812,
+                    true,
+                    null,
+                ],
+                [
+                    "PC-02",
+                    "Lenovo ThinkPad T14 Gen 3",
+                    "Operativo",
+                    "Ubuntu 24.04",
+                    16,
+                    -812,
+                    true,
+                    null,
+                ],
+                [
+                    "PC-03",
+                    "Lenovo ThinkPad T14 Gen 3",
+                    "En reparación",
+                    "Ubuntu 24.04",
+                    16,
+                    -812,
+                    false,
+                    "La batería no pasa del 40 %. Está en el servicio técnico por la garantía; el cargador "
+                        + "se quedó en el armario de la sede.",
+                ],
+                [
+                    "PC-04",
+                    "Lenovo ThinkPad T14 Gen 3",
+                    "Operativo",
+                    "Windows 11",
+                    16,
+                    -812,
+                    true,
+                    null,
+                ],
+                ["PC-05", "HP ProBook 450 G9", "Operativo", "Ubuntu 24.04", 8, -604, true, null],
+                [
+                    "PC-06",
+                    "HP ProBook 450 G9",
+                    "Operativo",
+                    "Ubuntu 24.04",
+                    8,
+                    -604,
+                    true,
+                    "La tecla Ñ va algo dura.",
+                ],
+                ["PC-07", "HP ProBook 450 G9", "Operativo", "Windows 11", 8, -604, true, null],
+                [
+                    "PC-08",
+                    "HP ProBook 450 G9",
+                    "Averiado",
+                    null,
+                    8,
+                    -604,
+                    false,
+                    "No arranca: se queda en negro después del logotipo.\nPendiente del presupuesto de reparación.",
+                ],
+                [
+                    "PC-09",
+                    "Dell Latitude 5420",
+                    "Operativo",
+                    "ChromeOS Flex",
+                    8,
+                    null,
+                    true,
+                    "Donado por Ingeniería y Software Quilmara S.L.",
+                ],
+                [
+                    "PC-10",
+                    "Dell Latitude 5420",
+                    "Operativo",
+                    "ChromeOS Flex",
+                    8,
+                    null,
+                    true,
+                    "Donado por Ingeniería y Software Quilmara S.L.",
+                ],
+                [
+                    "PC-11",
+                    "Dell Latitude 5420",
+                    "En reparación",
+                    "ChromeOS Flex",
+                    4,
+                    null,
+                    true,
+                    "Donado por Ingeniería y Software Quilmara S.L.\nEsperando el módulo de memoria para "
+                        + "ampliarlo a 8 GB.",
+                ],
+                [
+                    "PC-12",
+                    "Acer Aspire 5",
+                    "Dado de baja",
+                    null,
+                    4,
+                    -2131,
+                    false,
+                    "Bisagra rota y placa base dañada. Guardamos el disco y la memoria como repuestos.",
+                ],
+                [
+                    "PC-13",
+                    "Apple MacBook Air M1",
+                    "Operativo",
+                    "macOS",
+                    8,
+                    -1009,
+                    true,
+                    "Reservado para los talleres de desarrollo de aplicaciones móviles.",
+                ],
+                ["PC-14", "Lenovo IdeaPad 3", "Operativo", "Ubuntu 24.04", 12, -287, true, null],
+                [
+                    "PC-15",
+                    "Lenovo IdeaPad 3",
+                    "Operativo",
+                    "Ubuntu 24.04",
+                    12,
+                    -287,
+                    false,
+                    "El cargador está prestado al aula de formación.",
+                ],
+                ["PC-16", "Lenovo IdeaPad 3", "Operativo", "Windows 11", 12, -287, true, null],
+            ]
+        ),
+        new(
+            "Camisetas",
+            [
+                new(
+                    "Modelo",
+                    InventoryColumnType.List,
+                    true,
+                    [("Logotipo", "#F97316"), ("Voluntariado", "#14B8A6"), ("Hackatón", "#A855F7")]
+                ),
+                new(
+                    "Talla",
+                    InventoryColumnType.List,
+                    true,
+                    [
+                        ("6-8 años", "#EC4899"),
+                        ("10-12 años", "#A855F7"),
+                        ("S", "#0EA5E9"),
+                        ("M", "#14B8A6"),
+                        ("L", "#84CC16"),
+                        ("XL", "#EAB308"),
+                        ("XXL", "#F97316"),
+                    ]
+                ),
+                new("Unidades", InventoryColumnType.Quantity, true),
+                new("Ubicación", InventoryColumnType.Text),
+            ],
+            [
+                ["Logotipo", "6-8 años", 10, "Armario de la sede, balda 1"],
+                ["Logotipo", "10-12 años", 14, "Armario de la sede, balda 1"],
+                ["Logotipo", "S", 12, "Armario de la sede, balda 2"],
+                ["Logotipo", "M", 18, "Armario de la sede, balda 2"],
+                ["Logotipo", "L", 15, "Armario de la sede, balda 2"],
+                ["Logotipo", "XL", 6, "Armario de la sede, balda 2"],
+                ["Logotipo", "XXL", 0, null],
+                ["Voluntariado", "S", 4, "Caja del voluntariado"],
+                ["Voluntariado", "M", 9, "Caja del voluntariado"],
+                ["Voluntariado", "L", 7, "Caja del voluntariado"],
+                ["Voluntariado", "XL", 3, "Caja del voluntariado"],
+                ["Hackatón", "M", 2, null],
+                ["Hackatón", "L", 5, null],
+                ["Hackatón", "XL", 1, null],
+            ]
+        ),
+        new(
+            "Kits de robótica",
+            [
+                new("Kit", InventoryColumnType.Text, true),
+                new(
+                    "Plataforma",
+                    InventoryColumnType.List,
+                    true,
+                    [
+                        ("LEGO Education", "#EAB308"),
+                        ("Makeblock", "#0EA5E9"),
+                        ("Arduino", "#14B8A6"),
+                        ("micro:bit", "#84CC16"),
+                        ("Raspberry Pi", "#EC4899"),
+                    ]
+                ),
+                new(
+                    "Edad",
+                    InventoryColumnType.List,
+                    Options:
+                    [
+                        ("De 8 a 11 años", "#84CC16"),
+                        ("De 12 a 15 años", "#0EA5E9"),
+                        ("Desde 16 años", "#A855F7"),
+                    ]
+                ),
+                new("Unidades", InventoryColumnType.Quantity, true),
+                new("Completo", InventoryColumnType.Boolean, true),
+                new("Revisado el", InventoryColumnType.Date),
+                new("Faltan", InventoryColumnType.LongText),
+            ],
+            [
+                [
+                    "LEGO Education SPIKE Prime",
+                    "LEGO Education",
+                    "De 12 a 15 años",
+                    8,
+                    false,
+                    -38,
+                    "Kit 3: faltan dos vigas de 15 módulos.\nKit 6: falta el cable del sensor de color.",
+                ],
+                [
+                    "LEGO Education SPIKE Essential",
+                    "LEGO Education",
+                    "De 8 a 11 años",
+                    6,
+                    true,
+                    -38,
+                    null,
+                ],
+                ["mBot2", "Makeblock", "De 8 a 11 años", 10, true, -93, null],
+                [
+                    "mBot Ranger",
+                    "Makeblock",
+                    "De 12 a 15 años",
+                    4,
+                    false,
+                    -93,
+                    "Uno tiene una oruga rota y solo se usa en modo coche.",
+                ],
+                [
+                    "Arduino Starter Kit",
+                    "Arduino",
+                    "Desde 16 años",
+                    12,
+                    false,
+                    -151,
+                    "Quedan pocos LED rojos y resistencias de 220 Ω: hay que reponerlos antes del próximo taller.",
+                ],
+                [
+                    "Arduino UNO R4 WiFi (placa suelta)",
+                    "Arduino",
+                    "Desde 16 años",
+                    20,
+                    true,
+                    null,
+                    null,
+                ],
+                [
+                    "BBC micro:bit V2 con portapilas",
+                    "micro:bit",
+                    "De 8 a 11 años",
+                    25,
+                    true,
+                    -12,
+                    null,
+                ],
+                [
+                    "Raspberry Pi 5 de 8 GB con fuente y caja",
+                    "Raspberry Pi",
+                    "Desde 16 años",
+                    6,
+                    true,
+                    -204,
+                    null,
+                ],
+                [
+                    "Kit de sensores Grove",
+                    "Arduino",
+                    null,
+                    3,
+                    false,
+                    null,
+                    "Sin revisar desde la mudanza del almacén.",
+                ],
+            ]
+        ),
+        new(
+            "Filamento para impresión 3D",
+            [
+                new(
+                    "Material",
+                    InventoryColumnType.List,
+                    true,
+                    [
+                        ("PLA", "#84CC16"),
+                        ("PETG", "#0EA5E9"),
+                        ("TPU", "#EC4899"),
+                        ("ABS", "#EF4444"),
+                    ]
+                ),
+                new("Color", InventoryColumnType.Text, true),
+                new("Ø (mm)", InventoryColumnType.Number, true),
+                new("Kg/bobina", InventoryColumnType.Number),
+                new("Bobinas", InventoryColumnType.Quantity, true),
+                new("Empezada", InventoryColumnType.Boolean),
+                new("Abierta el", InventoryColumnType.Date),
+            ],
+            [
+                ["PLA", "Negro", 1.75m, 1m, 6, false, null],
+                ["PLA", "Blanco", 1.75m, 1m, 4, true, -21],
+                ["PLA", "Naranja", 1.75m, 1m, 3, false, null],
+                ["PLA", "Verde fosforito", 1.75m, 0.75m, 2, true, -64],
+                ["PLA", "Gris", 1.75m, 1m, 1, true, -5],
+                ["PLA", "Efecto madera", 1.75m, 0.5m, 0, null, null],
+                ["PETG", "Transparente", 1.75m, 1m, 2, false, null],
+                ["PETG", "Azul", 1.75m, 1m, 1, true, -112],
+                ["TPU", "Rojo", 1.75m, 0.5m, 1, true, -198],
+                ["ABS", "Blanco", 2.85m, 0.75m, 2, false, null],
+            ]
+        ),
+        new(
+            "Licencias y suscripciones",
+            [
+                new("Servicio", InventoryColumnType.Text, true),
+                new("Licencias", InventoryColumnType.Quantity),
+                new("€/año", InventoryColumnType.Number),
+                new("Renueva el", InventoryColumnType.Date, true),
+                new("Automática", InventoryColumnType.Boolean),
+                new("Responsable", InventoryColumnType.Text),
+                new("Notas", InventoryColumnType.LongText),
+            ],
+            [
+                ["Dominio y alojamiento de la web", 1, 89.90m, 142, true, "Secretaría", null],
+                [
+                    "Plataforma de videoconferencias",
+                    3,
+                    172.80m,
+                    23,
+                    true,
+                    "Coordinación de talleres",
+                    "Una licencia por cada sala de los talleres en línea.",
+                ],
+                ["Gestor de contraseñas del equipo", 5, 216m, 201, true, "Secretaría", null],
+                [
+                    "Software de diseño 3D (licencia educativa)",
+                    15,
+                    0m,
+                    58,
+                    false,
+                    "Coordinación de talleres",
+                    "Gratuita para asociaciones educativas, pero hay que pedir la renovación cada año con el "
+                        + "certificado de inscripción en el registro.",
+                ],
+                [
+                    "Antivirus de los portátiles con Windows",
+                    20,
+                    79.50m,
+                    -9,
+                    false,
+                    "Tesorería",
+                    "Caducada. Decidir en la próxima junta si se renueva o basta con la protección del sistema.",
+                ],
+            ]
+        ),
+        new(
+            "Material para eventos",
+            [
+                new("Artículo", InventoryColumnType.Text, true),
+                new("Unidades", InventoryColumnType.Quantity, true),
+                new(
+                    "Ubicación",
+                    InventoryColumnType.List,
+                    true,
+                    [("Sede", "#0EA5E9"), ("Almacén municipal", "#A855F7"), ("Prestado", "#F59E0B")]
+                ),
+                new("Prestado a", InventoryColumnType.Text),
+                new("Devolver el", InventoryColumnType.Date),
+            ],
+            [
+                ["Roll-up con el logotipo", 2, "Sede", null, null],
+                ["Carpa plegable de 3 × 3 m", 1, "Almacén municipal", null, null],
+                ["Mesa plegable", 8, "Almacén municipal", null, null],
+                ["Alargador de 5 m", 12, "Sede", null, null],
+                ["Regleta de seis enchufes", 15, "Sede", null, null],
+                ["Proyector", 1, "Sede", null, null],
+                ["Proyector", 1, "Prestado", "Ayuntamiento de Villaejemplo", -3],
+                ["Pantalla de proyección", 1, "Sede", null, null],
+                ["Router 4G portátil", 1, "Prestado", "Academia de Robótica Engranaje", 9],
+                ["Chaleco de voluntariado", 25, "Sede", null, null],
+                ["Botiquín", 3, "Sede", null, null],
+                ["Pizarra blanca con ruedas", 1, "Almacén municipal", null, null],
+            ]
+        ),
+        new(
+            "Premios y obsequios",
+            [
+                new("Artículo", InventoryColumnType.Text, true),
+                new("Unidades", InventoryColumnType.Quantity),
+                new("Evento", InventoryColumnType.Text),
+                new("Entregado", InventoryColumnType.Boolean),
+            ],
+            []
+        ),
+    ];
+
     private static readonly UserSeed[] UserSeeds =
     [
         new(
@@ -3010,5 +3548,6 @@ internal sealed record DemoGraph(
     List<NewsItem> News,
     List<Resource> Resources,
     List<Partner> Partners,
-    List<LegalPolicy> LegalPolicies
+    List<LegalPolicy> LegalPolicies,
+    List<InventoryCategory> InventoryCategories
 );
