@@ -28,9 +28,9 @@ Official website and management platform for `<Codigoactivo/>`, a nonprofit asso
 introduces young people to programming and computational thinking through free, practical activities. It
 provides a public site for events and resources, self-service registration with mandatory two-factor login
 (emailed code or authenticator app), activity signup and participation history, event ratings and
-certificates, and an administration area for content, events, users, email, legal policies, metrics and the
-audit and diagnostic logs, split between editors, who publish content, and administrators, who also manage
-people. The interface is Spanish, managed through Vue I18n.
+certificates, and an administration area for content, events, users, email, legal policies, the inventory,
+metrics and the audit and diagnostic logs. Editors publish content; administrators also manage people. The
+interface is Spanish, managed through Vue I18n.
 
 ## Technology
 
@@ -58,12 +58,13 @@ the SPA and proxies API traffic. See [ARCHITECTURE.md](ARCHITECTURE.md) for the 
 
 ### Local development stack
 
-From a clone, Compose automatically merges `docker-compose.override.yml`, which delivers every email
-(including login codes) to a bundled Mailpit catcher, so no SMTP server is needed locally.
+From a clone, Compose automatically merges `docker-compose.override.yml`, the
+[development overlay](DEPLOYMENT.md#development-overlay), which delivers every email (including login codes)
+to a bundled Mailpit catcher, so no SMTP server is needed locally.
 
 ```bash
 cp .env.example .env
-# Set BOOTSTRAP_ADMIN_EMAIL, then set its password with the password reset caught by Mailpit.
+# Set BOOTSTRAP_ADMIN_EMAIL in .env.
 mkdir -m 700 secrets
 openssl rand -base64 32 | tr -d '\r\n' > secrets/postgres_password
 openssl rand -base64 32 | tr -d '\r\n' > secrets/data_protection_key
@@ -73,33 +74,34 @@ docker compose up --build
 
 The SPA is at <http://localhost:8080>, the API at <http://localhost:5150>, Swagger at
 <http://localhost:5150/swagger> and the caught mail at <http://localhost:8025>. The overlay also publishes
-PostgreSQL on port `5432`.
+PostgreSQL on port `5432`. Set the password of `BOOTSTRAP_ADMIN_EMAIL` through the password reset of the login
+page; Mailpit catches its email.
 
 > [!WARNING]
-> The development overlay builds local code, publishes the database and the Mailpit inbox and relaxes API
-> container hardening. Do not use it for production.
-
-### Production stack
-
-The base Compose file pulls released images from GHCR and does not depend on a repository clone. Follow
-[DEPLOYMENT.md](DEPLOYMENT.md#first-production-start) to start it.
+> The development overlay builds local code, relaxes API container hardening and publishes the database and
+> the Mailpit inbox. Do not use it for production.
 
 To run the applications directly with hot reload instead of full containers, see
 [CONTRIBUTING.md](CONTRIBUTING.md#local-setup).
 
+### Production stack
+
+The base Compose file pulls released images from GitHub Container Registry (GHCR) and does not depend on a
+repository clone. Follow [DEPLOYMENT.md](DEPLOYMENT.md#first-production-start) to start it.
+
 ## Documentation
 
-| Document                                                   | Purpose                                                                |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------- |
-| [ARCHITECTURE.md](ARCHITECTURE.md)                         | System structure, dependency rules and API contract                    |
-| [CONTRIBUTING.md](CONTRIBUTING.md)                         | Development setup, commands, migrations, test suites and pull requests |
-| [DEPLOYMENT.md](DEPLOYMENT.md)                             | Production topology, configuration and releases                        |
-| [SECURITY.md](SECURITY.md)                                 | Vulnerability reporting and the security model                         |
-| [AGENTS.md](AGENTS.md)                                     | Repository guidance for coding agents                                  |
-| [backend/AGENTS.md](backend/AGENTS.md)                     | Backend coding conventions and tests                                   |
-| [frontend/AGENTS.md](frontend/AGENTS.md)                   | Frontend coding conventions and tests                                  |
-| [tests/e2e/AGENTS.md](tests/e2e/AGENTS.md)                 | End-to-end suite conventions                                           |
-| [tests/performance/AGENTS.md](tests/performance/AGENTS.md) | Performance suite conventions                                          |
+| Document                                                   | Purpose                                                                        |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| [ARCHITECTURE.md](ARCHITECTURE.md)                         | Domain language, boundaries, data flow and API contract                        |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                         | Local setup, commands, migrations, test suites and pull requests               |
+| [DEPLOYMENT.md](DEPLOYMENT.md)                             | Compose, environment variables, email delivery and releases                    |
+| [SECURITY.md](SECURITY.md)                                 | Vulnerability reporting, authentication, abuse controls, privacy and retention |
+| [AGENTS.md](AGENTS.md)                                     | Repository guidance for coding agents                                          |
+| [backend/AGENTS.md](backend/AGENTS.md)                     | Backend coding conventions and tests                                           |
+| [frontend/AGENTS.md](frontend/AGENTS.md)                   | Frontend coding conventions and tests                                          |
+| [tests/e2e/AGENTS.md](tests/e2e/AGENTS.md)                 | End-to-end suite conventions                                                   |
+| [tests/performance/AGENTS.md](tests/performance/AGENTS.md) | Performance suite conventions                                                  |
 
 ## License
 

@@ -1,6 +1,6 @@
 # Contributing
 
-This guide covers local setup, commands and pull requests. Coding conventions live in
+This guide covers local setup, commands, migrations, test suites and pull requests. Coding conventions live in
 [backend/AGENTS.md](backend/AGENTS.md) and [frontend/AGENTS.md](frontend/AGENTS.md); read
 [ARCHITECTURE.md](ARCHITECTURE.md) before changing boundaries between projects or frontend layers. Runtime
 configuration belongs in [DEPLOYMENT.md](DEPLOYMENT.md).
@@ -37,15 +37,18 @@ cd backend
 dotnet run --project src/CodigoActivo.API
 ```
 
-Compose needs all three [secret files](DEPLOYMENT.md#secrets). As in the container, the API keeps its Data
-Protection key ring in `/home/app/.aspnet/DataProtection-Keys` (`C:\home\app\.aspnet\DataProtection-Keys` on
-Windows); delete that folder after changing `DATA_PROTECTION_KEY`. In PowerShell, set the same variables with
-`$env:NAME="..."`. Mailpit catches every email at <http://localhost:8025>: login codes, verification links
-and the password reset that sets the initial administrator's first password.
+Compose needs all three [secret files](DEPLOYMENT.md#secrets). In PowerShell, set the same variables with
+`$env:NAME="..."`. The variables left out fall back to the local defaults that
+[DEPLOYMENT.md](DEPLOYMENT.md#secrets) lists.
 
-The API listens on <http://localhost:5150> (the `https` launch profile adds <https://localhost:7039>) and
-serves Swagger at `/swagger` in Development, where it logs to the console as well as to the log tables of its
-database. Missing variables fall back as described in [DEPLOYMENT.md](DEPLOYMENT.md#secrets).
+The API listens on <http://localhost:5150> (the `https` launch profile adds <https://localhost:7039>). In
+Development it serves Swagger at `/swagger` and logs to the console as well as to the log tables of its
+database. Mailpit catches every email at <http://localhost:8025>: login codes, verification links and the
+password reset that sets the initial administrator's first password.
+
+As in the container, the API keeps its Data Protection key ring in `/home/app/.aspnet/DataProtection-Keys`
+(`\home\app\.aspnet\DataProtection-Keys` on the current drive on Windows); delete that folder after changing
+`DATA_PROTECTION_KEY`.
 
 ### Frontend
 
@@ -65,6 +68,8 @@ See [README.md](README.md#local-development-stack) and
 
 ## Commands
 
+### Backend
+
 Run backend commands from `backend/`. The folder holds both `CodigoActivo.slnx` and `docker-compose.dcproj`, so
 name the solution or project:
 
@@ -79,22 +84,23 @@ dotnet test tests/CodigoActivo.UnitTests --filter "FullyQualifiedName~ClassName.
 ```
 
 Integration tests require Docker unless `CODIGOACTIVO_TEST_DB_CONNECTION` points to an empty, disposable
-PostgreSQL database whose role may create databases: it becomes the template each test class copies.
+PostgreSQL database whose role may create databases; that database becomes the template each test class copies.
 
-A model change adds a migration that stays compatible with the deployed version and its data:
+A model change needs a migration that stays compatible with the deployed version and its data:
 
 ```bash
 dotnet ef migrations add <Name> --context CodigoActivoDbContext --project src/CodigoActivo.Infrastructure --startup-project src/CodigoActivo.Infrastructure --output-dir Database/Migrations
 ```
 
 `--context` is required because Infrastructure also has `CodigoActivoReadDbContext`, the read side, which never
-has migrations. The tools build the context through `CodigoActivoDesignTimeDbContextFactory`, whose placeholder
+has migrations. Infrastructure is its own startup project because `Microsoft.EntityFrameworkCore.Design` stays
+out of the API. The tools build the context through `CodigoActivoDesignTimeDbContextFactory`, whose placeholder
 database never resolves, so commands that touch a database need `--connection`.
-`Microsoft.EntityFrameworkCore.Design` stays out of the API.
 
 Backend coverage merges the unit and integration tests and must reach 95% of lines, branches and methods; the
-architecture tests check structure, not behavior, and stay out of it. It uses Microsoft Code Coverage with
-`tests/CodeCoverage.config`, which measures the production assemblies and excludes EF Core migrations:
+architecture tests check structure, not behavior, and are not part of it. Measure it with Microsoft Code
+Coverage and `tests/CodeCoverage.config`, which covers the production assemblies and excludes EF Core
+migrations:
 
 ```bash
 dotnet test tests/CodigoActivo.UnitTests --coverage --coverage-output-format cobertura --coverage-output unit.cobertura.xml --coverage-settings tests/CodeCoverage.config --results-directory TestResults/coverage
@@ -104,6 +110,8 @@ dotnet run --file scripts/check-coverage.cs -- TestResults/coverage/report/Summa
 ```
 
 `TestResults/coverage/report/index.html` shows the uncovered code.
+
+### Frontend
 
 Run frontend commands from `frontend/`:
 
@@ -122,37 +130,40 @@ npm run check           # Complete frontend gate, coverage included
 
 The remaining scripts are in `package.json`.
 
-### End-to-end tests
+## End-to-end tests
 
 `tests/e2e/` is a [Playwright](https://playwright.dev/) suite in TypeScript that drives the SPA in Chromium
 through the journeys of each kind of user: visitors, participants, members, sponsors, guardians, activity
-leaders, editors, administrators, the privacy officer and the initial administrator. Like the performance suite
-it runs in Docker as its own Compose project with its own volumes: PostgreSQL, Mailpit, the API (`Development`,
-without demo data) and the nginx image built from the working tree, plus the Playwright runner. From the
-repository root:
+leaders, editors, administrators, the privacy officer and the initial administrator. It runs in Docker as its
+own Compose project with its own volumes: PostgreSQL, Mailpit, the API (`Development`, without demo data), the
+nginx image built from the working tree and the Playwright runner. From the repository root:
 
 ```bash
 docker compose -f tests/e2e/compose.yaml run --rm --build playwright
 docker compose -f tests/e2e/compose.yaml down -v
 ```
 
-Arguments after `playwright` replace its command, such as `npx playwright test specs/account` or
+Arguments after `playwright` replace its command, for example `npx playwright test specs/account`, or
 `npm run check`, the suite's gate (types, ESLint, Knip and Prettier). The stack publishes the site on
-<http://localhost:8180> and Mailpit on <http://localhost:8125>, so after
-`docker compose -f tests/e2e/compose.yaml up -d --build --wait web` the suite also runs from `tests/e2e/` on
-the host (`npm ci`, `npx playwright install chromium`, then `npm test` or `npm run test:ui`).
+<http://localhost:8180> and Mailpit on <http://localhost:8125> (`E2E_WEB_PORT` and `E2E_MAILPIT_PORT` change
+them). After `docker compose -f tests/e2e/compose.yaml up -d --build --wait web`, the suite also runs from
+`tests/e2e/` on the host: `npm ci`, `npx playwright install chromium`, then `npm test` or `npm run test:ui`.
 
-The `setup` project takes over the initial administrator through a password reset and has it designate the
-privacy officer, a member it makes an administrator; every other account and all content are created through
-the API by the tests that need them, so the suite runs again on the same volumes. Logins complete the second
-factor with the code read from Mailpit. The `desktop` project runs every test except those tagged `@mobile`,
-which only `mobile` runs; a full run takes about three minutes with the default four workers. Each worker sends
-its own `X-Forwarded-For`, and each registration another, so the rate limits treat them as different visitors.
-The email guard allows 1,000 verification and reset emails per hour and only resets with a new API process:
-after several runs in an hour, restart `api` or run `down -v`. The HTML report and the traces of failed
-tests are written to `tests/e2e/results/`; conventions are in [tests/e2e/AGENTS.md](tests/e2e/AGENTS.md).
+The `setup` project takes over the initial administrator through a password reset, then has that account
+designate the privacy officer, a member that `setup` makes an administrator. Every other account and all
+content are created through the API by the tests that need them, so the suite runs again on the same volumes.
+Logins complete the second factor with the code read from Mailpit.
 
-### Performance tests
+The `desktop` project runs every test except those tagged `@mobile`, which only `mobile` runs; a full run takes
+about three minutes with the default four workers. Each worker sends its own `X-Forwarded-For`, and each
+registration sends another, so the rate limits treat them as different visitors. In this stack the
+[email guard](SECURITY.md#email-abuse-controls) allows 1,000 verification and reset emails per hour and only
+resets with a new API process: after several runs in an hour, restart `api` or run `down -v`.
+
+The HTML report and the traces of failed tests are written to `tests/e2e/results/`. Conventions are in
+[tests/e2e/AGENTS.md](tests/e2e/AGENTS.md).
+
+## Performance tests
 
 `tests/performance/` is a [Grafana k6](https://grafana.com/docs/k6/) suite that loads the API the way the SPA
 does, to find what needs optimizing before people do. It runs only in Docker, as its own Compose project with
@@ -164,71 +175,82 @@ docker compose -f tests/performance/compose.yaml run --rm --build -e PROFILE=loa
 docker compose -f tests/performance/compose.yaml down -v
 ```
 
-Every run needs new volumes, so `down -v` goes between runs. The first start seeds the demo data and
+Every run needs new volumes, so run `down -v` between runs. The first start seeds the demo data and
 `volume.sql` then adds what a grown association would hold: 10,000 people in 5,000 households, about 430 of
-them subscribed to the news so one email stays under its 500 recipients, 100 past events with their signups and
-ratings, and 100,000 audit and 20,000 diagnostic entries. Without it lists and reports would be measured on a
-few dozen rows. These figures are an assumption, set in the file; replace them when real ones exist.
+them subscribed to the news so one email stays under its limit of 500 recipients, 100 past events with their
+signups and ratings, 30 inventory categories with their entries, and 100,000 audit and 20,000 diagnostic
+entries. Without that volume, lists and reports would be measured on a few dozen rows. These figures are
+assumptions, set in that file; replace them when real ones exist.
 
-Each scenario sends the requests the SPA sends when its pages open: anonymous visitors (home, events, an event
-and its activities, news, resources), members (home, an event with their signups, profile, history,
-certificates), accounts signing up for the shared event, alone or with their household, members signing in, new
-families that register, confirm their email and sign in, and administrators who manage an event, its signups and
-news, read reports and logs (the audit log as the initial administrator, which holds the data protection
-designation in this stack), upload images and send email. The suite measures only the requests that carry the
-site's traffic or its heavy work; the rare account, authenticator, unsubscribe and blocked data flows are left
-to the integration tests.
+The containers reproduce the production server (4 vCPUs, 8 GB): the API and PostgreSQL share CPUs 0–3, with
+4 GB and 3 GB of memory respectively, and k6 and Mailpit run on CPUs 4–11 so they take nothing from the first
+two. On another host, or one with fewer than 12 CPUs, set `PERF_SERVER_CPUSET`, `PERF_TOOLS_CPUSET`,
+`PERF_API_MEMORY` and `PERF_DB_MEMORY` in the shell. nginx and the TLS proxy share the server in production but
+are not measured, and the host's CPUs may be faster than the server's, so leave headroom on any capacity
+figure.
 
-`PROFILE` selects the load and what it must prove. A window is a stretch of steady load; its objective is p95
-under 500 ms, p99 under 1.5 s and failures under 1% on the API, with at least 95% of the iterations its load
-promises actually started, so a slow k6 cannot pass for a fast API.
+Each scenario sends the requests the SPA sends when its pages open:
 
-| Profile    | Load                                                                                        | k6 exits with code 99 unless                                                                                                 |
-| ---------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `smoke`    | One or two iterations per scenario, to check the suite                                      | Every catalogued endpoint is requested and fails under 1%                                                                    |
-| `load`     | The expected peak for eight minutes after a one-minute ramp; the default                    | The same, every endpoint keeps the p95 budget of `k6/lib/catalog.js`, `peak` meets the objective and codes arrive within 5 s |
-| `spike`    | Signups open: signups, logins and new families jump to ten times the peak for three minutes | The same as `smoke`, every window gets its load, `recovery` meets the objective and codes arrive within 5 s                  |
-| `capacity` | From 1,000 to 10,000 people using the site at once, in eight two-minute steps               | Every catalogued endpoint is requested; the summary reports the largest step that met the objective                          |
+- anonymous visitors: home, events, an event and its activities, news and resources;
+- members: home, an event with their signups, profile, history and certificates;
+- accounts signing up for the shared event, alone or with their household;
+- members signing in;
+- new families that register, confirm their email and sign in;
+- administrators who manage an event, its signups and news, read reports and logs (the audit log as the
+  initial administrator, which holds the data protection designation in this stack), upload images and send
+  email.
 
-In `capacity`, 70% of the people browse anonymously, 25% as members and 5% sign up their household, one page
-every ten seconds, and one member visit in ten starts with a login. k6 replays those visits at the matching
-arrival rate with short pauses of its own, while new families and administrators keep a fixed pace.
+The suite measures only the requests that carry the site's traffic or its heavy work; the rare flows of
+accounts, authenticators, unsubscribing and blocked data are left to the integration tests.
 
-Setup signs in the initial administrator, registers administrators and members, takes over demo members
+`PROFILE` selects the load and what it must prove. A window is a stretch of steady load. Its objective is p95
+under 500 ms, p99 under 1.5 s and failures under 1% on the API, and at least 95% of the iterations its load
+promises must actually start, so a slow k6 cannot pass for a fast API.
+
+| Profile    | Load                                                                                        | k6 exits with code 99 unless                                                                                                                               |
+| ---------- | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `smoke`    | One or two iterations per scenario, to check the suite                                      | Every cataloged endpoint is requested and its failures stay under 1%                                                                                       |
+| `load`     | The expected peak for eight minutes after a one-minute ramp (the default)                   | The same as `smoke`; every endpoint keeps the p95 budget of `k6/lib/catalog.js`, the `peak` window meets the objective and emailed codes arrive within 5 s |
+| `spike`    | Signups open: signups, logins and new families jump to ten times the peak for three minutes | The same as `smoke`; every window gets its load, the `recovery` window meets the objective and emailed codes arrive within 5 s                             |
+| `capacity` | From 1,000 to 10,000 people using the site at once, in eight two-minute steps               | Every cataloged endpoint is requested; the summary reports the largest step that met the objective                                                         |
+
+In `capacity`, 70% of the people browse anonymously, 25% as members and 5% sign up their household, each
+opening one page every ten seconds, and one member visit in ten starts with a login. k6 replays those visits
+at the matching arrival rate with short pauses of its own, while new families and administrators keep a fixed
+pace.
+
+`setup` signs in the initial administrator, registers administrators and members, takes over demo members
 through a password reset and creates the events the scenarios share, reading every code from Mailpit. Its
 requests stay out of the results, and any unexpected answer stops the run. k6 calls the API directly as its
 trusted proxy, sending a private `X-Forwarded-For` per simulated client and `X-Forwarded-Proto: https`, so nginx
-is not measured and the rate limits apply per client and account as in production. Scenarios stay within those
-limits; a `429` therefore points at a capacity limit. The API delivers to Mailpit without the provider pace
-(`SMTP_MAX_PER_MINUTE`), but the email guard still allows 1,000 verification and reset emails per hour, which
-bounds new families and the account pools.
+is not measured and the [rate limits](SECURITY.md#rate-and-concurrency-limits) apply per client and account as
+in production. Scenarios stay within those limits; a `429` therefore points at a capacity limit. The API
+delivers to Mailpit without the provider pace (`SMTP_MAX_PER_MINUTE`), but the email guard still allows 1,000
+verification and reset emails per hour, which bounds new families and the account pools.
 
-`tests/performance/results/` receives `summary.md`, also printed at the end of the run (each window with its
-verdict, delivered load and p95 by kind of endpoint, then every endpoint with its p50, p95, p99, errors and
-budget, worst first), `summary.json` and the k6 dashboard in `report.html`. Conventions are in
-[tests/performance/AGENTS.md](tests/performance/AGENTS.md).
+`tests/performance/results/` receives `summary.md`, `summary.json` and the k6 dashboard in `report.html`.
+`summary.md` is also printed at the end of the run: an overview, each window with its verdict, delivered load
+and p95 by kind of endpoint, then every endpoint with its p50, p95, p99, errors and budget, worst first.
+Conventions are in [tests/performance/AGENTS.md](tests/performance/AGENTS.md).
 
-The containers reproduce the production server (4 vCPUs, 8 GB): the API and PostgreSQL share CPUs 0–3 with
-4 GB and 3 GB, and k6 and Mailpit run on CPUs 4–11 so they take nothing from them. On another host, or one
-with fewer than 12 CPUs, set `PERF_SERVER_CPUSET`, `PERF_TOOLS_CPUSET`, `PERF_API_MEMORY` and `PERF_DB_MEMORY`
-in the shell. nginx and the TLS proxy share the server in production but are not measured, and the host's
-CPUs may be faster than the server's, so leave headroom on any capacity figure.
-
-## Changing the API
+## Changing the API contract
 
 Follow the five steps in [ARCHITECTURE.md](ARCHITECTURE.md#changing-the-api-contract).
 
 ## Pull requests
 
-CI runs only on pushes to `master`, so pull requests and `develop` are checked locally; see
-[DEPLOYMENT.md](DEPLOYMENT.md#releases-and-upgrades). Dependabot (`.github/dependabot.yml`) opens one grouped
-pull request against `develop` every Saturday at 00:00 (Europe/Madrid).
+CI runs only on pushes to `master`, so pull requests and `develop` are checked locally (only CodeQL also scans
+pushes to `develop`); see [DEPLOYMENT.md](DEPLOYMENT.md#releases-and-upgrades). Dependabot
+(`.github/dependabot.yml`) opens one grouped pull request against `develop` every Saturday at 00:00
+(Europe/Madrid).
 
 Before opening a pull request:
 
 1. Run `dotnet build CodigoActivo.slnx` and `dotnet test --solution CodigoActivo.slnx` from `backend/`, and keep
    backend coverage at or above 95%.
 2. Run `npm run check` from `frontend/`.
-3. Update the owning document when behavior, configuration, architecture or security changes.
-4. Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, and so on); the
+3. Run the end-to-end suite when the change touches a user journey or a `data-testid`; CI runs neither that
+   suite nor the performance one.
+4. Update the owning document when behavior, configuration, architecture or security changes.
+5. Use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, and so on); the
    commit types decide the next release version.
