@@ -18,16 +18,16 @@
     "check": "npm run typecheck && npm run lint && npm run lint:unused && npm run format:check"
   },
   "devDependencies": {
-    "@playwright/test": "1.65.0",
+    "@playwright/test": "1.65.1",
     "@types/node": "26.6.6",
-    "eslint": "10.14.0",
+    "eslint": "10.15.0",
     "eslint-config-prettier": "10.1.8",
-    "eslint-plugin-jsdoc": "65.4.2",
+    "eslint-plugin-jsdoc": "65.4.11",
     "eslint-plugin-playwright": "2.12.2",
-    "knip": "6.44.1",
+    "knip": "6.45.1",
     "otpauth": "9.6.0",
-    "prettier": "3.9.10",
-    "typescript": "6.0.3",
-    "typescript-eslint": "8.72.1"
+    "prettier": "3.10.1",
+    "typescript": "7.0.2",
+    "typescript-eslint": "8.73.0"
   }
 }
