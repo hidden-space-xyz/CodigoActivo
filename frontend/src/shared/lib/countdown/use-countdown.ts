@@ -1,4 +1,5 @@
-import { onScopeDispose, ref } from 'vue'
+import { ref } from 'vue'
+import { useIntervalFn } from '@vueuse/core'
 
 /**
  * Seconds left of a countdown that ticks once per second until it reaches zero, e.g. before a
@@ -7,31 +8,26 @@ import { onScopeDispose, ref } from 'vue'
  */
 export function useCountdown(seconds: number) {
   const remaining = ref(0)
-  let timer: ReturnType<typeof setInterval> | null = null
+  let deadline = 0
+  const { pause, resume } = useIntervalFn(tick, 1000, {
+    immediate: false,
+    immediateCallback: true,
+  })
 
-  function clear(): void {
-    if (timer === null) return
-    clearInterval(timer)
-    timer = null
+  function tick(): void {
+    remaining.value = Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
+    if (remaining.value <= 0) pause()
   }
 
   function start(): void {
-    clear()
-    const deadline = Date.now() + seconds * 1000
-    const tick = (): void => {
-      remaining.value = Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
-      if (remaining.value <= 0) clear()
-    }
-    tick()
-    timer = setInterval(tick, 1000)
+    deadline = Date.now() + seconds * 1000
+    resume()
   }
 
   function stop(): void {
-    clear()
+    pause()
     remaining.value = 0
   }
-
-  onScopeDispose(clear)
 
   return { remaining, start, stop }
 }

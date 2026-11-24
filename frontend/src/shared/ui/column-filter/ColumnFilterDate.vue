@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import ColumnFilterShell from './ColumnFilterShell.vue'
 import { useTableFilterRegistration } from './filter-registry'
 import { formatDate, formatDateRange, toDateOnly } from '@/shared/lib/date'
-import { useMediaQuery } from '@/shared/lib/media-query'
 
 const props = withDefaults(
   defineProps<{

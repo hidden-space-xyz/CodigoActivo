@@ -1,7 +1,8 @@
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
+import { useRouteQuery } from '@vueuse/router'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 import { hasStaffAccess, useSession } from '@/entities/session'
 import { useServerTable } from '@/shared/lib/paging'
@@ -26,18 +27,10 @@ function traceOf(value: unknown): string {
  */
 export function useDiagnostics() {
   const { t } = useI18n()
-  const route = useRoute()
   const router = useRouter()
   const session = useSession()
   const opensAudit = computed(() => hasStaffAccess(session.user, 'audit'))
-  const traceId = ref(traceOf(route.query.traceId))
-
-  watch(
-    () => route.query.traceId,
-    (value) => {
-      traceId.value = traceOf(value)
-    },
-  )
+  const traceId = useRouteQuery('traceId', '', { mode: 'replace', transform: traceOf })
 
   const table = useServerTable({
     ...diagnosticList,
@@ -54,7 +47,6 @@ export function useDiagnostics() {
   /** Narrows the list to the entries of one trace, or lifts that filter with an empty `trace`. */
   function filterByTrace(trace: string): void {
     traceId.value = traceOf(trace)
-    void router.replace({ query: traceId.value ? { traceId: traceId.value } : {} })
   }
 
   /** Opens the audit page on the commands of the same trace. */

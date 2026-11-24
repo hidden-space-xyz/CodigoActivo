@@ -1,4 +1,5 @@
-import { computed, onMounted, onUnmounted, ref, toValue, watch, type MaybeRefOrGetter } from 'vue'
+import { computed, onMounted, ref, toValue, watch, type MaybeRefOrGetter } from 'vue'
+import { useIntervalFn } from '@vueuse/core'
 
 import type { Sponsor } from '@/entities/partner'
 
@@ -28,7 +29,9 @@ export function useSponsorCarousel(source: MaybeRefOrGetter<readonly Sponsor[] |
   const items = computed<readonly Sponsor[]>(() => toValue(source) ?? [])
   const count = computed(() => items.value.length)
   const activeIndex = ref(0)
-  let timer: ReturnType<typeof setInterval> | null = null
+  const { pause: stop, resume: restart } = useIntervalFn(() => advance(1), INTERVAL_MS, {
+    immediate: false,
+  })
 
   const cards = computed<SponsorCard[]>(() =>
     items.value.map((sponsor, index) => ({
@@ -43,16 +46,9 @@ export function useSponsorCarousel(source: MaybeRefOrGetter<readonly Sponsor[] |
     activeIndex.value = (((activeIndex.value + step) % total) + total) % total
   }
 
-  function stop(): void {
-    if (timer !== null) {
-      clearInterval(timer)
-      timer = null
-    }
-  }
-
   function start(): void {
-    stop()
-    if (count.value > 1) timer = setInterval(() => advance(1), INTERVAL_MS)
+    if (count.value > 1) restart()
+    else stop()
   }
 
   function next(): void {
@@ -76,7 +72,6 @@ export function useSponsorCarousel(source: MaybeRefOrGetter<readonly Sponsor[] |
   })
 
   onMounted(start)
-  onUnmounted(stop)
 
   return { cards, next, prev, pause, resume }
 }

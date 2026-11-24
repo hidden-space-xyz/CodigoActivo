@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
+import { useTimeoutFn } from '@vueuse/core'
 
 import { MAX_SEARCH_LENGTH } from '@/shared/config'
 import { AppIcon } from '@/shared/ui/app-icon'
@@ -25,7 +26,7 @@ const emit = defineEmits<{
 }>()
 
 const draft = ref(props.modelValue)
-let timer: ReturnType<typeof setTimeout> | undefined
+const { start, stop } = useTimeoutFn(commit, () => props.debounce, { immediate: false })
 
 watch(
   () => props.modelValue,
@@ -35,19 +36,14 @@ watch(
 )
 
 function commit(): void {
-  if (timer) clearTimeout(timer)
+  stop()
   const value = draft.value.trim()
   if (value !== props.modelValue) emit('update:modelValue', value)
 }
 
 function onInput(): void {
-  if (timer) clearTimeout(timer)
-  timer = setTimeout(commit, props.debounce)
+  start()
 }
-
-onBeforeUnmount(() => {
-  if (timer) clearTimeout(timer)
-})
 </script>
 
 <template>

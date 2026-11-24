@@ -1,6 +1,7 @@
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
+import { useRouteQuery } from '@vueuse/router'
 import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 import { useSession } from '@/entities/session'
 import { useServerTable } from '@/shared/lib/paging'
@@ -32,21 +33,13 @@ function traceOf(value: unknown): string {
  */
 export function useAuditLog() {
   const { t } = useI18n()
-  const route = useRoute()
   const router = useRouter()
   const session = useSession()
   const opensDiagnostics = computed(() => session.isAdmin)
-  const traceId = ref(traceOf(route.query.traceId))
+  const traceId = useRouteQuery('traceId', '', { mode: 'replace', transform: traceOf })
   const actor = ref<PinnedFilter | null>(null)
   const entity = ref<PinnedFilter | null>(null)
   const clientIp = ref('')
-
-  watch(
-    () => route.query.traceId,
-    (value) => {
-      traceId.value = traceOf(value)
-    },
-  )
 
   const table = useServerTable({
     ...auditList,
@@ -85,7 +78,6 @@ export function useAuditLog() {
   /** Keeps only the commands of one trace, or lifts that filter with an empty `trace`. */
   function filterByTrace(trace: string): void {
     traceId.value = traceOf(trace)
-    void router.replace({ query: traceId.value ? { traceId: traceId.value } : {} })
   }
 
   /** Opens the diagnostic page on the events of the same trace. */

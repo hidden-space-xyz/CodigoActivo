@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouteQuery } from '@vueuse/router'
 
 import { AppIcon } from '@/shared/ui/app-icon'
 import { PageHeading } from '@/shared/ui/page-heading'
@@ -19,19 +18,11 @@ type AccountTab = (typeof TABS)[number]
 
 const DEFAULT_TAB: AccountTab = 'profile'
 
-const route = useRoute()
-const router = useRouter()
-
-const tab = computed<AccountTab>({
-  get: () => {
-    const value = String(route.query.tab ?? '')
-    return (TABS as readonly string[]).includes(value) ? (value as AccountTab) : DEFAULT_TAB
-  },
-  set: (value) => {
-    const query = { ...route.query }
-    if (value === DEFAULT_TAB) delete query.tab
-    else query.tab = value
-    void router.replace({ query })
+const tab = useRouteQuery<string, AccountTab>('tab', DEFAULT_TAB, {
+  mode: 'replace',
+  transform: (value) => {
+    const name = String(value)
+    return (TABS as readonly string[]).includes(name) ? (name as AccountTab) : DEFAULT_TAB
   },
 })
 </script>

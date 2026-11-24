@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, h, useAttrs, type Component } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
 
 import { AppIcon } from '@/shared/ui/app-icon'
-import { useMediaQuery } from '@/shared/lib/media-query'
 
 defineOptions({ inheritAttrs: false })
 

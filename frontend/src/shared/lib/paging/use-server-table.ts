@@ -1,8 +1,8 @@
 import { computed, ref, watch } from 'vue'
 import { keepPreviousData, useQuery } from '@tanstack/vue-query'
+import { useMediaQuery } from '@vueuse/core'
 
 import { toDateOnly } from '@/shared/lib/date'
-import { useMediaQuery } from '@/shared/lib/media-query'
 
 type ServerTableFieldType = 'text' | 'number' | 'dateRange'
 /** Sort direction names used by Element Plus tables. */

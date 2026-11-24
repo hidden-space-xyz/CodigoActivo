@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import { formatDate } from '@/shared/lib/date'
-import { useMediaQuery } from '@/shared/lib/media-query'
 import { AppIcon } from '@/shared/ui/app-icon'
 
 import {

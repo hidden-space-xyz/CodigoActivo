@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
+import { useTimeoutFn } from '@vueuse/core'
 import type { InputInstance } from 'element-plus'
 
 import ColumnFilterShell from './ColumnFilterShell.vue'
@@ -35,7 +36,7 @@ const emit = defineEmits<{
 const shell = ref<InstanceType<typeof ColumnFilterShell>>()
 const input = ref<InputInstance>()
 const draft = ref(props.modelValue == null ? '' : String(props.modelValue))
-let timer: ReturnType<typeof setTimeout> | undefined
+const { start, stop } = useTimeoutFn(commit, () => props.debounce, { immediate: false })
 
 const active = computed(
   () => props.modelValue !== null && props.modelValue !== undefined && props.modelValue !== '',
@@ -57,18 +58,17 @@ function commit(): void {
 }
 
 function onInput(): void {
-  if (timer) clearTimeout(timer)
-  timer = setTimeout(commit, props.debounce)
+  start()
 }
 
 function applyNow(): void {
-  if (timer) clearTimeout(timer)
+  stop()
   commit()
   shell.value?.hide()
 }
 
 function cancel(): void {
-  if (timer) clearTimeout(timer)
+  stop()
   draft.value = props.modelValue == null ? '' : String(props.modelValue)
   shell.value?.hide()
 }
@@ -87,10 +87,6 @@ async function focusInput(): Promise<void> {
   await nextTick()
   input.value?.focus()
 }
-
-onBeforeUnmount(() => {
-  if (timer) clearTimeout(timer)
-})
 </script>
 
 <template>

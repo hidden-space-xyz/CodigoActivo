@@ -14,6 +14,8 @@ that this file leaves out, and each failure names the rule it guards.
 - Views are humble: put state in `model` composables and rules in pure functions, and build forms on `useForm`
   with a pure `read`; messages a form reader returns go under a `form.problems` group of the i18n keys.
 - Read the session through `useSession`, which wraps the `GET /api/auth/me` query.
+- Prefer VueUse (`@vueuse/core`, `@vueuse/router`) for timers, debounces, media queries and query-string
+  state over hand-written listeners, `setTimeout`/`setInterval` handles and `router.replace` syncs.
 - User-facing text must use Vue I18n keys in `src/shared/i18n/locales/es.json`. Keys referenced only through
   `TranslationKey`-typed config need an `ignores` entry in the ESLint `no-unused-keys` rule.
 - Theme values use `--ca-*` variables; map Element Plus values to them instead of adding isolated colors.

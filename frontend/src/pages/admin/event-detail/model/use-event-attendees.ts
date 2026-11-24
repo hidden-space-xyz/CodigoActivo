@@ -1,5 +1,6 @@
-import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue'
+import { computed, ref, watch, type Ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
+import { useTimeoutFn } from '@vueuse/core'
 
 import { activityQueries } from '@/entities/activity'
 import { userQueries, type Gender } from '@/entities/user'
@@ -36,15 +37,15 @@ export function useEventAttendees(eventId: () => string, active: () => boolean) 
   const roleTypeId = ref<string | null>(null)
   const statusId = ref<string | null>(null)
 
-  let searchTimer: ReturnType<typeof setTimeout> | undefined
-  watch(searchText, (value) => {
-    if (searchTimer) clearTimeout(searchTimer)
-    searchTimer = setTimeout(() => {
-      search.value = value
-    }, SEARCH_DELAY_MS)
-  })
-  onBeforeUnmount(() => {
-    if (searchTimer) clearTimeout(searchTimer)
+  const { start: scheduleSearch } = useTimeoutFn(
+    () => {
+      search.value = searchText.value
+    },
+    SEARCH_DELAY_MS,
+    { immediate: false },
+  )
+  watch(searchText, () => {
+    scheduleSearch()
   })
 
   function filters(): AttendeeFilters {
