@@ -7,7 +7,10 @@ ChartJS.register(...registerables)
 defineProps<{
   /** Chart.js chart type. Changing it destroys and recreates the chart. */
   type: 'line' | 'bar' | 'doughnut'
-  /** Chart.js `data`; watched deeply, and a change updates the drawn chart in place. */
+  /**
+   * Chart.js `data`; a new object, `labels` array or `datasets` array updates the drawn chart in
+   * place, while mutating them in place does not redraw it.
+   */
   data: object
   /** Chart.js `options`; a new object updates the drawn chart in place. */
   options: object

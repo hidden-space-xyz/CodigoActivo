@@ -11,8 +11,7 @@ let predicate: (query: string) => boolean = () => false
 
 /**
  * `window.matchMedia` replacement. A query first read matches as the last `setMediaQueryMatches`
- * predicate says, none by default; a later call changes the result and notifies listeners, so
- * composables that cache a query at module level still react.
+ * predicate says, none by default; a later call changes the result and notifies listeners.
  */
 export function matchMediaMock(query: string): MediaQueryList {
   const existing = lists.get(query)
