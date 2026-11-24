@@ -10,6 +10,8 @@ import {
 
 const column = 'el-table-column'
 
+const actionsColumnWidths: readonly (string | undefined)[] = ['100', '124']
+
 const visits = sourceFiles
   .filter(({ path }) => path.endsWith('.vue'))
   .flatMap((file) => templateElements(file).map((visit) => ({ ...visit, path: file.path })))
@@ -21,7 +23,7 @@ function location({ path, element }: { path: string; element: TemplateElement })
 function isActionsColumn(element: TemplateElement | undefined): boolean {
   return (
     element !== undefined &&
-    staticAttribute(element, 'width') === '100' &&
+    actionsColumnWidths.includes(staticAttribute(element, 'width')) &&
     staticAttribute(element, 'align') === 'right' &&
     staticAttribute(element, 'fixed') === 'right'
   )
@@ -60,7 +62,7 @@ function rootCount(slot: TemplateElement): number {
 }
 
 describe('admin tables', () => {
-  it('render RowActions in a width="100" align="right" fixed="right" column', () => {
+  it('render RowActions in a width="100" or "124" align="right" fixed="right" column', () => {
     const rowActions = visits.filter(({ element }) => element.tag === 'RowActions')
     expect(rowActions).not.toHaveLength(0)
 
@@ -70,7 +72,7 @@ describe('admin tables', () => {
           ({ ancestors }) => !isActionsColumn(ancestors.findLast(({ tag }) => tag === column)),
         )
         .map(location),
-      'RowActions fills its own width="100" align="right" fixed="right" el-table-column',
+      'RowActions fills its own width="100" or "124" align="right" fixed="right" el-table-column',
     ).toEqual([])
   })
 
