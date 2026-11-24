@@ -24,7 +24,7 @@ withDefaults(
       {{ $t('pages.admin.dashboard.chart.empty') }}
     </div>
     <div v-else class="analytics-chart__canvas" :style="{ height: `${height}px` }">
-      <BaseChart type="bar" :data="chart.data" :options="chart.options" />
+      <BaseChart type="bar" :data="chart.data" :options="chart.options" :aria-label="title" />
     </div>
   </ChartCard>
 </template>

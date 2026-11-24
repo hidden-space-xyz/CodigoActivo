@@ -21,6 +21,7 @@ describe('AnalyticsChart', () => {
     expect(wrapper.find('.analytics-chart__canvas').attributes('style')).toContain('height: 260px')
     expect(fakeCharts).toHaveLength(1)
     expect(fakeCharts[0]?.config.type).toBe('bar')
+    expect(wrapper.find('canvas').attributes('aria-label')).toBe('Inscripciones')
   })
 
   it('shows the empty placeholder with the given height instead of a chart', async () => {

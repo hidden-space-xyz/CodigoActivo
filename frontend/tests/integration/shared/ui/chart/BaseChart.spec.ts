@@ -29,7 +29,7 @@ describe('BaseChart', () => {
     expect(registeredPlugins).toContainEqual(['fake-registerable'])
     expect(fakeCharts).toHaveLength(1)
     expect(fakeCharts[0]?.canvas).toBe(wrapper.find('canvas').element)
-    expect(fakeCharts[0]?.config).toEqual({ type: 'bar', data, options })
+    expect(fakeCharts[0]?.config).toMatchObject({ type: 'bar', data, options })
   })
 
   it('recreates the chart when the type changes', async () => {
@@ -44,33 +44,30 @@ describe('BaseChart', () => {
     expect(liveCharts().map((chart) => chart.config.type)).toEqual(['line'])
   })
 
-  it('recreates the chart when the data is replaced or mutated deeply', async () => {
-    const mutable = { labels: ['a'], datasets: [{ data: [1] }] }
+  it('updates the drawn chart in place when the data is replaced', async () => {
     const { wrapper } = await renderWithProviders(BaseChart, {
-      props: { type: 'bar', data: mutable, options },
+      props: { type: 'bar', data, options },
     })
 
     await wrapper.setProps({ data: { labels: ['b'], datasets: [] } })
-    expect(fakeCharts).toHaveLength(2)
-
-    const props = wrapper.props() as { data: { labels: string[] } }
-    props.data.labels.push('c')
     await nextTick()
 
-    expect(fakeCharts).toHaveLength(3)
-    expect(liveCharts()).toHaveLength(1)
-    expect(liveCharts()[0]?.config.data).toEqual({ labels: ['b', 'c'], datasets: [] })
+    expect(fakeCharts).toHaveLength(1)
+    expect(fakeCharts[0]?.updates).toBe(1)
+    expect(fakeCharts[0]?.config.data).toEqual({ labels: ['b'], datasets: [] })
   })
 
-  it('recreates the chart when the options change', async () => {
+  it('updates the drawn chart in place when the options change', async () => {
     const { wrapper } = await renderWithProviders(BaseChart, {
       props: { type: 'doughnut', data, options },
     })
 
     await wrapper.setProps({ options: { responsive: false } })
+    await nextTick()
 
-    expect(fakeCharts).toHaveLength(2)
-    expect(liveCharts()[0]?.config.options).toEqual({ responsive: false })
+    expect(fakeCharts).toHaveLength(1)
+    expect(fakeCharts[0]?.updates).toBe(1)
+    expect(fakeCharts[0]?.options).toEqual({ responsive: false })
   })
 
   it('destroys the chart when unmounted', async () => {

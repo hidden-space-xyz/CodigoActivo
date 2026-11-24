@@ -14,21 +14,28 @@ export const fakeCharts: FakeChart[] = []
 export const registeredPlugins: unknown[][] = []
 
 /**
- * Minimal stand-in for Chart.js' `Chart`: records its canvas and config and whether it was
- * destroyed.
+ * Minimal stand-in for Chart.js' `Chart`: records its canvas and config, how many times it was
+ * updated and whether it was destroyed.
  */
 export class FakeChart {
   destroyed = false
+  updates = 0
+  readonly options: unknown
 
   constructor(
     readonly canvas: HTMLCanvasElement,
     readonly config: FakeChartConfig,
   ) {
+    this.options = config.options
     fakeCharts.push(this)
   }
 
   static register(...plugins: unknown[]): void {
     registeredPlugins.push(plugins)
+  }
+
+  update(): void {
+    this.updates++
   }
 
   destroy(): void {
@@ -50,6 +57,14 @@ export function resetFakeCharts(): void {
 export const chartJsModule = {
   Chart: FakeChart,
   registerables: ['fake-registerable'],
+  BarController: 'fake-bar-controller',
+  BubbleController: 'fake-bubble-controller',
+  DoughnutController: 'fake-doughnut-controller',
+  LineController: 'fake-line-controller',
+  PieController: 'fake-pie-controller',
+  PolarAreaController: 'fake-polar-area-controller',
+  RadarController: 'fake-radar-controller',
+  ScatterController: 'fake-scatter-controller',
 }
 
 /** Distinct, recognizable colors so assertions can tell which palette entry was used. */

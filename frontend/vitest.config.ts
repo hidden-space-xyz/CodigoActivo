@@ -13,6 +13,7 @@ export default defineConfig((env) =>
       restoreMocks: true,
       unstubGlobals: true,
       unstubEnvs: true,
+      server: { deps: { inline: ['vue-chartjs'] } },
       projects: [
         {
           extends: true,
