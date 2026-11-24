@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import { AppIcon } from '@/shared/ui/app-icon'
 import { fileContentUrl } from '@/shared/api'
 import { IMAGE_UPLOAD_ACCEPT, MAX_IMAGE_UPLOAD_BYTES } from '@/shared/config'
+import { useTextPrompt } from '@/shared/lib/feedback'
 import {
   cleanRichText,
   normalizeLink,
@@ -17,6 +18,7 @@ import {
 import { formatFileSize } from '@/shared/lib/number'
 
 const { t } = useI18n()
+const { promptText } = useTextPrompt()
 
 const props = defineProps<{
   /** Serialized Tiptap JSON document; anything else loads as an empty document. */
@@ -120,20 +122,22 @@ function setAlign(value: 'left' | 'center' | 'right'): void {
   editor.value?.chain().focus().setTextAlign(value).run()
 }
 
-function toggleLink(): void {
+async function toggleLink(): Promise<void> {
   const instance = editor.value
   if (!instance) return
   const previous = (instance.getAttributes('link').href as string | undefined) ?? ''
-  const url = window.prompt(t('editor.linkPrompt'), previous)
+  const url = await promptText({
+    header: t('editor.link'),
+    message: t('editor.linkPrompt'),
+    value: previous,
+    validate: (value) =>
+      value.trim() === '' || normalizeLink(value) !== null || t('editor.linkInvalid'),
+  })
   if (url === null) return
   const chain = instance.chain().focus().extendMarkRange('link')
-  if (url.trim() === '') {
-    chain.unsetLink().run()
-    return
-  }
   const href = normalizeLink(url)
   if (href) chain.setLink({ href }).run()
-  else window.alert(t('editor.linkInvalid'))
+  else chain.unsetLink().run()
 }
 
 function insertTable(): void {
@@ -164,7 +168,7 @@ const toolbar = computed<Tool[][]>(() => {
       title: t('editor.link'),
       icon: 'link',
       active: instance.isActive('link'),
-      run: toggleLink,
+      run: () => void toggleLink(),
     },
   ]
   if (upload) {

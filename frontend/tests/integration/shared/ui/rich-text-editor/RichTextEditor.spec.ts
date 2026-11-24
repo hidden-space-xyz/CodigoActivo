@@ -3,6 +3,13 @@ import { EditorContent } from '@tiptap/vue-3'
 import { flushPromises, type VueWrapper } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 
+import {
+  acceptMessageBox,
+  cancelMessageBox,
+  inputValue,
+  messageBox,
+  typeInto,
+} from '../../../../support/dom'
 import { renderWithProviders, t } from '../../../../support/render'
 import { RichTextEditor } from '@/shared/ui/rich-text-editor'
 import { MAX_IMAGE_UPLOAD_BYTES } from '@/shared/config'
@@ -225,44 +232,46 @@ describe('RichTextEditor', () => {
   })
 
   it('adds, edits and removes links through a prompt', async () => {
-    const prompt = vi.spyOn(window, 'prompt')
     const { wrapper, editor } = await renderEditor()
     await selectAll(editor)
     const link = button(wrapper, t('editor.link'))
 
-    prompt.mockReturnValueOnce(' https://example.test ')
     await link.trigger('click')
+    expect(messageBox().textContent).toContain(t('editor.linkPrompt'))
+    expect(inputValue('input', messageBox())).toBe('')
+    await typeInto('input', ' https://example.test ', messageBox())
+    await acceptMessageBox()
     await settle()
 
-    expect(prompt).toHaveBeenLastCalledWith(t('editor.linkPrompt'), '')
     expect(firstBlock(wrapper)?.content?.[0]?.marks?.[0]).toMatchObject({
       type: 'link',
       attrs: { href: 'https://example.test' },
     })
     expect(link.classes()).toContain('rt__btn--active')
 
-    prompt.mockReturnValueOnce(null)
     const updates = wrapper.emitted('update:modelValue')?.length
     await link.trigger('click')
-    expect(prompt).toHaveBeenLastCalledWith(t('editor.linkPrompt'), 'https://example.test')
+    expect(inputValue('input', messageBox())).toBe('https://example.test')
+    await cancelMessageBox()
+    await settle()
     expect(wrapper.emitted('update:modelValue')?.length).toBe(updates)
 
-    prompt.mockReturnValueOnce('   ')
     await link.trigger('click')
+    await typeInto('input', '   ', messageBox())
+    await acceptMessageBox()
     await settle()
 
     expect(marks(wrapper)).toEqual([])
   })
 
   it('adds https to addresses typed without a scheme and refuses unsafe links', async () => {
-    const prompt = vi.spyOn(window, 'prompt')
-    const alert = vi.spyOn(window, 'alert').mockImplementation(() => undefined)
     const { wrapper, editor } = await renderEditor()
     await selectAll(editor)
     const link = button(wrapper, t('editor.link'))
 
-    prompt.mockReturnValueOnce('ejemplo.org/eventos')
     await link.trigger('click')
+    await typeInto('input', 'ejemplo.org/eventos', messageBox())
+    await acceptMessageBox()
     await settle()
 
     expect(firstBlock(wrapper)?.content?.[0]?.marks?.[0]).toMatchObject({
@@ -271,11 +280,14 @@ describe('RichTextEditor', () => {
     })
 
     const updates = wrapper.emitted('update:modelValue')?.length
-    prompt.mockReturnValueOnce('javascript:alert(1)')
     await link.trigger('click')
+    await typeInto('input', 'javascript:alert(1)', messageBox())
+    await acceptMessageBox()
     await settle()
 
-    expect(alert).toHaveBeenCalledWith(t('editor.linkInvalid'))
+    expect(messageBox().textContent).toContain(t('editor.linkInvalid'))
+    await cancelMessageBox()
+    await settle()
     expect(wrapper.emitted('update:modelValue')?.length).toBe(updates)
   })
 
