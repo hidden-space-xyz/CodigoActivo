@@ -17,6 +17,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None
+      Include="..\..\..\frontend\swagger.json"
+      Link="OpenApi\swagger.json"
+      CopyToOutputDirectory="PreserveNewest"
+    />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\CodigoActivo.API\CodigoActivo.API.csproj" />
     <ProjectReference Include="..\..\src\CodigoActivo.Infrastructure\CodigoActivo.Infrastructure.csproj" />
   </ItemGroup>

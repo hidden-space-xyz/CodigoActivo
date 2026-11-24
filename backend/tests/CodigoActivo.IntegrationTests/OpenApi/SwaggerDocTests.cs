@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using AwesomeAssertions;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Xunit;
@@ -19,6 +20,24 @@ public sealed class SwaggerDocTests(CodigoActivoWebAppFactory factory)
 
         var body = await response.Content.ReadAsStringAsync(ct);
         return JsonDocument.Parse(body);
+    }
+
+    [Fact]
+    public async Task SwaggerDocumentMatchesTheCopyCommittedForTheFrontend()
+    {
+        var served = await CreateClient().GetStringAsync(TestUri.Rel(SwaggerUrl), Ct);
+        var committed = await File.ReadAllTextAsync(
+            Path.Join(AppContext.BaseDirectory, "OpenApi", "swagger.json"),
+            Ct
+        );
+
+        JsonNode
+            .DeepEquals(JsonNode.Parse(served), JsonNode.Parse(committed))
+            .Should()
+            .BeTrue(
+                "frontend/swagger.json must be replaced with the served document and the client "
+                    + "regenerated in the same change"
+            );
     }
 
     [Fact]

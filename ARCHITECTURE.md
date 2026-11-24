@@ -540,7 +540,8 @@ An API change is complete only when both applications agree:
 
 1. Change backend endpoints, DTOs and any `ErrorCode` values.
 2. Run the backend in Development and replace `frontend/swagger.json` with the document from
-   `http://localhost:5150/swagger/v1/swagger.json`. Nothing compares the two, so do it in the same change.
+   `http://localhost:5150/swagger/v1/swagger.json`. `SwaggerDocTests` fails while the two documents differ
+   in anything but the order of their properties.
 3. From `frontend/`, run `npm run api:generate`.
 4. Add translations for new error codes in `src/shared/i18n/locales/es.json`.
 5. Run `dotnet test --solution CodigoActivo.slnx` from `backend/` and `npm run check` from `frontend/`.
