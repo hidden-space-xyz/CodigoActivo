@@ -1,6 +1,11 @@
+<script lang="ts">
+import { createSharedComposable, useMediaQuery } from '@vueuse/core'
+
+const useCoarsePointer = createSharedComposable(() => useMediaQuery('(pointer: coarse)'))
+</script>
+
 <script setup lang="ts">
 import { computed, h, useAttrs, type Component } from 'vue'
-import { useMediaQuery } from '@vueuse/core'
 
 import { AppIcon } from '@/shared/ui/app-icon'
 
@@ -37,7 +42,7 @@ const tooltipText = computed(
   () => props.tooltip ?? (attrs['aria-label'] as string | undefined) ?? label.value,
 )
 
-const coarsePointer = useMediaQuery('(pointer: coarse)')
+const coarsePointer = useCoarsePointer()
 </script>
 
 <template>
