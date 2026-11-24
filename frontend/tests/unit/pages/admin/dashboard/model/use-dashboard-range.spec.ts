@@ -32,6 +32,13 @@ describe('useDashboardRange', () => {
     expect(range.value).toEqual({ from: '2025-09-17', to: '2026-09-17' })
   })
 
+  it('starts the last 12 months on the last day of the month when that day does not exist', () => {
+    vi.setSystemTime(new Date(2028, 1, 29, 9, 0))
+    const { range } = useDashboardRange()
+
+    expect(range.value).toEqual({ from: '2027-02-28', to: '2028-02-29' })
+  })
+
   it('spans 30 and 90 days inclusive of today', () => {
     const { range, setPreset } = useDashboardRange()
 

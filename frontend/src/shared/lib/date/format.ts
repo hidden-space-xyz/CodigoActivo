@@ -1,3 +1,5 @@
+import dayjs from 'dayjs'
+
 import { LOCALE } from '@/shared/config'
 
 const dateTimeFormatter = new Intl.DateTimeFormat(LOCALE, {
@@ -33,10 +35,7 @@ export function parseDateOnly(value?: string | null): Date | null {
 
 /** Formats the local calendar date as `YYYY-MM-DD`, ignoring the time. */
 export function toDateOnly(date: Date): string {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
+  return dayjs(date).format('YYYY-MM-DD')
 }
 
 /** Completed years since a birth date, or `null` when the date is missing or invalid. */
@@ -87,11 +86,7 @@ function toDate(value?: Date | string | null): Date | null {
 }
 
 function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  )
+  return dayjs(a).isSame(b, 'day')
 }
 
 /**

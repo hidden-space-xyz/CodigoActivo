@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import dayjs from 'dayjs'
 
 import { ANALYTICS_FIRST_YEAR, ANALYTICS_LAST_YEAR } from '@/shared/config'
 import type { TranslationKey } from '@/shared/i18n'
@@ -32,21 +33,15 @@ export function isOutsideAnalyticsDays(date: Date): boolean {
 }
 
 function startOfToday(): Date {
-  const date = new Date()
-  date.setHours(0, 0, 0, 0)
-  return date
+  return dayjs().startOf('day').toDate()
 }
 
 function daysAgo(days: number): Date {
-  const date = startOfToday()
-  date.setDate(date.getDate() - days)
-  return date
+  return dayjs().startOf('day').subtract(days, 'day').toDate()
 }
 
 function monthsAgo(months: number): Date {
-  const date = startOfToday()
-  date.setMonth(date.getMonth() - months)
-  return date
+  return dayjs().startOf('day').subtract(months, 'month').toDate()
 }
 
 /**
