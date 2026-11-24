@@ -5,7 +5,6 @@ using CodigoActivo.Application.Common.Validation;
 using CodigoActivo.Infrastructure.Caching;
 using CodigoActivo.Infrastructure.Messaging;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace CodigoActivo.Composition;
 
@@ -32,24 +31,24 @@ public static class UseCaseRegistration
     /// <returns>The same service collection.</returns>
     public static IServiceCollection AddUseCases(this IServiceCollection services)
     {
-        foreach (var (contract, implementation) in Implementations())
-        {
-            services.AddScoped(contract, implementation);
-        }
-
-        foreach (
-            var listener in typeof(ICommittedEventsHandler)
-                .Assembly.GetTypes()
-                .Where(type =>
-                    type is { IsClass: true, IsAbstract: false }
-                    && typeof(ICommittedEventsHandler).IsAssignableFrom(type)
+        services.Scan(scan =>
+            scan.FromAssemblyOf<ICommittedEventsHandler>()
+                .AddClasses(
+                    classes =>
+                        classes
+                            .AssignableToAny(Contracts)
+                            .Where(type => !type.IsGenericTypeDefinition),
+                    publicOnly: false
                 )
-        )
-        {
-            services.TryAddEnumerable(
-                ServiceDescriptor.Scoped(typeof(ICommittedEventsHandler), listener)
-            );
-        }
+                .As(type => type.GetInterfaces().Where(IsContract))
+                .WithScopedLifetime()
+                .AddClasses(
+                    classes => classes.AssignableTo<ICommittedEventsHandler>(),
+                    publicOnly: false
+                )
+                .As<ICommittedEventsHandler>()
+                .WithScopedLifetime()
+        );
 
         services.AddScoped<IDomainEventPublisher, DomainEventPublisher>();
         services.AddScoped<MessageValidator>();
@@ -69,73 +68,8 @@ public static class UseCaseRegistration
         return services;
     }
 
-    /// <summary>
-    /// Lists every concrete handler and listener of the application with the contract it
-    /// implements.
-    /// </summary>
-    /// <returns>Pairs of closed contract and implementation.</returns>
-    public static IReadOnlyList<(Type Contract, Type Implementation)> Implementations()
+    private static bool IsContract(Type contract)
     {
-        return
-        [
-            .. typeof(IQuery<>)
-                .Assembly.GetTypes()
-                .Where(type =>
-                    type is { IsClass: true, IsAbstract: false, IsGenericTypeDefinition: false }
-                )
-                .SelectMany(type =>
-                    type.GetInterfaces()
-                        .Where(contract =>
-                            contract.IsGenericType
-                            && Contracts.Contains(contract.GetGenericTypeDefinition())
-                        )
-                        .Select(contract => (contract, type))
-                ),
-        ];
-    }
-
-    private static void Decorate(
-        this IServiceCollection services,
-        Type openContract,
-        Type openDecorator
-    )
-    {
-        var decorated = services
-            .Select((descriptor, index) => (descriptor, index))
-            .Where(entry =>
-                entry.descriptor.ServiceType.IsGenericType
-                && entry.descriptor.ServiceType.GetGenericTypeDefinition() == openContract
-            )
-            .ToList();
-
-        foreach (var (descriptor, index) in decorated)
-        {
-            var decorator = openDecorator.MakeGenericType(
-                descriptor.ServiceType.GetGenericArguments()
-            );
-            services[index] = ServiceDescriptor.Describe(
-                descriptor.ServiceType,
-                provider =>
-                    ActivatorUtilities.CreateInstance(
-                        provider,
-                        decorator,
-                        CreateInner(provider, descriptor)
-                    ),
-                descriptor.Lifetime
-            );
-        }
-    }
-
-    private static object CreateInner(IServiceProvider provider, ServiceDescriptor descriptor)
-    {
-        return descriptor switch
-        {
-            { ImplementationFactory: { } factory } => factory(provider),
-            { ImplementationType: { } type } => ActivatorUtilities.CreateInstance(provider, type),
-            { ImplementationInstance: { } instance } => instance,
-            _ => throw new InvalidOperationException(
-                $"{descriptor.ServiceType.Name} cannot be decorated."
-            ),
-        };
+        return contract.IsGenericType && Contracts.Contains(contract.GetGenericTypeDefinition());
     }
 }

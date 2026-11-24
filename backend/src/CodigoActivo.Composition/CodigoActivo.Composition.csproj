@@ -9,6 +9,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+    <PackageReference Include="Scrutor" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CodigoActivo.Domain\CodigoActivo.Domain.csproj" />

@@ -214,7 +214,9 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, 
         where T : IHostedService
     {
         var descriptors = services
-            .Where(descriptor => descriptor.ImplementationType == typeof(T))
+            .Where(descriptor =>
+                !descriptor.IsKeyedService && descriptor.ImplementationType == typeof(T)
+            )
             .ToList();
         foreach (var descriptor in descriptors)
         {
@@ -230,7 +232,10 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, 
     private void UseRecordedLogs(IServiceCollection services)
     {
         var database = services
-            .Where(descriptor => descriptor.ImplementationType == typeof(DatabaseLoggerProvider))
+            .Where(descriptor =>
+                !descriptor.IsKeyedService
+                && descriptor.ImplementationType == typeof(DatabaseLoggerProvider)
+            )
             .ToList();
         foreach (var descriptor in database)
         {

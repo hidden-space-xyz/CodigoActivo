@@ -92,7 +92,9 @@ public sealed class HandlerRegistrationTests
         var services = BuildServices();
 
         services
-            .Where(descriptor => IsUseCaseContract(descriptor.ServiceType))
+            .Where(descriptor =>
+                !descriptor.IsKeyedService && IsUseCaseContract(descriptor.ServiceType)
+            )
             .Select(descriptor => descriptor.ServiceType)
             .Should()
             .BeEquivalentTo(DiscoveredHandlers().Select(handler => handler.Contract));

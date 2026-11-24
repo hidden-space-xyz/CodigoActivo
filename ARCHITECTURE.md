@@ -218,8 +218,10 @@ neither Infrastructure nor EF Core) and further conventions over the compiled as
 
 Each use case is a message and a sealed handler in `CodigoActivo.Application/<Feature>/Commands|Queries/`.
 `UseCaseRegistration` (Composition) registers every `ICommandHandler<,>`, `IQueryHandler<,>`,
-`IDomainEventListener<>` and `ICommittedEventsHandler` it finds by the contract it implements, and wraps the
-handlers in decorators: a command runs through `LoggingCommandDecorator` (warns about slow use cases),
+`IDomainEventListener<>` and `ICommittedEventsHandler` it finds by the contract it implements, through
+Scrutor's `Scan`, and wraps the handlers with Scrutor's `Decorate`, which keeps each decorated registration as
+a keyed service (code that reads `ImplementationType` from every descriptor must skip `IsKeyedService`
+ones). A command runs through `LoggingCommandDecorator` (warns about slow use cases),
 `AuditCommandDecorator` (records it in the audit log), `ValidationCommandDecorator` and
 `UnitOfWorkCommandDecorator` (commits once the handler succeeds); a query through `LoggingQueryDecorator`,
 `AuditQueryDecorator` (records an `IAuditedQuery`), `ValidationQueryDecorator` and `CachingQueryDecorator`.
