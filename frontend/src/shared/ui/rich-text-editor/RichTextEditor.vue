@@ -133,7 +133,7 @@ async function toggleLink(): Promise<void> {
     validate: (value) =>
       value.trim() === '' || normalizeLink(value) !== null || t('editor.linkInvalid'),
   })
-  if (url === null) return
+  if (url === null || instance.isDestroyed) return
   const chain = instance.chain().focus().extendMarkRange('link')
   const href = normalizeLink(url)
   if (href) chain.setLink({ href }).run()
