@@ -5,6 +5,7 @@ using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging.Testing;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Communication;
@@ -92,7 +93,7 @@ public sealed class EmailOutboxDeliveryWorkerTests
             ThrowOnClaim = new InvalidOperationException("The outbox is unreachable."),
         };
         var options = new EmailQueueOptions { PollInterval = TimeSpan.FromMilliseconds(5) };
-        var logger = new RecordingLogger<EmailOutboxDeliveryWorker>();
+        var logger = new FakeLogger<EmailOutboxDeliveryWorker>();
         var processor = Create(store, options, logger: logger);
         var runs = 0;
         var twoRuns = new TaskCompletionSource();
@@ -109,10 +110,11 @@ public sealed class EmailOutboxDeliveryWorkerTests
         await processor.StopAsync(TestContext.Current.CancellationToken);
 
         logger
-            .LevelEntries.Should()
+            .Collector.GetSnapshot()
+            .Should()
             .ContainSingle()
             .Which.Should()
-            .Match<(LogLevel Level, string Message)>(entry =>
+            .Match<FakeLogRecord>(entry =>
                 entry.Level == LogLevel.Error && entry.Message.Contains("next run will retry")
             );
     }
@@ -129,14 +131,17 @@ public sealed class EmailOutboxDeliveryWorkerTests
             ShutdownDrain = TimeSpan.FromMilliseconds(50),
         };
         var blocking = new BlockingEmailTransport();
-        var logger = new RecordingLogger<EmailOutboxDeliveryWorker>();
+        var logger = new FakeLogger<EmailOutboxDeliveryWorker>();
         var processor = Create(store, options, blocking, logger);
 
         await processor.StartAsync(TestContext.Current.CancellationToken);
         await blocking.Reached.Task.WaitAsync(Patience, TestContext.Current.CancellationToken);
         await processor.StopAsync(TestContext.Current.CancellationToken);
 
-        logger.Entries.Should().BeEmpty("the messages in flight stay stored for the next start");
+        logger
+            .Collector.GetSnapshot()
+            .Should()
+            .BeEmpty("the messages in flight stay stored for the next start");
         blocking.Release();
     }
 
@@ -189,7 +194,7 @@ public sealed class EmailOutboxDeliveryWorkerTests
             ThrowOnClaim = new OperationCanceledException("A database command timed out."),
         };
         var options = new EmailQueueOptions { PollInterval = TimeSpan.FromMilliseconds(5) };
-        var logger = new RecordingLogger<EmailOutboxDeliveryWorker>();
+        var logger = new FakeLogger<EmailOutboxDeliveryWorker>();
         var processor = Create(store, options, logger: logger);
         var runs = 0;
         var twoRuns = new TaskCompletionSource();
@@ -215,7 +220,8 @@ public sealed class EmailOutboxDeliveryWorkerTests
 
         transport.Sent.Should().ContainSingle("a foreign cancellation must not stop the worker");
         logger
-            .LevelEntries.Should()
+            .Collector.GetSnapshot()
+            .Should()
             .Contain(entry =>
                 entry.Level == LogLevel.Error && entry.Message.Contains("next run will retry")
             );
@@ -226,14 +232,17 @@ public sealed class EmailOutboxDeliveryWorkerTests
     {
         var store = new BlockingClaimStore(protector);
         var options = new EmailQueueOptions { PollInterval = TimeSpan.FromMilliseconds(5) };
-        var logger = new RecordingLogger<EmailOutboxDeliveryWorker>();
+        var logger = new FakeLogger<EmailOutboxDeliveryWorker>();
         var processor = Create(store, options, logger: logger);
 
         await processor.StartAsync(TestContext.Current.CancellationToken);
         await store.Reached.Task.WaitAsync(Patience, TestContext.Current.CancellationToken);
         await processor.StopAsync(TestContext.Current.CancellationToken);
 
-        logger.Entries.Should().BeEmpty("a cancellation is the shutdown path, not a failure");
+        logger
+            .Collector.GetSnapshot()
+            .Should()
+            .BeEmpty("a cancellation is the shutdown path, not a failure");
     }
 
     [Fact]
@@ -241,13 +250,13 @@ public sealed class EmailOutboxDeliveryWorkerTests
     {
         var store = new FakeEmailOutboxStore(protector) { EnqueuedAt = clock.UtcNow };
         var options = new EmailQueueOptions { PollInterval = TimeSpan.FromMilliseconds(5) };
-        var logger = new RecordingLogger<EmailOutboxDeliveryWorker>();
+        var logger = new FakeLogger<EmailOutboxDeliveryWorker>();
         var processor = Create(store, options, logger: logger);
 
         await processor.StartAsync(TestContext.Current.CancellationToken);
         await processor.StopAsync(TestContext.Current.CancellationToken);
 
-        logger.Entries.Should().BeEmpty();
+        logger.Collector.GetSnapshot().Should().BeEmpty();
     }
 
     private sealed class BlockingClaimStore(EmailOutboxProtector protector)

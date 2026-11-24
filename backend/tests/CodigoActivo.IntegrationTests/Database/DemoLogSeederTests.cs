@@ -192,7 +192,7 @@ public sealed class DemoLogSeederTests(CodigoActivoWebAppFactory factory)
             .And.OnlyContain(entry =>
                 entry.OccurredAt >= LogPartitions.CutoffOf(retention.Audit, now)
             );
-        Factory.Logs.Entries.Should().BeEmpty();
+        Factory.Logs.Collector.GetSnapshot().Should().BeEmpty();
     }
 
     [Fact]
@@ -229,7 +229,9 @@ public sealed class DemoLogSeederTests(CodigoActivoWebAppFactory factory)
         await seeder.SeedAsync(Ct);
 
         Factory
-            .Logs.Entries.Should()
+            .Logs.Collector.GetSnapshot()
+            .Select(entry => $"{entry.Level} {entry.Category}: {entry.Message}")
+            .Should()
             .ContainSingle()
             .Which.Should()
             .StartWith("Warning CodigoActivo.Infrastructure.Database.Seeders.DemoLogSeeder:");

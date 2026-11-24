@@ -4,6 +4,7 @@ using CodigoActivo.Infrastructure.Accounts;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Testing;
 using NSubstitute;
 using Xunit;
 
@@ -14,7 +15,7 @@ public sealed class DisposableEmailDomainRefreshWorkerTests : IDisposable
     private static readonly TimeSpan WaitBudget = TimeSpan.FromSeconds(10);
 
     private readonly FakeDisposableEmailDomainStore store = new();
-    private readonly RecordingLogger<DisposableEmailDomainRefreshWorker> logger = new();
+    private readonly FakeLogger<DisposableEmailDomainRefreshWorker> logger = new();
     private readonly List<IDisposable> owned = [];
     private IDisposableEmailDomainStore storedIn;
 
@@ -74,7 +75,7 @@ public sealed class DisposableEmailDomainRefreshWorkerTests : IDisposable
         stored.Should().BeTrue();
         store.Domains.Should().HaveCount(DisposableEmailDomainList.MinDomains + 1);
         store.Domains.Should().Contain("mailinator.com").And.NotContain("previous.test");
-        logger.Entries.Should().BeEmpty();
+        logger.Collector.GetSnapshot().Should().BeEmpty();
     }
 
     [Fact]
@@ -91,13 +92,14 @@ public sealed class DisposableEmailDomainRefreshWorkerTests : IDisposable
         stored.Should().BeFalse();
         store.Domains.Should().Equal("previous.test");
         logger
-            .LevelEntries.Should()
+            .Collector.GetSnapshot()
+            .Should()
             .ContainSingle()
             .Which.Should()
-            .Match<(LogLevel Level, string Message)>(entry =>
+            .Match<FakeLogRecord>(entry =>
                 entry.Level == LogLevel.Warning
                 && entry.Message.Contains("could not be downloaded", StringComparison.Ordinal)
-                && entry.Message.Contains("404", StringComparison.Ordinal)
+                && $"{entry.Exception}".Contains("404", StringComparison.Ordinal)
             );
     }
 
@@ -115,10 +117,11 @@ public sealed class DisposableEmailDomainRefreshWorkerTests : IDisposable
         stored.Should().BeFalse();
         store.Domains.Should().Equal("previous.test");
         logger
-            .LevelEntries.Should()
+            .Collector.GetSnapshot()
+            .Should()
             .ContainSingle()
             .Which.Should()
-            .Match<(LogLevel Level, string Message)>(entry =>
+            .Match<FakeLogRecord>(entry =>
                 entry.Level == LogLevel.Warning
                 && entry.Message.Contains("rejected as MalformedEntry", StringComparison.Ordinal)
             );
@@ -142,7 +145,10 @@ public sealed class DisposableEmailDomainRefreshWorkerTests : IDisposable
 
         stored.Should().BeFalse();
         store.Domains.Should().Equal("previous.test");
-        logger.LevelEntries.Should().ContainSingle(entry => entry.Level == LogLevel.Warning);
+        logger
+            .Collector.GetSnapshot()
+            .Should()
+            .ContainSingle(entry => entry.Level == LogLevel.Warning);
     }
 
     [Fact]
@@ -160,7 +166,7 @@ public sealed class DisposableEmailDomainRefreshWorkerTests : IDisposable
 
         await refresh.Should().ThrowAsync<OperationCanceledException>();
         store.Domains.Should().Equal("previous.test");
-        logger.Entries.Should().BeEmpty();
+        logger.Collector.GetSnapshot().Should().BeEmpty();
     }
 
     [Fact]
@@ -180,7 +186,10 @@ public sealed class DisposableEmailDomainRefreshWorkerTests : IDisposable
         await refresher.StopAsync(TestContext.Current.CancellationToken);
 
         handler.RequestedUris.Should().HaveCount(2);
-        logger.LevelEntries.Should().ContainSingle(entry => entry.Level == LogLevel.Warning);
+        logger
+            .Collector.GetSnapshot()
+            .Should()
+            .ContainSingle(entry => entry.Level == LogLevel.Warning);
         refresher.ExecuteTask!.IsFaulted.Should().BeFalse();
     }
 
@@ -201,7 +210,7 @@ public sealed class DisposableEmailDomainRefreshWorkerTests : IDisposable
         await refresher.StopAsync(TestContext.Current.CancellationToken);
 
         store.Domains.Should().NotContain("first.test");
-        logger.Entries.Should().BeEmpty();
+        logger.Collector.GetSnapshot().Should().BeEmpty();
     }
 
     [Fact]
@@ -230,11 +239,12 @@ public sealed class DisposableEmailDomainRefreshWorkerTests : IDisposable
 
         refresher.ExecuteTask!.IsFaulted.Should().BeFalse();
         logger
-            .LevelEntries.Should()
+            .Collector.GetSnapshot()
+            .Should()
             .Contain(entry =>
                 entry.Level == LogLevel.Error
                 && entry.Message.Contains("could not be stored", StringComparison.Ordinal)
-                && entry.Message.Contains("db down", StringComparison.Ordinal)
+                && $"{entry.Exception}".Contains("db down", StringComparison.Ordinal)
             );
     }
 
@@ -256,7 +266,7 @@ public sealed class DisposableEmailDomainRefreshWorkerTests : IDisposable
         refresher.ExecuteTask.IsFaulted.Should().BeFalse();
         handler.RequestedUris.Should().BeEmpty();
         store.Domains.Should().Equal("previous.test");
-        logger.Entries.Should().BeEmpty();
+        logger.Collector.GetSnapshot().Should().BeEmpty();
     }
 
     private static async Task WaitUntilAsync(Func<bool> condition)

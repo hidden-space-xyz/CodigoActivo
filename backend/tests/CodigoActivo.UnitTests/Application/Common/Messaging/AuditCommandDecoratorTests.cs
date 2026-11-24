@@ -23,6 +23,7 @@ using CodigoActivo.Domain.TermsDecisions;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging.Testing;
 using NSubstitute;
 using Xunit;
 
@@ -46,19 +47,14 @@ public sealed class AuditCommandDecoratorTests
     private Task<TResult> HandleAsync<TCommand, TResult>(
         TCommand command,
         Func<IAuditSubject, TResult> answer,
-        RecordingLogger<AuditWriter>? logger = null
+        FakeLogger<AuditWriter>? logger = null
     )
         where TCommand : ICommand<TResult>
         where TResult : Result
     {
         var sut = new AuditCommandDecorator<TCommand, TResult>(
             new AnsweringHandler<TCommand, TResult>(() => answer(subject)),
-            new AuditWriter(
-                trail,
-                currentUser,
-                origin,
-                logger ?? new RecordingLogger<AuditWriter>()
-            ),
+            new AuditWriter(trail, currentUser, origin, logger ?? new FakeLogger<AuditWriter>()),
             subject,
             commandScope
         );
@@ -293,13 +289,15 @@ public sealed class AuditCommandDecoratorTests
     {
         trail.Failure = new InvalidOperationException("queue gone");
         var answer = Result.Success();
-        var logger = new RecordingLogger<AuditWriter>();
+        var logger = new FakeLogger<AuditWriter>();
 
         var result = await HandleAsync(new DeleteUserCommand(UserId.New()), _ => answer, logger);
 
         result.Should().BeSameAs(answer);
         logger
-            .Entries.Should()
+            .Collector.GetSnapshot()
+            .Select(entry => $"{entry.Message} {entry.Exception}")
+            .Should()
             .ContainSingle()
             .Which.Should()
             .StartWith("The audit entry of a DeleteUser could not be recorded");

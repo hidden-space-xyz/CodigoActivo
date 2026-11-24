@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Routing.Patterns;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging.Testing;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.API.Middlewares;
@@ -44,12 +45,12 @@ public sealed class GlobalExceptionHandlerTests
         );
     }
 
-    private static async Task<RecordingLogger<GlobalExceptionHandler>> HandleAsync(
+    private static async Task<FakeLogger<GlobalExceptionHandler>> HandleAsync(
         Action<DefaultHttpContext> arrange,
         Exception? exception = null
     )
     {
-        var logger = new RecordingLogger<GlobalExceptionHandler>();
+        var logger = new FakeLogger<GlobalExceptionHandler>();
         var context = NewContext();
         context.Request.Method = "DELETE";
         context.Request.Path = RealPath;
@@ -149,7 +150,10 @@ public sealed class GlobalExceptionHandlerTests
             new ConcurrentUpdateException()
         );
 
-        logger.LevelEntries.Should().BeEmpty("a refused concurrent update is an expected outcome");
+        logger
+            .Collector.GetSnapshot()
+            .Should()
+            .BeEmpty("a refused concurrent update is an expected outcome");
     }
 
     [Fact]
@@ -179,7 +183,8 @@ public sealed class GlobalExceptionHandlerTests
         );
 
         logger
-            .LevelEntries.Should()
+            .Collector.GetSnapshot()
+            .Should()
             .BeEmpty("a value stored first by a concurrent request is an expected outcome");
     }
 
@@ -188,10 +193,10 @@ public sealed class GlobalExceptionHandlerTests
     {
         var logger = await HandleAsync(context => context.SetEndpoint(UserEndpoint()));
 
-        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
+        var entry = logger.Collector.GetSnapshot().Should().ContainSingle().Subject;
         entry.Level.Should().Be(LogLevel.Error);
-        entry
-            .Message.Should()
+        $"{entry.Message} {entry.Exception}"
+            .Should()
             .StartWith($"Unhandled exception while processing DELETE {RouteTemplate}")
             .And.NotContain(RealPath)
             .And.NotContain("8f7c2b1e-0000-4000-8000-000000000000")
@@ -213,7 +218,9 @@ public sealed class GlobalExceptionHandlerTests
         );
 
         logger
-            .Entries.Should()
+            .Collector.GetSnapshot()
+            .Select(entry => $"{entry.Message} {entry.Exception}")
+            .Should()
             .ContainSingle()
             .Which.Should()
             .StartWith($"Unhandled exception while processing DELETE {RouteTemplate}")
@@ -226,7 +233,9 @@ public sealed class GlobalExceptionHandlerTests
         var logger = await HandleAsync(_ => { });
 
         logger
-            .Entries.Should()
+            .Collector.GetSnapshot()
+            .Select(entry => $"{entry.Message} {entry.Exception}")
+            .Should()
             .ContainSingle()
             .Which.Should()
             .StartWith("Unhandled exception while processing DELETE (no endpoint)")

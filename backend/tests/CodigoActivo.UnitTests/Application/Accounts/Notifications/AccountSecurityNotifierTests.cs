@@ -6,6 +6,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Testing;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Application.Accounts.Notifications;
@@ -15,7 +16,7 @@ public sealed class AccountSecurityNotifierTests
     private readonly RecordingEmailSender emailSender = new();
     private readonly TestClock clock = new();
     private readonly FakeAccountEmailComposer composer = new();
-    private readonly RecordingLogger<AccountSecurityNotifier> logger = new();
+    private readonly FakeLogger<AccountSecurityNotifier> logger = new();
     private readonly AccountSecurityNotifier sut;
 
     public AccountSecurityNotifierTests()
@@ -213,9 +214,12 @@ public sealed class AccountSecurityNotifierTests
             sut.NotifyAsync(user, AccountSecurityChange.CredentialChanged, CancellationToken.None);
 
         await act.Should().NotThrowAsync();
-        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
+        var entry = logger.Collector.GetSnapshot().Should().ContainSingle().Subject;
         entry.Level.Should().Be(LogLevel.Error);
         entry.Message.Should().StartWith("Sending a SecurityAlert email failed");
-        entry.Message.Should().NotContain(user.Id.ToString()).And.NotContain("owner@test.com");
+        $"{entry.Message} {entry.Exception}"
+            .Should()
+            .NotContain(user.Id.ToString())
+            .And.NotContain("owner@test.com");
     }
 }

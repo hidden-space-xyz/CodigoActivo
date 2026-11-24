@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
+using Microsoft.Extensions.Logging.Testing;
 using NSubstitute;
 using Xunit;
 
@@ -120,7 +121,7 @@ public sealed class ApiLoggingTests
     [Fact]
     public void RecordFatalWithABuiltHostAlsoWritesThroughItsProviders()
     {
-        var recorder = new RecordingLoggerProvider();
+        using var recorder = new FakeLoggerProvider();
         using var host = new ServiceCollection()
             .AddLogging(logging => logging.AddProvider(recorder))
             .BuildServiceProvider();
@@ -128,10 +129,9 @@ public sealed class ApiLoggingTests
 
         logging.RecordFatal(new InvalidOperationException("boom"), host);
 
-        recorder
-            .Entries.Should()
-            .ContainSingle()
-            .Which.Should()
+        var entry = recorder.Collector.GetSnapshot().Should().ContainSingle().Subject;
+        $"{entry.Level} {entry.Category}: {entry.Message} {entry.Exception?.Message}"
+            .Should()
             .Be($"Critical {LogCategories.Lifecycle}: The API host terminated unexpectedly boom");
     }
 

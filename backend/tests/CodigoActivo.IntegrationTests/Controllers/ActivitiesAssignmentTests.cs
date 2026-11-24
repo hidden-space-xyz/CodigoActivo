@@ -293,7 +293,7 @@ public sealed class ActivitiesAssignmentTests(CodigoActivoWebAppFactory factory)
         );
 
         await response.ShouldBeConflictAsync(ErrorCode.ActivityAssignmentAlreadyExists);
-        Factory.Logs.Entries.Should().BeEmpty();
+        Factory.Logs.Collector.GetSnapshot().Should().BeEmpty();
     }
 
     [Fact]

@@ -29,6 +29,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Testing;
 using Xunit;
 
 namespace CodigoActivo.IntegrationTests.Infrastructure;
@@ -66,7 +67,7 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, 
 
     public FakeEmailSender EmailSender { get; } = new();
 
-    public LogRecorder Logs { get; } = new();
+    public FakeLoggerProvider Logs { get; } = new();
 
     public RecordingAuditTrail Audit { get; } = new();
 
@@ -225,9 +226,9 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, 
     }
 
     /// <summary>
-    /// Replaces the database provider with <see cref="LogRecorder"/>: the tests read what the
-    /// level policy lets through without waiting for the batching sink, and the log tables only
-    /// hold what a test writes into them on purpose.
+    /// Replaces the database provider with <see cref="FakeLoggerProvider"/>: the tests read what
+    /// the level policy lets through without waiting for the batching sink, and the log tables
+    /// only hold what a test writes into them on purpose.
     /// </summary>
     private void UseRecordedLogs(IServiceCollection services)
     {
@@ -319,7 +320,7 @@ public sealed class CodigoActivoWebAppFactory : WebApplicationFactory<Program>, 
     public async Task ResetDatabaseAsync()
     {
         EmailSender.Clear();
-        Logs.Clear();
+        Logs.Collector.Clear();
         Audit.Clear();
         ResetClock();
         await SeedFreshDatabaseAsync();

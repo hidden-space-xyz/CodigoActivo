@@ -2,6 +2,7 @@ using AwesomeAssertions;
 using CodigoActivo.Infrastructure.Logs;
 using CodigoActivo.IntegrationTests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Testing;
 using Npgsql;
 using Xunit;
 using static CodigoActivo.IntegrationTests.Infrastructure.TestCancellation;
@@ -247,7 +248,7 @@ public sealed class LogPartitionMaintainerTests(PostgresDatabaseFixture postgres
     public async Task TryMaintainAsyncRecordsAFailureInsteadOfThrowingIt()
     {
         await using var unreachable = new LogDatabase("Host=127.0.0.1;Port=1;Database=unused");
-        var logs = new LogRecorder();
+        using var logs = new FakeLoggerProvider();
 
         await new LogPartitionMaintainer(
             unreachable,
@@ -255,7 +256,9 @@ public sealed class LogPartitionMaintainerTests(PostgresDatabaseFixture postgres
             clock
         ).TryMaintainAsync(logs.CreateLogger("Maintenance"), Ct);
 
-        logs.Entries.Should()
+        logs.Collector.GetSnapshot()
+            .Select(entry => $"{entry.Level} {entry.Category}: {entry.Message}")
+            .Should()
             .Equal("Error Maintenance: The log table maintenance failed; the next run will retry");
     }
 }

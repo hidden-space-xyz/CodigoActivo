@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.DataProtection.Repositories;
 using Microsoft.AspNetCore.DataProtection.XmlEncryption;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Testing;
 using NSubstitute;
 using Xunit;
 
@@ -21,7 +22,7 @@ public sealed class ProtectedKeyRingRepositoryTests : IDisposable
         $"{typeof(AesGcmXmlDecryptor).FullName}, {typeof(AesGcmXmlDecryptor).Assembly.GetName().Name}, Version=1.0.0.0";
 
     private readonly IXmlRepository inner = Substitute.For<IXmlRepository>();
-    private readonly RecordingLogger<ProtectedKeyRingRepository> logger = new();
+    private readonly FakeLogger<ProtectedKeyRingRepository> logger = new();
     private readonly string directory = Path.Join(
         Path.GetTempPath(),
         "codigoactivo-keyring-tests",
@@ -75,7 +76,7 @@ public sealed class ProtectedKeyRingRepositoryTests : IDisposable
 
         Read(protectedKey, revocation).Should().Equal(protectedKey, revocation);
 
-        logger.Entries.Should().BeEmpty();
+        logger.Collector.GetSnapshot().Should().BeEmpty();
     }
 
     [Theory]
@@ -118,7 +119,7 @@ public sealed class ProtectedKeyRingRepositoryTests : IDisposable
             Key(EncryptedSecret(string.Empty))
         );
 
-        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
+        var entry = logger.Collector.GetSnapshot().Should().ContainSingle().Subject;
         entry.Level.Should().Be(LogLevel.Warning);
         entry
             .Message.Should()

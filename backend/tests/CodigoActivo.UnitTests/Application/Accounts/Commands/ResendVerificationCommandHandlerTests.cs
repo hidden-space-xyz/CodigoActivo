@@ -10,6 +10,7 @@ using CodigoActivo.Domain.Common;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Testing;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Accounts.AuthTestData;
@@ -25,7 +26,7 @@ public sealed class ResendVerificationCommandHandlerTests
     private readonly RecordingEmailSender emailSender = new();
     private readonly FakeAccountEmailComposer composer = new();
     private readonly AccountVerificationOptions verification = new();
-    private readonly RecordingLogger<ResendVerificationCommandHandler> logger = new();
+    private readonly FakeLogger<ResendVerificationCommandHandler> logger = new();
     private readonly ResendVerificationCommandHandler sut;
 
     public ResendVerificationCommandHandlerTests()
@@ -181,13 +182,20 @@ public sealed class ResendVerificationCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         user.VerificationCode.Hash.Should().Be(previousHash);
-        logger
-            .LevelEntries.Should()
+        var record = logger
+            .Collector.GetSnapshot()
+            .Should()
             .ContainSingle(entry => entry.Level == LogLevel.Error)
-            .Which.Message.Should()
+            .Subject;
+        $"{record.Message} {record.Exception}"
+            .Should()
             .StartWith("Sending a AccountVerification email failed")
             .And.NotContain(user.Id.ToString());
-        logger.Entries.Should().NotContain(entry => entry.Contains(user.Email!.Value));
+        logger
+            .Collector.GetSnapshot()
+            .Select(entry => $"{entry.Message} {entry.Exception}")
+            .Should()
+            .NotContain(entry => entry.Contains(user.Email!.Value));
     }
 
     [Fact]

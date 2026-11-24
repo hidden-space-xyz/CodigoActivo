@@ -6,6 +6,7 @@ using CodigoActivo.Infrastructure.Messaging;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Testing;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Messaging;
@@ -16,7 +17,7 @@ public sealed class DomainEventPublisherTests : IDisposable
 
     private readonly List<string> calls = [];
     private readonly List<CancellationToken> tokens = [];
-    private readonly RecordingLogger<DomainEventPublisher> logger = new();
+    private readonly FakeLogger<DomainEventPublisher> logger = new();
     private ServiceProvider? provider;
 
     public enum Failure
@@ -72,7 +73,7 @@ public sealed class DomainEventPublisherTests : IDisposable
         await publisher.PublishAsync([Raised]);
 
         calls.Should().Equal("commit:first", "commit:second", "event:first", "event:second");
-        logger.Entries.Should().BeEmpty();
+        logger.Collector.GetSnapshot().Should().BeEmpty();
     }
 
     [Theory]
@@ -87,9 +88,11 @@ public sealed class DomainEventPublisherTests : IDisposable
 
         await act.Should().NotThrowAsync();
         calls.Should().Equal("commit:broken", "commit:healthy", "event:broken", "event:healthy");
-        logger.LevelEntries.Should().OnlyContain(entry => entry.Level == LogLevel.Error);
+        logger.Collector.GetSnapshot().Should().OnlyContain(entry => entry.Level == LogLevel.Error);
         logger
-            .Entries.Should()
+            .Collector.GetSnapshot()
+            .Select(entry => $"{entry.Message} {entry.Exception}")
+            .Should()
             .SatisfyRespectively(
                 entry => entry.Should().Contain(nameof(CommittedHandler)),
                 entry => entry.Should().Contain(nameof(Listener))

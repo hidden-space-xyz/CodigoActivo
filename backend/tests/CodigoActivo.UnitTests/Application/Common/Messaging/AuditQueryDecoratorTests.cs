@@ -13,6 +13,7 @@ using CodigoActivo.Domain.Events;
 using CodigoActivo.Domain.TermsDocuments;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Logging.Testing;
 using NSubstitute;
 using Xunit;
 
@@ -23,7 +24,7 @@ public sealed class AuditQueryDecoratorTests
     private static readonly IPAddress Address = IPAddress.Parse("203.0.113.7");
 
     private readonly RecordingAuditTrail trail = new();
-    private readonly RecordingLogger<AuditWriter> logger = new();
+    private readonly FakeLogger<AuditWriter> logger = new();
     private readonly TestCurrentUser currentUser = new();
 
     private Task<TResult> HandleAsync<TQuery, TResult>(TQuery query, TResult answer)
@@ -108,7 +109,9 @@ public sealed class AuditQueryDecoratorTests
 
         result.Should().BeSameAs(answer);
         logger
-            .Entries.Should()
+            .Collector.GetSnapshot()
+            .Select(entry => $"{entry.Message} {entry.Exception}")
+            .Should()
             .ContainSingle()
             .Which.Should()
             .StartWith("The audit entry of a GetEventTermsSignature could not be recorded");

@@ -4,6 +4,7 @@ using CodigoActivo.Infrastructure.Communication;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging.Testing;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Communication;
@@ -100,7 +101,7 @@ public sealed class ThrottledEmailSenderTests
     [Fact]
     public async Task SendAsyncTrackedRecipientsSaturatedWarnsAndStillStoresTheMessage()
     {
-        var logger = new RecordingLogger<ThrottledEmailSender>();
+        var logger = new FakeLogger<ThrottledEmailSender>();
         var outbox = new RecordingEmailOutbox();
         var sender = Create(outbox, new EmailGuardOptions { MaxTrackedRecipients = 1 }, logger);
 
@@ -112,17 +113,22 @@ public sealed class ThrottledEmailSenderTests
 
         outbox.Messages.Should().HaveCount(2);
         logger
-            .LevelEntries.Should()
+            .Collector.GetSnapshot()
+            .Should()
             .ContainSingle(entry => entry.Level == LogLevel.Warning)
             .Which.Message.Should()
             .Contain("1");
-        logger.Entries.Should().NotContain(entry => entry.Contains("otro@example.test"));
+        logger
+            .Collector.GetSnapshot()
+            .Select(entry => $"{entry.Message} {entry.Exception}")
+            .Should()
+            .NotContain(entry => entry.Contains("otro@example.test"));
     }
 
     [Fact]
     public async Task SendAsyncAnonymousBudgetSpentLogsOnceAndKeepsLoginCodesFlowing()
     {
-        var logger = new RecordingLogger<ThrottledEmailSender>();
+        var logger = new FakeLogger<ThrottledEmailSender>();
         var outbox = new RecordingEmailOutbox();
         var sender = Create(
             outbox,
@@ -151,6 +157,9 @@ public sealed class ThrottledEmailSenderTests
             .Messages.Select(message => message.ToAddress)
             .Should()
             .Equal("a@example.test", "c@example.test");
-        logger.LevelEntries.Should().ContainSingle(entry => entry.Level == LogLevel.Error);
+        logger
+            .Collector.GetSnapshot()
+            .Should()
+            .ContainSingle(entry => entry.Level == LogLevel.Error);
     }
 }

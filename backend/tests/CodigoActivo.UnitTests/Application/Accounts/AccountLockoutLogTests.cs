@@ -9,6 +9,7 @@ using CodigoActivo.Application.Common.Messaging;
 using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Testing;
 using NSubstitute;
 using Xunit;
 
@@ -18,7 +19,7 @@ public sealed class AccountLockoutLogTests
 {
     private static readonly IPAddress Address = IPAddress.Parse("203.0.113.7");
 
-    private readonly RecordingLogger<AccountLockoutLog> logger = new();
+    private readonly FakeLogger<AccountLockoutLog> logger = new();
     private readonly RecordingAuditTrail trail = new();
     private readonly TestCurrentUser currentUser = TestCurrentUser.Anonymous();
     private readonly AccountLockoutLog sut;
@@ -31,7 +32,7 @@ public sealed class AccountLockoutLogTests
             new PasswordLockoutOptions { MaxFailedAttempts = 3 },
             new TwoFactorOptions { MaxFailedAttempts = 4 },
             logger,
-            new AuditWriter(trail, currentUser, origin, new RecordingLogger<AuditWriter>())
+            new AuditWriter(trail, currentUser, origin, new FakeLogger<AuditWriter>())
         );
     }
 
@@ -56,7 +57,7 @@ public sealed class AccountLockoutLogTests
 
         await sut.HandleAsync(new PasswordLocked(userId), TestContext.Current.CancellationToken);
 
-        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
+        var entry = logger.Collector.GetSnapshot().Should().ContainSingle().Subject;
         entry.Level.Should().Be(LogLevel.Warning);
         entry
             .Message.Should()
@@ -76,7 +77,7 @@ public sealed class AccountLockoutLogTests
 
         await sut.HandleAsync(new TwoFactorLocked(userId), TestContext.Current.CancellationToken);
 
-        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
+        var entry = logger.Collector.GetSnapshot().Should().ContainSingle().Subject;
         entry.Level.Should().Be(LogLevel.Warning);
         entry
             .Message.Should()

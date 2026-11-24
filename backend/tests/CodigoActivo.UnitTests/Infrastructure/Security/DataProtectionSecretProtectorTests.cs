@@ -4,6 +4,7 @@ using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging.Testing;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Security;
@@ -35,17 +36,17 @@ public sealed class DataProtectionSecretProtectorTests
     [Fact]
     public void TryUnprotectValueFromAnotherKeyRingReportsItUnreadableAndLogsIt()
     {
-        var logger = new RecordingLogger<DataProtectionSecretProtector>();
+        var logger = new FakeLogger<DataProtectionSecretProtector>();
         var protectedValue = NewProtector().Protect("JBSWY3DPEHPK3PXP");
 
         var read = NewProtector(logger).TryUnprotect(protectedValue, out var plaintext);
 
         read.Should().BeFalse();
         plaintext.Should().BeNull();
-        var entry = logger.LevelEntries.Should().ContainSingle().Subject;
+        var entry = logger.Collector.GetSnapshot().Should().ContainSingle().Subject;
         entry.Level.Should().Be(LogLevel.Error);
-        entry
-            .Message.Should()
+        $"{entry.Message} {entry.Exception}"
+            .Should()
             .Contain("could not be decrypted")
             .And.Contain("CryptographicException");
     }

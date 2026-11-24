@@ -6,6 +6,7 @@ using CodigoActivo.Infrastructure.Messaging;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Testing;
 using NSubstitute;
 using Xunit;
 
@@ -21,7 +22,7 @@ public sealed class ScheduledJobsWorkerTests : IDisposable
         Substitute.For<ICommandHandler<PurgeAdultDependentsCommand, Result<int>>>();
     private readonly ICommandHandler<SendComingOfAgeNoticesCommand, Result<int>> notices =
         Substitute.For<ICommandHandler<SendComingOfAgeNoticesCommand, Result<int>>>();
-    private readonly RecordingLogger<ScheduledJobsWorker> logger = new();
+    private readonly FakeLogger<ScheduledJobsWorker> logger = new();
     private readonly ServiceProvider provider;
 
     public ScheduledJobsWorkerTests()
@@ -91,7 +92,7 @@ public sealed class ScheduledJobsWorkerTests : IDisposable
                 Arg.Any<CancellationToken>()
             );
         });
-        logger.Entries.Should().BeEmpty();
+        logger.Collector.GetSnapshot().Should().BeEmpty();
     }
 
     [Fact]
@@ -117,13 +118,14 @@ public sealed class ScheduledJobsWorkerTests : IDisposable
 
         worker.ExecuteTask!.IsFaulted.Should().BeFalse();
         logger
-            .LevelEntries.Should()
+            .Collector.GetSnapshot()
+            .Should()
             .ContainSingle()
             .Which.Should()
-            .Match<(LogLevel Level, string Message)>(entry =>
+            .Match<FakeLogRecord>(entry =>
                 entry.Level == LogLevel.Error
                 && entry.Message.Contains(nameof(PurgeAdultDependentsCommand))
-                && entry.Message.Contains("db down")
+                && $"{entry.Exception}".Contains("db down")
             );
     }
 
@@ -140,6 +142,6 @@ public sealed class ScheduledJobsWorkerTests : IDisposable
         await purge
             .DidNotReceiveWithAnyArgs()
             .HandleAsync(default!, TestContext.Current.CancellationToken);
-        logger.Entries.Should().BeEmpty();
+        logger.Collector.GetSnapshot().Should().BeEmpty();
     }
 }

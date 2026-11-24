@@ -1,7 +1,7 @@
 using System.Globalization;
 using AwesomeAssertions;
 using CodigoActivo.Infrastructure.Time;
-using CodigoActivo.UnitTests.TestSupport;
+using Microsoft.Extensions.Time.Testing;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Time;
@@ -19,7 +19,7 @@ public sealed class SystemClockTests
     [Fact]
     public void UtcNowAnyTimezoneReturnsTheProvidedInstantUnshifted()
     {
-        var sut = new SystemClock(Zone(5), new FixedTimeProvider(Instant));
+        var sut = new SystemClock(Zone(5), new FakeTimeProvider(Instant));
 
         sut.UtcNow.Should().Be(Instant);
     }
@@ -36,7 +36,7 @@ public sealed class SystemClockTests
         int day
     )
     {
-        var sut = new SystemClock(Zone(offsetHours), new FixedTimeProvider(Instant));
+        var sut = new SystemClock(Zone(offsetHours), new FakeTimeProvider(Instant));
 
         sut.Today.Should().Be(new DateOnly(year, month, day));
     }

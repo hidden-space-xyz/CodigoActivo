@@ -15,6 +15,7 @@ using CodigoActivo.Domain.Users;
 using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging.Testing;
 using NSubstitute;
 using Xunit;
 using static CodigoActivo.UnitTests.Application.Users.UserTestData;
@@ -34,8 +35,8 @@ public sealed class UpdateUserCommandHandlerTests
     private readonly IUnitOfWork uow = Substitute.For<IUnitOfWork>();
     private readonly RecordingEmailSender emailSender = new();
     private readonly FakeAccountEmailComposer composer = new();
-    private readonly RecordingLogger<AccountSecurityNotifier> notifierLogger = new();
-    private readonly RecordingLogger<EmailChangeLinkIssuer> issuerLogger = new();
+    private readonly FakeLogger<AccountSecurityNotifier> notifierLogger = new();
+    private readonly FakeLogger<EmailChangeLinkIssuer> issuerLogger = new();
     private readonly FakeDisposableEmailDomainStore disposableDomains = new();
     private readonly AccountVerificationOptions verification = new();
     private readonly ITotpService totp = Substitute.For<ITotpService>();
@@ -287,10 +288,10 @@ public sealed class UpdateUserCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         emailSender.Sent.Should().BeEmpty();
-        var entry = notifierLogger.LevelEntries.Should().ContainSingle().Subject;
+        var entry = notifierLogger.Collector.GetSnapshot().Should().ContainSingle().Subject;
         entry.Level.Should().Be(LogLevel.Error);
-        entry
-            .Message.Should()
+        $"{entry.Message} {entry.Exception}"
+            .Should()
             .StartWith("Sending a SecurityAlert email failed")
             .And.NotContain(actingUser.Id.Value.ToString());
     }
@@ -765,7 +766,7 @@ public sealed class UpdateUserCommandHandlerTests
 
         result.ShouldFail(ErrorKind.Conflict, ApplicationErrorCode.EmailSendFailed);
         actingUser.EmailChange.NewEmail.Should().BeNull();
-        var entry = issuerLogger.LevelEntries.Should().ContainSingle().Subject;
+        var entry = issuerLogger.Collector.GetSnapshot().Should().ContainSingle().Subject;
         entry.Level.Should().Be(LogLevel.Error);
         entry.Message.Should().StartWith("Sending a AccountVerification email failed");
         await AssertNotSavedAsync();

@@ -5,6 +5,7 @@ using CodigoActivo.UnitTests.TestSupport;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Logging.Testing;
 using Xunit;
 
 namespace CodigoActivo.UnitTests.Infrastructure.Communication;
@@ -174,7 +175,7 @@ public sealed class EmailOutboxDelivererTests
         var store = Store();
         await store.TryEnqueueAsync(Batch("uno@example.test", "dos@example.test"), Ct());
         transport.ThrowOnOpen = ServerDown();
-        var logger = new RecordingLogger<EmailOutboxDeliverer>();
+        var logger = new FakeLogger<EmailOutboxDeliverer>();
         var deliverer = Create(store, logger);
 
         await deliverer.DeliverDueAsync(Ct());
@@ -189,7 +190,10 @@ public sealed class EmailOutboxDelivererTests
                 message.AttemptCount.Should().Be(0, "a pause spends no attempt");
                 message.NextAttemptAt.Should().Be(Now.AddMinutes(1));
             });
-        logger.LevelEntries.Should().ContainSingle(entry => entry.Level == LogLevel.Error);
+        logger
+            .Collector.GetSnapshot()
+            .Should()
+            .ContainSingle(entry => entry.Level == LogLevel.Error);
         store.SentRecorded.Should().Be(0);
     }
 
@@ -313,17 +317,19 @@ public sealed class EmailOutboxDelivererTests
         var store = Store();
         await store.TryEnqueueAsync(Batch("nadie@example.test", "ana@example.test"), Ct());
         transport.RejectedRecipients.Add("nadie@example.test");
-        var logger = new RecordingLogger<EmailOutboxDeliverer>();
+        var logger = new FakeLogger<EmailOutboxDeliverer>();
 
         await Create(store, logger).DeliverDueAsync(Ct());
 
         store.Messages.Should().BeEmpty();
         store.Rescheduled.Should().BeEmpty("a refusal for good is never retried");
         transport.Sent.Should().ContainSingle().Which.ToAddress.Should().Be("ana@example.test");
-        var entry = logger
-            .LevelEntries.Should()
+        var record = logger
+            .Collector.GetSnapshot()
+            .Should()
             .ContainSingle(entry => entry.Level == LogLevel.Warning)
-            .Subject.Message;
+            .Subject;
+        var entry = $"{record.Message} {record.Exception}";
         entry.Should().Contain("RecipientRejected").And.Contain("TwoFactorCode");
         entry.Should().NotContain("nadie@example.test");
     }
@@ -342,7 +348,7 @@ public sealed class EmailOutboxDelivererTests
             Ct()
         );
         var provider = new CountingDataProtectionProvider();
-        var logger = new RecordingLogger<EmailOutboxDeliverer>();
+        var logger = new FakeLogger<EmailOutboxDeliverer>();
 
         var delivered = await Create(store, logger, reader: new EmailOutboxProtector(provider))
             .DeliverDueAsync(Ct());
@@ -353,7 +359,8 @@ public sealed class EmailOutboxDelivererTests
         store.Messages.Should().BeEmpty("content no key can read is never worth retrying");
         provider.Unprotections.Should().Be(1, "the shared content is read once and fails once");
         logger
-            .LevelEntries.Should()
+            .Collector.GetSnapshot()
+            .Should()
             .HaveCount(3)
             .And.AllSatisfy(entry => entry.Message.Should().Contain("MessageRejected"));
     }
@@ -384,7 +391,7 @@ public sealed class EmailOutboxDelivererTests
             },
             Ct()
         );
-        var logger = new RecordingLogger<EmailOutboxDeliverer>();
+        var logger = new FakeLogger<EmailOutboxDeliverer>();
         clock.UtcNow = Now.AddMinutes(10);
 
         var delivered = await Create(store, logger).DeliverDueAsync(Ct());
@@ -392,10 +399,12 @@ public sealed class EmailOutboxDelivererTests
         delivered.Should().Be(0);
         transport.Sent.Should().BeEmpty("a code is useless once it expired");
         store.Messages.Should().BeEmpty();
-        var entry = logger
-            .LevelEntries.Should()
+        var record = logger
+            .Collector.GetSnapshot()
+            .Should()
             .ContainSingle(entry => entry.Level == LogLevel.Error)
-            .Subject.Message;
+            .Subject;
+        var entry = $"{record.Message} {record.Exception}";
         entry.Should().Contain("1").And.Contain("TwoFactorCode").And.NotContain("ana@example.test");
     }
 
@@ -409,7 +418,7 @@ public sealed class EmailOutboxDelivererTests
             Ct()
         );
         transport.ThrowOnOpen = ServerDown();
-        var logger = new RecordingLogger<EmailOutboxDeliverer>();
+        var logger = new FakeLogger<EmailOutboxDeliverer>();
         var deliverer = Create(store, logger);
 
         await deliverer.DeliverDueAsync(Ct());
@@ -418,7 +427,9 @@ public sealed class EmailOutboxDelivererTests
 
         store.Messages.Should().ContainSingle("a notice to the legal contact never expires");
         logger
-            .Entries.Should()
+            .Collector.GetSnapshot()
+            .Select(entry => $"{entry.Message} {entry.Exception}")
+            .Should()
             .ContainSingle(
                 entry => entry.Contains("more than 24 hours"),
                 "the check runs once per alert interval"
@@ -453,7 +464,7 @@ public sealed class EmailOutboxDelivererTests
         await store.TryEnqueueAsync(Batch(EmailKind.SecurityAlert, "alerta@example.test"), Ct());
         await store.TryEnqueueAsync(Batch(EmailKind.AccessRecovery, "reset@example.test"), Ct());
         await store.TryEnqueueAsync(Batch("login@example.test"), Ct());
-        var logger = new RecordingLogger<EmailOutboxDeliverer>();
+        var logger = new FakeLogger<EmailOutboxDeliverer>();
 
         await Create(store, logger).DeliverDueAsync(Ct());
 
@@ -462,7 +473,10 @@ public sealed class EmailOutboxDelivererTests
             .Should()
             .BeEquivalentTo("reset@example.test", "login@example.test");
         store.Messages.Should().ContainSingle().Which.ToAddress.Should().Be("alerta@example.test");
-        logger.LevelEntries.Should().ContainSingle(entry => entry.Level == LogLevel.Warning);
+        logger
+            .Collector.GetSnapshot()
+            .Should()
+            .ContainSingle(entry => entry.Level == LogLevel.Warning);
     }
 
     [Fact]
@@ -605,14 +619,15 @@ public sealed class EmailOutboxDelivererTests
         var store = new ThrowingOnWriteStore(protector) { EnqueuedAt = Now };
         await store.TryEnqueueAsync(Batch("ana@example.test"), Ct());
         transport.ThrowOnSend = new InvalidOperationException("Connection reset");
-        var logger = new RecordingLogger<EmailOutboxDeliverer>();
+        var logger = new FakeLogger<EmailOutboxDeliverer>();
 
         var delivered = await Create(store, logger).DeliverDueAsync(Ct());
 
         delivered.Should().Be(1);
         store.Messages.Should().ContainSingle().Which.NextAttemptAt.Should().Be(Now);
         logger
-            .LevelEntries.Should()
+            .Collector.GetSnapshot()
+            .Should()
             .Contain(entry => entry.Level == LogLevel.Error && entry.Message.Contains("stays due"));
     }
 
@@ -621,14 +636,15 @@ public sealed class EmailOutboxDelivererTests
     {
         var store = new ThrowingOnSweepStore(protector) { EnqueuedAt = Now };
         await store.TryEnqueueAsync(Batch("ana@example.test"), Ct());
-        var logger = new RecordingLogger<EmailOutboxDeliverer>();
+        var logger = new FakeLogger<EmailOutboxDeliverer>();
 
         var delivered = await Create(store, logger).DeliverDueAsync(Ct());
 
         delivered.Should().Be(1);
         transport.Sent.Should().ContainSingle();
         logger
-            .LevelEntries.Should()
+            .Collector.GetSnapshot()
+            .Should()
             .Contain(entry =>
                 entry.Level == LogLevel.Error && entry.Message.Contains("stored content")
             );
@@ -639,14 +655,15 @@ public sealed class EmailOutboxDelivererTests
     {
         var store = new ThrowingOnOverdueCountStore(protector) { EnqueuedAt = Now };
         await store.TryEnqueueAsync(Batch("ana@example.test"), Ct());
-        var logger = new RecordingLogger<EmailOutboxDeliverer>();
+        var logger = new FakeLogger<EmailOutboxDeliverer>();
 
         var delivered = await Create(store, logger).DeliverDueAsync(Ct());
 
         delivered.Should().Be(1);
         transport.Sent.Should().ContainSingle();
         logger
-            .LevelEntries.Should()
+            .Collector.GetSnapshot()
+            .Should()
             .Contain(entry =>
                 entry.Level == LogLevel.Error && entry.Message.Contains("waited too long")
             );
@@ -657,7 +674,7 @@ public sealed class EmailOutboxDelivererTests
     {
         var store = new FailingBookkeepingStore(protector) { EnqueuedAt = Now };
         await store.TryEnqueueAsync(Batch("uno@example.test", "dos@example.test"), Ct());
-        var logger = new RecordingLogger<EmailOutboxDeliverer>();
+        var logger = new FakeLogger<EmailOutboxDeliverer>();
 
         var delivered = await Create(store, logger).DeliverDueAsync(Ct());
 
@@ -665,7 +682,8 @@ public sealed class EmailOutboxDelivererTests
         transport.Sent.Should().HaveCount(2);
         store.Messages.Should().HaveCount(2, "a row that could not be removed stays due");
         var errors = logger
-            .LevelEntries.Where(entry => entry.Level == LogLevel.Error)
+            .Collector.GetSnapshot()
+            .Where(entry => entry.Level == LogLevel.Error)
             .Select(entry => entry.Message)
             .ToList();
         errors.Count(message => message.Contains("stays due")).Should().Be(2);
@@ -677,13 +695,17 @@ public sealed class EmailOutboxDelivererTests
     public async Task DeliverDueAsyncExpiredRemovalFailingAgainIsLoggedOncePerInterval()
     {
         var store = new FailingBookkeepingStore(protector) { EnqueuedAt = Now };
-        var logger = new RecordingLogger<EmailOutboxDeliverer>();
+        var logger = new FakeLogger<EmailOutboxDeliverer>();
         var deliverer = Create(store, logger);
 
         await deliverer.DeliverDueAsync(Ct());
         await deliverer.DeliverDueAsync(Ct());
 
-        logger.Entries.Should().ContainSingle(message => message.Contains("expired email"));
+        logger
+            .Collector.GetSnapshot()
+            .Select(entry => $"{entry.Message} {entry.Exception}")
+            .Should()
+            .ContainSingle(message => message.Contains("expired email"));
     }
 
     [Fact]
@@ -692,14 +714,19 @@ public sealed class EmailOutboxDelivererTests
         var store = new FailingBookkeepingStore(protector) { EnqueuedAt = Now };
         await store.TryEnqueueAsync(Batch("uno@example.test", "dos@example.test"), Ct());
         transport.ThrowOnOpen = ServerDown();
-        var logger = new RecordingLogger<EmailOutboxDeliverer>();
+        var logger = new FakeLogger<EmailOutboxDeliverer>();
         var deliverer = Create(store, logger);
 
         await deliverer.DeliverDueAsync(Ct());
 
         deliverer.PausedUntil.Should().Be(Now.AddMinutes(1));
         transport.Sent.Should().BeEmpty();
-        logger.Entries.Count(message => message.Contains("stays due")).Should().Be(2);
+        logger
+            .Collector.GetSnapshot()
+            .Select(entry => $"{entry.Message} {entry.Exception}")
+            .Count(message => message.Contains("stays due"))
+            .Should()
+            .Be(2);
     }
 
     [Fact]

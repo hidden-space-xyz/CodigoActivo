@@ -99,6 +99,6 @@ public sealed class NormalUseLoggingTests(CodigoActivoWebAppFactory factory)
         await UseAsMemberWithAStaleCsrfTokenAsync();
         await UseAsAdminAsync();
 
-        Factory.Logs.Entries.Should().BeEmpty();
+        Factory.Logs.Collector.GetSnapshot().Should().BeEmpty();
     }
 }
