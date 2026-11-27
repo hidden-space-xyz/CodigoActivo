@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0-resolute AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0-resolute AS build
 ARG TARGETARCH
 WORKDIR /source
 COPY Directory.Packages.props Directory.Build.props Directory.Build.Analyzers.props Directory.Build.targets ./
@@ -12,7 +12,7 @@ COPY src/CodigoActivo.API/CodigoActivo.API.csproj                      src/Codig
 RUN dotnet restore src/CodigoActivo.API/CodigoActivo.API.csproj -a $TARGETARCH
 COPY . .
 
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-resolute-chiseled AS base
+FROM mcr.microsoft.com/dotnet/aspnet:11.0-resolute-chiseled AS base
 COPY --from=build /usr/share/zoneinfo /usr/share/zoneinfo
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true \
     ASPNETCORE_HTTP_PORTS=8080 \

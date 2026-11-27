@@ -15,7 +15,7 @@ x-tools: &tools
 
 services:
   secrets:
-    image: postgres:18-alpine
+    image: postgres:19-alpine
     entrypoint:
       - sh
       - -c
@@ -25,7 +25,7 @@ services:
 
   db:
     <<: *server
-    image: postgres:18-alpine
+    image: postgres:19-alpine
     mem_limit: ${PERF_DB_MEMORY:-3g}
     depends_on:
       secrets:
@@ -98,7 +98,7 @@ services:
 
   volume:
     <<: *tools
-    image: postgres:18-alpine
+    image: postgres:19-alpine
     depends_on:
       api:
         condition: service_healthy
@@ -114,7 +114,7 @@ services:
 
   k6:
     <<: *tools
-    image: grafana/k6:2.3.0
+    image: grafana/k6:2.4.0
     profiles: [k6]
     user: root
     depends_on:
